@@ -1057,7 +1057,7 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // ── FORM SUBMIT ──
-function submitForm() {
+async function submitForm() {
   const name = document.getElementById('f-name').value.trim();
   const email = document.getElementById('f-email').value.trim();
   const brokerage = document.getElementById('f-brokerage').value;
@@ -1067,13 +1067,23 @@ function submitForm() {
     return;
   }
 
-  // Hide form, show success
+  try {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        email,
+        phone: document.getElementById('f-phone').value.trim(),
+        brokerage,
+        deals_per_year: document.getElementById('f-deals').value,
+        avg_price: document.getElementById('f-price').value,
+      })
+    });
+  } catch(e) {}
+
   document.getElementById('lead-form-content').style.display = 'none';
   document.getElementById('form-success').style.display = 'block';
-
-  // In production: replace this with your actual form endpoint
-  // Options: Netlify Forms, Formspree, Make/Zapier webhook, EmailJS
-  console.log('Lead captured:', { name, email, brokerage });
 }
 
 // ── SMOOTH SCROLL for anchor links ──
