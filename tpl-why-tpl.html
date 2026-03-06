@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Why TPL Collective | Partner With Us</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --purple: #2D1B5E;
+  --purple-mid: #3D2570;
+  --purple-light: #4A2E85;
+  --gold: #C9A84C;
+  --gold-light: #E2C97E;
+  --gold-dim: rgba(201,168,76,0.15);
+  --gold-border: rgba(201,168,76,0.3);
+  --white: #FFFFFF;
+  --off-white: #F8F5EF;
+  --text-dark: #1A0F35;
+  --text-mid: #4A3F6B;
+  --text-muted: #8B7FA8;
+  --bg-section: #F4F1EC;
+  --green: #1DB954;
+  --red: #E53E3E;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--white);
+  color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  background: rgba(45,27,94,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gold-border);
+  padding: 0 5%;
+  display: flex; align-items:center; justify-content:space-between;
+  height: 70px;
+}
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+.nav-links { display:flex; gap:32px; align-items:center; }
+.nav-links a {
+  color: rgba(255,255,255,0.7); font-size: 14px; font-weight:500;
+  text-decoration:none; letter-spacing:0.3px;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--gold); }
+.nav-cta {
+  background: var(--gold); color: var(--purple) !important;
+  padding: 10px 24px; border-radius: 6px;
+  font-weight: 600 !important; letter-spacing: 0.5px !important;
+  transition: background 0.2s, transform 0.2s !important;
+}
+.nav-cta:hover { background: var(--gold-light) !important; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  background: var(--purple);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 120px 5% 80px;
+}
+.hero::before {
+  content:'';
+  position: absolute; inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 70% 50%, rgba(201,168,76,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(139,92,246,0.15) 0%, transparent 60%);
+}
+/* Diagonal gold accent line */
+.hero::after {
+  content:'';
+  position: absolute;
+  top: 0; right: 25%; width: 1px; height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(201,168,76,0.3), transparent);
+}
+.hero-inner {
+  max-width: 1200px; margin: 0 auto; width:100%;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items:center;
+  position: relative; z-index:1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 20px;
+  display: flex; align-items:center; gap: 12px;
+}
+.hero-eyebrow::before {
+  content:''; display:block; width:32px; height:1px; background:var(--gold);
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(42px, 5vw, 68px);
+  font-weight: 900; line-height: 1.08;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 em {
+  font-style: italic; color: var(--gold);
+}
+.hero-sub {
+  font-size: 18px; line-height: 1.7;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 48px; max-width: 480px;
+}
+.hero-actions { display:flex; gap:16px; flex-wrap:wrap; }
+.btn-primary {
+  background: var(--gold);
+  color: var(--purple);
+  padding: 16px 36px; border-radius: 8px;
+  font-weight: 700; font-size: 15px; letter-spacing: 0.5px;
+  text-decoration:none; display:inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(201,168,76,0.3);
+}
+.btn-primary:hover {
+  background: var(--gold-light);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(201,168,76,0.4);
+}
+.btn-secondary {
+  border: 1px solid rgba(255,255,255,0.3);
+  color: var(--white);
+  padding: 16px 36px; border-radius: 8px;
+  font-weight: 500; font-size: 15px;
+  text-decoration:none; display:inline-block;
+  transition: all 0.25s;
+}
+.btn-secondary:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Hero right — stat block */
+.hero-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  border: 1px solid var(--gold-border);
+  border-radius: 12px; overflow:hidden;
+}
+.hero-stat {
+  background: rgba(255,255,255,0.04);
+  padding: 32px 28px;
+  border-bottom: 1px solid var(--gold-border);
+  border-right: 1px solid var(--gold-border);
+  position: relative;
+}
+.hero-stat:nth-child(even) { border-right:none; }
+.hero-stat:nth-last-child(-n+2) { border-bottom:none; }
+.hero-stat-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px; font-weight: 900;
+  color: var(--gold); line-height:1;
+  margin-bottom: 8px;
+}
+.hero-stat-label {
+  font-size: 13px; color: rgba(255,255,255,0.6);
+  line-height: 1.4; font-weight:400;
+}
+.hero-stat-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--gold);
+  letter-spacing: 2px; text-transform:uppercase;
+  margin-top: 6px; opacity:0.7;
+}
+
+/* ── TRUST TICKER ── */
+.ticker {
+  background: var(--gold);
+  padding: 14px 0; overflow:hidden;
+}
+.ticker-inner {
+  display: flex; gap: 60px;
+  animation: ticker 30s linear infinite;
+  white-space: nowrap;
+}
+.ticker-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  color: var(--purple); font-weight:500;
+  text-transform: uppercase;
+  flex-shrink:0;
+}
+.ticker-dot { color: var(--purple-mid); }
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ── SECTION BASE ── */
+.section { padding: 100px 5%; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 4px; text-transform:uppercase;
+  color: var(--gold); margin-bottom: 16px;
+  display: flex; align-items:center; gap:12px;
+}
+.section-label::before { content:''; display:block; width:24px; height:1px; background:var(--gold); }
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 900; line-height: 1.15;
+  color: var(--text-dark); margin-bottom: 20px;
+}
+.section-title em { color: var(--purple); font-style:italic; }
+.section-sub {
+  font-size: 18px; line-height: 1.7;
+  color: var(--text-mid); max-width: 560px;
+}
+
+/* ── PROBLEM SECTION ── */
+.problem-section {
+  background: var(--off-white);
+  padding: 100px 5%;
+}
+.problem-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items:center;
+  max-width: 1200px; margin: 60px auto 0;
+}
+.problem-list { display:flex; flex-direction:column; gap:20px; }
+.problem-item {
+  display: flex; gap: 18px; align-items:flex-start;
+  padding: 22px 24px;
+  background: white;
+  border-radius: 10px;
+  border-left: 3px solid var(--red);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+}
+.problem-x {
+  font-size: 18px; font-weight:700; color: var(--red);
+  flex-shrink:0; margin-top:1px;
+}
+.problem-text {
+  font-size: 15px; line-height: 1.6; color: var(--text-dark); font-weight:500;
+}
+.problem-text span { color: var(--text-mid); font-weight:400; display:block; font-size:13px; margin-top:4px; }
+
+.problem-callout {
+  background: var(--purple);
+  border-radius: 16px;
+  padding: 48px 40px;
+  position: relative; overflow:hidden;
+}
+.problem-callout::before {
+  content:'';
+  position:absolute; top:-40px; right:-40px;
+  width:160px; height:160px; border-radius:50%;
+  background: rgba(201,168,76,0.1);
+}
+.problem-callout-label {
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px;
+  color:var(--gold); text-transform:uppercase; margin-bottom:20px;
+}
+.problem-callout-stat {
+  font-family:'Playfair Display',serif;
+  font-size:64px; font-weight:900; color:var(--gold); line-height:1;
+  margin-bottom:8px;
+}
+.problem-callout-text {
+  font-size:16px; color:rgba(255,255,255,0.8); line-height:1.6;
+  margin-bottom:28px;
+}
+.problem-callout-note {
+  font-size:12px; color:rgba(255,255,255,0.4);
+  font-family:'DM Mono',monospace; letter-spacing:1px;
+  border-top:1px solid rgba(255,255,255,0.1);
+  padding-top:16px; margin-top:8px;
+}
+
+/* ── 3 LAYERS SECTION ── */
+.layers-section { background: var(--white); padding: 100px 5%; }
+.layers-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 24px; margin-top: 60px;
+}
+.layer-card {
+  border: 1px solid rgba(45,27,94,0.12);
+  border-radius: 16px; padding: 40px 36px;
+  position:relative; overflow:hidden;
+  transition: all 0.3s;
+}
+.layer-card:hover {
+  border-color: var(--gold-border);
+  box-shadow: 0 20px 60px rgba(45,27,94,0.08);
+  transform: translateY(-4px);
+}
+.layer-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.layer-card.lpt::before { background: linear-gradient(90deg, var(--purple), var(--purple-light)); }
+.layer-card.tpl::before { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+.layer-card.joe::before { background: linear-gradient(90deg, #1DB954, #48bb78); }
+
+.layer-num {
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px;
+  color:var(--text-muted); margin-bottom:16px;
+}
+.layer-icon { font-size:32px; margin-bottom:16px; }
+.layer-title {
+  font-family:'Playfair Display',serif; font-size:24px; font-weight:700;
+  color:var(--text-dark); margin-bottom:6px;
+}
+.layer-subtitle { font-size:13px; color:var(--gold); font-weight:600; letter-spacing:0.5px; margin-bottom:16px; text-transform:uppercase; font-family:'DM Mono',monospace; }
+.layer-desc { font-size:15px; line-height:1.7; color:var(--text-mid); margin-bottom:24px; }
+.layer-bullets { display:flex; flex-direction:column; gap:10px; }
+.layer-bullet {
+  display:flex; gap:10px; align-items:flex-start;
+  font-size:14px; color:var(--text-dark); line-height:1.5;
+}
+.layer-check { color:var(--green); font-size:14px; flex-shrink:0; margin-top:2px; font-weight:700; }
+
+/* ── AI ADVANTAGE ── */
+.ai-section {
+  background: var(--purple);
+  padding: 100px 5%;
+  position:relative; overflow:hidden;
+}
+.ai-section::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 50% 80% at 80% 50%, rgba(201,168,76,0.07), transparent);
+}
+.ai-section .section-title { color:var(--white); }
+.ai-section .section-sub { color: rgba(255,255,255,0.65); }
+.ai-label { color:var(--gold) !important; }
+
+.ai-grid {
+  display:grid; grid-template-columns: repeat(3,1fr);
+  gap:20px; margin-top:60px; position:relative; z-index:1;
+}
+.ai-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius:14px; padding:32px 28px;
+  transition: all 0.3s;
+}
+.ai-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(201,168,76,0.4);
+  transform: translateY(-3px);
+}
+.ai-card-tag {
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:3px;
+  color:var(--gold); text-transform:uppercase; margin-bottom:14px;
+  display:flex; align-items:center; gap:8px;
+}
+.ai-card-tag::before {
+  content:''; display:block; width:16px; height:1px; background:var(--gold);
+}
+.ai-card-name {
+  font-family:'Playfair Display',serif; font-size:22px; font-weight:700;
+  color:var(--white); margin-bottom:8px;
+}
+.ai-card-role { font-size:12px; color:rgba(255,255,255,0.45); margin-bottom:16px; font-weight:500; text-transform:uppercase; letter-spacing:1px; }
+.ai-card-desc { font-size:14px; line-height:1.7; color:rgba(255,255,255,0.65); }
+.ai-cta-row {
+  margin-top:60px; text-align:center; position:relative; z-index:1;
+}
+.ai-cta-note { font-size:13px; color:rgba(255,255,255,0.4); margin-top:16px; font-family:'DM Mono',monospace; letter-spacing:1px; }
+
+/* ── COMPARISON TABLE ── */
+.compare-section { background: var(--bg-section); padding:100px 5%; }
+.compare-table {
+  max-width: 900px; margin: 60px auto 0;
+  border-radius:16px; overflow:hidden;
+  box-shadow: 0 20px 80px rgba(45,27,94,0.12);
+}
+.compare-header {
+  display:grid; grid-template-columns: 2fr 1fr 1fr;
+  background: var(--purple);
+}
+.compare-header-cell {
+  padding: 20px 24px;
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:2px;
+  text-transform:uppercase; font-weight:500;
+}
+.compare-header-cell:first-child { color:rgba(255,255,255,0.5); }
+.compare-header-cell.tpl-col { color:var(--gold); text-align:center; }
+.compare-header-cell.other-col { color:rgba(255,255,255,0.4); text-align:center; }
+
+.compare-row {
+  display:grid; grid-template-columns:2fr 1fr 1fr;
+  background:white; border-bottom: 1px solid rgba(45,27,94,0.07);
+  transition: background 0.2s;
+}
+.compare-row:hover { background: rgba(201,168,76,0.04); }
+.compare-row:last-child { border:none; }
+.compare-cell {
+  padding: 18px 24px;
+  font-size:14px; display:flex; align-items:center;
+}
+.compare-cell.feature { color:var(--text-dark); font-weight:500; }
+.compare-cell.tpl-val { justify-content:center; color:var(--green); font-weight:700; font-size:16px; }
+.compare-cell.other-val { justify-content:center; color:var(--red); font-size:16px; }
+
+/* ── WHAT YOU GET ── */
+.get-section { background:white; padding:100px 5%; }
+.get-grid {
+  display:grid; grid-template-columns: repeat(2,1fr);
+  gap:20px; margin-top:60px;
+}
+.get-card {
+  padding:32px; border-radius:14px;
+  border:1px solid rgba(45,27,94,0.1);
+  display:flex; gap:20px; align-items:flex-start;
+  transition: all 0.25s;
+}
+.get-card:hover {
+  border-color:var(--gold-border);
+  box-shadow: 0 12px 40px rgba(45,27,94,0.08);
+}
+.get-icon {
+  width:48px; height:48px; border-radius:10px; flex-shrink:0;
+  background: var(--gold-dim); display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+}
+.get-title { font-size:17px; font-weight:700; color:var(--text-dark); margin-bottom:6px; }
+.get-desc { font-size:14px; line-height:1.6; color:var(--text-mid); }
+
+/* ── STEPS ── */
+.steps-section { background:var(--off-white); padding:100px 5%; }
+.steps-grid {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:0; margin-top:60px; position:relative;
+}
+.steps-grid::before {
+  content:'';
+  position:absolute; top:32px; left:12.5%; right:12.5%; height:1px;
+  background: linear-gradient(90deg, var(--gold), var(--purple-light), var(--gold));
+  opacity:0.3;
+}
+.step { text-align:center; padding:0 20px; }
+.step-num {
+  width:64px; height:64px; border-radius:50%;
+  background:var(--purple); color:var(--gold);
+  font-family:'Playfair Display',serif; font-size:24px; font-weight:900;
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 20px; border:2px solid var(--gold-border);
+  position:relative; z-index:1;
+}
+.step-title { font-size:17px; font-weight:700; color:var(--text-dark); margin-bottom:8px; }
+.step-desc { font-size:13px; line-height:1.6; color:var(--text-mid); }
+
+/* ── SOCIAL PROOF ── */
+.proof-section { background:white; padding:100px 5%; }
+.proof-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:24px; margin-top:60px;
+}
+.proof-card {
+  background:var(--off-white); border-radius:14px; padding:32px;
+  border:1px solid rgba(45,27,94,0.08);
+  position:relative;
+}
+.proof-quote {
+  font-size:32px; color:var(--gold); font-family:'Playfair Display',serif;
+  line-height:1; margin-bottom:16px;
+}
+.proof-text {
+  font-size:15px; line-height:1.7; color:var(--text-dark);
+  font-style:italic; margin-bottom:24px;
+}
+.proof-author { display:flex; gap:12px; align-items:center; }
+.proof-avatar {
+  width:44px; height:44px; border-radius:50%;
+  background: linear-gradient(135deg, var(--purple), var(--purple-light));
+  display:flex; align-items:center; justify-content:center;
+  color:var(--gold); font-weight:700; font-size:16px;
+  font-family:'Playfair Display',serif;
+}
+.proof-name { font-size:14px; font-weight:700; color:var(--text-dark); }
+.proof-detail { font-size:12px; color:var(--text-muted); }
+
+.lpt-stats {
+  margin-top:60px;
+  background:var(--purple); border-radius:16px; padding:48px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+}
+.lpt-stat {
+  text-align:center; padding:0 20px;
+  border-right:1px solid rgba(201,168,76,0.2);
+}
+.lpt-stat:last-child { border:none; }
+.lpt-stat-val {
+  font-family:'Playfair Display',serif; font-size:40px; font-weight:900;
+  color:var(--gold); margin-bottom:8px;
+}
+.lpt-stat-label { font-size:13px; color:rgba(255,255,255,0.6); line-height:1.4; }
+
+/* ── CTA SECTION ── */
+.cta-section {
+  background: linear-gradient(135deg, var(--purple) 0%, #1A0F35 100%);
+  padding:120px 5%; text-align:center;
+  position:relative; overflow:hidden;
+}
+.cta-section::before {
+  content:'';
+  position:absolute; top:-100px; left:50%; transform:translateX(-50%);
+  width:600px; height:600px; border-radius:50%;
+  background: radial-gradient(circle, rgba(201,168,76,0.08), transparent 70%);
+}
+.cta-eyebrow {
+  font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px;
+  color:var(--gold); text-transform:uppercase; margin-bottom:20px;
+}
+.cta-title {
+  font-family:'Playfair Display',serif;
+  font-size:clamp(36px,5vw,64px); font-weight:900;
+  color:var(--white); line-height:1.1; margin-bottom:24px;
+}
+.cta-title em { color:var(--gold); font-style:italic; }
+.cta-sub {
+  font-size:18px; line-height:1.7; color:rgba(255,255,255,0.65);
+  max-width:560px; margin:0 auto 48px;
+}
+.cta-actions { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.cta-note {
+  margin-top:24px; font-size:13px; color:rgba(255,255,255,0.35);
+  font-family:'DM Mono',monospace; letter-spacing:1px;
+}
+
+/* ── FOOTER NAV ── */
+footer {
+  background: #0F0820;
+  padding: 48px 5%;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:20px;
+}
+.footer-brand {
+  font-family:'Playfair Display',serif; font-size:18px;
+  color:var(--gold); font-weight:700;
+}
+.footer-links { display:flex; gap:28px; }
+.footer-links a {
+  color:rgba(255,255,255,0.4); font-size:13px; text-decoration:none;
+  transition:color 0.2s;
+}
+.footer-links a:hover { color:var(--gold); }
+.footer-copy { font-size:12px; color:rgba(255,255,255,0.25); font-family:'DM Mono',monospace; }
+
+/* ── ANIMATIONS ── */
+.fade-up {
+  opacity:0; transform:translateY(32px);
+  animation: fadeUp 0.8s ease forwards;
+}
+.fade-up.d1 { animation-delay:0.1s; }
+.fade-up.d2 { animation-delay:0.25s; }
+.fade-up.d3 { animation-delay:0.4s; }
+.fade-up.d4 { animation-delay:0.55s; }
+
+@keyframes fadeUp {
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity:0; transform:translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* ── MOBILE ── */
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns:1fr; gap:48px; }
+  .hero-stats { grid-template-columns:1fr 1fr; }
+  .problem-grid { grid-template-columns:1fr; }
+  .layers-grid { grid-template-columns:1fr; }
+  .ai-grid { grid-template-columns:1fr; }
+  .get-grid { grid-template-columns:1fr; }
+  .steps-grid { grid-template-columns:1fr 1fr; gap:40px; }
+  .steps-grid::before { display:none; }
+  .proof-grid { grid-template-columns:1fr; }
+  .lpt-stats { grid-template-columns:1fr 1fr; gap:20px; }
+  .lpt-stat { border:none; border-bottom:1px solid rgba(201,168,76,0.2); padding-bottom:20px; margin-bottom:20px; }
+  .nav-links { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">TPL Collective</div>
+  <div class="nav-links">
+    <a href="https://tplcollective.com/">Home</a>
+    <a href="https://tplcollective.com/lpt-explained/">LPT Explained</a>
+    <a href="https://tplcollective.com/look-who-joined/">Who Joined</a>
+    <a href="https://tplcollective.com/free-resources/">Free Resources</a>
+    <a href="#book" class="nav-cta">Book a Call</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow fade-up d1">Partner With TPL Collective</div>
+      <h1 class="fade-up d2">The Smarter Way to <em>Build a Real Estate Career</em></h1>
+      <p class="hero-sub fade-up d3">Most brokerages profit from agents. LPT Realty was built to change that — with a flat-fee model that lets you keep what you earn. TPL Collective layers AI infrastructure, a media engine, and a growth community on top. Together, it's an unfair advantage.</p>
+      <div class="hero-actions fade-up d4">
+        <a href="#book" class="btn-primary">Book a Strategy Call</a>
+        <a href="#how-it-works" class="btn-secondary">See How It Works</a>
+      </div>
+    </div>
+    <div class="hero-stats fade-up d3">
+      <div class="hero-stat">
+        <div class="hero-stat-val">$27K+</div>
+        <div class="hero-stat-label">Potential annual difference vs. traditional franchise — on the same production</div>
+        <div class="hero-stat-note">Based on 10 deals · $500K avg · results vary</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">$23.6B</div>
+        <div class="hero-stat-label">Volume submitted — up 502% in two years</div>
+        <div class="hero-stat-note">RealTrends 2025 Submitted</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">21K+</div>
+        <div class="hero-stat-label">Agents and growing — fastest brokerage growth in history</div>
+        <div class="hero-stat-note">RealTrends 2025 Submitted</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">AI-1st</div>
+        <div class="hero-stat-label">Dedicated AI bot division working for every agent 24/7</div>
+        <div class="hero-stat-note">No other team has this</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item">Inman Innovator Award — Most Innovative Brokerage 2024 <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">2025 AVA Digital Awards — 1 Platinum · 4 Gold <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">2025 Training APEX Award Winner <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">$23.6B Volume Submitted — RealTrends 2025 <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">Deloitte Fast 500 — #2 in North America 2025 <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">21,055 Agents · 61,041 Transaction Sides Submitted <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">LPTA Stock Ticker Reserved on Nasdaq — Aperture Holdings <span class="ticker-dot">✦</span></span>
+    <!-- duplicate for seamless loop -->
+    <span class="ticker-item">Inman Innovator Award — Most Innovative Brokerage 2024 <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">2025 AVA Digital Awards — 1 Platinum · 4 Gold <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">2025 Training APEX Award Winner <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">$23.6B Volume Submitted — RealTrends 2025 <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">Deloitte Fast 500 — #2 in North America 2025 <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">21,055 Agents · 61,041 Transaction Sides Submitted <span class="ticker-dot">✦</span></span>
+    <span class="ticker-item">LPTA Stock Ticker Reserved on Nasdaq — Aperture Holdings <span class="ticker-dot">✦</span></span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem-section">
+  <div class="section-inner">
+    <div class="section-label reveal">The Problem</div>
+    <h2 class="section-title reveal">Your Brokerage Is <em>Costing You</em> More Than You Think</h2>
+    <p class="section-sub reveal">Most agents don't leave because they lack skill or work ethic. They leave because the model was never designed to work for them.</p>
+    <div class="problem-grid">
+      <div class="problem-list reveal">
+        <div class="problem-item">
+          <div class="problem-x">✕</div>
+          <div class="problem-text">High splits and franchise royalties eating your commission
+            <span>Traditional 70/30 splits + desk fees + royalties — on every single deal</span>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="problem-x">✕</div>
+          <div class="problem-text">No leverage — trading time for every dollar
+            <span>No revenue share, no ownership, no compounding income streams</span>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="problem-x">✕</div>
+          <div class="problem-text">Marketing and tools all out of pocket
+            <span>Paying for your own CRM, ads, signs, and everything in between</span>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="problem-x">✕</div>
+          <div class="problem-text">Building alone with no real infrastructure
+            <span>No AI tools, no media engine, no community that actually helps you grow</span>
+          </div>
+        </div>
+        <div class="problem-item">
+          <div class="problem-x">✕</div>
+          <div class="problem-text">No ownership in what you're building
+            <span>Every transaction funds the brokerage's growth — not yours</span>
+          </div>
+        </div>
+      </div>
+      <div class="problem-callout reveal">
+        <div class="problem-callout-label">The Math Doesn't Lie</div>
+        <div class="problem-callout-stat">$27K</div>
+        <div class="problem-callout-text">The average annual difference between what agents net at a traditional franchise vs. LPT Realty — on the exact same production.</div>
+        <p style="font-size:15px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:12px;">That's not a marketing claim. That's a spreadsheet. Same deals, same volume, same market — the only variable is where you're hanging your license.</p>
+        <div class="problem-callout-note">Based on an agent doing approx. $5M volume — 10 transactions at $500K avg. Individual results vary based on production, market, and plan selected. Run your own numbers on a strategy call.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 LAYERS -->
+<section class="layers-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="section-label reveal">How It Works</div>
+    <h2 class="section-title reveal">Three Layers. <em>One Unfair Advantage.</em></h2>
+    <p class="section-sub reveal">When you partner with TPL Collective, you're not just joining a team. You're stepping into a layered ecosystem — powered by LPT Realty as the brokerage — designed to multiply your income, your leverage, and your career.</p>
+    <div class="layers-grid">
+
+      <div class="layer-card lpt reveal">
+        <div class="layer-num">01</div>
+        <div class="layer-icon">🏛️</div>
+        <div class="layer-title">LPT Realty</div>
+        <div class="layer-subtitle">The Vehicle</div>
+        <div class="layer-desc">The fastest-growing brokerage in North America — built on a flat-fee model that puts agents first, not the franchise. Over 21,000 agents and climbing.</div>
+        <div class="layer-bullets">
+          <div class="layer-bullet"><span class="layer-check">✓</span> Flat $500 per transaction — no percentage splits</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Choose your plan: Business Builder or Brokerage Partner</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> 7-level revenue share (Brokerage Partner plan)</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Company stock awards on production</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Brokerage-powered listing marketing kit per listing</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Enterprise CRM + Dezzy.ai included</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> No signup fees · No monthly desk fees</div>
+        </div>
+      </div>
+
+      <div class="layer-card tpl reveal">
+        <div class="layer-num">02</div>
+        <div class="layer-icon">⚡</div>
+        <div class="layer-title">TPL Collective</div>
+        <div class="layer-subtitle">The Supercharger</div>
+        <div class="layer-desc">What you get that no other LPT team offers — an AI-powered operating system, a media engine, and a community built for serious growth.</div>
+        <div class="layer-bullets">
+          <div class="layer-bullet"><span class="layer-check">✓</span> Dedicated AI bot workforce — working 24/7 for you</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Content & media infrastructure (YouTube, social, email)</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> HERALD coaching bot — on-demand training & scripts</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Personalized AI prompt libraries for your business</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Access to the Agent Portal — tools, templates, playbooks</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> High-performance team culture — no solo grind</div>
+        </div>
+      </div>
+
+      <div class="layer-card joe reveal">
+        <div class="layer-num">03</div>
+        <div class="layer-icon">🧭</div>
+        <div class="layer-title">Joe DeSane</div>
+        <div class="layer-subtitle">Your GPS</div>
+        <div class="layer-desc">Your direct access point into TPL Collective. Not a middleman. Not a recruiter. A partner who is active in the same market, running the same systems, building alongside you.</div>
+        <div class="layer-bullets">
+          <div class="layer-bullet"><span class="layer-check">✓</span> Active agent with real production and real data</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Direct relationship — not a downline number</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Transparent comparison — we'll run your numbers honestly</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> No pressure — if LPT doesn't fit, we'll tell you</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Ongoing mentorship — not just an onboarding call</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- AGENT CHOICE -->
+<section style="background:var(--bg-section);padding:100px 5%;">
+  <div class="section-inner">
+    <div class="section-label reveal">LPT Realty Compensation</div>
+    <h2 class="section-title reveal">You Choose Your <em>Own Comp Plan</em></h2>
+    <p class="section-sub reveal">No other brokerage lets you pick — and switch — your compensation structure. LPT gives you two plans built for two different goals. Both include the full tech stack, marketing kit, and stock awards.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:60px;" class="reveal">
+
+      <div style="background:white;border-radius:16px;padding:40px;border:2px solid rgba(45,27,94,0.12);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--purple),var(--purple-light));"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Plan 01</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--text-dark);margin-bottom:4px;">Business Builder</div>
+        <div style="font-size:13px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;font-family:'DM Mono',monospace;">Best for: Max personal income</div>
+        <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:900;color:var(--purple);margin-bottom:4px;">$500<span style="font-size:18px;font-weight:400;color:var(--text-mid);font-family:'DM Sans',sans-serif;"> / transaction</span></div>
+        <div style="font-size:14px;color:var(--text-mid);margin-bottom:28px;">$5,000 annual cap · then $0 per deal for the rest of your year</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;font-size:14px;color:var(--text-dark);"><span style="color:var(--green);font-weight:700;">✓</span> Full listing marketing kit included</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:var(--text-dark);"><span style="color:var(--green);font-weight:700;">✓</span> LPT Connect · Lofty CRM · dotloop · Dezzy.ai</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:var(--text-dark);"><span style="color:var(--green);font-weight:700;">✓</span> Company stock awards on production</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:var(--text-dark);"><span style="color:var(--green);font-weight:700;">✓</span> Education, training, and support</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:var(--text-dark);"><span style="color:var(--green);font-weight:700;">✓</span> No signup fees · No monthly fees</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:var(--text-muted);"><span style="color:var(--text-muted);">—</span> Revenue share not included on this plan</div>
+        </div>
+      </div>
+
+      <div style="background:var(--purple);border-radius:16px;padding:40px;border:2px solid var(--gold-border);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold-light));"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:12px;">Plan 02</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:white;margin-bottom:4px;">Brokerage Partner</div>
+        <div style="font-size:13px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;font-family:'DM Mono',monospace;">Best for: Building leverage + teams</div>
+        <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:900;color:var(--gold);margin-bottom:4px;">80/20<span style="font-size:18px;font-weight:400;color:rgba(255,255,255,0.6);font-family:'DM Sans',sans-serif;"> split</span></div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:28px;">$15,000 annual cap · full access to HybridShare rev share</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;font-size:14px;color:white;"><span style="color:var(--gold);font-weight:700;">✓</span> Everything in Business Builder</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:white;"><span style="color:var(--gold);font-weight:700;">✓</span> 7-level HybridShare revenue share</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:white;"><span style="color:var(--gold);font-weight:700;">✓</span> Lead a team · Branch office eligible</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:white;"><span style="color:var(--gold);font-weight:700;">✓</span> Black Badge eligible ($15K marketing credit)</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:white;"><span style="color:var(--gold);font-weight:700;">✓</span> Mentor agents · Priority hub access</div>
+          <div style="display:flex;gap:10px;font-size:14px;color:white;"><span style="color:var(--gold);font-weight:700;">✓</span> Early access to new products & special events</div>
+        </div>
+      </div>
+
+    </div>
+    <p style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:24px;letter-spacing:1px;" class="reveal">Switch plans once per 12-month anniversary year · No signup fees on either plan</p>
+  </div>
+</section>
+
+<!-- AI ADVANTAGE -->
+<section class="ai-section">
+  <div class="section-inner" style="position:relative;z-index:1;">
+    <div class="section-label ai-label reveal">The TPL Difference</div>
+    <h2 class="section-title reveal">While Other Teams Have <em>Agents,</em><br>We Have an AI Workforce</h2>
+    <p class="section-sub reveal">When you join TPL Collective, you get access to a team of specialized AI bots — each trained on our strategy, our voice, and our data — running 24/7 so you don't have to.</p>
+    <div class="ai-grid">
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Recruiting</div>
+        <div class="ai-card-name">ATLAS</div>
+        <div class="ai-card-role">The Recruiter</div>
+        <div class="ai-card-desc">Monitors your pipeline, generates personalized outreach, builds commission comparison reports, and drafts follow-up sequences in your voice.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Market Intel</div>
+        <div class="ai-card-name">SIGNAL</div>
+        <div class="ai-card-role">The Market Analyst</div>
+        <div class="ai-card-desc">Tracks bond yields, rate decisions, and market data daily — then turns it into content-ready scripts and agent intelligence briefings automatically.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Content</div>
+        <div class="ai-card-name">CANVAS</div>
+        <div class="ai-card-role">The Content Engine</div>
+        <div class="ai-card-desc">Generates full YouTube scripts, Facebook ad copy, email newsletters, social captions, and a 30-day rolling content calendar — in your voice.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Coaching</div>
+        <div class="ai-card-name">HERALD</div>
+        <div class="ai-card-role">The Agent Coach</div>
+        <div class="ai-card-desc">On-demand coaching scripts, onboarding playbooks, LPT tool guidance, and weekly action guides — available to every agent in the team 24/7.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Operations</div>
+        <div class="ai-card-name">LEDGER</div>
+        <div class="ai-card-role">The Transaction Bot</div>
+        <div class="ai-card-desc">Prepares CMA packages, drafts offer language, organizes transaction timelines, and flags deadlines — so nothing falls through the cracks.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Intelligence</div>
+        <div class="ai-card-name">ORACLE</div>
+        <div class="ai-card-role">The Research Bot</div>
+        <div class="ai-card-desc">Profiles inbound leads, monitors competitor moves, researches top-producing agents, and delivers weekly intelligence briefings on your market.</div>
+      </div>
+    </div>
+    <div class="ai-cta-row reveal">
+      <a href="#book" class="btn-primary">Get Access to the Full AI Stack</a>
+      <p class="ai-cta-note">Included when you partner with TPL Collective — no extra cost</p>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="compare-section">
+  <div class="section-inner">
+    <div class="section-label reveal">Side By Side</div>
+    <h2 class="section-title reveal">TPL + LPT vs. <em>Traditional Brokerages</em></h2>
+    <p class="section-sub reveal">This isn't about bashing anyone. It's about giving you an honest look at what the numbers actually say.</p>
+    <div class="compare-table reveal">
+      <div class="compare-header">
+        <div class="compare-header-cell">Feature</div>
+        <div class="compare-header-cell tpl-col">TPL + LPT ✦</div>
+        <div class="compare-header-cell other-col">Traditional</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Agent Choice Comp Plan</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row" style="background:rgba(201,168,76,0.03)">
+        <div class="compare-cell feature" style="font-size:13px;padding-left:32px;color:var(--text-muted)">Choose Business Builder ($500 flat) or Brokerage Partner (80/20) — switch once/year</div>
+        <div class="compare-cell tpl-val" style="font-size:13px;color:var(--green)">Your choice</div>
+        <div class="compare-cell other-val" style="font-size:13px;color:var(--red)">One plan</div>
+      </div>
+      <div class="compare-row" style="background:rgba(201,168,76,0.03)">
+        <div class="compare-cell feature" style="font-size:13px;padding-left:32px;color:var(--text-muted)">Flat $500/deal · $5,000 annual cap · no percentage split</div>
+        <div class="compare-cell tpl-val" style="font-size:13px;color:var(--green)">Flat fee</div>
+        <div class="compare-cell other-val" style="font-size:13px;color:var(--red)">70/30–80/20</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">No Monthly Desk Fees</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Revenue Share / Passive Income</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Company Stock Ownership</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">AI Bot Workforce (Team-Level)</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Brokerage-Paid Marketing Kit</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Enterprise CRM Included</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Content & Media Infrastructure</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Dezzy.ai — Exclusive Brokerage AI Tool</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">On-Demand AI Coaching (HERALD)</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT YOU GET -->
+<section class="get-section">
+  <div class="section-inner">
+    <div class="section-label reveal">What's Included</div>
+    <h2 class="section-title reveal">Everything You Get When You <em>Partner With TPL</em></h2>
+    <div class="get-grid">
+      <div class="get-card reveal">
+        <div class="get-icon">🤖</div>
+        <div>
+          <div class="get-title">Full AI Bot Division Access</div>
+          <div class="get-desc">ATLAS, SIGNAL, CANVAS, HERALD, LEDGER, ORACLE — 6 specialized AI bots working your pipeline, content, coaching, and market intel around the clock.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📦</div>
+        <div>
+          <div class="get-title">Brokerage-Powered Listing Marketing Kit</div>
+          <div class="get-desc">Every listing gets a full branded marketing box shipped to your door — postcards, flyers, brochures, door hangers, business cards, sign riders, and direct mail with postage paid. Funded by LPT Realty.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">💼</div>
+        <div>
+          <div class="get-title">Agent Portal Access</div>
+          <div class="get-desc">Your private command center — AI tools, prompt libraries, coaching playbooks, content templates, market briefings, and deal resources all in one place.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📈</div>
+        <div>
+          <div class="get-title">Revenue Share Network</div>
+          <div class="get-desc">On the Brokerage Partner plan, build passive income through LPT's 7-level revenue share. Every agent you help join and develop becomes a compounding income stream — for life.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">🎯</div>
+        <div>
+          <div class="get-title">Lofty Enterprise CRM + Dezzy AI</div>
+          <div class="get-desc">Industry-leading CRM with IDX website, lead gen, and automation built in. Plus Dezzy.ai — LPT's proprietary AI that creates listing graphics, social posts, and flyers instantly.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📊</div>
+        <div>
+          <div class="get-title">Company Stock Awards + LPTA</div>
+          <div class="get-desc">Earn company stock on production milestones — awarded on a 3-year vesting schedule. LPT Realty's parent company, Aperture Holdings, has reserved the stock ticker <strong>LPTA on Nasdaq</strong>. As an agent, you're building equity in something bigger than a commission check.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📹</div>
+        <div>
+          <div class="get-title">Media & Content Infrastructure</div>
+          <div class="get-desc">TPL's full content engine — YouTube strategy, social content calendars, email templates, and AI video resources — so you can build authority without starting from zero.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">🧭</div>
+        <div>
+          <div class="get-title">Direct Partnership with Joe</div>
+          <div class="get-desc">Not a recruiter. Not a number. An active agent who runs the same systems you will — available for real conversations, real strategy, real support.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps-section" id="how-to-join">
+  <div class="section-inner">
+    <div class="section-label reveal" style="justify-content:center;">Getting Started</div>
+    <h2 class="section-title reveal" style="text-align:center;">Four Steps to <em>Joining TPL</em></h2>
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <div class="step-title">Book a Strategy Call</div>
+        <div class="step-desc">A no-pressure 20–30 min conversation. We'll run your numbers, answer every question, and give you an honest picture of what the move looks like for your specific business.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <div class="step-title">Review Your Comparison</div>
+        <div class="step-desc">We build a personalized commission comparison using your actual production numbers — so you can see exactly what you'd keep at LPT vs. where you are now.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <div class="step-title">Make the Move</div>
+        <div class="step-desc">When you're ready, we walk you through the LPT onboarding process step by step. No confusion, no friction — we've done this before and we're with you the whole way.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">4</div>
+        <div class="step-title">Get Activated</div>
+        <div class="step-desc">Access your Agent Portal, your AI tools, your coaching resources, and your direct line to the TPL Collective team. You're not starting over — you're starting better.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="proof-section">
+  <div class="section-inner">
+    <div class="section-label reveal">Look Who Joined</div>
+    <h2 class="section-title reveal">Agents Are <em>Making the Move</em></h2>
+
+    <div class="proof-grid">
+      <div class="proof-card reveal">
+        <div class="proof-quote">"</div>
+        <div class="proof-text">I spent three years at a traditional franchise wondering why I was working this hard and keeping so little. The comparison call with Joe took 20 minutes and the math was obvious. Wish I'd done it sooner.</div>
+        <div class="proof-author">
+          <div class="proof-avatar">G</div>
+          <div>
+            <div class="proof-name">Agent Testimonial</div>
+            <div class="proof-detail">Joined from KW · Active Agent</div>
+          </div>
+        </div>
+      </div>
+      <div class="proof-card reveal">
+        <div class="proof-quote">"</div>
+        <div class="proof-text">The AI tools alone are worth the move. Having a bot that handles my follow-up sequences and keeps my pipeline organized — that's hours back in my week, every week.</div>
+        <div class="proof-author">
+          <div class="proof-avatar">M</div>
+          <div>
+            <div class="proof-name">Agent Testimonial</div>
+            <div class="proof-detail">Joined from eXp · Active Agent</div>
+          </div>
+        </div>
+      </div>
+      <div class="proof-card reveal">
+        <div class="proof-quote">"</div>
+        <div class="proof-text">I wasn't looking to move — I was comfortable. But comfortable was costing me $20K+ a year. TPL made the decision easy, and the transition was seamless.</div>
+        <div class="proof-author">
+          <div class="proof-avatar">R</div>
+          <div>
+            <div class="proof-name">Agent Testimonial</div>
+            <div class="proof-detail">Joined from Compass · Active Agent</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lpt-stats reveal">
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">21,055</div>
+        <div class="lpt-stat-label">Agents — RealTrends 2025 Submitted</div>
+      </div>
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">$23.6B</div>
+        <div class="lpt-stat-label">Volume Submitted — RealTrends 2025</div>
+      </div>
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">#2</div>
+        <div class="lpt-stat-label">North America — Deloitte Fast 500, 2025</div>
+      </div>
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">61,041</div>
+        <div class="lpt-stat-label">Transaction sides submitted — up 462% since 2023</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="book">
+  <div style="position:relative;z-index:1;">
+    <div class="cta-eyebrow reveal">Ready to Make the Move?</div>
+    <h2 class="cta-title reveal">Book Your <em>Strategy Call</em></h2>
+    <p class="cta-sub reveal">A no-pressure 20–30 minute conversation. We'll run your numbers, answer every question honestly, and let you decide if TPL Collective is the right fit — even if the answer is not right now.</p>
+    <div class="cta-actions reveal">
+      <a href="https://calendly.com/joedesane/q-a" class="btn-primary" target="_blank">Book a Private Call</a>
+      <a href="https://tplcollective.com/lpt-explained/" class="btn-secondary">Learn About LPT First</a>
+    </div>
+    <p class="cta-note reveal">No pitch. No pressure. Just clarity.</p>
+
+    <!-- Calendly placeholder -->
+    <div style="margin-top:60px;max-width:700px;margin-left:auto;margin-right:auto;">
+      <div style="background:rgba(255,255,255,0.05);border:1px solid var(--gold-border);border-radius:16px;padding:48px;text-align:center;" class="reveal">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--gold);margin-bottom:16px;text-transform:uppercase;">📅 Schedule Directly Below</div>
+        <p style="color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:24px;">Embed your Calendly widget here in WordPress/Elementor</p>
+        <a href="https://calendly.com/joedesane/q-a" class="btn-primary" target="_blank">Open Scheduling Link →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="https://tplcollective.com/">Home</a>
+    <a href="https://tplcollective.com/lpt-explained/">LPT Explained</a>
+    <a href="https://tplcollective.com/look-who-joined/">Who Joined</a>
+    <a href="https://tplcollective.com/free-resources/">Free Downloads</a>
+    <a href="https://tplcollective.com/blog/">Blog</a>
+  </div>
+  <div class="footer-copy">© 2026 TPL Collective · Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, 80);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
