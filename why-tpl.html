@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Why TPL Collective | Partner With Us</title>
+<meta name="description" content="TPL Collective layers AI infrastructure, a media engine, and a growth community on top of LPT Realty's flat-fee model. Built for agents who want to keep what they earn."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 120px 5% 80px;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 800px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+  position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 6vw, 80px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); font-weight: 300;
+  margin-bottom: 44px; max-width: 480px;
+}
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: var(--white);
+  padding: 15px 34px; border-radius: 6px;
+  font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-primary:hover {
+  background: var(--accent-hi); transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(108,99,255,0.4);
+}
+.btn-secondary {
+  border: 1px solid var(--border); color: var(--muted);
+  padding: 15px 32px; border-radius: 6px;
+  font-weight: 500; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s; background: transparent; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* Hero right stats */
+.hero-stats {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.hero-stat {
+  background: var(--surface);
+  padding: 28px 24px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.hero-stat:nth-child(even) { border-right: none; }
+.hero-stat:nth-last-child(-n+2) { border-bottom: none; }
+.hero-stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px; color: var(--accent-hi); line-height: 1; margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.hero-stat-label { font-size: 12px; color: var(--muted); line-height: 1.4; font-weight: 300; }
+.hero-stat-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-top: 6px; opacity: 0.7;
+}
+
+/* ── TICKER ── */
+.ticker {
+  background: var(--accent); padding: 13px 0; overflow: hidden;
+}
+.ticker-inner {
+  display: flex; gap: 60px;
+  animation: ticker 35s linear infinite;
+  white-space: nowrap; width: max-content;
+}
+.ticker-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.9); font-weight: 500;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.ticker-dot { color: rgba(255,255,255,0.4); }
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ── SECTION BASE ── */
+.section { padding: 96px 5%; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 20px;
+}
+.section-title em { font-style: normal; color: var(--accent-hi); }
+.section-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); max-width: 560px; font-weight: 300;
+}
+
+/* ── PROBLEM ── */
+.problem-section { background: var(--surface); padding: 96px 5%; }
+.problem-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 64px; align-items: center;
+  max-width: 1200px; margin: 56px auto 0;
+}
+.problem-list { display: flex; flex-direction: column; gap: 16px; }
+.problem-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 20px 22px;
+  background: var(--bg);
+  border-radius: 8px;
+  border-left: 2px solid var(--red);
+}
+.problem-x { font-size: 16px; font-weight: 700; color: var(--red); flex-shrink: 0; margin-top: 2px; }
+.problem-text { font-size: 14px; line-height: 1.6; color: var(--text); font-weight: 500; }
+.problem-text span { color: var(--muted); font-weight: 300; display: block; font-size: 12px; margin-top: 4px; }
+.problem-callout {
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border: 1px solid var(--accent-br); border-radius: 14px;
+  padding: 44px 40px; position: relative; overflow: hidden;
+}
+.problem-callout::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.problem-callout-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 20px;
+}
+.problem-callout-stat {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px; color: var(--accent-hi); line-height: 1; margin-bottom: 8px;
+}
+.problem-callout-text { font-size: 16px; color: var(--muted); line-height: 1.65; margin-bottom: 24px; font-weight: 300; }
+.problem-callout-note {
+  font-size: 11px; color: var(--dim);
+  font-family: 'DM Mono', monospace; letter-spacing: 0.08em;
+  border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;
+}
+
+/* ── 3 LAYERS ── */
+.layers-section { background: var(--bg); padding: 96px 5%; }
+.layers-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 20px; margin-top: 56px;
+}
+.layer-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 40px 34px; position: relative; overflow: hidden;
+  transition: all 0.3s;
+}
+.layer-card:hover { border-color: var(--accent-br); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(108,99,255,0.1); }
+.layer-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.layer-card.lpt::before { background: linear-gradient(90deg, var(--accent), var(--accent-hi)); }
+.layer-card.tpl::before { background: linear-gradient(90deg, var(--gold), rgba(240,192,64,0.5)); }
+.layer-card.joe::before { background: linear-gradient(90deg, var(--green), rgba(52,211,153,0.4)); }
+.layer-num {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+  color: var(--dim); margin-bottom: 14px;
+}
+.layer-icon { font-size: 28px; margin-bottom: 14px; }
+.layer-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 0.04em;
+  color: var(--white); margin-bottom: 4px;
+}
+.layer-subtitle {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em;
+  text-transform: uppercase; margin-bottom: 16px;
+}
+.layer-subtitle.lpt-sub { color: var(--accent-hi); }
+.layer-subtitle.tpl-sub { color: var(--gold); }
+.layer-subtitle.joe-sub { color: var(--green); }
+.layer-desc { font-size: 14px; line-height: 1.7; color: var(--muted); margin-bottom: 22px; font-weight: 300; }
+.layer-bullets { display: flex; flex-direction: column; gap: 10px; }
+.layer-bullet { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text); line-height: 1.5; font-weight: 300; }
+.layer-check { color: var(--green); font-size: 13px; flex-shrink: 0; margin-top: 2px; font-weight: 700; }
+
+/* ── PLANS ── */
+.plans-section { background: var(--surface); padding: 96px 5%; }
+.plans-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 24px; margin-top: 48px;
+}
+.plan-card {
+  border-radius: 14px; padding: 44px 40px; position: relative; overflow: hidden;
+}
+.plan-bb {
+  background: var(--bg); border: 1px solid var(--border);
+}
+.plan-bp {
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border: 1px solid var(--accent-br);
+}
+.plan-bp::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.plan-tag {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.plan-tag-bb { color: var(--dim); }
+.plan-tag-bp { color: var(--accent); }
+.plan-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 0.04em; margin-bottom: 4px;
+}
+.plan-name-bb { color: var(--white); }
+.plan-name-bp { color: var(--accent-hi); }
+.plan-best {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em;
+  text-transform: uppercase; margin-bottom: 20px;
+}
+.plan-best-bb { color: var(--muted); }
+.plan-best-bp { color: var(--gold); }
+.plan-price {
+  font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1; margin-bottom: 4px;
+}
+.plan-price-bb { color: var(--white); }
+.plan-price-bp { color: var(--accent-hi); }
+.plan-price-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; font-weight: 300; }
+.plan-rule { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.plan-features { display: flex; flex-direction: column; gap: 10px; }
+.plan-features div { display: flex; gap: 10px; font-size: 13px; line-height: 1.5; font-weight: 300; }
+.check-green { color: var(--green); font-weight: 700; flex-shrink: 0; }
+.check-dim { color: var(--dim); flex-shrink: 0; }
+.feat-white { color: var(--text); }
+.feat-muted { color: var(--muted); }
+.plans-note {
+  text-align: center; margin-top: 20px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: var(--dim);
+}
+
+/* ── AI SECTION ── */
+.ai-section {
+  background: var(--bg); padding: 96px 5%;
+  position: relative; overflow: hidden;
+}
+.ai-section::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(108,99,255,0.06), transparent);
+}
+.ai-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 18px; margin-top: 56px; position: relative; z-index: 1;
+}
+.ai-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 30px 26px; transition: all 0.3s;
+}
+.ai-card:hover { border-color: var(--accent-br); transform: translateY(-3px); box-shadow: 0 16px 48px rgba(108,99,255,0.1); }
+.ai-card-tag {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.ai-card-tag::before { content: ''; display: block; width: 14px; height: 1px; background: var(--accent); }
+.ai-card-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 0.04em;
+  color: var(--white); margin-bottom: 4px;
+}
+.ai-card-role { font-size: 11px; color: var(--dim); margin-bottom: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; font-family: 'DM Mono', monospace; }
+.ai-card-desc { font-size: 13px; line-height: 1.7; color: var(--muted); font-weight: 300; }
+.ai-cta-row { margin-top: 56px; text-align: center; position: relative; z-index: 1; }
+.ai-cta-note { margin-top: 14px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--dim); }
+
+/* ── COMPARE TABLE ── */
+.compare-section { background: var(--surface); padding: 96px 5%; }
+.compare-table {
+  margin-top: 48px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.compare-header {
+  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.compare-header-cell {
+  padding: 16px 20px; font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--dim); font-weight: 500;
+}
+.compare-header-cell.tpl-col { color: var(--accent-hi); }
+.compare-header-cell.other-col { color: var(--muted); }
+.compare-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  border-bottom: 1px solid rgba(42,42,61,0.5);
+  transition: background 0.15s;
+}
+.compare-row:last-child { border-bottom: none; }
+.compare-row:hover { background: rgba(108,99,255,0.04); }
+.compare-cell { padding: 14px 20px; font-size: 14px; display: flex; align-items: center; }
+.compare-cell.feature { color: var(--text); font-weight: 400; }
+.compare-cell.tpl-val { color: var(--green); font-weight: 600; font-size: 15px; }
+.compare-cell.other-val { color: var(--red); font-weight: 600; font-size: 15px; }
+
+/* ── WHAT YOU GET ── */
+.get-section { background: var(--bg); padding: 96px 5%; }
+.get-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 16px; margin-top: 48px;
+}
+.get-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 28px 26px; display: flex; gap: 18px; align-items: flex-start;
+  transition: all 0.2s;
+}
+.get-card:hover { border-color: var(--accent-br); transform: translateY(-2px); }
+.get-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.get-title { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 6px; }
+.get-desc { font-size: 13px; line-height: 1.65; color: var(--muted); font-weight: 300; }
+
+/* ── STEPS ── */
+.steps-section { background: var(--surface); padding: 96px 5%; }
+.steps-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 20px; margin-top: 48px;
+}
+.step {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px 28px;
+  position: relative; overflow: hidden;
+}
+.step::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+.step-num {
+  font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1;
+  color: var(--border); margin-bottom: 16px;
+}
+.step-title { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 10px; }
+.step-desc { font-size: 13px; line-height: 1.7; color: var(--muted); font-weight: 300; }
+
+/* ── PROOF ── */
+.proof-section { background: var(--bg); padding: 96px 5%; }
+.proof-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 20px; margin-top: 48px;
+}
+.proof-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px 32px;
+}
+.proof-quote {
+  font-family: 'Bebas Neue', sans-serif; font-size: 56px; color: var(--accent);
+  line-height: 0.8; margin-bottom: 16px; opacity: 0.5;
+}
+.proof-text { font-size: 15px; line-height: 1.7; color: var(--muted); margin-bottom: 24px; font-weight: 300; font-style: italic; }
+.proof-author { display: flex; gap: 14px; align-items: center; }
+.proof-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent-bg); border: 1px solid var(--accent-br);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--accent-hi);
+  flex-shrink: 0;
+}
+.proof-name { font-size: 14px; font-weight: 600; color: var(--white); }
+.proof-detail { font-size: 12px; color: var(--dim); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+.lpt-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 2px; margin-top: 48px;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.lpt-stat {
+  background: var(--surface); padding: 32px 24px;
+  border-right: 1px solid var(--border);
+}
+.lpt-stat:last-child { border-right: none; }
+.lpt-stat-val {
+  font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: var(--accent-hi);
+  line-height: 1; margin-bottom: 8px; letter-spacing: 0.02em;
+}
+.lpt-stat-label { font-size: 12px; color: var(--muted); line-height: 1.4; font-weight: 300; }
+
+/* ── CTA ── */
+.cta-section {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, transparent 60%);
+  border-top: 1px solid rgba(108,99,255,0.2);
+  padding: 100px 5%; text-align: center;
+  position: relative;
+}
+.cta-section::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(108,99,255,0.06), transparent);
+}
+.cta-eyebrow {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 20px;
+  position: relative; z-index: 1;
+}
+.cta-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 6vw, 80px); line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 20px;
+  position: relative; z-index: 1;
+}
+.cta-title em { font-style: normal; color: var(--accent-hi); }
+.cta-sub {
+  font-size: 17px; color: var(--muted); font-weight: 300;
+  max-width: 560px; margin: 0 auto 40px; line-height: 1.75;
+  position: relative; z-index: 1;
+}
+.cta-actions {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  position: relative; z-index: 1; margin-bottom: 20px;
+}
+.cta-note {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em;
+  color: var(--dim); text-transform: uppercase;
+  position: relative; z-index: 1;
+}
+.calendly-block {
+  margin-top: 56px; max-width: 680px; margin-left: auto; margin-right: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 44px; text-align: center;
+  position: relative; z-index: 1;
+}
+.calendly-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+  color: var(--accent); margin-bottom: 14px; text-transform: uppercase;
+}
+.calendly-sub { color: var(--dim); font-size: 13px; margin-bottom: 22px; font-weight: 300; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 40px 5%; text-align: center;
+}
+.footer-brand {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  color: var(--white); letter-spacing: 0.1em; margin-bottom: 20px;
+}
+.footer-links { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+
+/* ── REVEAL ANIMATION ── */
+.reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+.d1 { transition-delay: 0.05s; } .d2 { transition-delay: 0.15s; }
+.d3 { transition-delay: 0.25s; } .d4 { transition-delay: 0.35s; }
+
+/* ── RESPONSIVE ── */
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; letter-spacing: 0.05em !important;
+  text-transform: uppercase; border: none;
+}
+
+/* ── TABLET (≤900px) ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 100px 5% 60px; }
+  .hero-inner, .problem-grid, .plans-grid { grid-template-columns: 1fr; gap: 40px; }
+  .layers-grid, .ai-grid, .proof-grid, .steps-grid { grid-template-columns: 1fr; }
+  .get-grid { grid-template-columns: 1fr; }
+  .lpt-stats { grid-template-columns: 1fr 1fr; }
+  .lpt-stat { border-right: none; border-bottom: 1px solid var(--border); }
+  .lpt-stat:nth-child(odd) { border-right: 1px solid var(--border); }
+  .lpt-stat:last-child { border-bottom: none; }
+  .compare-table { overflow-x: auto; }
+  .compare-header, .compare-row { grid-template-columns: 2fr 1fr 1fr; min-width: 480px; }
+  .section { padding: 64px 5%; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE (≤480px) ── */
+@media (max-width: 480px) {
+  .hero { padding: 88px 4% 52px; }
+  .hero h1 { font-size: clamp(44px, 13vw, 64px); }
+  .hero-sub { font-size: 15px; }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-secondary { width: 100%; text-align: center; }
+  .hero-stats { grid-template-columns: 1fr 1fr; }
+  .hero-stat-val { font-size: 32px; }
+  .section { padding: 52px 4%; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .lpt-stats { grid-template-columns: 1fr; }
+  .lpt-stat { border-right: none !important; border-bottom: 1px solid var(--border); }
+  .lpt-stat:last-child { border-bottom: none; }
+  .problem-callout-stat { font-size: 56px; }
+  .plan-card { padding: 32px 24px; }
+  .cta-actions { flex-direction: column; align-items: center; }
+  .cta-actions .btn-primary,
+  .cta-actions .btn-secondary { width: 100%; max-width: 320px; text-align: center; }
+  .btn-primary, .btn-secondary { padding: 14px 24px; font-size: 13px; }
+  .ticker-item { font-size: 10px; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .get-card { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/#who-joined">Who Joined</a>
+    <a href="/free-resources">Free Resources</a>
+    <a href="#book" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/#who-joined">Who Joined</a>
+  <a href="/free-resources">Free Resources</a>
+  <a href="#book" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow fade-up d1">Partner With TPL Collective</div>
+      <h1 class="fade-up d2">Why Agents<br>Choose <em>TPL</em></h1>
+      <p class="hero-sub fade-up d3">Most brokerages profit from agents. LPT Realty was built to change that — with a flat-fee model that lets you keep what you earn. TPL Collective layers AI infrastructure, a media engine, and a growth community on top. Together, it's an unfair advantage.</p>
+      <div class="hero-actions fade-up d4">
+        <a href="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone" target="_blank" class="btn-primary">Book a Strategy Call</a>
+        <a href="/lpt-explained" class="btn-secondary">See the Numbers</a>
+      </div>
+    </div>
+    <div class="hero-stats fade-up d3">
+      <div class="hero-stat">
+        <div class="hero-stat-val">$27K+</div>
+        <div class="hero-stat-label">Potential annual difference vs. traditional franchise — same production</div>
+        <div class="hero-stat-note">Based on 10 deals · $500K avg · results vary</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">$23.6B</div>
+        <div class="hero-stat-label">Volume submitted — up 502% in two years</div>
+        <div class="hero-stat-note">RealTrends 2025 Submitted</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">21K+</div>
+        <div class="hero-stat-label">Agents and growing — fastest brokerage growth in history</div>
+        <div class="hero-stat-note">RealTrends 2025 Submitted</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">#2</div>
+        <div class="hero-stat-label">Deloitte Fast 500 — North America, 2025</div>
+        <div class="hero-stat-note">Fastest growing companies</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item">21,000+ Agents</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">$23.6B Volume</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">50 States</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Deloitte Fast 500 #2</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Flat Fee Model</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Agent Choice Plans</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">HybridShare Revenue</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Stock Ownership</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">AI Bot Workforce</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Brokerage for Life</span><span class="ticker-dot"> · </span>
+    <!-- duplicate for seamless loop -->
+    <span class="ticker-item">21,000+ Agents</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">$23.6B Volume</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">50 States</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Deloitte Fast 500 #2</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Flat Fee Model</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Agent Choice Plans</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">HybridShare Revenue</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Stock Ownership</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">AI Bot Workforce</span><span class="ticker-dot"> · </span>
+    <span class="ticker-item">Brokerage for Life</span><span class="ticker-dot"> · </span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem-section">
+  <div class="section-inner">
+    <div class="section-label reveal">The Problem</div>
+    <h2 class="section-title reveal">Your Brokerage Is<br><em>Profiting From You</em></h2>
+    <p class="section-sub reveal">Traditional brokerages are built to maximize their cut. Every deal you close, they're taking a bigger share than they've earned. That math adds up to tens of thousands of dollars a year.</p>
+    <div class="problem-grid">
+      <div class="problem-list">
+        <div class="problem-item reveal">
+          <div class="problem-x">✗</div>
+          <div class="problem-text">High percentage splits on every deal
+            <span>70/30 or worse — on your production, your clients, your relationships</span>
+          </div>
+        </div>
+        <div class="problem-item reveal">
+          <div class="problem-x">✗</div>
+          <div class="problem-text">Monthly desk and tech fees
+            <span>$100–$500/month whether you close or not — it never stops</span>
+          </div>
+        </div>
+        <div class="problem-item reveal">
+          <div class="problem-x">✗</div>
+          <div class="problem-text">Caps that reset before you build momentum
+            <span>Hit your cap in December, lose it January 1 — right back to square one</span>
+          </div>
+        </div>
+        <div class="problem-item reveal">
+          <div class="problem-x">✗</div>
+          <div class="problem-text">No ownership. No equity. No upside.
+            <span>You build their brand for decades with nothing to show for it</span>
+          </div>
+        </div>
+        <div class="problem-item reveal">
+          <div class="problem-x">✗</div>
+          <div class="problem-text">One-size-fits-all compensation
+            <span>New agent or 20-year vet — same structure, same terms, no choice</span>
+          </div>
+        </div>
+      </div>
+      <div class="problem-callout reveal">
+        <div class="problem-callout-label">The Real Cost</div>
+        <div class="problem-callout-stat">$27K+</div>
+        <div class="problem-callout-text">The estimated annual difference between a traditional franchise split and LPT Realty's flat-fee model — based on 10 transactions at $500K average price. That's money you're leaving on the table every year you stay.</div>
+        <div class="problem-callout-note">Based on 3% commission · 70/30 split vs Business Builder $500 flat · results vary by market and production</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 LAYERS -->
+<section class="layers-section">
+  <div class="section-inner">
+    <div class="section-label reveal">The Stack</div>
+    <h2 class="section-title reveal">Three Layers.<br><em>One Unfair Advantage.</em></h2>
+    <p class="section-sub reveal">TPL Collective isn't just a brokerage switch. It's a three-layer platform built to compound your income, your brand, and your leverage simultaneously.</p>
+    <div class="layers-grid">
+      <div class="layer-card lpt reveal">
+        <div class="layer-num">LAYER 01</div>
+        <div class="layer-icon">🏢</div>
+        <div class="layer-title">LPT Realty</div>
+        <div class="layer-subtitle lpt-sub">The Brokerage Foundation</div>
+        <div class="layer-desc">The licensed real estate brokerage where your license lives. Flat-fee structure, full compliance, E&O coverage, Dotloop, and $11K+ in tools — all included.</div>
+        <div class="layer-bullets">
+          <div class="layer-bullet"><span class="layer-check">✓</span> Business Builder or Brokerage Partner plan</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> $195 transaction fee · $500 annual fee · no desk fees</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> HybridShare revenue through 7 tiers</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Company stock — LPTA Nasdaq reservation</div>
+        </div>
+      </div>
+      <div class="layer-card tpl reveal">
+        <div class="layer-num">LAYER 02</div>
+        <div class="layer-icon">⚡</div>
+        <div class="layer-title">TPL Collective</div>
+        <div class="layer-subtitle tpl-sub">The Community + AI Layer</div>
+        <div class="layer-desc">Not a brokerage — a community and infrastructure layer built on top of LPT. AI tools, media infrastructure, coaching systems, and a growth community purpose-built for agents.</div>
+        <div class="layer-bullets">
+          <div class="layer-bullet"><span class="layer-check">✓</span> 6 specialized AI bots (ATLAS, SIGNAL, CANVAS, HERALD, LEDGER, ORACLE)</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Full content engine — scripts, social, email, YouTube</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Agent portal · coaching playbooks · prompt libraries</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Brokerage-paid listing marketing kit</div>
+        </div>
+      </div>
+      <div class="layer-card joe reveal">
+        <div class="layer-num">LAYER 03</div>
+        <div class="layer-icon">🤝</div>
+        <div class="layer-title">Direct Partnership</div>
+        <div class="layer-subtitle joe-sub">Real Access to Joe</div>
+        <div class="layer-desc">Not a recruiter. Not a number. An active agent who runs the same systems — available for real conversations, real strategy, and real support when it matters.</div>
+        <div class="layer-bullets">
+          <div class="layer-bullet"><span class="layer-check">✓</span> Personal onboarding walkthrough</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Strategy calls — no pressure, no pitch</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Ongoing access — not just day one</div>
+          <div class="layer-bullet"><span class="layer-check">✓</span> Same tools, same systems, same brokerage</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANS -->
+<section class="plans-section">
+  <div class="section-inner">
+    <div class="section-label reveal">Commission Plans</div>
+    <h2 class="section-title reveal">Choose Your Structure.<br><em>Own Your Career.</em></h2>
+    <p class="section-sub reveal">Two plans. Same brokerage. Same support. What changes is how you structure commissions — and what else you can earn.</p>
+    <div class="plans-grid">
+      <div class="plan-card plan-bb reveal">
+        <div class="plan-tag plan-tag-bb">Plan 01</div>
+        <div class="plan-name plan-name-bb">Business Builder</div>
+        <div class="plan-best plan-best-bb">Best for: High-volume producers</div>
+        <div class="plan-price plan-price-bb">100%</div>
+        <div class="plan-price-sub">of GCI — you keep everything, LPT retains a flat $500/transaction</div>
+        <hr class="plan-rule"/>
+        <div class="plan-features">
+          <div><span class="check-green">✓</span><span class="feat-white">$500 flat fee per core transaction</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">$5,000 annual cap — then 100% for the rest of the year</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">$195 transaction fee · $500 annual fee (both plans)</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">Full access to LPT tools + TPL resources</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">Switch to Brokerage Partner at any time</span></div>
+          <div><span class="check-dim">—</span><span class="feat-muted">Revenue share not included on this plan</span></div>
+        </div>
+      </div>
+      <div class="plan-card plan-bp reveal">
+        <div class="plan-tag plan-tag-bp">Plan 02</div>
+        <div class="plan-name plan-name-bp">Brokerage Partner</div>
+        <div class="plan-best plan-best-bp">Best for: Building leverage + teams</div>
+        <div class="plan-price plan-price-bp">80/20</div>
+        <div class="plan-price-sub">split — $15,000 annual cap · full HybridShare access (formerly RevShare Partner)</div>
+        <hr class="plan-rule"/>
+        <div class="plan-features">
+          <div><span class="check-green">✓</span><span class="feat-white">Everything in Business Builder</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">7-level HybridShare revenue through your downline</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">Lead a team · Branch office eligible</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">Black Badge eligible ($15K marketing credit)</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">2x stock grant multiplier vs Business Builder</span></div>
+          <div><span class="check-green">✓</span><span class="feat-white">Revenue share survives retirement — income for life</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="plans-note reveal">Switch plans once per 12-month anniversary year · No signup fees on either plan · $195 transaction fee + $500 annual fee apply to both</p>
+  </div>
+</section>
+
+<!-- AI ADVANTAGE -->
+<section class="ai-section">
+  <div class="section-inner" style="position:relative;z-index:1;">
+    <div class="section-label reveal">The TPL Difference</div>
+    <h2 class="section-title reveal">While Other Teams Have Agents,<br><em>We Have an AI Workforce</em></h2>
+    <p class="section-sub reveal">When you join TPL Collective, you get access to a team of specialized AI bots — each trained on our strategy, our voice, and our data — running 24/7 so you don't have to.</p>
+    <div class="ai-grid">
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Recruiting</div>
+        <div class="ai-card-name">ATLAS</div>
+        <div class="ai-card-role">The Recruiter</div>
+        <div class="ai-card-desc">Monitors your pipeline, generates personalized outreach, builds commission comparison reports, and drafts follow-up sequences in your voice.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Market Intel</div>
+        <div class="ai-card-name">SIGNAL</div>
+        <div class="ai-card-role">The Market Analyst</div>
+        <div class="ai-card-desc">Tracks bond yields, rate decisions, and market data daily — then turns it into content-ready scripts and agent intelligence briefings automatically.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Content</div>
+        <div class="ai-card-name">CANVAS</div>
+        <div class="ai-card-role">The Content Engine</div>
+        <div class="ai-card-desc">Generates full YouTube scripts, Facebook ad copy, email newsletters, social captions, and a 30-day rolling content calendar — in your voice.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Coaching</div>
+        <div class="ai-card-name">HERALD</div>
+        <div class="ai-card-role">The Agent Coach</div>
+        <div class="ai-card-desc">On-demand coaching scripts, onboarding playbooks, LPT tool guidance, and weekly action guides — available to every agent in the team 24/7.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Operations</div>
+        <div class="ai-card-name">LEDGER</div>
+        <div class="ai-card-role">The Transaction Bot</div>
+        <div class="ai-card-desc">Prepares CMA packages, drafts offer language, organizes transaction timelines, and flags deadlines — so nothing falls through the cracks.</div>
+      </div>
+      <div class="ai-card reveal">
+        <div class="ai-card-tag">Intelligence</div>
+        <div class="ai-card-name">ORACLE</div>
+        <div class="ai-card-role">The Research Bot</div>
+        <div class="ai-card-desc">Profiles inbound leads, monitors competitor moves, researches top-producing agents, and delivers weekly intelligence briefings on your market.</div>
+      </div>
+    </div>
+    <div class="ai-cta-row reveal">
+      <a href="#book" class="btn-primary">Get Access to the Full AI Stack</a>
+      <p class="ai-cta-note">Included when you partner with TPL Collective — no extra cost</p>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE TABLE -->
+<section class="compare-section">
+  <div class="section-inner">
+    <div class="section-label reveal">Side By Side</div>
+    <h2 class="section-title reveal">TPL + LPT vs.<br><em>Traditional Brokerages</em></h2>
+    <p class="section-sub reveal">Not about bashing anyone. Just an honest look at what the numbers actually say.</p>
+    <div class="compare-table reveal">
+      <div class="compare-header">
+        <div class="compare-header-cell">Feature</div>
+        <div class="compare-header-cell tpl-col">TPL + LPT ✦</div>
+        <div class="compare-header-cell other-col">Traditional</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Agent Choice Comp Plan</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row" style="background:rgba(108,99,255,0.03)">
+        <div class="compare-cell feature" style="font-size:12px;padding-left:32px;color:var(--dim)">Business Builder ($500 flat) or Brokerage Partner (80/20) — switch once per year</div>
+        <div class="compare-cell tpl-val" style="font-size:12px;color:var(--green)">Your choice</div>
+        <div class="compare-cell other-val" style="font-size:12px;color:var(--red)">One plan</div>
+      </div>
+      <div class="compare-row" style="background:rgba(108,99,255,0.03)">
+        <div class="compare-cell feature" style="font-size:12px;padding-left:32px;color:var(--dim)">Flat $500/deal · $5,000 annual cap · no percentage split</div>
+        <div class="compare-cell tpl-val" style="font-size:12px;color:var(--green)">Flat fee</div>
+        <div class="compare-cell other-val" style="font-size:12px;color:var(--red)">70/30–80/20</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">No Monthly Desk Fees</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Revenue Share / Passive Income</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Company Stock Ownership</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">AI Bot Workforce (Team-Level)</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Brokerage-Paid Marketing Kit</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Enterprise CRM Included</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Content & Media Infrastructure</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Dezzy.ai — Exclusive Brokerage AI Tool</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">On-Demand AI Coaching (HERALD)</div>
+        <div class="compare-cell tpl-val">✓</div>
+        <div class="compare-cell other-val">✕</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT YOU GET -->
+<section class="get-section">
+  <div class="section-inner">
+    <div class="section-label reveal">What's Included</div>
+    <h2 class="section-title reveal">Everything You Get When You<br><em>Partner With TPL</em></h2>
+    <div class="get-grid">
+      <div class="get-card reveal">
+        <div class="get-icon">🤖</div>
+        <div>
+          <div class="get-title">Full AI Bot Division Access</div>
+          <div class="get-desc">ATLAS, SIGNAL, CANVAS, HERALD, LEDGER, ORACLE — 6 specialized AI bots working your pipeline, content, coaching, and market intel around the clock.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📦</div>
+        <div>
+          <div class="get-title">Brokerage-Powered Listing Marketing Kit</div>
+          <div class="get-desc">Every listing gets a full branded marketing box shipped to your door — postcards, flyers, brochures, door hangers, business cards, sign riders, and direct mail with postage paid. Funded by LPT Realty.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">💼</div>
+        <div>
+          <div class="get-title">Agent Portal Access</div>
+          <div class="get-desc">Your private command center — AI tools, prompt libraries, coaching playbooks, content templates, market briefings, and deal resources all in one place.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📈</div>
+        <div>
+          <div class="get-title">HybridShare Revenue Network</div>
+          <div class="get-desc">On the Brokerage Partner plan, build passive income through LPT's 7-level HybridShare. Every agent you help join and develop becomes a compounding income stream — for life.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">🎯</div>
+        <div>
+          <div class="get-title">Lofty Enterprise CRM + Dezzy AI</div>
+          <div class="get-desc">Industry-leading CRM with IDX website, lead gen, and automation built in. Plus Dezzy.ai — LPT's proprietary AI that creates listing graphics, social posts, and flyers instantly.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📊</div>
+        <div>
+          <div class="get-title">Company Stock Awards + LPTA</div>
+          <div class="get-desc">Earn company stock on production milestones — awarded on a 3-year vesting schedule. LPT Realty's parent company, Aperture Holdings, has reserved the stock ticker LPTA on Nasdaq. You're building equity in something bigger than a commission check.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">📹</div>
+        <div>
+          <div class="get-title">Media & Content Infrastructure</div>
+          <div class="get-desc">TPL's full content engine — YouTube strategy, social content calendars, email templates, and AI video resources — so you can build authority without starting from zero.</div>
+        </div>
+      </div>
+      <div class="get-card reveal">
+        <div class="get-icon">🧭</div>
+        <div>
+          <div class="get-title">Direct Partnership with Joe</div>
+          <div class="get-desc">Not a recruiter. Not a number. An active agent who runs the same systems you will — available for real conversations, real strategy, real support.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps-section" id="how-to-join">
+  <div class="section-inner">
+    <div class="section-label reveal" style="justify-content:center;">Getting Started</div>
+    <h2 class="section-title reveal" style="text-align:center;">Four Steps to<br><em>Joining TPL</em></h2>
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <div class="step-title">Book a Strategy Call</div>
+        <div class="step-desc">A no-pressure 20–30 min conversation. We'll run your numbers, answer every question, and give you an honest picture of what the move looks like for your specific business.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <div class="step-title">Review Your Comparison</div>
+        <div class="step-desc">We build a personalized commission comparison using your actual production numbers — so you can see exactly what you'd keep at LPT vs. where you are now.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <div class="step-title">Make the Move</div>
+        <div class="step-desc">When you're ready, we walk you through the LPT onboarding process step by step. No confusion, no friction — we've done this before and we're with you the whole way.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">4</div>
+        <div class="step-title">Get Activated</div>
+        <div class="step-desc">Access your Agent Portal, your AI tools, your coaching resources, and your direct line to the TPL Collective team. You're not starting over — you're starting better.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section class="proof-section">
+  <div class="section-inner">
+    <div class="section-label reveal">Look Who Joined</div>
+    <h2 class="section-title reveal">Agents Are<br><em>Making the Move</em></h2>
+    <div class="proof-grid">
+      <div class="proof-card reveal">
+        <div class="proof-quote">"</div>
+        <div class="proof-text">I spent three years at a traditional franchise wondering why I was working this hard and keeping so little. The comparison call with Joe took 20 minutes and the math was obvious. Wish I'd done it sooner.</div>
+        <div class="proof-author">
+          <div class="proof-avatar">G</div>
+          <div>
+            <div class="proof-name">Agent Testimonial</div>
+            <div class="proof-detail">Joined from KW · Active Agent</div>
+          </div>
+        </div>
+      </div>
+      <div class="proof-card reveal">
+        <div class="proof-quote">"</div>
+        <div class="proof-text">The AI tools alone are worth the move. Having a bot that handles my follow-up sequences and keeps my pipeline organized — that's hours back in my week, every week.</div>
+        <div class="proof-author">
+          <div class="proof-avatar">M</div>
+          <div>
+            <div class="proof-name">Agent Testimonial</div>
+            <div class="proof-detail">Joined from eXp · Active Agent</div>
+          </div>
+        </div>
+      </div>
+      <div class="proof-card reveal">
+        <div class="proof-quote">"</div>
+        <div class="proof-text">I wasn't looking to move — I was comfortable. But comfortable was costing me $20K+ a year. TPL made the decision easy, and the transition was seamless.</div>
+        <div class="proof-author">
+          <div class="proof-avatar">R</div>
+          <div>
+            <div class="proof-name">Agent Testimonial</div>
+            <div class="proof-detail">Joined from Compass · Active Agent</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lpt-stats reveal">
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">21,055</div>
+        <div class="lpt-stat-label">Agents — RealTrends 2025 Submitted</div>
+      </div>
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">$23.6B</div>
+        <div class="lpt-stat-label">Volume Submitted — RealTrends 2025</div>
+      </div>
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">#2</div>
+        <div class="lpt-stat-label">North America — Deloitte Fast 500, 2025</div>
+      </div>
+      <div class="lpt-stat">
+        <div class="lpt-stat-val">61,041</div>
+        <div class="lpt-stat-label">Transaction sides — up 462% since 2023</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="book">
+  <div class="cta-eyebrow reveal">Ready to Make the Move?</div>
+  <h2 class="cta-title reveal">Book Your <em>Strategy Call</em></h2>
+  <p class="cta-sub reveal">A no-pressure 20–30 minute conversation. We'll run your numbers, answer every question honestly, and let you decide if TPL Collective is the right fit — even if the answer is not right now.</p>
+  <div class="cta-actions reveal">
+    <a href="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone" class="btn-primary" target="_blank">Book a Private Call</a>
+    <a href="/lpt-explained" class="btn-secondary">Learn About LPT First</a>
+  </div>
+  <p class="cta-note reveal">No pitch. No pressure. Just clarity.</p>
+  <div class="calendly-block reveal">
+    <div class="calendly-label">📅 Schedule Directly Below</div>
+    <div class="calendly-inline-widget" data-url="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone?hide_gdpr_banner=1&background_color=12121a&text_color=e8e8f0&primary_color=6c63ff" style="min-width:320px;height:700px;"></div>
+    <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/look-who-joined">Who Joined</a>
+    <a href="/free-resources">Free Downloads</a>
+    <a href="/blog">Blog</a>
+  </div>
+  <div class="footer-copy">© 2026 TPL Collective · Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal, .fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
