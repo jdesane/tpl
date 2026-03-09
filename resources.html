@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free Resources for Real Estate Agents | TPL Collective</title>
+  <meta name="description" content="Free tools, calculators, guides, and checklists for real estate agents. Commission calculators, brokerage comparison guides, broker interview questions, and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26; --border: #2a2a3d;
+      --accent: #6c63ff; --accent-light: #8b85ff; --accent-dim: rgba(108,99,255,0.12);
+      --gold: #f0c040; --green: #34d399; --red: #f87171; --amber: #fbbf24;
+      --text: #e8e8f0; --muted: #8888aa; --dim: #55556a;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.6; min-height: 100vh; }
+
+    /* NAV */
+    nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:0 2rem; height:64px; background:rgba(10,10,15,0.88); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+    .nav-logo { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; color:var(--text); text-decoration:none; letter-spacing:0.04em; }
+    .nav-logo span { color:var(--accent); }
+    .nav-links { display:flex; align-items:center; gap:2rem; list-style:none; }
+    .nav-links a { color:var(--muted); text-decoration:none; font-size:0.9rem; font-weight:500; transition:color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color:var(--text); }
+    .nav-cta { background:var(--accent) !important; color:#fff !important; padding:0.5rem 1.2rem; border-radius:6px; font-weight:600 !important; }
+    .nav-cta:hover { background:var(--accent-light) !important; }
+    .hamburger { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:4px; }
+    .hamburger span { display:block; width:24px; height:2px; background:var(--text); border-radius:2px; transition:all 0.3s; }
+    .hamburger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity:0; }
+    .hamburger.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+    .mobile-menu { display:none; position:fixed; inset:64px 0 0 0; background:rgba(10,10,15,0.97); backdrop-filter:blur(16px); z-index:99; flex-direction:column; align-items:center; justify-content:center; gap:2rem; }
+    .mobile-menu.open { display:flex; }
+    .mobile-menu a { color:var(--text); text-decoration:none; font-size:1.4rem; font-family:'Bebas Neue',sans-serif; letter-spacing:0.06em; }
+    .mobile-menu a.mob-cta { background:var(--accent); padding:0.7rem 2rem; border-radius:8px; }
+    @media(max-width:900px) { .nav-links { display:none; } .hamburger { display:flex; } }
+
+    /* HERO */
+    .hero { padding:140px 2rem 80px; text-align:center; position:relative; overflow:hidden; max-width:1100px; margin:0 auto; }
+    .hero::before { content:''; position:absolute; top:-60px; left:50%; transform:translateX(-50%); width:800px; height:500px; background:radial-gradient(ellipse,rgba(108,99,255,0.12) 0%,transparent 70%); pointer-events:none; }
+    .hero-label { display:inline-flex; align-items:center; gap:0.5rem; background:var(--accent-dim); border:1px solid rgba(108,99,255,0.3); color:var(--accent-light); font-size:0.75rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:0.35rem 0.9rem; border-radius:20px; margin-bottom:1.5rem; font-family:'DM Mono',monospace; }
+    .hero h1 { font-family:'Bebas Neue',sans-serif; font-size:clamp(3rem,7vw,5.5rem); line-height:1.0; letter-spacing:0.03em; margin-bottom:1.2rem; }
+    .hero h1 em { font-style:normal; color:var(--accent); }
+    .hero p { font-size:clamp(1rem,2vw,1.15rem); color:var(--muted); max-width:560px; margin:0 auto 2rem; }
+    .hero-stats { display:flex; justify-content:center; gap:3rem; flex-wrap:wrap; margin-top:2.5rem; }
+    .hero-stat { text-align:center; }
+    .hero-stat-num { font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:0.04em; color:var(--accent-light); }
+    .hero-stat-label { font-size:0.75rem; color:var(--muted); font-family:'DM Mono',monospace; letter-spacing:0.06em; text-transform:uppercase; }
+
+    /* MAIN CONTENT */
+    .resources-wrap { max-width:1100px; margin:0 auto; padding:0 2rem 80px; }
+
+    /* CATEGORY FILTER */
+    .filter-bar { display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:3rem; }
+    .filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); font-family:'DM Mono',monospace; font-size:0.72rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; padding:0.45rem 1rem; border-radius:20px; cursor:pointer; transition:all 0.2s; }
+    .filter-btn:hover { border-color:rgba(108,99,255,0.4); color:var(--text); }
+    .filter-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent-light); }
+
+    /* FEATURED CARD (Commission Calculator) */
+    .featured-card { background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(52,211,153,0.05)); border:1px solid rgba(108,99,255,0.3); border-radius:20px; padding:2.5rem; margin-bottom:3rem; display:grid; grid-template-columns:1fr auto; gap:2rem; align-items:center; position:relative; overflow:hidden; }
+    .featured-card::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; background:radial-gradient(ellipse,rgba(108,99,255,0.15),transparent 70%); pointer-events:none; }
+    .featured-eyebrow { font-family:'DM Mono',monospace; font-size:0.65rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:0.6rem; }
+    .featured-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(1.8rem,4vw,2.8rem); letter-spacing:0.04em; margin-bottom:0.7rem; line-height:1.1; }
+    .featured-desc { color:var(--muted); font-size:0.95rem; max-width:520px; margin-bottom:1.5rem; line-height:1.65; }
+    .featured-tags { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .tag { font-family:'DM Mono',monospace; font-size:0.65rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:0.2rem 0.6rem; border-radius:4px; }
+    .tag-green { background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25); color:var(--green); }
+    .tag-accent { background:var(--accent-dim); border:1px solid rgba(108,99,255,0.25); color:var(--accent-light); }
+    .tag-gold { background:rgba(240,192,64,0.1); border:1px solid rgba(240,192,64,0.25); color:var(--gold); }
+    .btn-primary { display:inline-flex; align-items:center; gap:0.5rem; background:var(--accent); color:#fff; font-weight:600; font-size:0.95rem; padding:0.8rem 1.8rem; border-radius:8px; text-decoration:none; transition:all 0.2s; }
+    .btn-primary:hover { background:var(--accent-light); transform:translateY(-1px); box-shadow:0 8px 30px rgba(108,99,255,0.35); }
+    .featured-graphic { font-size:5rem; opacity:0.6; text-align:center; position:relative; z-index:1; }
+
+    /* SECTION HEADERS */
+    .section-header { margin-bottom:1.5rem; }
+    .section-eyebrow { font-family:'DM Mono',monospace; font-size:0.65rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:0.4rem; }
+    .section-title { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:0.04em; }
+
+    /* RESOURCE GRID */
+    .resource-section { margin-bottom:3.5rem; }
+    .resource-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.2rem; }
+
+    /* RESOURCE CARD */
+    .resource-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.6rem; display:flex; flex-direction:column; gap:0.6rem; transition:border-color 0.2s,transform 0.2s,box-shadow 0.2s; text-decoration:none; color:inherit; position:relative; overflow:hidden; }
+    .resource-card:hover { border-color:rgba(108,99,255,0.35); transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.3); }
+    .resource-card.coming-soon { opacity:0.55; cursor:default; pointer-events:none; }
+    .resource-card.coming-soon:hover { transform:none; box-shadow:none; }
+    .card-icon { font-size:1.8rem; line-height:1; margin-bottom:0.3rem; }
+    .card-type { font-family:'DM Mono',monospace; font-size:0.63rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+    .card-title { font-weight:700; font-size:0.97rem; color:var(--text); line-height:1.35; }
+    .card-desc { font-size:0.82rem; color:var(--muted); line-height:1.55; flex:1; }
+    .card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:0.5rem; padding-top:0.8rem; border-top:1px solid var(--border); }
+    .card-action { font-family:'DM Mono',monospace; font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent-light); }
+    .card-badge { font-family:'DM Mono',monospace; font-size:0.6rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:0.15rem 0.5rem; border-radius:4px; }
+    .badge-live { background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25); color:var(--green); }
+    .badge-soon { background:rgba(136,136,170,0.1); border:1px solid rgba(136,136,170,0.2); color:var(--muted); }
+    .badge-new { background:rgba(240,192,64,0.1); border:1px solid rgba(240,192,64,0.25); color:var(--gold); }
+
+    /* COMING SOON OVERLAY */
+    .cs-overlay { position:absolute; top:1rem; right:1rem; font-family:'DM Mono',monospace; font-size:0.6rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; background:rgba(136,136,170,0.1); border:1px solid var(--border); color:var(--dim); padding:0.2rem 0.5rem; border-radius:4px; }
+
+    /* BOTTOM CTA */
+    .bottom-cta { background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(52,211,153,0.04)); border:1px solid rgba(108,99,255,0.2); border-radius:20px; padding:3rem; text-align:center; margin-top:2rem; }
+    .bottom-cta h2 { font-family:'Bebas Neue',sans-serif; font-size:clamp(2rem,5vw,3rem); letter-spacing:0.04em; margin-bottom:0.8rem; }
+    .bottom-cta p { color:var(--muted); max-width:480px; margin:0 auto 2rem; font-size:0.95rem; }
+    .cta-buttons { display:flex; justify-content:center; gap:1rem; flex-wrap:wrap; }
+    .btn-secondary { display:inline-flex; align-items:center; gap:0.5rem; background:transparent; color:var(--text); font-weight:600; font-size:0.95rem; padding:0.8rem 1.8rem; border-radius:8px; text-decoration:none; border:1px solid var(--border); transition:all 0.2s; }
+    .btn-secondary:hover { border-color:var(--accent); color:var(--accent-light); }
+
+    /* GATE MODAL */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:200; align-items:center; justify-content:center; padding:1rem; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:2.5rem; max-width:440px; width:100%; position:relative; animation:modalIn 0.25s ease; }
+    @keyframes modalIn { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+    .modal-close { position:absolute; top:1.1rem; right:1.2rem; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.2rem; line-height:1; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s; }
+    .modal-close:hover { color:var(--text); }
+    .modal-eyebrow { font-family:'DM Mono',monospace; font-size:0.65rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:0.5rem; }
+    .modal-title { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:0.04em; margin-bottom:0.4rem; line-height:1.1; }
+    .modal-sub { color:var(--muted); font-size:0.86rem; margin-bottom:1.6rem; line-height:1.55; }
+    .modal-resource-name { display:inline-flex; align-items:center; gap:0.4rem; background:var(--accent-dim); border:1px solid rgba(108,99,255,0.25); border-radius:6px; padding:0.35rem 0.8rem; font-size:0.8rem; font-weight:600; color:var(--accent-light); margin-bottom:1.4rem; }
+    .modal-field { margin-bottom:1rem; }
+    .modal-field label { display:block; font-family:'DM Mono',monospace; font-size:0.68rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:0.4rem; }
+    .modal-field input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.95rem; font-family:'DM Sans',sans-serif; padding:0.75rem 1rem; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+    .modal-field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,99,255,0.15); }
+    .modal-field input::placeholder { color:var(--dim); }
+    .modal-submit { width:100%; background:var(--accent); color:#fff; font-weight:700; font-size:1rem; font-family:'DM Sans',sans-serif; padding:0.85rem; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s; margin-top:0.3rem; }
+    .modal-submit:hover { background:var(--accent-light); transform:translateY(-1px); box-shadow:0 8px 28px rgba(108,99,255,0.35); }
+    .modal-submit:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+    .modal-privacy { font-size:0.72rem; color:var(--dim); text-align:center; margin-top:0.8rem; }
+    .modal-error { font-size:0.8rem; color:var(--red); margin-top:0.5rem; display:none; }
+    .modal-success { text-align:center; display:none; }
+    .modal-success .success-icon { font-size:3rem; margin-bottom:1rem; }
+    .modal-success h3 { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:0.04em; color:var(--green); margin-bottom:0.5rem; }
+    .modal-success p { color:var(--muted); font-size:0.88rem; margin-bottom:1.5rem; }
+    .modal-download-btn { display:inline-flex; align-items:center; gap:0.5rem; background:var(--green); color:#0a0a0f; font-weight:700; font-size:0.95rem; padding:0.8rem 1.8rem; border-radius:8px; text-decoration:none; transition:all 0.2s; }
+    .modal-download-btn:hover { background:#4ade80; transform:translateY(-1px); }
+
+    /* MOBILE */
+    @media(max-width:900px) { .featured-card { grid-template-columns:1fr; } .featured-graphic { display:none; } .resource-grid { grid-template-columns:1fr 1fr; } }
+    @media(max-width:580px) { .resource-grid { grid-template-columns:1fr; } .hero-stats { gap:1.5rem; } .filter-bar { gap:0.4rem; } .modal { padding:1.8rem; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="/lpt-explained.html">How LPT Works</a></li>
+    <li><a href="/why-tpl.html">Why TPL</a></li>
+    <li><a href="/resources.html" class="active">Free Resources</a></li>
+    <li><a href="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone" target="_blank" class="nav-cta">Book a Call</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/lpt-explained.html">How LPT Works</a>
+  <a href="/why-tpl.html">Why TPL</a>
+  <a href="/resources.html">Free Resources</a>
+  <a href="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone" target="_blank" class="mob-cta">Book a Call</a>
+</div>
+
+<div class="hero">
+  <div class="hero-label">✦ 100% Free — No Email Required</div>
+  <h1>Tools That Actually <em>Help</em><br>You Make More Money</h1>
+  <p>Calculators, guides, and checklists built specifically for agents who are serious about their business. Use them, share them, keep them.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-num">FREE</div>
+      <div class="hero-stat-label">Always</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">10+</div>
+      <div class="hero-stat-label">Resources</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">0</div>
+      <div class="hero-stat-label">Email Required</div>
+    </div>
+  </div>
+</div>
+
+<div class="resources-wrap">
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterCards('all', this)">All Resources</button>
+    <button class="filter-btn" onclick="filterCards('calculator', this)">Calculators</button>
+    <button class="filter-btn" onclick="filterCards('guide', this)">Guides</button>
+    <button class="filter-btn" onclick="filterCards('checklist', this)">Checklists</button>
+    <button class="filter-btn" onclick="filterCards('template', this)">Templates</button>
+  </div>
+
+  <!-- FEATURED: COMMISSION CALCULATOR -->
+  <div class="featured-card" data-cat="calculator">
+    <div>
+      <div class="featured-eyebrow">⚡ Most Popular Tool</div>
+      <div class="featured-title">Commission Calculator</div>
+      <div class="featured-desc">Enter your current brokerage and production numbers. See your exact take-home vs. both LPT plans — side by side, with full fee breakdowns. Includes every major brokerage pre-loaded.</div>
+      <div class="featured-tags">
+        <span class="tag tag-green">Interactive</span>
+        <span class="tag tag-accent">10 Brokerages</span>
+        <span class="tag tag-gold">Instant Results</span>
+      </div>
+      <a href="/commission-calculator.html" class="btn-primary">Open Calculator →</a>
+    </div>
+    <div class="featured-graphic">🧮</div>
+  </div>
+
+  <!-- BROKERAGE TOOLS -->
+  <div class="resource-section">
+    <div class="section-header">
+      <div class="section-eyebrow">Brokerage Decision Tools</div>
+      <div class="section-title">Before You Switch — Do the Math</div>
+    </div>
+    <div class="resource-grid">
+
+      <a href="/commission-calculator.html" class="resource-card" data-cat="calculator">
+        <div class="card-icon">🧮</div>
+        <div class="card-type">Calculator</div>
+        <div class="card-title">Commission Calculator</div>
+        <div class="card-desc">Compare your take-home at your current brokerage vs. LPT Business Builder and Brokerage Partner. Pre-loaded with KW, eXp, RE/MAX, Compass, and more.</div>
+        <div class="card-footer">
+          <span class="card-action">Use Tool →</span>
+          <span class="card-badge badge-live">Live</span>
+        </div>
+      </a>
+
+      <div class="resource-card coming-soon" data-cat="guide">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">📊</div>
+        <div class="card-type">Guide</div>
+        <div class="card-title">Brokerage Fee Breakdown Guide</div>
+        <div class="card-desc">A plain-English breakdown of what LPT, eXp, Real Broker, Fathom, and KW actually cost — every fee, every plan, side by side.</div>
+        <div class="card-footer">
+          <span class="card-action">Download PDF</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+      <div class="resource-card" data-cat="checklist" onclick="openGate('20 Questions to Ask Before Switching Brokerages', '/downloads/20-questions-before-switching-brokerages.pdf')" style="cursor:pointer;">
+        <div class="card-icon">❓</div>
+        <div class="card-type">Checklist</div>
+        <div class="card-title">20 Questions to Ask Before Switching Brokerages</div>
+        <div class="card-desc">The exact questions that separate a good brokerage from the right one for you. Ask these before you sign anything.</div>
+        <div class="card-footer">
+          <span class="card-action">Free Download →</span>
+          <span class="card-badge badge-new">New</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TRANSACTION TOOLS -->
+  <div class="resource-section">
+    <div class="section-header">
+      <div class="section-eyebrow">Transaction & Production Tools</div>
+      <div class="section-title">Run Your Business Like a Business</div>
+    </div>
+    <div class="resource-grid">
+
+      <div class="resource-card coming-soon" data-cat="checklist">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">🏠</div>
+        <div class="card-type">Checklist</div>
+        <div class="card-title">Listing Checklist</div>
+        <div class="card-desc">Every step from signed listing agreement to closed sale. Nothing falls through the cracks.</div>
+        <div class="card-footer">
+          <span class="card-action">Download</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+      <div class="resource-card coming-soon" data-cat="checklist">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">🔑</div>
+        <div class="card-type">Checklist</div>
+        <div class="card-title">Buyer Checklist</div>
+        <div class="card-desc">Walk every buyer client through a clean, professional process from first consult to keys in hand.</div>
+        <div class="card-footer">
+          <span class="card-action">Download</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+      <div class="resource-card coming-soon" data-cat="checklist">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">📋</div>
+        <div class="card-type">Checklist</div>
+        <div class="card-title">Open House Sign-In Sheet</div>
+        <div class="card-desc">Clean, professional sign-in sheet that captures what you actually need to follow up effectively.</div>
+        <div class="card-footer">
+          <span class="card-action">Download</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+      <div class="resource-card coming-soon" data-cat="template">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">💰</div>
+        <div class="card-type">Template</div>
+        <div class="card-title">Seller Net Sheet</div>
+        <div class="card-desc">Show sellers exactly what they'll walk away with. A clean, editable net sheet that builds trust from the first meeting.</div>
+        <div class="card-footer">
+          <span class="card-action">Download</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+      <div class="resource-card coming-soon" data-cat="template">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">🧾</div>
+        <div class="card-type">Template</div>
+        <div class="card-title">Agent Tax Deductions Worksheet</div>
+        <div class="card-desc">Every deduction a real estate agent can legally take. Stop leaving money on the table at tax time.</div>
+        <div class="card-footer">
+          <span class="card-action">Download</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+      <div class="resource-card coming-soon" data-cat="guide">
+        <div class="cs-overlay">Coming Soon</div>
+        <div class="card-icon">🚀</div>
+        <div class="card-type">Guide</div>
+        <div class="card-title">New Agent First 90 Days Plan</div>
+        <div class="card-desc">A week-by-week action plan for new agents who want to close their first deal fast and build a real business foundation.</div>
+        <div class="card-footer">
+          <span class="card-action">Download</span>
+          <span class="card-badge badge-soon">Soon</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM CTA -->
+  <div class="bottom-cta">
+    <h2>Want the Full Toolkit?</h2>
+    <p>TPL Collective members get access to AI-powered tools, coaching playbooks, content templates, and a community of agents building real businesses — not just chasing transactions.</p>
+    <div class="cta-buttons">
+      <a href="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone" target="_blank" class="btn-primary">Book a Free Call →</a>
+      <a href="/why-tpl.html" class="btn-secondary">See What's Inside TPL</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- GATE MODAL -->
+<div class="modal-overlay" id="gateModal" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <!-- FORM STATE -->
+    <div id="modalForm">
+      <div class="modal-eyebrow">📥 Free Download</div>
+      <div class="modal-title" id="modalTitle">Get Instant Access</div>
+      <div class="modal-sub">Enter your name and email and we'll send you straight to the download. No spam — ever.</div>
+      <div class="modal-resource-name" id="modalResourceName">📋 Resource Name</div>
+      <div class="modal-field">
+        <label>First Name</label>
+        <input type="text" id="gateFirst" placeholder="Your first name" autocomplete="given-name" />
+      </div>
+      <div class="modal-field">
+        <label>Email Address</label>
+        <input type="email" id="gateEmail" placeholder="you@email.com" autocomplete="email" />
+      </div>
+      <div class="modal-error" id="gateError">Please fill in all fields with a valid email.</div>
+      <button class="modal-submit" id="gateSubmit" onclick="submitGate()">Get Free Download →</button>
+      <div class="modal-privacy">No spam. No brokerage pressure. Unsubscribe anytime.</div>
+    </div>
+
+    <!-- SUCCESS STATE -->
+    <div class="modal-success" id="modalSuccess">
+      <div class="success-icon">✅</div>
+      <h3>You're All Set!</h3>
+      <p id="successMsg">Your download is ready. Click below to get it.</p>
+      <a href="#" id="downloadLink" class="modal-download-btn" download>⬇ Download Now</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleMenu() {
+  document.getElementById('hamburger').classList.toggle('open');
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+function filterCards(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.resource-card, .featured-card').forEach(card => {
+    if (cat === 'all' || card.dataset.cat === cat) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.resource-section').forEach(section => {
+    const visible = [...section.querySelectorAll('.resource-card')].some(c => c.style.display !== 'none');
+    section.style.display = visible ? '' : 'none';
+  });
+}
+
+// ── GATE ──
+let _pendingDownload = { url: '', name: '' };
+
+function openGate(resourceName, downloadUrl) {
+  _pendingDownload = { url: downloadUrl, name: resourceName };
+  document.getElementById('modalTitle').textContent = 'Get Instant Access';
+  document.getElementById('modalResourceName').textContent = '📋 ' + resourceName;
+  document.getElementById('modalForm').style.display = '';
+  document.getElementById('modalSuccess').style.display = 'none';
+  document.getElementById('gateError').style.display = 'none';
+  document.getElementById('gateFirst').value = '';
+  document.getElementById('gateEmail').value = '';
+  document.getElementById('gateModal').classList.add('open');
+  setTimeout(() => document.getElementById('gateFirst').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('gateModal').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('gateModal')) closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+async function submitGate() {
+  const first = document.getElementById('gateFirst').value.trim();
+  const email = document.getElementById('gateEmail').value.trim();
+  const errEl = document.getElementById('gateError');
+
+  if (!first || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('gateSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    await fetch('https://mission.tplcollective.ai/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: first,
+        email: email,
+        phone: '',
+        source: 'resource_download',
+        notes: 'Downloaded: ' + _pendingDownload.name
+      })
+    });
+  } catch (e) {
+    // don't block the download if the API is unreachable
+    console.warn('Lead capture failed:', e);
+  }
+
+  // show success + trigger download
+  document.getElementById('modalForm').style.display = 'none';
+  document.getElementById('successMsg').textContent =
+    'Thanks ' + first + '! Your copy of "' + _pendingDownload.name + '" is ready below.';
+  document.getElementById('downloadLink').href = _pendingDownload.url;
+  document.getElementById('downloadLink').setAttribute('download', _pendingDownload.name + '.pdf');
+  document.getElementById('modalSuccess').style.display = 'block';
+
+  // auto-trigger download
+  setTimeout(() => document.getElementById('downloadLink').click(), 400);
+}
+</script>
+
+</body>
+</html>
