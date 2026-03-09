@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LPT Explained | TPL Collective</title>
+<meta name="description" content="LPT Realty explained — two commission plans, flat fees, and a brokerage model built around agent choice. See how Business Builder and Brokerage Partner compare."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --green:     #34d399;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px; transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em; transition: color 0.2s;
+}
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; text-transform: uppercase; border: none;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  padding: 130px 24px 100px;
+  text-align: center;
+  overflow: hidden;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -100px; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 400px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; }
+.eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px; display: inline-block;
+}
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 10vw, 120px);
+  line-height: 0.92; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 span { color: var(--accent); }
+.hero-sub {
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--muted); max-width: 580px;
+  margin: 0 auto 48px; font-weight: 300; line-height: 1.7;
+}
+.hero-badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 8px 16px; border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--muted); background: var(--surface);
+}
+
+/* ── SECTIONS ── */
+.section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px; display: block;
+}
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1; color: var(--white);
+  margin-bottom: 20px; letter-spacing: 0.02em;
+}
+.section-body {
+  font-size: 17px; color: var(--muted);
+  max-width: 680px; line-height: 1.75; font-weight: 300;
+}
+.divider {
+  border: none; border-top: 1px solid var(--border);
+  max-width: 1100px; margin: 0 auto;
+}
+
+/* ── TWO ENTITIES ── */
+.what-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 48px; margin-top: 56px; align-items: start;
+}
+.what-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px;
+}
+.what-card h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; letter-spacing: 0.04em;
+  color: var(--white); margin-bottom: 14px;
+}
+.what-card p { font-size: 15px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+.tag {
+  display: inline-block; font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 3px; margin-bottom: 16px;
+}
+.tag-brokerage { background: rgba(108,99,255,0.12); color: var(--accent-hi); border: 1px solid rgba(108,99,255,0.25); }
+.tag-community { background: rgba(240,192,64,0.1); color: var(--gold); border: 1px solid rgba(240,192,64,0.2); }
+
+/* ── PHILOSOPHY ── */
+.philosophy {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+}
+.philosophy-inner { max-width: 1100px; margin: 0 auto; }
+.vs-row {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 32px; align-items: center; margin-top: 56px;
+}
+.vs-col-bad {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px; opacity: 0.6;
+}
+.vs-col-good {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(108,99,255,0.03));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 12px; padding: 32px;
+}
+.vs-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 16px; display: block;
+}
+.vs-label-bad { color: var(--dim); }
+.vs-label-good { color: var(--accent-hi); }
+.vs-col-bad h3, .vs-col-good h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; letter-spacing: 0.03em; margin-bottom: 16px;
+}
+.vs-col-bad h3 { color: var(--muted); }
+.vs-col-good h3 { color: var(--white); }
+.vs-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.vs-list li {
+  font-size: 14px; color: var(--muted); font-weight: 300;
+  padding-left: 20px; position: relative; line-height: 1.5;
+}
+.vs-list li::before { content: attr(data-icon); position: absolute; left: 0; }
+.vs-divider {
+  font-family: 'Bebas Neue', sans-serif; font-size: 48px;
+  color: var(--border); text-align: center;
+}
+
+/* ── PLANS ── */
+.plans-section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.plans-header { margin-bottom: 48px; }
+.plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.plan-card { border-radius: 16px; padding: 44px 40px; position: relative; overflow: hidden; }
+.plan-card-bb { background: var(--surface); border: 1px solid var(--border); }
+.plan-card-bp {
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border: 1px solid rgba(108,99,255,0.35);
+}
+.plan-card-bp::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.plan-name { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 0.04em; margin-bottom: 8px; }
+.plan-name-bb { color: var(--white); }
+.plan-name-bp { color: var(--accent-hi); }
+.plan-tagline { font-size: 14px; color: var(--muted); font-weight: 300; margin-bottom: 36px; line-height: 1.5; }
+.plan-stat { margin-bottom: 24px; }
+.plan-stat-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 6px; display: block;
+}
+.plan-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1; letter-spacing: 0.02em; }
+.plan-stat-value-bb { color: var(--white); }
+.plan-stat-value-bp { color: var(--accent-hi); }
+.plan-stat-sub { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 300; }
+.plan-rule { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.plan-features li {
+  font-size: 14px; color: var(--muted);
+  padding-left: 22px; position: relative; font-weight: 300; line-height: 1.5;
+}
+.plan-features li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-size: 12px; }
+
+/* ── FEES ── */
+.fees-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.fees-inner { max-width: 1100px; margin: 0 auto; padding: 56px 24px; }
+.fees-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0; margin-top: 40px;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.fee-item { padding: 36px 32px; border-right: 1px solid var(--border); }
+.fee-item:last-child { border-right: none; }
+.fee-item-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 12px; display: block;
+}
+.fee-item-value { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--white); line-height: 1; margin-bottom: 8px; }
+.fee-item-desc { font-size: 13px; color: var(--muted); font-weight: 300; line-height: 1.6; }
+
+/* ── PILLARS ── */
+.pillars { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.pillars-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+.pillar {
+  padding: 36px 32px; border: 1px solid var(--border);
+  border-radius: 12px; background: var(--surface);
+  position: relative; overflow: hidden;
+}
+.pillar::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(108,99,255,0.4), transparent);
+}
+.pillar-number {
+  font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 1;
+  color: var(--border); margin-bottom: 16px; letter-spacing: 0.02em;
+}
+.pillar h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px;
+  letter-spacing: 0.04em; color: var(--white); margin-bottom: 12px;
+}
+.pillar p { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+
+/* ── CTA ── */
+.cta-section {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, transparent 60%);
+  border-top: 1px solid rgba(108,99,255,0.2);
+  padding: 100px 24px; text-align: center;
+}
+.cta-inner { max-width: 640px; margin: 0 auto; }
+.cta-inner h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 6vw, 72px);
+  color: var(--white); line-height: 1;
+  letter-spacing: 0.02em; margin-bottom: 20px;
+}
+.cta-inner p { font-size: 17px; color: var(--muted); font-weight: 300; margin-bottom: 40px; line-height: 1.7; }
+.btn-primary {
+  display: inline-block; background: var(--accent); color: var(--white);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 16px 40px; border-radius: 6px; text-decoration: none;
+  border: none; cursor: pointer; transition: all 0.2s ease; margin-right: 12px;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(108,99,255,0.35); }
+.btn-secondary {
+  display: inline-block; background: transparent; color: var(--muted);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 16px 32px; border-radius: 6px; text-decoration: none;
+  border: 1px solid var(--border); cursor: pointer; transition: all 0.2s ease;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 40px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ── FADE IN ── */
+.fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+
+/* ── TABLET (≤900px) ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .what-grid { grid-template-columns: 1fr; gap: 24px; }
+  .vs-row { grid-template-columns: 1fr; }
+  .vs-divider { display: none; }
+  .plans-grid { grid-template-columns: 1fr; }
+  .fees-grid { grid-template-columns: 1fr; }
+  .fee-item { border-right: none; border-bottom: 1px solid var(--border); }
+  .fee-item:last-child { border-bottom: none; }
+  .pillars-grid { grid-template-columns: 1fr; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE (≤480px) ── */
+@media (max-width: 480px) {
+  .hero { padding: 88px 16px 60px; }
+  .hero h1 { font-size: clamp(48px, 14vw, 72px); }
+  .hero-sub { font-size: 15px; }
+  .hero-badges { gap: 8px; }
+  .badge { font-size: 10px; padding: 6px 12px; }
+  .section, .plans-section, .pillars { padding: 52px 16px; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .what-card { padding: 24px; }
+  .plan-card { padding: 32px 22px; }
+  .plan-stat-value { font-size: 36px; }
+  .fees-inner { padding: 44px 16px; }
+  .fee-item-value { font-size: 40px; }
+  .pillar { padding: 28px 22px; }
+  .cta-section { padding: 72px 16px; }
+  .btn-primary, .btn-secondary { display: block; width: 100%; text-align: center; margin: 0 0 12px 0; margin-right: 0; }
+  .calendly-inline-widget { height: 600px !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained.html">LPT Explained</a>
+    <a href="/why-tpl.html">Why TPL</a>
+    <a href="/#who-joined">Who Joined</a>
+    <a href="/free-resources">Free Resources</a>
+    <a href="#book" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained.html">LPT Explained</a>
+  <a href="/why-tpl.html">Why TPL</a>
+  <a href="/#who-joined">Who Joined</a>
+  <a href="/free-resources">Free Resources</a>
+  <a href="#book" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <span class="eyebrow">LPT Realty — The Brokerage Behind TPL Collective</span>
+    <h1>Your Career.<br><span>Your Choice.</span></h1>
+    <p class="hero-sub">
+      Most brokerages hand you one plan and tell you to make it work.
+      LPT Realty was built differently — two commission structures, zero desk fees,
+      and a model designed to serve you at every stage of your career.
+      You pick the plan that fits. You change it as you grow.
+    </p>
+    <div class="hero-badges">
+      <span class="badge">Two Commission Plans</span>
+      <span class="badge">Switch Anytime</span>
+      <span class="badge">Brokerage for Life</span>
+      <span class="badge">No Desk Fees</span>
+    </div>
+  </div>
+</section>
+
+<!-- TWO ENTITIES -->
+<section class="section">
+  <div class="fade-in">
+    <span class="section-label">The Basics</span>
+    <h2 class="section-title">Two Entities,<br>One Mission</h2>
+    <p class="section-body">
+      Understanding how LPT Realty and TPL Collective work together is the starting point.
+      They're related but distinct — and that distinction matters for your career.
+    </p>
+  </div>
+  <div class="what-grid">
+    <div class="what-card fade-in delay-1">
+      <span class="tag tag-brokerage">The Brokerage</span>
+      <h3>LPT Realty, LLC</h3>
+      <p>
+        LPT Realty is the licensed real estate brokerage where your license lives.
+        Founded by Robert Palmer and built by agents from the start, LPT handles
+        your transactions, compliance, E&O coverage, Dotloop access, and commission
+        disbursements. When you close a deal, it closes under LPT.
+      </p>
+    </div>
+    <div class="what-card fade-in delay-2">
+      <span class="tag tag-community">The Community Layer</span>
+      <h3>TPL Collective</h3>
+      <p>
+        TPL Collective is not a brokerage. It's the community, coaching infrastructure,
+        and AI-powered recruiting platform built on top of LPT Realty's model.
+        When you join through TPL, you get the brokerage benefits of LPT plus the
+        resources, mentorship, and tools of the Collective.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- PHILOSOPHY -->
+<section class="philosophy">
+  <div class="philosophy-inner">
+    <div class="fade-in">
+      <span class="section-label">The Problem We Solve</span>
+      <h2 class="section-title">One Size Fits None</h2>
+      <p class="section-body">
+        A new agent grinding their first deals has different needs than a 20-year
+        producer who's already capped. A team builder chasing passive income wants
+        something different than someone who just wants to close and keep everything.
+        LPT Realty was designed around that reality — not around a single plan
+        that works best for the brokerage.
+      </p>
+    </div>
+    <div class="vs-row fade-in delay-1">
+      <div class="vs-col-bad">
+        <span class="vs-label vs-label-bad">Traditional Model</span>
+        <h3>One Structure. No Choice.</h3>
+        <ul class="vs-list">
+          <li data-icon="✗">Fixed splits regardless of your production</li>
+          <li data-icon="✗">Cap resets punish momentum</li>
+          <li data-icon="✗">No path to ownership or revenue share</li>
+          <li data-icon="✗">Technology costs layered on top</li>
+          <li data-icon="✗">Switch brokerages when your needs change</li>
+        </ul>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="vs-col-good">
+        <span class="vs-label vs-label-good">LPT Realty Model</span>
+        <h3>Agent Choice. Your Terms.</h3>
+        <ul class="vs-list">
+          <li data-icon="→">Two commission plans — you pick the one that fits</li>
+          <li data-icon="→">Low flat fees mean more stays in your pocket</li>
+          <li data-icon="→">HybridShare creates income beyond closings</li>
+          <li data-icon="→">$11k+ in tech tools included at no added cost</li>
+          <li data-icon="→">Stay at LPT for your entire career, at any stage</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE TWO PLANS -->
+<section class="plans-section">
+  <div class="plans-header fade-in">
+    <span class="section-label">Two Plans. One Brokerage. You Decide.</span>
+    <h2 class="section-title">Pick the Plan<br>That Fits Your Business</h2>
+    <p class="section-body">
+      Same brokerage. Same support. Same tools. Same compliance.
+      What changes is how your commissions are structured — and whether you
+      want to build passive income through HybridShare on top of your closings.
+      You can switch once per anniversary year. No penalty. No pressure.
+    </p>
+  </div>
+  <div class="plans-grid">
+
+    <!-- Business Builder -->
+    <div class="plan-card plan-card-bb fade-in delay-1">
+      <div class="plan-name plan-name-bb">Business Builder</div>
+      <p class="plan-tagline">
+        Maximum per-deal take-home. Flat fee per transaction, hard cap, and you're done.
+        Built for high-volume producers who want simplicity.
+      </p>
+      <div class="plan-stat">
+        <span class="plan-stat-label">You Keep</span>
+        <div class="plan-stat-value plan-stat-value-bb">100%</div>
+        <div class="plan-stat-sub">of your Gross Commission Income</div>
+      </div>
+      <div class="plan-stat">
+        <span class="plan-stat-label">LPT Retains Per Core Transaction</span>
+        <div class="plan-stat-value plan-stat-value-bb">$500</div>
+        <div class="plan-stat-sub">flat admin fee, not a percentage</div>
+      </div>
+      <div class="plan-stat">
+        <span class="plan-stat-label">Annual Cap</span>
+        <div class="plan-stat-value plan-stat-value-bb">$5K</div>
+        <div class="plan-stat-sub">once hit, you close at 100% for the rest of your plan year</div>
+      </div>
+      <hr class="plan-rule"/>
+      <ul class="plan-features">
+        <li>10 transactions to cap (at $500 each)</li>
+        <li>No HybridShare earnings while on this plan</li>
+        <li>Can switch to Brokerage Partner once per year</li>
+        <li>Best for: high-volume, transaction-focused agents</li>
+      </ul>
+    </div>
+
+    <!-- Brokerage Partner -->
+    <div class="plan-card plan-card-bp fade-in delay-2">
+      <div class="plan-name plan-name-bp">Brokerage Partner</div>
+      <p class="plan-tagline">
+        Formerly RevShare Partner. Build income beyond your own closings through
+        HybridShare — and stay in the revenue pool for life.
+      </p>
+      <div class="plan-stat">
+        <span class="plan-stat-label">You Keep</span>
+        <div class="plan-stat-value plan-stat-value-bp">80%</div>
+        <div class="plan-stat-sub">of your Gross Commission Income per core transaction</div>
+      </div>
+      <div class="plan-stat">
+        <span class="plan-stat-label">LPT Retains</span>
+        <div class="plan-stat-value plan-stat-value-bp">20%</div>
+        <div class="plan-stat-sub">per core transaction (the Core Transaction Cost)</div>
+      </div>
+      <div class="plan-stat">
+        <span class="plan-stat-label">Annual Cap</span>
+        <div class="plan-stat-value plan-stat-value-bp">$15K</div>
+        <div class="plan-stat-sub">once hit, you're capped for the rest of your plan year</div>
+      </div>
+      <hr class="plan-rule"/>
+      <ul class="plan-features">
+        <li>HybridShare income from your downline's closings (7 tiers)</li>
+        <li>Stock grants — 2x multiplier vs Business Builder</li>
+        <li>Revenue share unlocked from day one on this plan</li>
+        <li>Best for: agents building a team or long-term income</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- UNIVERSAL FEES -->
+<section class="fees-bar">
+  <div class="fees-inner">
+    <div class="fade-in">
+      <span class="section-label">Universal Fees — Both Plans</span>
+      <h2 class="section-title">What Everyone Pays</h2>
+      <p class="section-body">
+        Regardless of which plan you're on, these fees apply to every agent.
+        No surprises, no hidden splits.
+      </p>
+    </div>
+    <div class="fees-grid fade-in delay-1">
+      <div class="fee-item">
+        <span class="fee-item-label">Transaction Fee (Core)</span>
+        <div class="fee-item-value">$195</div>
+        <div class="fee-item-desc">
+          Per core transaction. Collected on the closing disclosure from the client.
+          If not collected, deducted from your commission. Does not count toward cap.
+        </div>
+      </div>
+      <div class="fee-item">
+        <span class="fee-item-label">Annual Fee</span>
+        <div class="fee-item-value">$500</div>
+        <div class="fee-item-desc">
+          Once per anniversary year. Auto-retained from your first closing of the year.
+          Accumulates if you don't close — rolls into the next year.
+        </div>
+      </div>
+      <div class="fee-item">
+        <span class="fee-item-label">Everything Else</span>
+        <div class="fee-item-value">$0</div>
+        <div class="fee-item-desc">
+          No desk fees. No monthly tech fees. Dotloop, Lofty (Chime), Listing Power Tools,
+          and $11k+ in marketing tools included at no additional cost.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THREE PILLARS -->
+<section class="pillars">
+  <div class="fade-in">
+    <span class="section-label">The Philosophy</span>
+    <h2 class="section-title">Built for Your Entire Career</h2>
+    <p class="section-body">
+      LPT Realty's core value proposition isn't just low fees — it's a brokerage
+      designed to serve you at every stage.
+    </p>
+  </div>
+  <div class="pillars-grid">
+    <div class="pillar fade-in delay-1">
+      <div class="pillar-number">01</div>
+      <h3>Agent Choice</h3>
+      <p>
+        No one tells you which plan to be on. You evaluate your production, your goals,
+        and your career stage — then you choose. And you can change plans as your
+        business evolves.
+      </p>
+    </div>
+    <div class="pillar fade-in delay-2">
+      <div class="pillar-number">02</div>
+      <h3>Brokerage for Life</h3>
+      <p>
+        LPT was designed so you never need to leave. Whether you're a new agent finding
+        your footing or a top producer capped out every year, this model grows with you.
+        Revenue share even survives retirement.
+      </p>
+    </div>
+    <div class="pillar fade-in delay-3">
+      <div class="pillar-number">03</div>
+      <h3>Your Definition of Success</h3>
+      <p>
+        Some agents want maximum per-deal income. Others want to build passive revenue
+        through a downline. Both are valid. LPT doesn't pick a lane for you — it builds
+        infrastructure for both.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="book">
+  <div class="cta-inner fade-in">
+    <h2>Which Plan<br>Is Right for You?</h2>
+    <p>
+      The answer depends on your production volume, your goals, and where
+      you are in your career right now. Book a call and we'll walk through
+      both plans with your actual numbers — no pressure, no pitch, just clarity.
+    </p>
+    <a href="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone" target="_blank" class="btn-primary">Book a Call with Joe</a>
+    <a href="/why-tpl.html" class="btn-secondary">Why TPL Collective</a>
+  </div>
+  <div style="max-width:760px;margin:56px auto 0;" class="fade-in">
+    <div class="calendly-inline-widget"
+      data-url="https://calendly.com/joedesane/learn-more-about-lpt-realty-clone?hide_gdpr_banner=1&background_color=12121a&text_color=e8e8f0&primary_color=6c63ff"
+      style="min-width:320px;height:700px;">
+    </div>
+    <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/lpt-explained.html">LPT Explained</a>
+    <a href="/why-tpl.html">Why TPL</a>
+    <a href="/free-resources">Free Downloads</a>
+    <a href="#book">Book a Call</a>
+  </div>
+  <div class="footer-copy">© 2026 TPL Collective · Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
