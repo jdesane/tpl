@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/lpt-explained", "destination": "/lpt-explained.html" },
+    { "source": "/free-resources", "destination": "/resources.html" },
+    { "source": "/why-tpl", "destination": "/why-tpl.html" },
+    { "source": "/commission-calculator", "destination": "/commission-calculator.html" },
+    { "source": "/fee-plans", "destination": "/fee-plans.html" }
+  ]
+}
