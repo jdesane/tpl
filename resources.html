@@ -451,15 +451,15 @@ async function submitGate() {
   btn.textContent = 'Submitting…';
 
   try {
-    await fetch('https://mission.tplcollective.ai/leads', {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: first,
         email: email,
         phone: '',
-        source: 'resource_download',
-        notes: 'Downloaded: ' + _pendingDownload.name
+        
+        
       })
     });
   } catch (e) {
