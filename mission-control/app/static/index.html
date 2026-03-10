@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TPL Command · Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --border2:   rgba(108,99,255,0.2);
+  --accent:    #6c63ff;
+  --accent-dim:rgba(108,99,255,0.15);
+  --accent-glow:rgba(108,99,255,0.08);
+  --gold:      #f0c040;
+  --gold-dim:  rgba(240,192,64,0.15);
+  --green:     #34d399;
+  --green-dim: rgba(52,211,153,0.12);
+  --amber:     #fbbf24;
+  --amber-dim: rgba(251,191,36,0.12);
+  --red:       #f87171;
+  --red-dim:   rgba(248,113,113,0.12);
+  --text:      #e8e8f0;
+  --muted:     rgba(232,232,240,0.4);
+  --muted2:    rgba(232,232,240,0.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;font-size:14px;}
+
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--text);}
+.logo-dot{color:var(--accent);}
+.logo-divider{width:1px;height:20px;background:var(--border);}
+.topbar-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.live-pill{display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;background:var(--green-dim);border:1px solid rgba(52,211,153,0.25);color:var(--green);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+.topbar-right{display:flex;align-items:center;gap:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+.clock{color:var(--accent);font-size:13px;font-weight:500;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 6px var(--green);}50%{opacity:0.4;box-shadow:none;}}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 52px);}
+
+/* ── SIDEBAR ── */
+.sidebar{width:196px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto;}
+.nav-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted2);padding:16px 18px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;letter-spacing:0.3px;transition:all 0.15s;border-left:2px solid transparent;position:relative;}
+.nav-item:hover{color:var(--text);background:var(--accent-glow);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-dim);}
+.nav-icon{font-size:13px;width:16px;text-align:center;opacity:0.8;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;padding:1px 6px;border-radius:10px;font-family:'DM Mono',monospace;font-weight:500;}
+
+/* ── MAIN ── */
+.main{flex:1;padding:32px;overflow-y:auto;max-width:1200px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;}
+.page-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;opacity:0.8;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;color:var(--text);line-height:1;}
+.page-sub{font-size:13px;color:var(--muted);margin-top:6px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;letter-spacing:0.3px;}
+.btn-primary{background:var(--accent);color:#fff;border:1px solid rgba(108,99,255,0.5);}
+.btn-primary:hover{background:#7b73ff;box-shadow:0 0 24px rgba(108,99,255,0.3);transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2);}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,0.25);}
+.btn-danger:hover{background:rgba(248,113,113,0.2);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+
+/* ── STAT STRIP ── */
+.stat-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;opacity:0.6;}
+.stat-card.accent::after{background:var(--accent);}
+.stat-card.gold::after{background:var(--gold);}
+.stat-card.green::after{background:var(--green);}
+.stat-card.amber::after{background:var(--amber);}
+.stat-card.red::after{background:var(--red);}
+.stat-card:hover{border-color:var(--border2);}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:4px;line-height:1;}
+.stat-val.c-accent{color:var(--accent);}
+.stat-val.c-gold{color:var(--gold);}
+.stat-val.c-green{color:var(--green);}
+.stat-val.c-amber{color:var(--amber);}
+.stat-val.c-text{color:var(--text);}
+.stat-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+
+/* ── PIPELINE TABS ── */
+.pipeline-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.pipeline-tab{padding:6px 16px;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all 0.15s;}
+.pipeline-tab:hover{color:var(--text);border-color:var(--border2);}
+.pipeline-tab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.pipeline-tab .count{margin-left:6px;background:rgba(232,232,240,0.08);padding:1px 6px;border-radius:10px;font-size:10px;}
+
+/* ── LEADS TABLE ── */
+.leads-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.leads-table-header{display:grid;grid-template-columns:2fr 1.5fr 1.2fr 1fr 1fr 110px;padding:10px 20px;border-bottom:1px solid var(--border);background:rgba(10,10,15,0.5);}
+.th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted2);text-transform:uppercase;}
+.lead-row{display:grid;grid-template-columns:2fr 1.5fr 1.2fr 1fr 1fr 110px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.03);align-items:center;transition:background 0.15s;cursor:pointer;}
+.lead-row:last-child{border:none;}
+.lead-row:hover{background:var(--accent-glow);}
+.lead-name{font-size:14px;font-weight:600;color:var(--text);}
+.lead-email{font-size:11px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace;}
+.lead-brokerage{font-size:13px;color:var(--text);opacity:0.8;}
+.lead-meta{font-size:12px;color:var(--muted);}
+.lead-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
+.lead-actions{display:flex;gap:6px;}
+
+/* ── STATUS BADGES ── */
+.status-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1px;font-weight:500;}
+.badge-new{background:var(--accent-dim);border:1px solid rgba(108,99,255,0.3);color:var(--accent);}
+.badge-contacted{background:var(--amber-dim);border:1px solid rgba(251,191,36,0.25);color:var(--amber);}
+.badge-qualified{background:var(--gold-dim);border:1px solid rgba(240,192,64,0.25);color:var(--gold);}
+.badge-joined{background:var(--green-dim);border:1px solid rgba(52,211,153,0.25);color:var(--green);}
+.badge-lost{background:var(--red-dim);border:1px solid rgba(248,113,113,0.25);color:var(--red);}
+
+/* ── PANEL ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
+.panel-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(10,10,15,0.4);}
+.panel-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;opacity:0.9;}
+.panel-body{padding:0;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text);margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.modal-close{position:absolute;top:20px;right:20px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;line-height:1;}
+.modal-close:hover{color:var(--text);}
+
+/* ── FORM ── */
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:7px;}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color 0.15s;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent);}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--muted2);}
+.form-textarea{resize:vertical;min-height:80px;}
+.form-select option{background:var(--surface2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+
+/* ── ACTIVITY LOG ── */
+.log-entry{display:flex;gap:12px;align-items:flex-start;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.03);}
+.log-entry:last-child{border:none;}
+.log-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);width:130px;flex-shrink:0;padding-top:2px;}
+.log-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.log-dot.green{background:var(--green);}
+.log-dot.accent{background:var(--accent);}
+.log-dot.gold{background:var(--gold);}
+.log-dot.red{background:var(--red);}
+.log-dot.amber{background:var(--amber);}
+.log-text{color:var(--text);flex:1;line-height:1.5;font-size:13px;opacity:0.8;}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:60px 20px;}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.25;}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--muted);margin-bottom:6px;}
+.empty-sub{font-size:13px;color:var(--muted);opacity:0.6;}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;gap:12px;margin-bottom:20px;}
+.search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;}
+.search-input:focus{outline:none;border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--green);border-radius:10px;padding:12px 20px;font-size:12px;color:var(--green);font-family:'DM Mono',monospace;letter-spacing:0.5px;z-index:300;transform:translateY(80px);opacity:0;transition:all 0.3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{border-color:var(--red);color:var(--red);}
+
+/* ── SETTINGS PAGE ── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.setting-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.setting-header{padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(10,10,15,0.4);}
+.setting-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+.setting-body{padding:20px;}
+.setting-desc{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.toggle-row:last-child{border:none;}
+.toggle-label{font-size:13px;font-weight:500;}
+.toggle-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:22px;cursor:pointer;transition:0.2s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.2s;}
+.toggle input:checked + .toggle-slider{background:var(--accent);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(18px);}
+.tag-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.tag{padding:4px 10px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.tag.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.save-row{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
+.status-indicator{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px;}
+.si-dot{width:8px;height:8px;border-radius:50%;}
+.si-dot.green{background:var(--green);}
+.si-dot.red{background:var(--red);}
+.si-dot.amber{background:var(--amber);}
+
+/* ── NOTIFICATION TEST SECTION ── */
+.test-area{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:16px;}
+.test-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .stat-strip{grid-template-columns:repeat(3,1fr);}
+  .settings-grid{grid-template-columns:1fr;}
+  .sidebar{width:52px;}
+  .nav-item span:not(.nav-icon):not(.nav-badge){display:none;}
+  .nav-section{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">TPL<span class="logo-dot">.</span></div>
+    <div class="logo-divider"></div>
+    <div class="topbar-label">Mission Control</div>
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+  </div>
+  <div class="topbar-right">
+    <span>Errors: <span style="color:var(--green)">0</span></span>
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">⬡</span> Dashboard
+    </div>
+    <div class="nav-section">CRM</div>
+    <div class="nav-item" onclick="showPage('leads')" id="nav-leads">
+      <span class="nav-icon">◎</span> Leads
+      <span class="nav-badge" id="new-lead-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-section">System</div>
+    <div class="nav-item" onclick="showPage('activity')" id="nav-activity">
+      <span class="nav-icon">≡</span> Activity Log
+    </div>
+    <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
+      <span class="nav-icon">◈</span> Settings
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">// Command Center · TPL Collective</div>
+          <div class="page-title">Mission Control</div>
+          <div class="page-sub">All systems nominal — <span id="dash-date" style="color:var(--gold)"></span></div>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('leads')">View All Leads →</button>
+      </div>
+
+      <div class="stat-strip">
+        <div class="stat-card accent">
+          <div class="stat-val c-text" id="stat-total">—</div>
+          <div class="stat-label">Total Leads</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="stat-val c-accent" id="stat-new">—</div>
+          <div class="stat-label">New</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-val c-amber" id="stat-contacted">—</div>
+          <div class="stat-label">Contacted</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-val c-gold" id="stat-qualified">—</div>
+          <div class="stat-label">Qualified</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-val c-green" id="stat-joined">—</div>
+          <div class="stat-label">Joined</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="stat-val c-accent" id="stat-today">—</div>
+          <div class="stat-label">Today</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">// Recent Leads</div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('leads')">View All</button>
+        </div>
+        <div class="panel-body" id="recent-leads-body">
+          <div class="empty-state"><div class="empty-icon">◎</div><div class="empty-title">No leads yet</div><div class="empty-sub">Leads from tplcollective.ai will appear here</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">// Sys.Log</div>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)" id="log-timestamp"></span>
+        </div>
+        <div class="panel-body" id="activity-body-dash">
+          <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LEADS PAGE ── -->
+    <div class="page" id="page-leads">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">// CRM · Pipeline</div>
+          <div class="page-title">Leads</div>
+          <div class="page-sub">Agent recruiting pipeline from tplcollective.ai</div>
+        </div>
+        <button class="btn btn-primary" onclick="openAddLead()">+ Add Lead</button>
+      </div>
+
+      <div class="pipeline-tabs">
+        <div class="pipeline-tab active" onclick="filterLeads('all',this)">All <span class="count" id="tab-all">0</span></div>
+        <div class="pipeline-tab" onclick="filterLeads('new',this)">New <span class="count" id="tab-new">0</span></div>
+        <div class="pipeline-tab" onclick="filterLeads('contacted',this)">Contacted <span class="count" id="tab-contacted">0</span></div>
+        <div class="pipeline-tab" onclick="filterLeads('qualified',this)">Qualified <span class="count" id="tab-qualified">0</span></div>
+        <div class="pipeline-tab" onclick="filterLeads('joined',this)">Joined <span class="count" id="tab-joined">0</span></div>
+        <div class="pipeline-tab" onclick="filterLeads('lost',this)">Lost <span class="count" id="tab-lost">0</span></div>
+      </div>
+
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="Search by name, email, or brokerage..." id="lead-search" oninput="searchLeads()"/>
+      </div>
+
+      <div class="leads-table-wrap">
+        <div class="leads-table-header">
+          <div class="th">Agent</div>
+          <div class="th">Brokerage</div>
+          <div class="th">Production</div>
+          <div class="th">Status</div>
+          <div class="th">Date</div>
+          <div class="th">Actions</div>
+        </div>
+        <div id="leads-table-body">
+          <div class="empty-state"><div class="empty-icon">◎</div><div class="empty-title">No leads yet</div><div class="empty-sub">Submit the commission form on tplcollective.ai to see leads here</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ACTIVITY PAGE ── -->
+    <div class="page" id="page-activity">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">// System</div>
+          <div class="page-title">Activity Log</div>
+          <div class="page-sub">All system events and lead activity</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">// Full Log</div></div>
+        <div class="panel-body" id="activity-body-full">
+          <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS PAGE ── -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-eyebrow">// System · Config</div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">Notifications, integrations, and system configuration</div>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+
+        <!-- Email Notifications -->
+        <div class="setting-panel">
+          <div class="setting-header">
+            <div class="setting-title">// Email Notifications</div>
+          </div>
+          <div class="setting-body">
+            <div class="setting-desc">Get notified instantly when a new lead comes in from tplcollective.ai.</div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">New Lead Alerts</div>
+                <div class="toggle-sub">Email on every new lead capture</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="toggle-new-lead" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Daily Digest</div>
+                <div class="toggle-sub">Morning summary of pipeline activity</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="toggle-digest"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Status Changes</div>
+                <div class="toggle-sub">Notify when a lead is manually updated</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="toggle-status"><span class="toggle-slider"></span></label>
+            </div>
+
+            <div style="margin-top:20px;">
+              <div class="form-group">
+                <label class="form-label">Notification Email</label>
+                <input class="form-input" id="notif-email" type="email" placeholder="joe@tplcollective.ai"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Notify On Sources</label>
+                <div class="tag-row" id="source-tags">
+                  <span class="tag active" data-source="all">All Sources</span>
+                  <span class="tag" data-source="Commission Calculator">Calculator</span>
+                  <span class="tag" data-source="Resource Download">Resources</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="test-area">
+              <div class="test-label">Test Notification</div>
+              <button class="btn btn-ghost btn-sm" onclick="sendTestNotification()" id="test-btn">Send Test Email</button>
+              <span id="test-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:12px;"></span>
+            </div>
+
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="saveNotifSettings()">Save Settings</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="setting-panel">
+          <div class="setting-header">
+            <div class="setting-title">// System Status</div>
+          </div>
+          <div class="setting-body">
+            <div class="setting-desc">Live status of all connected services.</div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Lead API</div><div class="toggle-sub">mission.tplcollective.ai/api/leads</div></div>
+              <div class="status-indicator"><div class="si-dot green"></div><span style="color:var(--green);font-size:11px;">Online</span></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Database</div><div class="toggle-sub">SQLite · /data/mission.db</div></div>
+              <div class="status-indicator"><div class="si-dot green"></div><span style="color:var(--green);font-size:11px;">Healthy</span></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Email Service</div><div class="toggle-sub" id="email-service-sub">Not configured</div></div>
+              <div class="status-indicator" id="email-service-status"><div class="si-dot amber"></div><span style="color:var(--amber);font-size:11px;">Pending</span></div>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Frontend</div><div class="toggle-sub">tplcollective.ai · Vercel</div></div>
+              <div class="status-indicator"><div class="si-dot green"></div><span style="color:var(--green);font-size:11px;">Online</span></div>
+            </div>
+
+            <div style="margin-top:20px;">
+              <div class="form-group">
+                <label class="form-label">SMTP Host</label>
+                <input class="form-input" id="smtp-host" placeholder="smtp.gmail.com or smtp.resend.com"/>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">SMTP Port</label>
+                  <input class="form-input" id="smtp-port" placeholder="465"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">From Address</label>
+                  <input class="form-input" id="smtp-from" placeholder="alerts@tplcollective.ai"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">SMTP Username</label>
+                <input class="form-input" id="smtp-user" placeholder="API key or email"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">SMTP Password / API Key</label>
+                <input class="form-input" id="smtp-pass" type="password" placeholder="••••••••••••"/>
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="saveSmtpSettings()">Save SMTP Config</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- LEAD MODAL -->
+<div class="modal-overlay" id="lead-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">Add Lead</div>
+    <div class="modal-sub" id="modal-sub">Manually add an agent to your pipeline</div>
+    <input type="hidden" id="modal-lead-id" value=""/>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="f-name" placeholder="Agent name"/></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" type="email" placeholder="email@domain.com"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="f-phone" placeholder="(555) 000-0000"/></div>
+      <div class="form-group"><label class="form-label">Current Brokerage</label><input class="form-input" id="f-brokerage" placeholder="KW, eXp, RE/MAX..."/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Deals / Year</label><input class="form-input" id="f-deals" placeholder="e.g. 12"/></div>
+      <div class="form-group"><label class="form-label">Avg Sale Price</label><input class="form-input" id="f-price" placeholder="e.g. $450K"/></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-select" id="f-status">
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="qualified">Qualified</option>
+        <option value="joined">Joined</option>
+        <option value="lost">Lost</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="f-notes" placeholder="Call notes, follow-up reminders..."></textarea></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLead()">Save Lead</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let allLeads = [];
+let currentFilter = 'all';
+
+// ── SETTINGS STATE ──
+let notifSettings = {
+  newLead: true,
+  digest: false,
+  statusChange: false,
+  email: '',
+  sources: ['all'],
+  smtp: { host: '', port: '465', from: '', user: '', pass: '' }
+};
+
+// Load saved settings
+try {
+  const saved = JSON.parse(localStorage.getItem('mc_notif_settings') || '{}');
+  notifSettings = { ...notifSettings, ...saved };
+} catch(e) {}
+
+function applySettingsToUI() {
+  document.getElementById('toggle-new-lead').checked = notifSettings.newLead;
+  document.getElementById('toggle-digest').checked = notifSettings.digest;
+  document.getElementById('toggle-status').checked = notifSettings.statusChange;
+  document.getElementById('notif-email').value = notifSettings.email || '';
+  document.getElementById('smtp-host').value = notifSettings.smtp?.host || '';
+  document.getElementById('smtp-port').value = notifSettings.smtp?.port || '465';
+  document.getElementById('smtp-from').value = notifSettings.smtp?.from || '';
+  document.getElementById('smtp-user').value = notifSettings.smtp?.user || '';
+  // don't populate password for security
+
+  // source tags
+  document.querySelectorAll('#source-tags .tag').forEach(tag => {
+    const src = tag.dataset.source;
+    tag.classList.toggle('active', notifSettings.sources.includes(src));
+  });
+
+  updateSmtpStatus();
+}
+
+function updateSmtpStatus() {
+  const configured = notifSettings.smtp?.host && notifSettings.smtp?.user;
+  const sub = document.getElementById('email-service-sub');
+  const status = document.getElementById('email-service-status');
+  if (configured) {
+    sub.textContent = notifSettings.smtp.host;
+    status.innerHTML = '<div class="si-dot green"></div><span style="color:var(--green);font-size:11px;">Configured</span>';
+  } else {
+    sub.textContent = 'Not configured';
+    status.innerHTML = '<div class="si-dot amber"></div><span style="color:var(--amber);font-size:11px;">Pending</span>';
+  }
+}
+
+// Source tag toggle
+document.querySelectorAll('#source-tags .tag').forEach(tag => {
+  tag.addEventListener('click', () => {
+    const src = tag.dataset.source;
+    if (src === 'all') {
+      document.querySelectorAll('#source-tags .tag').forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      notifSettings.sources = ['all'];
+    } else {
+      document.querySelector('#source-tags .tag[data-source="all"]').classList.remove('active');
+      tag.classList.toggle('active');
+      notifSettings.sources = Array.from(document.querySelectorAll('#source-tags .tag.active')).map(t => t.dataset.source);
+      if (!notifSettings.sources.length) {
+        document.querySelector('#source-tags .tag[data-source="all"]').classList.add('active');
+        notifSettings.sources = ['all'];
+      }
+    }
+  });
+});
+
+function saveNotifSettings() {
+  notifSettings.newLead = document.getElementById('toggle-new-lead').checked;
+  notifSettings.digest = document.getElementById('toggle-digest').checked;
+  notifSettings.statusChange = document.getElementById('toggle-status').checked;
+  notifSettings.email = document.getElementById('notif-email').value;
+  localStorage.setItem('mc_notif_settings', JSON.stringify(notifSettings));
+  showToast('✦ Notification settings saved');
+}
+
+function saveSmtpSettings() {
+  notifSettings.smtp = {
+    host: document.getElementById('smtp-host').value,
+    port: document.getElementById('smtp-port').value,
+    from: document.getElementById('smtp-from').value,
+    user: document.getElementById('smtp-user').value,
+    pass: document.getElementById('smtp-pass').value,
+  };
+  localStorage.setItem('mc_notif_settings', JSON.stringify(notifSettings));
+  updateSmtpStatus();
+  showToast('✦ SMTP configuration saved');
+}
+
+async function sendTestNotification() {
+  const btn = document.getElementById('test-btn');
+  const status = document.getElementById('test-status');
+  const email = document.getElementById('notif-email').value;
+  if (!email) { showToast('⚠ Enter a notification email first', true); return; }
+
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  status.textContent = '';
+
+  try {
+    const r = await fetch('/api/notifications/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, smtp: notifSettings.smtp })
+    });
+    const data = await r.json();
+    if (data.success) {
+      status.style.color = 'var(--green)';
+      status.textContent = '✓ Test email sent';
+      showToast('✦ Test email sent to ' + email);
+    } else {
+      status.style.color = 'var(--red)';
+      status.textContent = '✗ ' + (data.error || 'Failed');
+    }
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = '✗ Could not reach server';
+  }
+
+  btn.textContent = 'Send Test Email';
+  btn.disabled = false;
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  document.getElementById('clock').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} ${ampm}`;
+  document.getElementById('log-timestamp').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+// ── NAV ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  if (name === 'leads') loadLeads();
+  if (name === 'activity') loadActivity('full');
+  if (name === 'settings') applySettingsToUI();
+}
+
+// ── TOAST ──
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── BADGE HTML ──
+function badgeHTML(status) {
+  const map = { new:'badge-new', contacted:'badge-contacted', qualified:'badge-qualified', joined:'badge-joined', lost:'badge-lost' };
+  return `<span class="status-badge ${map[status]||'badge-new'}">${status.toUpperCase()}</span>`;
+}
+
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
+}
+
+// ── STATS ──
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const s = await r.json();
+    document.getElementById('stat-total').textContent = s.total;
+    document.getElementById('stat-new').textContent = s.new;
+    document.getElementById('stat-contacted').textContent = s.contacted;
+    document.getElementById('stat-qualified').textContent = s.qualified;
+    document.getElementById('stat-joined').textContent = s.joined;
+    document.getElementById('stat-today').textContent = s.today;
+    const badge = document.getElementById('new-lead-badge');
+    badge.textContent = s.new;
+    badge.style.display = s.new > 0 ? 'inline' : 'none';
+    document.getElementById('tab-all').textContent = s.total;
+    document.getElementById('tab-new').textContent = s.new;
+    document.getElementById('tab-contacted').textContent = s.contacted;
+    document.getElementById('tab-qualified').textContent = s.qualified;
+    document.getElementById('tab-joined').textContent = s.joined;
+  } catch(e) {}
+}
+
+// ── LEADS ──
+async function loadLeads() {
+  try {
+    const r = await fetch('/api/leads');
+    allLeads = await r.json();
+    renderLeads(allLeads);
+    renderRecentLeads(allLeads.slice(0,5));
+    loadStats();
+  } catch(e) {
+    document.getElementById('leads-table-body').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-title">Could not load leads</div></div>';
+  }
+}
+
+function renderLeads(leads) {
+  const body = document.getElementById('leads-table-body');
+  if (!leads.length) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">◎</div><div class="empty-title">No leads in this stage</div><div class="empty-sub">Leads from tplcollective.ai appear here automatically</div></div>';
+    return;
+  }
+  body.innerHTML = leads.map(l => `
+    <div class="lead-row" onclick="editLead(${l.id})">
+      <div><div class="lead-name">${l.name}</div><div class="lead-email">${l.email}${l.phone?' · '+l.phone:''}</div></div>
+      <div class="lead-brokerage">${l.brokerage||'—'}</div>
+      <div class="lead-meta">${l.deals_per_year||'—'} deals · ${l.avg_price||'—'}</div>
+      <div>${badgeHTML(l.status)}</div>
+      <div class="lead-date">${fmtDate(l.created_at)}</div>
+      <div class="lead-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-sm" title="Advance status" onclick="quickStatus(${l.id},'${l.status}')">→</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLead(${l.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderRecentLeads(leads) {
+  const body = document.getElementById('recent-leads-body');
+  if (!leads.length) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">◎</div><div class="empty-title">No leads yet</div><div class="empty-sub">Leads from tplcollective.ai will appear here</div></div>';
+    return;
+  }
+  body.innerHTML = leads.map(l => `
+    <div class="lead-row" style="grid-template-columns:2fr 1.5fr 1fr 1fr;" onclick="showPage('leads')">
+      <div><div class="lead-name">${l.name}</div><div class="lead-email">${l.email}</div></div>
+      <div class="lead-brokerage">${l.brokerage||'—'}</div>
+      <div>${badgeHTML(l.status)}</div>
+      <div class="lead-date">${fmtDate(l.created_at)}</div>
+    </div>
+  `).join('');
+}
+
+function filterLeads(status, el) {
+  document.querySelectorAll('.pipeline-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = status;
+  const filtered = status === 'all' ? allLeads : allLeads.filter(l => l.status === status);
+  renderLeads(filtered);
+}
+
+function searchLeads() {
+  const q = document.getElementById('lead-search').value.toLowerCase();
+  const filtered = allLeads.filter(l =>
+    (l.name||'').toLowerCase().includes(q) ||
+    (l.email||'').toLowerCase().includes(q) ||
+    (l.brokerage||'').toLowerCase().includes(q)
+  );
+  renderLeads(filtered);
+}
+
+const statusOrder = ['new','contacted','qualified','joined'];
+async function quickStatus(id, current) {
+  const next = statusOrder[statusOrder.indexOf(current)+1] || current;
+  if (next === current) return;
+  await fetch(`/api/leads/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:next})});
+  showToast(`✦ Moved to ${next.toUpperCase()}`);
+  loadLeads();
+}
+
+async function deleteLead(id) {
+  if (!confirm('Remove this lead?')) return;
+  await fetch(`/api/leads/${id}`,{method:'DELETE'});
+  showToast('Lead removed');
+  loadLeads();
+}
+
+// ── MODAL ──
+function openAddLead() {
+  document.getElementById('modal-title').textContent = 'Add Lead';
+  document.getElementById('modal-sub').textContent = 'Manually add an agent to your pipeline';
+  document.getElementById('modal-lead-id').value = '';
+  ['f-name','f-email','f-phone','f-brokerage','f-deals','f-price','f-notes'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('f-status').value = 'new';
+  document.getElementById('lead-modal').classList.add('open');
+}
+
+function editLead(id) {
+  const l = allLeads.find(x => x.id === id);
+  if (!l) return;
+  document.getElementById('modal-title').textContent = l.name;
+  document.getElementById('modal-sub').textContent = 'Edit lead details and status';
+  document.getElementById('modal-lead-id').value = l.id;
+  document.getElementById('f-name').value = l.name||'';
+  document.getElementById('f-email').value = l.email||'';
+  document.getElementById('f-phone').value = l.phone||'';
+  document.getElementById('f-brokerage').value = l.brokerage||'';
+  document.getElementById('f-deals').value = l.deals_per_year||'';
+  document.getElementById('f-price').value = l.avg_price||'';
+  document.getElementById('f-status').value = l.status||'new';
+  document.getElementById('f-notes').value = l.notes||'';
+  document.getElementById('lead-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('lead-modal').classList.remove('open'); }
+
+async function saveLead() {
+  const id = document.getElementById('modal-lead-id').value;
+  const data = {
+    name: document.getElementById('f-name').value,
+    email: document.getElementById('f-email').value,
+    phone: document.getElementById('f-phone').value,
+    brokerage: document.getElementById('f-brokerage').value,
+    deals_per_year: document.getElementById('f-deals').value,
+    avg_price: document.getElementById('f-price').value,
+  };
+  const status = document.getElementById('f-status').value;
+  const notes = document.getElementById('f-notes').value;
+  if (!data.name || !data.email) { showToast('⚠ Name and email required', true); return; }
+  if (id) {
+    await fetch(`/api/leads/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,notes})});
+    showToast('✦ Lead updated');
+  } else {
+    const r = await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const created = await r.json();
+    if (created.id) await fetch(`/api/leads/${created.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,notes})});
+    showToast('✦ Lead added');
+  }
+  closeModal();
+  loadLeads();
+}
+
+// ── ACTIVITY ──
+async function loadActivity(target) {
+  try {
+    const r = await fetch('/api/activity?limit=40');
+    const logs = await r.json();
+    const bodyId = target === 'full' ? 'activity-body-full' : 'activity-body-dash';
+    const body = document.getElementById(bodyId);
+    if (!logs.length) {
+      body.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No activity yet</div>';
+      return;
+    }
+    const colorMap = { lead:'green', error:'red', system:'accent', info:'gold', smtp:'amber' };
+    body.innerHTML = logs.map(l => `
+      <div class="log-entry">
+        <div class="log-time">${l.created_at.replace('T',' ').slice(0,19)}</div>
+        <div class="log-dot ${colorMap[l.type]||'accent'}"></div>
+        <div class="log-text">${l.message}</div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ── INIT ──
+loadStats();
+loadLeads();
+loadActivity('dash');
+applySettingsToUI();
+setInterval(() => { loadStats(); loadActivity('dash'); }, 30000);
+</script>
+</body>
+</html>
