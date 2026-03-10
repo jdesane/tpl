@@ -402,6 +402,12 @@ let _pendingDownload = { url: '', name: '' };
 
 function openGate(resourceName, downloadUrl) {
   _pendingDownload = { url: downloadUrl, name: resourceName };
+  const savedName  = sessionStorage.getItem('tpl_gate_name');
+  const savedEmail = sessionStorage.getItem('tpl_gate_email');
+  if (savedName && savedEmail) {
+    triggerDownload(savedName, savedEmail);
+    return;
+  }
   document.getElementById('modalTitle').textContent = 'Get Instant Access';
   document.getElementById('modalResourceName').textContent = '📋 ' + resourceName;
   document.getElementById('modalForm').style.display = '';
@@ -411,6 +417,25 @@ function openGate(resourceName, downloadUrl) {
   document.getElementById('gateEmail').value = '';
   document.getElementById('gateModal').classList.add('open');
   setTimeout(() => document.getElementById('gateFirst').focus(), 100);
+}
+
+async function triggerDownload(first, email) {
+  try {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: first, email: email, phone: '', brokerage: 'Resource Download', notes: 'Downloaded: ' + _pendingDownload.name })
+    });
+  } catch (e) { console.warn('Lead capture failed:', e); }
+  document.getElementById('modalTitle').textContent = 'Your Download Is Ready';
+  document.getElementById('modalResourceName').textContent = '📋 ' + _pendingDownload.name;
+  document.getElementById('modalForm').style.display = 'none';
+  document.getElementById('successMsg').textContent = 'Here you go, ' + first + '! Your copy of "' + _pendingDownload.name + '" is downloading now.';
+  document.getElementById('downloadLink').href = 'https://www.tplcollective.ai' + _pendingDownload.url;
+  document.getElementById('downloadLink').setAttribute('download', _pendingDownload.name + '.pdf');
+  document.getElementById('modalSuccess').style.display = 'block';
+  document.getElementById('gateModal').classList.add('open');
+  setTimeout(() => document.getElementById('downloadLink').click(), 200);
 }
 
 function closeModal() {
@@ -463,7 +488,8 @@ async function submitGate() {
   document.getElementById('downloadLink').setAttribute('download', _pendingDownload.name + '.pdf');
   document.getElementById('modalSuccess').style.display = 'block';
 
-  // auto-trigger download
+  sessionStorage.setItem('tpl_gate_name', first);
+  sessionStorage.setItem('tpl_gate_email', email);
   setTimeout(() => document.getElementById('downloadLink').click(), 400);
 }
 </script>
