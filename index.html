@@ -387,10 +387,17 @@ nav {
 /* ── WHO JOINED ── */
 .joined-section { background: var(--surface); padding: 96px 5%; }
 .joined-scroll {
-  display: flex; gap: 16px; margin-top: 44px;
-  overflow-x: auto; padding-bottom: 12px;
-  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 16px;
+  padding: 8px 4px 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
 }
+.joined-scroll::-webkit-scrollbar { display: none; }
 .joined-scroll::-webkit-scrollbar { height: 3px; }
 .joined-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .joined-card {
