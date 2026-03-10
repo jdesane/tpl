@@ -1235,6 +1235,27 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   });
 });
+
+// Auto-scroll the joined carousel
+(function() {
+  const track = document.querySelector('.joined-scroll');
+  if (!track) return;
+  let paused = false;
+  track.addEventListener('mouseenter', () => paused = true);
+  track.addEventListener('mouseleave', () => paused = false);
+  track.addEventListener('touchstart', () => paused = true, { passive: true });
+  track.addEventListener('touchend', () => setTimeout(() => paused = false, 2000), { passive: true });
+  function tick() {
+    if (!paused) {
+      track.scrollLeft += 0.6;
+      if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 10) {
+        track.scrollLeft = 0;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 </script>
 </body>
 </html>
