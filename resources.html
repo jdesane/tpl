@@ -429,10 +429,10 @@ function openGate(resourceName, downloadUrl) {
 
 async function triggerDownload(first, email) {
   try {
-    await fetch('https://mission.tplcollective.ai/api/leads', {
+    await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: first, email: email, phone: '', brokerage: 'Resource Download', notes: 'Downloaded: ' + _pendingDownload.name })
+      body: JSON.stringify({ name: first, email: email, phone: '', source: 'resource_download', notes: 'Downloaded: ' + _pendingDownload.name })
     });
   } catch (e) { console.warn('Lead capture failed:', e); }
   document.getElementById('modalTitle').textContent = 'Your Download Is Ready';
@@ -472,7 +472,7 @@ async function submitGate() {
   btn.textContent = 'Submitting…';
 
   try {
-    await fetch('https://mission.tplcollective.ai/leads', {
+    await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { name, email, brokerage, phone, deals_per_year, avg_price, source } = req.body;
+  const { name, email, brokerage, phone, deals_per_year, avg_price, source, notes } = req.body;
 
   // Save lead to VPS
   try {
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${auth}`
       },
-      body: JSON.stringify({ name, email, brokerage, phone, deals_per_year, avg_price, source: source || 'Web' })
+      body: JSON.stringify({ name, email, brokerage, phone, deals_per_year, avg_price, source: source || 'Web', notes })
     });
   } catch(e) {
     console.error('Failed to save lead to VPS:', e);
@@ -47,6 +47,7 @@ export default async function handler(req, res) {
                 <tr><td style="padding:8px 0;color:#888;">Deals/Year</td><td style="padding:8px 0;">${deals_per_year || '—'}</td></tr>
                 <tr><td style="padding:8px 0;color:#888;">Avg Price</td><td style="padding:8px 0;">${avg_price || '—'}</td></tr>
                 <tr><td style="padding:8px 0;color:#888;">Source</td><td style="padding:8px 0;">${source || 'Web'}</td></tr>
+                ${notes ? `<tr><td style="padding:8px 0;color:#888;">Notes</td><td style="padding:8px 0;">${notes}</td></tr>` : ''}
               </table>
               <a href="https://mission.tplcollective.ai" style="display:inline-block;margin-top:24px;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:6px;">View in Mission Control</a>
             </div>

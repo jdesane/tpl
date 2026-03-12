@@ -162,6 +162,27 @@
 
     .disclaimer { text-align:center; font-size:0.74rem; color:var(--dim); margin-top:2rem; line-height:1.7; }
 
+    /* GATE MODAL */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:200; align-items:center; justify-content:center; padding:1rem; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:2.5rem; max-width:440px; width:100%; position:relative; animation:modalIn 0.25s ease; }
+    @keyframes modalIn { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+    .modal-close { position:absolute; top:1.1rem; right:1.2rem; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.2rem; line-height:1; padding:0.2rem 0.4rem; border-radius:4px; transition:color 0.2s; }
+    .modal-close:hover { color:var(--text); }
+    .modal-eyebrow { font-family:'DM Mono',monospace; font-size:0.65rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:0.5rem; }
+    .modal-title { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:0.04em; margin-bottom:0.4rem; line-height:1.1; }
+    .modal-sub { color:var(--muted); font-size:0.86rem; margin-bottom:1.6rem; line-height:1.55; }
+    .modal-field { margin-bottom:1rem; }
+    .modal-field label { display:block; font-family:'DM Mono',monospace; font-size:0.68rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:0.4rem; }
+    .modal-field input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.95rem; font-family:'DM Sans',sans-serif; padding:0.75rem 1rem; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+    .modal-field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,99,255,0.15); }
+    .modal-field input::placeholder { color:var(--dim); }
+    .modal-submit { width:100%; background:var(--accent); color:#fff; font-weight:700; font-size:1rem; font-family:'DM Sans',sans-serif; padding:0.85rem; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s; margin-top:0.3rem; }
+    .modal-submit:hover { background:var(--accent-light); transform:translateY(-1px); box-shadow:0 8px 28px rgba(108,99,255,0.35); }
+    .modal-submit:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+    .modal-privacy { font-size:0.72rem; color:var(--dim); text-align:center; margin-top:0.8rem; }
+    .modal-error { font-size:0.8rem; color:var(--red); margin-top:0.5rem; display:none; }
+
     /* MOBILE */
     @media(max-width:700px) {
       .fields-grid { grid-template-columns:1fr 1fr; }
@@ -378,6 +399,27 @@
 
 </section>
 
+<!-- GATE MODAL -->
+<div class="modal-overlay" id="gateModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('gateModal').classList.remove('open')">&#10005;</button>
+    <div class="modal-eyebrow">🧮 Your Results Are Ready</div>
+    <div class="modal-title">See Your Numbers</div>
+    <div class="modal-sub">Enter your name and email to unlock your personalized commission comparison. No spam — ever.</div>
+    <div class="modal-field">
+      <label>First Name</label>
+      <input type="text" id="gateFirst" placeholder="Your first name" autocomplete="given-name" />
+    </div>
+    <div class="modal-field">
+      <label>Email Address</label>
+      <input type="email" id="gateEmail" placeholder="you@email.com" autocomplete="email" />
+    </div>
+    <div class="modal-error" id="gateError">Please fill in all fields with a valid email.</div>
+    <button class="modal-submit" id="gateSubmit" onclick="submitCalcGate()">Show My Results →</button>
+    <div class="modal-privacy">No spam. No brokerage pressure. Unsubscribe anytime.</div>
+  </div>
+</div>
+
 <script>
 // ── BROKERAGE DATABASE ──
 // split=agent%, cap=max brokerage collects/yr, desk=$/mo, txfee=$/deal, royalty=%, royaltycap=max royalty $
@@ -446,6 +488,30 @@ function calculate() {
   const deals     = parseFloat(document.getElementById('annualDeals').value) || 0;
   const commRate  = parseFloat(document.getElementById('commRate').value) / 100;
   if (!avgPrice || !deals || !commRate) { alert('Please fill in all production fields.'); return; }
+
+  // Check if already gated this session
+  const savedName  = sessionStorage.getItem('tpl_gate_name');
+  const savedEmail = sessionStorage.getItem('tpl_gate_email');
+  if (!savedName || !savedEmail) {
+    document.getElementById('gateError').style.display = 'none';
+    document.getElementById('gateFirst').value = '';
+    document.getElementById('gateEmail').value = '';
+    document.getElementById('gateSubmit').disabled = false;
+    document.getElementById('gateSubmit').textContent = 'Show My Results →';
+    document.getElementById('gateModal').classList.add('open');
+    setTimeout(() => document.getElementById('gateFirst').focus(), 100);
+    return;
+  }
+  // If already gated, fire lead capture in background and show results
+  captureCalcLead(savedName, savedEmail);
+  runCalculation();
+}
+
+function runCalculation() {
+  const val = document.getElementById('brokerageSelect').value;
+  const avgPrice  = parseNum(document.getElementById('avgPrice').value);
+  const deals     = parseFloat(document.getElementById('annualDeals').value) || 0;
+  const commRate  = parseFloat(document.getElementById('commRate').value) / 100;
 
   const agentPct    = parseFloat(document.getElementById('f-split').value) / 100;
   const brokCap     = parseFloat(document.getElementById('f-cap').value)  || 0;
@@ -563,6 +629,56 @@ function calculate() {
   document.getElementById('step3').classList.add('active');
   setTimeout(() => rp.scrollIntoView({ behavior:'smooth', block:'start' }), 200);
 }
+
+// ── GATE ──
+async function submitCalcGate() {
+  const first = document.getElementById('gateFirst').value.trim();
+  const email = document.getElementById('gateEmail').value.trim();
+  const errEl = document.getElementById('gateError');
+
+  if (!first || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('gateSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+
+  sessionStorage.setItem('tpl_gate_name', first);
+  sessionStorage.setItem('tpl_gate_email', email);
+
+  await captureCalcLead(first, email);
+  document.getElementById('gateModal').classList.remove('open');
+  runCalculation();
+}
+
+async function captureCalcLead(first, email) {
+  const val = document.getElementById('brokerageSelect').value;
+  const brokerage = val ? DB[val].name : 'Unknown';
+  const deals = document.getElementById('annualDeals').value;
+  const avgPrice = document.getElementById('avgPrice').value;
+  try {
+    await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: first,
+        email: email,
+        phone: '',
+        brokerage: brokerage,
+        deals_per_year: deals,
+        avg_price: avgPrice,
+        source: 'commission_calculator'
+      })
+    });
+  } catch (e) {
+    console.warn('Lead capture failed:', e);
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('gateModal').classList.remove('open'); });
 
 // ── HELPERS ──
 function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
