@@ -1223,7 +1223,7 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // Form submit
-function submitForm() {
+async function submitForm() {
   const name = document.getElementById('f-name').value.trim();
   const email = document.getElementById('f-email').value.trim();
   const brokerage = document.getElementById('f-brokerage').value;
@@ -1231,9 +1231,15 @@ function submitForm() {
     alert('Please fill in your name, email, and current brokerage to continue.');
     return;
   }
+  try {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, brokerage, source: 'Web' })
+    });
+  } catch(e) { console.error('Lead capture failed:', e); }
   document.getElementById('lead-form-content').style.display = 'none';
   document.getElementById('form-success').style.display = 'block';
-  console.log('Lead captured:', { name, email, brokerage });
 }
 
 // Smooth scroll

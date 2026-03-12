@@ -86,37 +86,36 @@ def save_settings(data: dict):
 # ── EMAIL HELPER ──
 
 def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
-    """Send email via Resend API."""
-    import urllib.request
+    """Send email via SMTP. Returns (success, error_message)."""
     try:
-        api_key = smtp_config.get("pass", "")
-        if not api_key:
-            return False, "Resend API key not configured"
+        host = smtp_config.get("host", "")
+        port = int(smtp_config.get("port", 465))
+        user = smtp_config.get("user", "")
+        password = smtp_config.get("pass", "")
+        from_addr = smtp_config.get("from", user)
 
-        payload = json.dumps({
-            "from": "TPL Mission Control <notifications@tplcollective.ai>",
-            "to": [to_email],
-            "subject": subject,
-            "html": html_body
-        }).encode("utf-8")
+        if not all([host, user, password]):
+            return False, "SMTP not fully configured"
 
-        req = urllib.request.Request(
-            "https://api.resend.com/emails",
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            method="POST"
-        )
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = from_addr
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html"))
 
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read().decode())
-            return True, ""
+        context = ssl.create_default_context()
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, context=context) as server:
+                server.login(user, password)
+                server.sendmail(from_addr, to_email, msg.as_string())
+        else:
+            with smtplib.SMTP(host, port) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.login(user, password)
+                server.sendmail(from_addr, to_email, msg.as_string())
 
-    except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        return False, f"Resend API error {e.code}: {body}"
+        return True, ""
     except Exception as e:
         return False, str(e)
 
@@ -333,17 +332,13 @@ def get_stats():
     try:
         total = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
         new = conn.execute("SELECT COUNT(*) FROM leads WHERE status='new'").fetchone()[0]
-        researched = conn.execute("SELECT COUNT(*) FROM leads WHERE status='researched'").fetchone()[0]
-        outreach = conn.execute("SELECT COUNT(*) FROM leads WHERE status='outreach'").fetchone()[0]
-        meeting = conn.execute("SELECT COUNT(*) FROM leads WHERE status='meeting'").fetchone()[0]
-        talking = conn.execute("SELECT COUNT(*) FROM leads WHERE status='talking'").fetchone()[0]
+        contacted = conn.execute("SELECT COUNT(*) FROM leads WHERE status='contacted'").fetchone()[0]
+        qualified = conn.execute("SELECT COUNT(*) FROM leads WHERE status='qualified'").fetchone()[0]
         joined = conn.execute("SELECT COUNT(*) FROM leads WHERE status='joined'").fetchone()[0]
-        lost = conn.execute("SELECT COUNT(*) FROM leads WHERE status='lost'").fetchone()[0]
         today = conn.execute("SELECT COUNT(*) FROM leads WHERE DATE(created_at)=DATE('now')").fetchone()[0]
         return {
-            "total": total, "new": new, "researched": researched,
-            "outreach": outreach, "meeting": meeting, "talking": talking,
-            "joined": joined, "lost": lost, "today": today
+            "total": total, "new": new, "contacted": contacted,
+            "qualified": qualified, "joined": joined, "today": today
         }
     finally:
         conn.close()
@@ -398,8 +393,8 @@ async def test_notification(req: TestNotifRequest):
     settings = load_settings()
     smtp = req.smtp if req.smtp else settings.get("smtp", {})
 
-    if not smtp.get("pass"):
-        return {"success": False, "error": "Resend API key not configured. Add it in Settings first."}
+    if not smtp.get("host"):
+        return {"success": False, "error": "SMTP not configured. Add your SMTP settings first."}
 
     html = build_lead_email({
         "name": "Test Agent",

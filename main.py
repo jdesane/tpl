@@ -7,10 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 import json
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import urllib.request
 from datetime import datetime
 
 app = FastAPI(title="TPL Mission Control")
@@ -86,8 +83,7 @@ def save_settings(data: dict):
 # ── EMAIL HELPER ──
 
 def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
-    """Send email via Resend API."""
-    import urllib.request
+    """Send email via Resend API. smtp_config.pass is the Resend API key."""
     try:
         api_key = smtp_config.get("pass", "")
         if not api_key:
@@ -333,17 +329,13 @@ def get_stats():
     try:
         total = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
         new = conn.execute("SELECT COUNT(*) FROM leads WHERE status='new'").fetchone()[0]
-        researched = conn.execute("SELECT COUNT(*) FROM leads WHERE status='researched'").fetchone()[0]
-        outreach = conn.execute("SELECT COUNT(*) FROM leads WHERE status='outreach'").fetchone()[0]
-        meeting = conn.execute("SELECT COUNT(*) FROM leads WHERE status='meeting'").fetchone()[0]
-        talking = conn.execute("SELECT COUNT(*) FROM leads WHERE status='talking'").fetchone()[0]
+        contacted = conn.execute("SELECT COUNT(*) FROM leads WHERE status='contacted'").fetchone()[0]
+        qualified = conn.execute("SELECT COUNT(*) FROM leads WHERE status='qualified'").fetchone()[0]
         joined = conn.execute("SELECT COUNT(*) FROM leads WHERE status='joined'").fetchone()[0]
-        lost = conn.execute("SELECT COUNT(*) FROM leads WHERE status='lost'").fetchone()[0]
         today = conn.execute("SELECT COUNT(*) FROM leads WHERE DATE(created_at)=DATE('now')").fetchone()[0]
         return {
-            "total": total, "new": new, "researched": researched,
-            "outreach": outreach, "meeting": meeting, "talking": talking,
-            "joined": joined, "lost": lost, "today": today
+            "total": total, "new": new, "contacted": contacted,
+            "qualified": qualified, "joined": joined, "today": today
         }
     finally:
         conn.close()
