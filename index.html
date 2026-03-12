@@ -1232,7 +1232,7 @@ async function submitForm() {
     return;
   }
   try {
-    await fetch('https://mission.tplcollective.ai/api/leads', {
+    await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, brokerage, source: 'Web' })
