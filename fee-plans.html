@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fee Plans | Your Business, Your Way — TPL Collective</title>
+<meta name="description" content="LPT Realty's Agent Choice pillar lets you pick the comp plan, CRM, e-sign, and add-ons that fit your business. 100% commission or 80/20 split — you decide."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 60vh;
+  background: var(--bg);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 140px 5% 80px;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 900px; margin: 0 auto; width: 100%;
+  text-align: center; position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before, .hero-eyebrow::after { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 7vw, 86px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 24px;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); font-weight: 300;
+  max-width: 600px; margin: 0 auto;
+}
+
+/* ── SECTION BASE ── */
+.section { padding: 96px 5%; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 16px;
+}
+.section-subtitle {
+  font-size: 16px; color: var(--muted); font-weight: 300;
+  line-height: 1.7; max-width: 640px; margin-bottom: 48px;
+}
+
+/* ── PLAN CARDS ── */
+.plan-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.plan-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 40px 36px;
+  position: relative;
+  transition: border-color 0.3s;
+}
+.plan-card:hover { border-color: var(--accent-br); }
+.plan-card.featured {
+  border-color: var(--accent-br);
+  box-shadow: 0 0 60px rgba(108,99,255,0.08);
+}
+.plan-badge {
+  position: absolute; top: -12px; left: 36px;
+  background: var(--accent); color: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 5px 14px; border-radius: 4px;
+}
+.plan-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px; color: var(--white); letter-spacing: 0.02em;
+  margin-bottom: 8px; line-height: 1;
+}
+.plan-highlight {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; color: var(--accent-hi);
+  letter-spacing: 0.06em; margin-bottom: 28px;
+}
+.plan-details { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.plan-details li {
+  font-size: 14px; color: var(--text); line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.plan-details li::before {
+  content: ''; display: block; flex-shrink: 0;
+  width: 6px; height: 6px; margin-top: 7px;
+  border-radius: 50%; background: var(--accent);
+}
+.plan-details .detail-label {
+  color: var(--muted); font-size: 12px; display: block;
+  font-family: 'DM Mono', monospace; letter-spacing: 0.05em;
+}
+.plan-details .detail-value {
+  color: var(--white); font-weight: 500;
+}
+
+/* ── CHOICE CARDS (CRM / E-SIGN) ── */
+.choice-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.choice-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 28px;
+  transition: border-color 0.3s;
+}
+.choice-card:hover { border-color: var(--accent-br); }
+.choice-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 4px; margin-bottom: 16px;
+}
+.choice-tag.free { background: rgba(52,211,153,0.12); color: var(--green); }
+.choice-tag.upgrade { background: var(--gold-bg); color: var(--gold); }
+.choice-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; color: var(--white); letter-spacing: 0.02em;
+  margin-bottom: 6px; line-height: 1;
+}
+.choice-desc {
+  font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 16px;
+}
+.choice-price {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; color: var(--accent-hi); letter-spacing: 0.04em;
+}
+
+/* ── PLUS ADD-ON ── */
+.plus-card {
+  background: var(--surface);
+  border: 1px solid var(--gold-br);
+  border-radius: 14px;
+  padding: 48px 44px;
+  position: relative;
+  box-shadow: 0 0 80px rgba(240,192,64,0.04);
+}
+.plus-header {
+  display: flex; align-items: baseline; gap: 16px;
+  margin-bottom: 8px; flex-wrap: wrap;
+}
+.plus-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38px; color: var(--gold); letter-spacing: 0.02em; line-height: 1;
+}
+.plus-pricing {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; color: var(--muted); letter-spacing: 0.04em;
+}
+.plus-pricing strong { color: var(--gold); font-weight: 500; }
+.plus-subtitle {
+  font-size: 15px; color: var(--muted); font-weight: 300;
+  line-height: 1.6; margin-bottom: 36px; max-width: 600px;
+}
+.plus-benefits {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px 32px;
+  list-style: none;
+}
+.plus-benefits li {
+  font-size: 14px; color: var(--text); line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.plus-benefits li::before {
+  content: ''; display: block; flex-shrink: 0;
+  width: 6px; height: 6px; margin-top: 7px;
+  border-radius: 50%; background: var(--gold);
+}
+
+/* ── CTA ── */
+.cta-section {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 96px 5%; text-align: center;
+}
+.cta-inner { max-width: 720px; margin: 0 auto; }
+.cta-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 56px);
+  color: var(--white); line-height: 1; margin-bottom: 16px;
+}
+.cta-sub {
+  font-size: 16px; color: var(--muted); font-weight: 300;
+  line-height: 1.7; margin-bottom: 48px;
+}
+.btn-primary {
+  background: var(--accent); color: var(--white);
+  padding: 15px 34px; border-radius: 6px;
+  font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,99,255,0.4); }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 40px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ── ANIMATIONS ── */
+.fade-up { opacity: 0; transform: translateY(28px); animation: fadeUp 0.8s ease forwards; }
+.fade-up.d1 { animation-delay: 0.1s; }
+.fade-up.d2 { animation-delay: 0.25s; }
+.fade-up.d3 { animation-delay: 0.4s; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── HAMBURGER / MOBILE ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; letter-spacing: 0.05em !important;
+  text-transform: uppercase; border: none;
+}
+
+/* ── TABLET ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 100px 5% 60px; }
+  .plan-grid { grid-template-columns: 1fr; }
+  .choice-grid { grid-template-columns: 1fr; }
+  .plus-benefits { grid-template-columns: 1fr; }
+  .section { padding: 64px 5%; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE ── */
+@media (max-width: 480px) {
+  .hero { padding: 88px 4% 52px; }
+  .hero h1 { font-size: clamp(40px, 12vw, 56px); }
+  .hero-sub { font-size: 15px; }
+  .section { padding: 52px 4%; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .plan-card { padding: 32px 24px; }
+  .plus-card { padding: 32px 24px; }
+  .btn-primary { padding: 14px 24px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained.html">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans.html">Fee Plans</a>
+    <a href="/resources.html">Free Resources</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained.html">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans.html">Fee Plans</a>
+  <a href="/resources.html">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow fade-up">Agent Choice</div>
+    <h1 class="fade-up d1">Your Business,<br/><em>Your Way</em></h1>
+    <p class="hero-sub fade-up d2">LPT Realty's Agent Choice pillar puts you in control. Pick the comp plan, CRM, e-sign platform, and add-ons that fit the way you work.</p>
+  </div>
+</section>
+
+<!-- SECTION 1: COMP PLANS -->
+<section class="section" id="comp-plans">
+  <div class="section-inner">
+    <div class="section-label reveal">01 — Compensation</div>
+    <h2 class="section-title reveal">Choose Your Comp Plan</h2>
+    <p class="section-subtitle reveal">Two paths, both built for agents who want to keep more of what they earn.</p>
+
+    <div class="plan-grid">
+      <!-- Business Builder -->
+      <div class="plan-card reveal">
+        <div class="plan-name">Business Builder</div>
+        <div class="plan-highlight">100% GCI — Keep Everything</div>
+        <ul class="plan-details">
+          <li>
+            <div><span class="detail-label">Per-Transaction Fee</span><span class="detail-value">$500 / deal, capped at $5,000 / year</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Transaction Fee</span><span class="detail-value">$195 per transaction</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Annual Fee</span><span class="detail-value">$500 / year</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">HybridShare</span><span class="detail-value">Locked — revenue share not available</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Brokerage Partner -->
+      <div class="plan-card featured reveal">
+        <div class="plan-badge">Most Popular</div>
+        <div class="plan-name">Brokerage Partner</div>
+        <div class="plan-highlight">80/20 Split — Revenue Share Unlocked</div>
+        <ul class="plan-details">
+          <li>
+            <div><span class="detail-label">Commission Split</span><span class="detail-value">80/20 with $15,000 annual cap</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Transaction Fee</span><span class="detail-value">$195 per transaction</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Annual Fee</span><span class="detail-value">$500 / year</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">HybridShare</span><span class="detail-value">Unlocked — 7-tier revenue share structure</span></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: CRM -->
+<section class="section" style="background: var(--surface);" id="crm">
+  <div class="section-inner">
+    <div class="section-label reveal">02 — CRM</div>
+    <h2 class="section-title reveal">Choose Your CRM</h2>
+    <p class="section-subtitle reveal">Every agent gets a CRM at no extra cost. Want something different? Swap in your preferred platform.</p>
+
+    <div class="choice-grid">
+      <div class="choice-card reveal">
+        <span class="choice-tag free">Included Free</span>
+        <div class="choice-name">Lofty</div>
+        <p class="choice-desc">Full-featured CRM with IDX website, AI assistant, smart plans, and built-in marketing tools. Included with every LPT Realty agent account.</p>
+        <div class="choice-price">$0 — always included</div>
+      </div>
+      <div class="choice-card reveal">
+        <span class="choice-tag upgrade">Optional Upgrade</span>
+        <div class="choice-name">KV Core / Follow Up Boss / BoldTrail</div>
+        <p class="choice-desc">Prefer a different platform? Activate your CRM of choice. One-time setup, predictable monthly cost.</p>
+        <div class="choice-price">$99 one-time activation + $49/mo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: E-SIGN -->
+<section class="section" id="esign">
+  <div class="section-inner">
+    <div class="section-label reveal">03 — E-Sign</div>
+    <h2 class="section-title reveal">Choose Your E-Sign</h2>
+    <p class="section-subtitle reveal">Digital transaction management is included. Upgrade only if you want to.</p>
+
+    <div class="choice-grid">
+      <div class="choice-card reveal">
+        <span class="choice-tag free">Included Free</span>
+        <div class="choice-name">Dotloop</div>
+        <p class="choice-desc">Industry-standard e-signature and transaction management platform. Included at no additional cost for all agents.</p>
+        <div class="choice-price">$0 — always included</div>
+      </div>
+      <div class="choice-card reveal">
+        <span class="choice-tag upgrade">Optional Upgrade</span>
+        <div class="choice-name">SkySlope</div>
+        <p class="choice-desc">Advanced transaction management with audit trail, digital signatures, and broker compliance tools.</p>
+        <div class="choice-price">$99 one-time activation</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: LPT PLUS -->
+<section class="section" style="background: var(--surface);" id="lpt-plus">
+  <div class="section-inner">
+    <div class="section-label reveal">04 — Add-On</div>
+    <h2 class="section-title reveal">Enhance with LPT Plus</h2>
+    <p class="section-subtitle reveal">An optional monthly add-on that stacks leads, tools, marketing, coaching, and health benefits into one subscription.</p>
+
+    <div class="plus-card reveal">
+      <div class="plus-header">
+        <div class="plus-name">LPT Plus</div>
+        <div class="plus-pricing"><strong>$89/mo</strong> Brokerage Partner &nbsp;|&nbsp; <strong>$149/mo</strong> Business Builder</div>
+      </div>
+      <p class="plus-subtitle">Everything you need to prospect, market, connect, and grow — bundled at a fraction of à la carte pricing.</p>
+      <ul class="plus-benefits">
+        <li>Monthly prospecting leads delivered to your CRM</li>
+        <li>AMCards — automated greeting &amp; follow-up cards</li>
+        <li>Zoom Enterprise account for client &amp; team meetings</li>
+        <li>RealScout — AI-powered home search &amp; listing alerts</li>
+        <li>Done-For-You listing marketing packages</li>
+        <li>Health benefits via Teladoc</li>
+        <li>2x weekly live masterminds with top producers</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="book">
+  <div class="cta-inner">
+    <h2 class="cta-title reveal">Ready to Build on Your Terms?</h2>
+    <p class="cta-sub reveal">Book a 15-minute discovery call. We'll walk through the plans, answer your questions, and find the right fit for your business.</p>
+    <div style="margin-top:16px;max-width:720px;margin-left:auto;margin-right:auto;position:relative;z-index:1;" class="reveal">
+      <div class="calendly-inline-widget" data-url="https://calendly.com/discovertpl?hide_gdpr_banner=1&background_color=12121a&text_color=e8e8f0&primary_color=6c63ff" style="min-width:320px;height:700px;"></div>
+      <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/lpt-explained.html">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans.html">Fee Plans</a>
+    <a href="/resources.html">Free Resources</a>
+    <a href="#book">Book a Call</a>
+  </div>
+  <div class="footer-copy">© 2026 TPL Collective · Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
