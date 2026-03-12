@@ -1227,6 +1227,9 @@ async function submitForm() {
   const name = document.getElementById('f-name').value.trim();
   const email = document.getElementById('f-email').value.trim();
   const brokerage = document.getElementById('f-brokerage').value;
+  const phone = document.getElementById('f-phone').value.trim();
+  const deals_per_year = document.getElementById('f-deals').value;
+  const avg_price = document.getElementById('f-price').value;
   if (!name || !email || !brokerage) {
     alert('Please fill in your name, email, and current brokerage to continue.');
     return;
@@ -1235,7 +1238,7 @@ async function submitForm() {
     await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, brokerage, source: 'Web' })
+      body: JSON.stringify({ name, email, brokerage, phone, deals_per_year, avg_price, source: 'Web' })
     });
   } catch(e) { console.error('Lead capture failed:', e); }
   document.getElementById('lead-form-content').style.display = 'none';
