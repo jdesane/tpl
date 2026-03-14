@@ -675,7 +675,7 @@ async function captureCalcLead(first, email) {
   const deals = document.getElementById('annualDeals').value;
   const avgPrice = document.getElementById('avgPrice').value;
 
-  // 1. Existing lead capture (unchanged)
+  // 1. Existing lead capture
   try {
     await fetch('/api/leads', {
       method: 'POST',
@@ -694,7 +694,7 @@ async function captureCalcLead(first, email) {
     console.warn('Lead capture failed:', e);
   }
 
-  // 2. NEW: Generate personalized PDF report and email it
+  // 2. Generate personalized PDF report and email it
   try {
     const reportData = {
       name: first,
@@ -717,31 +717,28 @@ async function captureCalcLead(first, email) {
       body: JSON.stringify(reportData)
     }).then(resp => resp.json()).then(data => {
       if (data.status === 'ok' && data.email_sent) {
-        // Show a small toast notification
         showReportToast(email);
       }
     }).catch(e => {
       console.warn('Report generation failed:', e);
-      // Silent fail — don't interrupt the user experience
     });
   } catch (e) {
     console.warn('Report setup failed:', e);
   }
 }
 
-// Toast notification function
 function showReportToast(email) {
   const toast = document.createElement('div');
-  toast.innerHTML = `📧 <strong>Your personalized report is on its way to ${email}</strong>`;
+  toast.innerHTML = '📧 <strong>Your personalized report is on its way to ' + email + '</strong>';
   Object.assign(toast.style, {
     position: 'fixed',
     bottom: '24px',
     right: '24px',
-    background: '#1a1a2e',
+    background: '#12121a',
     color: '#e8e8f0',
     padding: '14px 22px',
     borderRadius: '10px',
-    border: '1px solid #c9a84c',
+    border: '1px solid #6c63ff',
     fontFamily: "'DM Sans', sans-serif",
     fontSize: '14px',
     zIndex: '999',
@@ -749,18 +746,12 @@ function showReportToast(email) {
     animation: 'fadeInUp 0.3s ease',
     maxWidth: '400px',
   });
-
-  // Add animation keyframes if not already present
   if (!document.getElementById('toastStyles')) {
     const style = document.createElement('style');
     style.id = 'toastStyles';
-    style.textContent = `
-      @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-      @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
-    `;
+    style.textContent = '@keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } } @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }';
     document.head.appendChild(style);
   }
-
   document.body.appendChild(toast);
   setTimeout(() => {
     toast.style.animation = 'fadeOut 0.3s ease forwards';
