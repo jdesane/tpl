@@ -261,6 +261,7 @@
         <optgroup label="Cloud / Flat-Fee Brokerages">
           <option value="real">Real Broker (REAL)</option>
           <option value="fathom">Fathom Realty</option>
+          <option value="epique">Epique Realty</option>
           <option value="r1g">Realty ONE Group</option>
         </optgroup>
         <optgroup label="Other">
@@ -277,7 +278,7 @@
     <div class="fields-grid" id="brokerageFields" style="display:none">
       <div class="field-group">
         <label>Agent Split <span class="edited-badge" id="b-split">EDITED</span></label>
-        <div class="input-wrap"><input type="number" id="f-split" class="pr" min="50" max="100" step="1" oninput="markEdited('split')" /><span class="sfx">%</span></div>
+        <div class="input-wrap"><input type="number" id="f-split" class="pr" min="0" max="100" step="1" oninput="markEdited('split')" /><span class="sfx">%</span></div>
       </div>
       <div class="field-group">
         <label>Brokerage Annual Cap <span class="edited-badge" id="b-cap">EDITED</span></label>
@@ -422,18 +423,29 @@
 
 <script>
 // ── BROKERAGE DATABASE ──
-// split=agent%, cap=max brokerage collects/yr, desk=$/mo, txfee=$/deal, royalty=%, royaltycap=max royalty $
+// split=agent%, cap=max brokerage collects/yr, desk=$/mo, txfee=$/deal, txPct=% of sale price per deal, royalty=%, royaltycap=max royalty $, annualFee=$
 const DB = {
-  kw:     { name:'Keller Williams',      split:70, cap:21000, desk:85,  txfee:175, royalty:6,   royaltycap:3000, note:'KW runs a 70/30 split with a 6% franchise fee (capped at $3K). Market center caps typically range $15K–$42K — we used a common midpoint. Edit if your office differs.' },
-  exp:    { name:'eXp Realty',           split:80, cap:16000, desk:85,  txfee:65,  royalty:0,   royaltycap:0,    note:'eXp: 80/20 split capped at $16K + $85/mo cloud fee + $65/deal in transaction & E&O fees. After capping, a $250 tx fee applies for next 20 deals.' },
-  remax:  { name:'RE/MAX',               split:95, cap:23000, desk:900, txfee:200, royalty:0,   royaltycap:0,    note:'RE/MAX offers a 95/5 split but desk fees can run $300–$2,500+/mo by office. We used a mid-range estimate — edit this to match your actual office fee.' },
-  c21:    { name:'Century 21',           split:70, cap:0,     desk:0,   txfee:250, royalty:8,   royaltycap:0,    note:'Century 21 splits range 70/30–90/10. An 8% franchise fee applies on most transactions. Cap varies by office — enter yours if applicable.' },
-  cb:     { name:'Coldwell Banker',      split:60, cap:0,     desk:110, txfee:200, royalty:6,   royaltycap:0,    note:'Coldwell Banker splits vary 50/50–90/10 with no universal cap. A 6–8% franchise fee and ~$110/mo desk fee are common. Edit to your actual terms.' },
-  compass:{ name:'Compass',             split:80, cap:0,     desk:145, txfee:0,   royalty:4,   royaltycap:0,    note:'Compass negotiates splits individually (avg ~80/20). A 4% marketing fee typically applies. No standard cap — splits and fees vary significantly by market.' },
-  real:   { name:'Real Broker (REAL)',   split:85, cap:12000, desk:0,   txfee:265, royalty:0,   royaltycap:0,    note:'Real Broker: 85/15 capped at $12K. No monthly fee. $265/deal pre-cap ($225 tx + $40 E&O). After cap: $160 + $40 E&O. $750 annual fee billed at first 3 closings.' },
-  fathom: { name:'Fathom Realty',        split:100,cap:9000,  desk:0,   txfee:465, royalty:0,   royaltycap:0,    note:'Fathom Max plan: 100% commission, $465 flat/deal capped at $9K/yr + $700 annual fee. After cap: $165/deal. No monthly fees.' },
-  r1g:    { name:'Realty ONE Group',     split:100,cap:0,     desk:200, txfee:300, royalty:0,   royaltycap:0,    note:'Realty ONE Group: 100% commission with monthly office fees and flat transaction fees. Figures vary by office — edit to your actual terms.' },
-  other:  { name:'My Brokerage',         split:70, cap:0,     desk:0,   txfee:0,   royalty:0,   royaltycap:0,    note:'' }
+  kw:     { name:'Keller Williams',      split:70,  cap:21000, desk:85,  txfee:175, txPct:0, royalty:6,  royaltycap:3000, annualFee:0,
+            note:'KW: 70/30 split with a 6% franchise fee capped at $3K/yr. Market center caps typically range $15K–$42K — $21K used as a common midpoint. Edit if your office differs.' },
+  exp:    { name:'eXp Realty',           split:80,  cap:16000, desk:85,  txfee:85,  txPct:0, royalty:0,  royaltycap:0,    annualFee:0,
+            note:'eXp: 80/20 split capped at $16K + $85/mo cloud fee + $85/deal ($25 broker review + $60 risk mgmt). Post-cap: $250/deal, dropping to $75 after 20 post-cap transactions. $149 startup fee not included.' },
+  remax:  { name:'RE/MAX',               split:95,  cap:23000, desk:1000, txfee:200, txPct:0, royalty:0, royaltycap:0,    annualFee:0,
+            note:'RE/MAX: 95/5 split with monthly desk fees typically $500–$2,000/mo. $23K cap applies on 80/20 plans. We used $1,000/mo as a midpoint — edit to your actual office fee.' },
+  c21:    { name:'Century 21',           split:70,  cap:15000, desk:200,  txfee:250, txPct:0, royalty:8,  royaltycap:0,    annualFee:0,
+            note:'C21: Splits range 70/30–90/10 with caps typically $15K–$20K. An 8% franchise/royalty fee applies on most transactions. Monthly fees $100–$350 vary by office — edit to your terms.' },
+  cb:     { name:'Coldwell Banker',      split:60,  cap:0,     desk:110,  txfee:200, txPct:0, royalty:6,  royaltycap:0,    annualFee:0,
+            note:'Coldwell Banker: Splits range 50/50–90/10 with no universal cap. A 6% franchise fee and ~$110/mo desk fee are common starting points. Edit all fields to your actual agreement.' },
+  compass:{ name:'Compass',             split:80,  cap:0,     desk:145,  txfee:0,   txPct:0, royalty:4,  royaltycap:0,    annualFee:0,
+            note:'Compass: Splits negotiated individually, typically 70/30–85/15. A 4% marketing fee is common. No standard cap — highly variable by market and production level.' },
+  real:   { name:'Real Broker (REAL)',   split:85,  cap:12000, desk:0,    txfee:265, txPct:0, royalty:0,  royaltycap:0,    annualFee:750,
+            note:'Real Broker: 85/15 capped at $12K, no monthly fee. $265/deal pre-cap ($225 tx + $40 E&O). Post-cap: $200/deal. $750 annual fee billed across first 3 closings of the year.' },
+  fathom: { name:'Fathom Realty (Max)', split:100, cap:9000,  desk:0,    txfee:465, txPct:0, royalty:0,  royaltycap:0,    annualFee:700,
+            note:'Fathom Max: 100% commission, $465 flat/deal capped at $9K/yr + $700 annual fee + $35 E&O/deal. Post-cap: $165/deal. No monthly fees. E&O included in the $465 pre-cap fee shown.' },
+  r1g:    { name:'Realty ONE Group',     split:100, cap:0,     desk:150,  txfee:700, txPct:0, royalty:0,  royaltycap:0,    annualFee:650,
+            note:'Realty ONE: 100% commission, $150/mo, tiered tx fee based on sale price ($600–$1,200+ depending on price point, avg ~$700). $650/yr E&O. No franchise fees. Varies by office.' },
+  epique: { name:'Epique Realty',        split:85,  cap:15000, desk:149,  txfee:0,   txPct:0.1, royalty:0, royaltycap:0,  annualFee:0,
+            note:'Epique: 85/15 split with a declining cap — starts at $15K, drops $1K/yr for 5 years (to $10K at 5+ years). $149/mo tech fee ($99/mo if paid annually). Tx fee is 0.1% of the gross sale price per deal — capped at $500/deal, then $250 after $5K paid in tx fees.' },
+  other:  { name:'My Brokerage',         split:70,  cap:0,     desk:0,    txfee:0,   txPct:0, royalty:0,  royaltycap:0,    annualFee:0,   note:'' }
 };
 
 function onBrokerageSelect() {
@@ -448,6 +460,7 @@ function onBrokerageSelect() {
   document.getElementById('f-txfee').value      = b.txfee;
   document.getElementById('f-royalty').value    = b.royalty;
   document.getElementById('f-royaltycap').value = b.royaltycap;
+  window._txPct = b.txPct || 0;
 
   // clear edited state
   ['split','cap','desk','txfee','royalty','royaltycap'].forEach(f => {
@@ -517,6 +530,7 @@ function runCalculation() {
   const brokCap     = parseFloat(document.getElementById('f-cap').value)  || 0;
   const deskMo      = parseFloat(document.getElementById('f-desk').value)  || 0;
   const txFee       = parseFloat(document.getElementById('f-txfee').value) || 0;
+  const txPct       = window._txPct || 0;
   const royaltyPct  = parseFloat(document.getElementById('f-royalty').value) / 100;
   const royaltyCap  = parseFloat(document.getElementById('f-royaltycap').value) || 0;
 
@@ -531,7 +545,8 @@ function runCalculation() {
   if (royaltyCap > 0) royaltyFees = Math.min(royaltyFees, royaltyCap);
 
   const deskAnnual = deskMo * 12;
-  const txTotal    = txFee * deals;
+  const txFeePerDeal = txPct > 0 ? Math.min(avgPrice * txPct / 100, 500) : txFee;
+  const txTotal    = txFeePerDeal * deals;
   const currentNet = totalGCI - brokFees - royaltyFees - deskAnnual - txTotal;
 
   // ── LPT BUSINESS BUILDER ──
@@ -659,6 +674,8 @@ async function captureCalcLead(first, email) {
   const brokerage = val ? DB[val].name : 'Unknown';
   const deals = document.getElementById('annualDeals').value;
   const avgPrice = document.getElementById('avgPrice').value;
+
+  // 1. Existing lead capture (unchanged)
   try {
     await fetch('/api/leads', {
       method: 'POST',
@@ -676,6 +693,79 @@ async function captureCalcLead(first, email) {
   } catch (e) {
     console.warn('Lead capture failed:', e);
   }
+
+  // 2. NEW: Generate personalized PDF report and email it
+  try {
+    const reportData = {
+      name: first,
+      email: email,
+      brokerage: brokerage,
+      agent_split: parseFloat(document.getElementById('f-split').value) || 0,
+      brokerage_cap: parseFloat(document.getElementById('f-cap').value) || 0,
+      desk_fee_monthly: parseFloat(document.getElementById('f-desk').value) || 0,
+      tx_fee: parseFloat(document.getElementById('f-txfee').value) || 0,
+      royalty_pct: parseFloat(document.getElementById('f-royalty').value) || 0,
+      royalty_cap: parseFloat(document.getElementById('f-royaltycap').value) || 0,
+      avg_price: parseFloat(avgPrice.replace(/,/g, '')) || 0,
+      annual_deals: parseInt(deals) || 0,
+      comm_rate: parseFloat(document.getElementById('commRate').value) || 0,
+    };
+
+    fetch('https://mission.tplcollective.ai/api/generate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportData)
+    }).then(resp => resp.json()).then(data => {
+      if (data.status === 'ok' && data.email_sent) {
+        // Show a small toast notification
+        showReportToast(email);
+      }
+    }).catch(e => {
+      console.warn('Report generation failed:', e);
+      // Silent fail — don't interrupt the user experience
+    });
+  } catch (e) {
+    console.warn('Report setup failed:', e);
+  }
+}
+
+// Toast notification function
+function showReportToast(email) {
+  const toast = document.createElement('div');
+  toast.innerHTML = `📧 <strong>Your personalized report is on its way to ${email}</strong>`;
+  Object.assign(toast.style, {
+    position: 'fixed',
+    bottom: '24px',
+    right: '24px',
+    background: '#1a1a2e',
+    color: '#e8e8f0',
+    padding: '14px 22px',
+    borderRadius: '10px',
+    border: '1px solid #c9a84c',
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: '14px',
+    zIndex: '999',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    animation: 'fadeInUp 0.3s ease',
+    maxWidth: '400px',
+  });
+
+  // Add animation keyframes if not already present
+  if (!document.getElementById('toastStyles')) {
+    const style = document.createElement('style');
+    style.id = 'toastStyles';
+    style.textContent = `
+      @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+      @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'fadeOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('gateModal').classList.remove('open'); });
