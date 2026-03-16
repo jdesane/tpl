@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LPT Realty vs. Century 21 | TPL Collective</title>
+<meta name="description" content="Century 21 charges a 6% royalty on every deal with no cap. See what you'd keep at LPT Realty. Free commission calculator."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 120px 5% 80px;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 800px; margin: 0 auto; width: 100%;
+  text-align: center;
+  position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 7vw, 86px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); font-weight: 300;
+  margin-bottom: 44px; max-width: 620px; margin-left: auto; margin-right: auto;
+}
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.btn-primary {
+  background: var(--accent); color: var(--white);
+  padding: 15px 34px; border-radius: 6px;
+  font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,99,255,0.4); }
+.btn-secondary {
+  border: 1px solid var(--border); color: var(--muted);
+  padding: 15px 32px; border-radius: 6px;
+  font-weight: 500; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s; background: transparent; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* ── SECTIONS ── */
+.section {
+  padding: 80px 5%;
+}
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-label::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 20px;
+}
+.section-title em { font-style: normal; color: var(--accent); }
+.section-sub {
+  font-size: 16px; line-height: 1.7;
+  color: var(--muted); font-weight: 300;
+  max-width: 640px; margin-bottom: 48px;
+}
+.section-center { text-align: center; }
+.section-center .section-label { justify-content: center; }
+.section-center .section-sub { margin-left: auto; margin-right: auto; }
+
+/* ── COMPARISON TABLE ── */
+.comp-table-wrap {
+  max-width: 960px; margin: 0 auto;
+  border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden;
+}
+.comp-table {
+  width: 100%; border-collapse: collapse;
+}
+.comp-table thead th {
+  background: var(--surface2);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); padding: 16px 20px;
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+.comp-table thead th:nth-child(2) { color: var(--accent); }
+.comp-table thead th:nth-child(3) { color: var(--red); }
+.comp-table tbody td {
+  padding: 14px 20px; font-size: 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comp-table tbody tr:last-child td { border-bottom: none; }
+.comp-table tbody td:first-child {
+  font-weight: 500; color: var(--white);
+  font-size: 13px; letter-spacing: 0.02em;
+}
+.comp-table tbody td:nth-child(2) { color: var(--green); }
+.comp-table tbody td:nth-child(3) { color: var(--muted); }
+
+/* ── MATH SCENARIOS ── */
+.math-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  max-width: 960px; margin: 0 auto 48px;
+}
+.math-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 32px; overflow: hidden;
+}
+.math-card-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 6px;
+}
+.math-card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; color: var(--white); letter-spacing: 0.02em;
+  margin-bottom: 24px;
+}
+.math-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.math-row:last-of-type { border-bottom: none; }
+.math-row-label { color: var(--muted); }
+.math-row-c21 { color: var(--red); font-family: 'DM Mono', monospace; font-size: 13px; }
+.math-row-lpt { color: var(--green); font-family: 'DM Mono', monospace; font-size: 13px; }
+.math-totals {
+  margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--border);
+}
+.math-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; font-size: 14px;
+}
+.math-total-label { color: var(--white); font-weight: 600; }
+.math-total-val { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 600; }
+.math-total-val.red { color: var(--red); }
+.math-total-val.green { color: var(--green); }
+.math-gap {
+  margin-top: 12px; padding: 10px 14px;
+  background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 8px; text-align: center;
+}
+.math-gap-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; color: var(--green); letter-spacing: 0.02em;
+}
+.math-gap-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7;
+}
+
+/* Big callout */
+.big-callout {
+  max-width: 960px; margin: 0 auto 0;
+  background: var(--surface);
+  border: 1px solid var(--accent-br); border-radius: 16px;
+  padding: 48px 40px; text-align: center;
+}
+.big-callout-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--green); letter-spacing: 0.02em; line-height: 1.1;
+  margin-bottom: 10px;
+}
+.big-callout-sub {
+  font-size: 16px; color: var(--muted); font-weight: 300;
+}
+.big-callout-sub strong { color: var(--gold); font-weight: 600; }
+
+/* ── ROYALTY TABLE ── */
+.royalty-table-wrap {
+  max-width: 640px; margin: 0 auto 32px;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.royalty-table {
+  width: 100%; border-collapse: collapse;
+}
+.royalty-table thead th {
+  background: var(--surface2);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); padding: 14px 20px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.royalty-table tbody td {
+  padding: 12px 20px; font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.royalty-table tbody tr:last-child td { border-bottom: none; }
+.royalty-table tbody td:first-child { color: var(--white); font-weight: 500; }
+.royalty-table tbody td:nth-child(2) { color: var(--red); font-family: 'DM Mono', monospace; }
+.royalty-note {
+  max-width: 640px; margin: 0 auto;
+  font-size: 15px; line-height: 1.7; color: var(--muted); font-weight: 300;
+  text-align: center;
+}
+.royalty-note strong { color: var(--white); font-weight: 500; }
+
+/* ── WIN CARDS ── */
+.win-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  max-width: 960px; margin: 0 auto;
+}
+.win-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 28px 24px;
+  transition: border-color 0.3s;
+}
+.win-card:hover { border-color: var(--accent-br); }
+.win-card-icon { font-size: 24px; margin-bottom: 12px; }
+.win-card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; color: var(--white); letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+.win-card-desc {
+  font-size: 14px; line-height: 1.7; color: var(--muted); font-weight: 300;
+}
+
+/* ── HONEST SECTION ── */
+.honest-wrap {
+  max-width: 960px; margin: 0 auto;
+}
+.honest-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 32px;
+}
+.honest-item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px; line-height: 1.7; color: var(--muted); font-weight: 300;
+}
+.honest-item:last-child { border-bottom: none; }
+.honest-item strong { color: var(--white); font-weight: 500; }
+
+/* ── COMPASS FACTOR ── */
+.compass-callout {
+  max-width: 960px; margin: 0 auto;
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-br); border-radius: 12px;
+  padding: 32px 36px;
+}
+.compass-callout-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px;
+}
+.compass-callout-text {
+  font-size: 16px; line-height: 1.7; color: var(--text); font-weight: 300;
+}
+.compass-callout-text strong { color: var(--white); font-weight: 500; }
+
+/* ── WHO BEST FOR ── */
+.best-list {
+  max-width: 700px; margin: 0 auto;
+  list-style: none;
+}
+.best-list li {
+  padding: 16px 0; border-bottom: 1px solid var(--border);
+  font-size: 15px; line-height: 1.7; color: var(--muted); font-weight: 300;
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.best-list li:last-child { border-bottom: none; }
+.best-check {
+  flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px;
+  background: var(--accent-bg); border: 1px solid var(--accent-br);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--accent);
+}
+
+/* ── CTA ── */
+.cta-section {
+  padding: 80px 5%;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.cta-glow {
+  position: absolute; bottom: -80px; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 400px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+.cta-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+.cta-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--dim); letter-spacing: 0.08em;
+}
+
+/* ── DISCLAIMER ── */
+.disclaimer {
+  max-width: 800px; margin: 0 auto;
+  padding: 0 5% 40px;
+  font-size: 11px; line-height: 1.8;
+  color: var(--dim); text-align: center;
+}
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 40px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ── ANIMATIONS ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; letter-spacing: 0.05em !important;
+  text-transform: uppercase; border: none;
+}
+
+/* ── TABLET (<=900px) ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 100px 5% 60px; }
+  .hero h1 { font-size: clamp(40px, 10vw, 66px); }
+  .math-grid { grid-template-columns: 1fr; }
+  .win-grid { grid-template-columns: 1fr; }
+  .comp-table-wrap { overflow-x: auto; }
+  .section { padding: 64px 5%; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE (<=480px) ── */
+@media (max-width: 480px) {
+  .hero { padding: 88px 4% 52px; }
+  .hero h1 { font-size: clamp(36px, 12vw, 52px); }
+  .hero-sub { font-size: 15px; }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-secondary { width: 100%; text-align: center; }
+  .section { padding: 52px 4%; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .btn-primary, .btn-secondary { padding: 14px 24px; font-size: 13px; }
+  .cta-actions { flex-direction: column; align-items: center; }
+  .cta-actions .btn-primary,
+  .cta-actions .btn-secondary { width: 100%; max-width: 320px; text-align: center; }
+  .math-card { padding: 24px 18px; }
+  .big-callout { padding: 36px 24px; }
+  .compass-callout { padding: 24px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained.html">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans.html">Fee Plans</a>
+    <a href="/#who-joined">Who Joined</a>
+    <a href="/resources.html">Free Resources</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained.html">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans.html">Fee Plans</a>
+  <a href="/#who-joined">Who Joined</a>
+  <a href="/resources.html">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Commission Comparison</div>
+    <h1>C21 Charges a 6% Royalty<br>on <em>Every Deal.</em> LPT Charges $0.</h1>
+    <p class="hero-sub">Century 21 is a globally recognized brand. But the royalty fee, the split, and the monthly fees add up &mdash; especially for new agents starting at 70/30.</p>
+    <div class="hero-actions">
+      <a href="/commission-calculator.html" class="btn-primary">Run My Numbers &rarr;</a>
+      <a href="https://calendly.com/discovertpl" class="btn-secondary">Book a Strategy Call</a>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON TABLE -->
+<section class="section section-center">
+  <div class="reveal">
+    <div class="section-label">Side-by-Side</div>
+    <h2 class="section-title">How the Two <em>Models Compare</em></h2>
+    <p class="section-sub">Feature-by-feature breakdown of LPT Realty vs. Century 21.</p>
+  </div>
+  <div class="comp-table-wrap reveal">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>LPT Realty</th>
+          <th>Century 21</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Commission Split</td>
+          <td>100%</td>
+          <td>70/30 (new) to 90/10+ (experienced)</td>
+        </tr>
+        <tr>
+          <td>Annual Cap</td>
+          <td>$5,000</td>
+          <td>None on most plans</td>
+        </tr>
+        <tr>
+          <td>Royalty / Franchise Fee</td>
+          <td>None</td>
+          <td>~6% of commission &mdash; no cap</td>
+        </tr>
+        <tr>
+          <td>Monthly Fees</td>
+          <td>$0</td>
+          <td>$100&ndash;$350/mo</td>
+        </tr>
+        <tr>
+          <td>Transaction Fee</td>
+          <td>$195/deal</td>
+          <td>~$295/deal</td>
+        </tr>
+        <tr>
+          <td>Revenue Share</td>
+          <td>HybridShare available</td>
+          <td>None</td>
+        </tr>
+        <tr>
+          <td>Stock / Equity</td>
+          <td>LPTA (Nasdaq reserved)</td>
+          <td>None</td>
+        </tr>
+        <tr>
+          <td>AI Tools</td>
+          <td>Dezzy.ai &middot; RecruitAssist &middot; Media Stack</td>
+          <td>MoxiWorks CRM</td>
+        </tr>
+        <tr>
+          <td>Global Referral Network</td>
+          <td>National (50 states)</td>
+          <td>79+ countries</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- MATH SCENARIOS -->
+<section class="section section-center">
+  <div class="reveal">
+    <div class="section-label">The Math</div>
+    <h2 class="section-title">Run the Numbers on <em>$135K GCI</em></h2>
+    <p class="section-sub">12 deals at $135,000 gross commission income. Same production. Two very different outcomes.</p>
+  </div>
+
+  <div class="math-grid">
+    <!-- SCENARIO A -->
+    <div class="math-card reveal">
+      <div class="math-card-head">Scenario A</div>
+      <div class="math-card-title">New Agent (70/30)</div>
+
+      <div style="margin-bottom:8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--red);">Century 21 Costs</div>
+      <div class="math-row">
+        <span class="math-row-label">Split (30%)</span>
+        <span class="math-row-c21">&minus;$40,500</span>
+      </div>
+      <div class="math-row">
+        <span class="math-row-label">Royalty (6% of agent side)</span>
+        <span class="math-row-c21">&minus;$5,670</span>
+      </div>
+      <div class="math-row">
+        <span class="math-row-label">Monthly ($100/mo)</span>
+        <span class="math-row-c21">&minus;$1,200</span>
+      </div>
+      <div class="math-row">
+        <span class="math-row-label">Transaction ($295 &times; 12)</span>
+        <span class="math-row-c21">&minus;$3,540</span>
+      </div>
+
+      <div class="math-totals">
+        <div class="math-total-row">
+          <span class="math-total-label">C21 Total Costs</span>
+          <span class="math-total-val red">~$50,910</span>
+        </div>
+        <div class="math-total-row">
+          <span class="math-total-label">C21 Take-Home</span>
+          <span class="math-total-val red">~$84,090</span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; margin-bottom:8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--green);">LPT Realty Costs</div>
+      <div class="math-totals" style="border-top:none; margin-top:0; padding-top:0;">
+        <div class="math-total-row">
+          <span class="math-total-label">LPT Total Costs</span>
+          <span class="math-total-val green">$7,840</span>
+        </div>
+        <div class="math-total-row">
+          <span class="math-total-label">LPT Take-Home</span>
+          <span class="math-total-val green">$127,160</span>
+        </div>
+      </div>
+
+      <div class="math-gap">
+        <div class="math-gap-val">+$43,070/yr</div>
+        <div class="math-gap-label">More at LPT</div>
+      </div>
+    </div>
+
+    <!-- SCENARIO B -->
+    <div class="math-card reveal">
+      <div class="math-card-head">Scenario B</div>
+      <div class="math-card-title">Experienced Agent (90/10)</div>
+
+      <div style="margin-bottom:8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--red);">Century 21 Costs</div>
+      <div class="math-row">
+        <span class="math-row-label">Split (10%)</span>
+        <span class="math-row-c21">&minus;$13,500</span>
+      </div>
+      <div class="math-row">
+        <span class="math-row-label">Royalty (6%)</span>
+        <span class="math-row-c21">&minus;$7,290</span>
+      </div>
+      <div class="math-row">
+        <span class="math-row-label">Monthly ($150/mo)</span>
+        <span class="math-row-c21">&minus;$1,800</span>
+      </div>
+      <div class="math-row">
+        <span class="math-row-label">Transaction ($295 &times; 12)</span>
+        <span class="math-row-c21">&minus;$3,540</span>
+      </div>
+
+      <div class="math-totals">
+        <div class="math-total-row">
+          <span class="math-total-label">C21 Total Costs</span>
+          <span class="math-total-val red">~$26,130</span>
+        </div>
+        <div class="math-total-row">
+          <span class="math-total-label">C21 Take-Home</span>
+          <span class="math-total-val red">~$108,870</span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; margin-bottom:8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--green);">LPT Realty Costs</div>
+      <div class="math-totals" style="border-top:none; margin-top:0; padding-top:0;">
+        <div class="math-total-row">
+          <span class="math-total-label">LPT Total Costs</span>
+          <span class="math-total-val green">$7,840</span>
+        </div>
+        <div class="math-total-row">
+          <span class="math-total-label">LPT Take-Home</span>
+          <span class="math-total-val green">$127,160</span>
+        </div>
+      </div>
+
+      <div class="math-gap">
+        <div class="math-gap-val">+$18,290/yr</div>
+        <div class="math-gap-label">More at LPT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Big callout -->
+  <div class="big-callout reveal">
+    <div class="big-callout-title">Even on C21's Best Plan, You'd Keep $18,290 More at LPT</div>
+    <p class="big-callout-sub">New agents? The gap is <strong>$43,070/year</strong>.</p>
+  </div>
+</section>
+
+<!-- ROYALTY FEE SECTION -->
+<section class="section section-center">
+  <div class="reveal">
+    <div class="section-label">The Tax That Never Stops</div>
+    <h2 class="section-title">The Royalty Fee: Your Brokerage's <em>Favorite Revenue Stream</em></h2>
+    <p class="section-sub">The more you produce, the more the royalty costs. It never caps. It never stops.</p>
+  </div>
+
+  <div class="royalty-table-wrap reveal">
+    <table class="royalty-table">
+      <thead>
+        <tr>
+          <th>Your GCI</th>
+          <th>6% Royalty Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>$100,000</td><td>$6,000</td></tr>
+        <tr><td>$150,000</td><td>$9,000</td></tr>
+        <tr><td>$200,000</td><td>$12,000</td></tr>
+        <tr><td>$300,000</td><td>$18,000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="royalty-note reveal">The more you produce, the more the royalty costs. It never caps. It never stops.<br><strong>At LPT, royalty fees don't exist.</strong></p>
+</section>
+
+<!-- WHERE LPT WINS -->
+<section class="section section-center">
+  <div class="reveal">
+    <div class="section-label">Advantages</div>
+    <h2 class="section-title">Where LPT <em>Wins</em></h2>
+  </div>
+
+  <div class="win-grid">
+    <div class="win-card reveal">
+      <div class="win-card-icon">&#x1F6AB;</div>
+      <div class="win-card-title">No Royalty Fee. Ever.</div>
+      <p class="win-card-desc">The 6% royalty is the single biggest hidden cost at C21. It costs more than LPT's entire annual cap at every production level.</p>
+    </div>
+    <div class="win-card reveal">
+      <div class="win-card-icon">&#x1F4B0;</div>
+      <div class="win-card-title">The Gap Is Massive</div>
+      <p class="win-card-desc">New C21 agents overpay by $43,070/year. Even experienced agents overpay by $18,290.</p>
+    </div>
+    <div class="win-card reveal">
+      <div class="win-card-icon">&#x26A1;</div>
+      <div class="win-card-title">You Actually Cap</div>
+      <p class="win-card-desc">Most C21 plans have no cap. At LPT, you cap at $5,000 &mdash; usually within months.</p>
+    </div>
+    <div class="win-card reveal">
+      <div class="win-card-icon">&#x1F916;</div>
+      <div class="win-card-title">AI Tools vs. TV Commercials</div>
+      <p class="win-card-desc">C21 funds leads through franchise fees for TV ads. LPT gives you AI tools to build your own pipeline.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHERE C21 WINS -->
+<section class="section section-center">
+  <div class="reveal">
+    <div class="section-label">Honest Take</div>
+    <h2 class="section-title">Where Century 21 <em>Wins</em></h2>
+    <p class="section-sub">No comparison is complete without honesty. Here's where C21 has real advantages.</p>
+  </div>
+
+  <div class="honest-wrap reveal">
+    <div class="honest-card">
+      <div class="honest-item"><strong>Global referral network</strong> &mdash; 79+ countries, ~400 referrals/month. Genuine utility in tourist and relocation markets.</div>
+      <div class="honest-item"><strong>Company-generated leads</strong> &mdash; C21's national advertising produces inbound leads for local agents.</div>
+      <div class="honest-item"><strong>Brand recognition</strong> &mdash; Century 21 is one of the most recognized real estate brands in the world.</div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPASS FACTOR -->
+<section class="section">
+  <div class="compass-callout reveal">
+    <div class="compass-callout-label">The Compass Factor</div>
+    <p class="compass-callout-text">In January 2026, Compass acquired C21's parent company. While C21 agents wait for clarity, <strong>LPT's model is unchanged: $500/deal, $5K cap.</strong></p>
+  </div>
+</section>
+
+<!-- WHO LPT IS BEST FOR -->
+<section class="section section-center">
+  <div class="reveal">
+    <div class="section-label">Best Fit</div>
+    <h2 class="section-title">Who LPT Is <em>Best For</em></h2>
+  </div>
+
+  <ul class="best-list reveal">
+    <li>
+      <span class="best-check">&#x2713;</span>
+      <span>C21 agents who've been paying the 6% royalty for years without questioning it</span>
+    </li>
+    <li>
+      <span class="best-check">&#x2713;</span>
+      <span>New agents starting at 70/30 giving up nearly half their income</span>
+    </li>
+    <li>
+      <span class="best-check">&#x2713;</span>
+      <span>Agents who don't rely on C21's global referral network</span>
+    </li>
+    <li>
+      <span class="best-check">&#x2713;</span>
+      <span>Team leaders whose teams are bleeding money through royalty fees</span>
+    </li>
+  </ul>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <div class="cta-inner reveal">
+    <div class="section-label" style="justify-content:center;">Ready to See Your Numbers?</div>
+    <h2 class="section-title">The Math Is <em>Yours</em></h2>
+    <p class="section-sub" style="margin-left:auto; margin-right:auto;">No pressure. No pitch deck. Run the calculator or book 20 minutes with Joe.</p>
+    <div class="cta-actions">
+      <a href="/commission-calculator.html" class="btn-primary">Run My Numbers &rarr;</a>
+      <a href="https://calendly.com/discovertpl" class="btn-secondary">Book a Strategy Call</a>
+    </div>
+    <p class="cta-note">Free &middot; No obligation &middot; Calculator requires no email</p>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  Century 21 is a franchise system &mdash; fees vary significantly by office. Figures reflect common ranges from publicly reported data. LPT figures reflect current Business Builder fee structure. TPL Collective is a community platform. LPT Realty is the brokerage.
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL<span style="color:var(--accent)">.</span></div>
+  <div class="footer-links">
+    <a href="/lpt-explained.html">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans.html">Fee Plans</a>
+    <a href="/#who-joined">Who Joined</a>
+    <a href="/resources.html">Free Resources</a>
+    <a href="https://calendly.com/discovertpl">Book a Call</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
