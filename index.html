@@ -1238,10 +1238,10 @@ async function submitForm() {
     return;
   }
   try {
-    await fetch('/api/leads', {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, brokerage, phone, deals_per_year, avg_price, source: 'Web' })
+      body: JSON.stringify({ name, email, brokerage, phone, deals_per_year, avg_price, source: 'Commission Report' })
     });
   } catch(e) { console.error('Lead capture failed:', e); }
   document.getElementById('lead-form-content').style.display = 'none';

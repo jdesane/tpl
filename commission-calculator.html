@@ -677,7 +677,7 @@ async function captureCalcLead(first, email) {
 
   // 1. Existing lead capture
   try {
-    await fetch('/api/leads', {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -687,7 +687,7 @@ async function captureCalcLead(first, email) {
         brokerage: brokerage,
         deals_per_year: deals,
         avg_price: avgPrice,
-        source: 'commission_calculator'
+        source: 'Commission Calculator'
       })
     });
   } catch (e) {

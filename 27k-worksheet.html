@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The $27K Question | Free Worksheet — TPL Collective</title>
+<meta name="description" content="What is your brokerage actually costing you? This free 4-page worksheet walks you through the math in under 10 minutes. Compare your fees to LPT Realty's flat-fee model."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26;
+  --border: #2a2a3d; --accent: #6c63ff; --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3); --accent-hi: #8b85ff;
+  --gold: #f0c040; --gold-bg: rgba(240,192,64,0.1); --gold-br: rgba(240,192,64,0.25);
+  --green: #34d399; --red: #f87171;
+  --text: #e8e8f0; --muted: #8888aa; --dim: #55556a; --white: #ffffff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+/* NAV */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(10,10,15,0.95); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 0 5%; display: flex; align-items: center; justify-content: space-between; height: 68px; }
+.nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.08em; color: var(--white); text-decoration: none; }
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { color: var(--muted); font-size: 13px; font-weight: 500; text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s; }
+.nav-links a:hover { color: var(--white); }
+.nav-cta { background: var(--accent) !important; color: var(--white) !important; padding: 9px 22px; border-radius: 5px; font-weight: 600 !important; font-size: 13px !important; letter-spacing: 0.05em !important; text-transform: uppercase; transition: all 0.2s !important; }
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* HAMBURGER / MOBILE */
+.hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+.hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu { display: none; position: fixed; top: 68px; left: 0; right: 0; background: rgba(10,10,15,0.98); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99; }
+.mobile-menu.open { display: flex; }
+.mobile-menu a { color: var(--muted); font-size: 15px; font-weight: 500; text-decoration: none; padding: 14px 0; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; transition: color 0.2s; }
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta { margin-top: 16px; text-align: center; background: var(--accent) !important; color: var(--white) !important; border-radius: 6px; padding: 13px !important; font-weight: 600 !important; letter-spacing: 0.05em !important; text-transform: uppercase; border: none; }
+
+/* HERO */
+.hero { min-height: 100vh; background: var(--bg); display: flex; align-items: center; position: relative; overflow: hidden; padding: 120px 5% 80px; }
+.hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%); }
+.hero-glow { position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 900px; height: 500px; background: radial-gradient(ellipse, rgba(108,99,255,0.13) 0%, transparent 70%); pointer-events: none; }
+.hero-inner { max-width: 1000px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; position: relative; z-index: 1; }
+.hero-eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+.hero-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 6vw, 72px); line-height: 0.93; letter-spacing: 0.02em; color: var(--white); margin-bottom: 24px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub { font-size: 16px; line-height: 1.75; color: var(--muted); font-weight: 300; margin-bottom: 32px; max-width: 480px; }
+.hero-perks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; }
+.hero-perk { display: flex; gap: 12px; align-items: center; font-size: 14px; color: var(--text); font-weight: 400; }
+.hero-perk-icon { color: var(--green); font-size: 14px; flex-shrink: 0; }
+
+/* FORM CARD */
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; box-shadow: 0 40px 80px rgba(0,0,0,0.4); }
+.form-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 6px; }
+.form-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; font-weight: 300; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--dim); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.12em; }
+.form-group input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--bg); transition: border-color 0.2s; }
+.form-group input:focus { outline: none; border-color: var(--accent); }
+.form-group input::placeholder { color: var(--dim); }
+.form-submit { width: 100%; padding: 15px; background: var(--accent); color: var(--white); border: none; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.25s; margin-top: 8px; box-shadow: 0 8px 24px rgba(108,99,255,0.25); }
+.form-submit:hover { background: var(--accent-hi); transform: translateY(-1px); box-shadow: 0 12px 32px rgba(108,99,255,0.35); }
+.form-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.form-privacy { text-align: center; font-size: 11px; color: var(--dim); margin-top: 12px; font-family: 'DM Mono', monospace; letter-spacing: 0.08em; }
+.form-error { display: none; color: var(--red); font-size: 12px; margin-bottom: 12px; text-align: center; }
+
+/* SUCCESS STATE */
+.form-success { display: none; text-align: center; padding: 20px 0; }
+.form-success-icon { font-size: 44px; margin-bottom: 16px; }
+.form-success-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 12px; }
+.form-success-text { font-size: 14px; color: var(--muted); line-height: 1.65; font-weight: 300; margin-bottom: 20px; }
+.download-btn { display: inline-block; background: var(--green); color: var(--bg); padding: 14px 32px; border-radius: 6px; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; transition: all 0.25s; }
+.download-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(52,211,153,0.3); }
+
+/* FOOTER */
+footer { background: var(--surface); border-top: 1px solid var(--border); padding: 40px 5%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ANIMATIONS */
+.fade-up { opacity: 0; transform: translateY(28px); animation: fadeUp 0.8s ease forwards; }
+.fade-up.d1 { animation-delay: 0.1s; }
+.fade-up.d2 { animation-delay: 0.25s; }
+.fade-up.d3 { animation-delay: 0.4s; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 100px 5% 60px; }
+  .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+@media (max-width: 480px) {
+  .hero { padding: 88px 4% 52px; }
+  .hero h1 { font-size: clamp(40px, 12vw, 56px); }
+  .form-card { padding: 28px 22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow fade-up">Free Worksheet</div>
+      <h1 class="fade-up d1">The $27,000<br><em>Question</em></h1>
+      <p class="hero-sub fade-up d2">What is your brokerage actually costing you per year? Most agents have never done this math. This 4-page worksheet walks you through it in under 10 minutes.</p>
+      <div class="hero-perks fade-up d3">
+        <div class="hero-perk"><span class="hero-perk-icon">&#10003;</span> Calculate your true all-in brokerage cost</div>
+        <div class="hero-perk"><span class="hero-perk-icon">&#10003;</span> Compare against both LPT Realty comp plans</div>
+        <div class="hero-perk"><span class="hero-perk-icon">&#10003;</span> See the gap — same production, different model</div>
+        <div class="hero-perk"><span class="hero-perk-icon">&#10003;</span> 4 pages, 10 minutes, zero pressure</div>
+      </div>
+    </div>
+
+    <div class="form-card fade-up d2">
+      <div id="form-content">
+        <div class="form-title">Get the Free Worksheet</div>
+        <div class="form-subtitle">Enter your name and email. The PDF downloads instantly.</div>
+        <div class="form-error" id="form-error">Please fill in all fields with a valid email.</div>
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="f-name" placeholder="Your first name" autocomplete="given-name"/>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="f-email" placeholder="you@email.com" autocomplete="email"/>
+        </div>
+        <button class="form-submit" id="submit-btn" onclick="submitForm()">Download the Worksheet</button>
+        <div class="form-privacy">No spam. No brokerage pressure. Unsubscribe anytime.</div>
+      </div>
+      <div class="form-success" id="form-success">
+        <div class="form-success-icon">&#10024;</div>
+        <div class="form-success-title" id="success-title">You're All Set!</div>
+        <div class="form-success-text" id="success-text">Your worksheet is downloading now.</div>
+        <a href="/downloads/the-27k-question-worksheet.pdf" class="download-btn" id="download-link" download="The-27K-Question-Worksheet.pdf">Download Again</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="https://calendly.com/discovertpl">Book a Call</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => { hamburger.classList.toggle('open'); mobileMenu.classList.toggle('open'); });
+mobileMenu.querySelectorAll('a').forEach(a => { a.addEventListener('click', () => { hamburger.classList.remove('open'); mobileMenu.classList.remove('open'); }); });
+
+// Form
+async function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const errEl = document.getElementById('form-error');
+  const btn = document.getElementById('submit-btn');
+
+  if (!name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  try {
+    await fetch('https://mission.tplcollective.ai/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone: '', brokerage: '', source: '27K Worksheet' })
+    });
+  } catch (e) { console.warn('Lead capture failed:', e); }
+
+  document.getElementById('form-content').style.display = 'none';
+  document.getElementById('success-title').textContent = "Here's Your Worksheet, " + name + "!";
+  document.getElementById('form-success').style.display = 'block';
+
+  // Auto-trigger download
+  const link = document.getElementById('download-link');
+  link.click();
+}
+</script>
+
+</body>
+</html>
