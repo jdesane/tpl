@@ -1,9 +1,15 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/free-resources", "destination": "/resources", "permanent": true },
+    { "source": "/vs-keller-williams", "destination": "/vs/keller-williams", "permanent": true },
+    { "source": "/vs-exp-realty", "destination": "/vs/exp-realty", "permanent": true },
+    { "source": "/vs-coldwell-banker", "destination": "/vs/coldwell-banker", "permanent": true },
+    { "source": "/vs-century-21", "destination": "/vs/century-21", "permanent": true },
+    { "source": "/vs-real-brokerage", "destination": "/vs/real-brokerage", "permanent": true }
+  ],
   "rewrites": [
-    { "source": "/lpt-explained", "destination": "/lpt-explained.html" },
-    { "source": "/free-resources", "destination": "/resources.html" },
-    { "source": "/why-tpl", "destination": "/why-tpl.html" },
-    { "source": "/commission-calculator", "destination": "/commission-calculator.html" },
-    { "source": "/fee-plans", "destination": "/fee-plans.html" }
+    { "source": "/free-resources", "destination": "/resources.html" }
   ]
 }
