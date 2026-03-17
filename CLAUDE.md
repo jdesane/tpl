@@ -57,7 +57,8 @@
 - Static marketing site deployed via Vercel
 - `api/leads.js` — Vercel serverless function, writes leads directly to Supabase
 - `package.json` — has `@supabase/supabase-js` dependency
-- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources
+- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, revshare, two-lanes, franchise-fees, brokerage-fees
+- Comparison pages: vs/keller-williams, vs/exp-realty, vs/exp-switch, vs/coldwell-banker, vs/century-21, vs/real-brokerage, vs/remax, vs/index (hub)
 
 ## Build Plan (v2 Architecture) — ALL COMPLETE
 - Session 1: Database migration (13 Supabase tables, 40 recruiting links seeded) ✅
@@ -67,6 +68,19 @@
 - Session 5: Mission Control frontend — Agents, Drips, Content Hub, Recruiting Links ✅
 - Session 6: Agent Portal (login, onboarding, resources, referrals, community) ✅
 - Session 7: Traefik routing, end-to-end testing (14/14 tests pass) ✅
+
+## Phase 3 — Content Pages ✅
+- join.html, revshare.html, two-lanes.html, franchise-fees.html, brokerage-fees.html
+- vs/exp-switch.html (eXp refugee page)
+- Updated vs/keller-williams.html ($17,883 math)
+- Updated lpt-explained.html (Deloitte, Dezzy.ai, awards)
+
+## Phase 4 — Competitor Hub + Calendly Webhook ✅
+- vs/remax.html, vs/index.html (comparison hub)
+- POST /api/webhooks/calendly — auto-creates/updates leads on Calendly bookings
+- Supports invitee.created and invitee.canceled events
+- Optional HMAC signature verification via `calendly_signing_key` in settings.json
+- To activate: set Calendly webhook URL to `https://mission.tplcollective.ai/api/webhooks/calendly`
 
 ## Remaining DNS Task
 - Add A record: `portal.tplcollective.ai` → `187.77.213.230` in Namecheap

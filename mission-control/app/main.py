@@ -4,13 +4,12 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-import sqlite3
+from supabase import create_client
 import os
 import json
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import hmac
+import hashlib
+import urllib.request
 from datetime import datetime
 
 app = FastAPI(title="TPL Mission Control")
@@ -22,47 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_PATH = "/data/mission.db"
 SETTINGS_PATH = "/data/settings.json"
 
+# ── SUPABASE CLIENT ──
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://zyonidiybzrgklrmalbt.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
-
-def init_db():
-    conn = get_db()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            phone TEXT,
-            brokerage TEXT,
-            deals_per_year TEXT,
-            avg_price TEXT,
-            status TEXT DEFAULT 'new',
-            notes TEXT DEFAULT '',
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS activity_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT,
-            message TEXT,
-            meta TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-init_db()
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # ── SETTINGS HELPERS ──
@@ -86,8 +52,7 @@ def save_settings(data: dict):
 # ── EMAIL HELPER ──
 
 def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
-    """Send email via Resend API."""
-    import urllib.request
+    """Send email via Resend API. smtp_config.pass is the Resend API key."""
     try:
         api_key = smtp_config.get("pass", "")
         if not api_key:
@@ -202,19 +167,18 @@ def maybe_notify_new_lead(lead_data: dict):
         html = build_lead_email(lead_data)
         success, error = send_email(smtp, to_email, subject, html)
 
-        conn = get_db()
         if success:
-            conn.execute(
-                "INSERT INTO activity_log (type, message, meta) VALUES (?,?,?)",
-                ("smtp", f"Email notification sent to {to_email} for lead: {lead_data.get('name')}", "{}")
-            )
+            supabase.table("activity_log").insert({
+                "type": "smtp",
+                "message": f"Email notification sent to {to_email} for lead: {lead_data.get('name')}",
+                "meta": {}
+            }).execute()
         else:
-            conn.execute(
-                "INSERT INTO activity_log (type, message, meta) VALUES (?,?,?)",
-                ("error", f"Email notification failed: {error}", "{}")
-            )
-        conn.commit()
-        conn.close()
+            supabase.table("activity_log").insert({
+                "type": "error",
+                "message": f"Email notification failed: {error}",
+                "meta": {}
+            }).execute()
     except Exception as e:
         pass  # Never let notification failure break lead capture
 
@@ -228,6 +192,7 @@ class LeadIn(BaseModel):
     brokerage: Optional[str] = ""
     deals_per_year: Optional[str] = ""
     avg_price: Optional[str] = ""
+    source: Optional[str] = "Web"
 
 
 class LeadUpdate(BaseModel):
@@ -265,98 +230,95 @@ def health():
 
 @app.post("/api/leads")
 async def create_lead(lead: LeadIn):
-    conn = get_db()
-    try:
-        cur = conn.execute(
-            "INSERT INTO leads (name, email, phone, brokerage, deals_per_year, avg_price) VALUES (?,?,?,?,?,?)",
-            (lead.name, lead.email, lead.phone, lead.brokerage, lead.deals_per_year, lead.avg_price)
-        )
-        lead_id = cur.lastrowid
-        conn.execute(
-            "INSERT INTO activity_log (type, message, meta) VALUES (?,?,?)",
-            ("lead", f"New lead: {lead.name} from {lead.brokerage or 'tplcollective.ai'}", json.dumps({"lead_id": lead_id}))
-        )
-        conn.commit()
+    result = supabase.table("leads").insert({
+        "name": lead.name,
+        "email": lead.email,
+        "phone": lead.phone or "",
+        "brokerage": lead.brokerage or "",
+        "deals_per_year": lead.deals_per_year or "",
+        "avg_price": lead.avg_price or "",
+        "source": lead.source or "Web",
+        "status": "new"
+    }).execute()
 
-        # Fire notification (non-blocking, never fails the request)
-        maybe_notify_new_lead(lead.dict())
+    lead_data = result.data[0]
+    lead_id = lead_data["id"]
 
-        return {"success": True, "id": lead_id, "message": "Lead captured"}
-    finally:
-        conn.close()
+    supabase.table("activity_log").insert({
+        "type": "lead",
+        "message": f"New lead: {lead.name} from {lead.brokerage or 'tplcollective.ai'}",
+        "meta": {"lead_id": lead_id}
+    }).execute()
+
+    # Fire notification (non-blocking, never fails the request)
+    maybe_notify_new_lead(lead.dict())
+
+    return {"success": True, "id": lead_id, "message": "Lead captured"}
 
 
 @app.get("/api/leads")
 def get_leads(status: Optional[str] = None):
-    conn = get_db()
-    try:
-        if status:
-            rows = conn.execute("SELECT * FROM leads WHERE status=? ORDER BY created_at DESC", (status,)).fetchall()
-        else:
-            rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC").fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        conn.close()
+    query = supabase.table("leads").select("*").order("created_at", desc=True)
+    if status:
+        query = query.eq("status", status)
+    result = query.execute()
+    return result.data
 
 
 @app.patch("/api/leads/{lead_id}")
 def update_lead(lead_id: int, update: LeadUpdate):
-    conn = get_db()
-    try:
-        lead = conn.execute("SELECT * FROM leads WHERE id=?", (lead_id,)).fetchone()
-        if not lead:
-            raise HTTPException(status_code=404, detail="Lead not found")
-        if update.status:
-            conn.execute("UPDATE leads SET status=?, updated_at=datetime('now') WHERE id=?", (update.status, lead_id))
-        if update.notes is not None:
-            conn.execute("UPDATE leads SET notes=?, updated_at=datetime('now') WHERE id=?", (update.notes, lead_id))
-        conn.commit()
-        return {"success": True}
-    finally:
-        conn.close()
+    existing = supabase.table("leads").select("id").eq("id", lead_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    updates = {"updated_at": datetime.utcnow().isoformat()}
+    if update.status:
+        updates["status"] = update.status
+    if update.notes is not None:
+        updates["notes"] = update.notes
+
+    supabase.table("leads").update(updates).eq("id", lead_id).execute()
+    return {"success": True}
 
 
 @app.delete("/api/leads/{lead_id}")
 def delete_lead(lead_id: int):
-    conn = get_db()
-    try:
-        conn.execute("DELETE FROM leads WHERE id=?", (lead_id,))
-        conn.commit()
-        return {"success": True}
-    finally:
-        conn.close()
+    supabase.table("leads").delete().eq("id", lead_id).execute()
+    return {"success": True}
 
 
 @app.get("/api/stats")
 def get_stats():
-    conn = get_db()
-    try:
-        total = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
-        new = conn.execute("SELECT COUNT(*) FROM leads WHERE status='new'").fetchone()[0]
-        researched = conn.execute("SELECT COUNT(*) FROM leads WHERE status='researched'").fetchone()[0]
-        outreach = conn.execute("SELECT COUNT(*) FROM leads WHERE status='outreach'").fetchone()[0]
-        meeting = conn.execute("SELECT COUNT(*) FROM leads WHERE status='meeting'").fetchone()[0]
-        talking = conn.execute("SELECT COUNT(*) FROM leads WHERE status='talking'").fetchone()[0]
-        joined = conn.execute("SELECT COUNT(*) FROM leads WHERE status='joined'").fetchone()[0]
-        lost = conn.execute("SELECT COUNT(*) FROM leads WHERE status='lost'").fetchone()[0]
-        today = conn.execute("SELECT COUNT(*) FROM leads WHERE DATE(created_at)=DATE('now')").fetchone()[0]
-        return {
-            "total": total, "new": new, "researched": researched,
-            "outreach": outreach, "meeting": meeting, "talking": talking,
-            "joined": joined, "lost": lost, "today": today
-        }
-    finally:
-        conn.close()
+    leads = supabase.table("leads").select("status, created_at").execute().data
+
+    total = len(leads)
+    counts = {}
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    today_count = 0
+
+    for lead in leads:
+        s = lead["status"]
+        counts[s] = counts.get(s, 0) + 1
+        if lead["created_at"] and lead["created_at"][:10] == today_str:
+            today_count += 1
+
+    return {
+        "total": total,
+        "new": counts.get("new", 0),
+        "researched": counts.get("researched", 0),
+        "outreach": counts.get("outreach", 0),
+        "meeting": counts.get("meeting", 0),
+        "talking": counts.get("talking", 0),
+        "joined": counts.get("joined", 0),
+        "lost": counts.get("lost", 0),
+        "today": today_count
+    }
 
 
 @app.get("/api/activity")
 def get_activity(limit: int = 40):
-    conn = get_db()
-    try:
-        rows = conn.execute("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        conn.close()
+    result = supabase.table("activity_log").select("*").order("created_at", desc=True).limit(limit).execute()
+    return result.data
 
 
 # ── NOTIFICATION SETTINGS ──
@@ -376,7 +338,6 @@ def save_notif_settings(data: dict):
     settings["notifications"] = data.get("notifications", {})
     if "smtp" in data:
         smtp = data["smtp"]
-        # Merge — don't overwrite password if not provided
         existing_smtp = settings.get("smtp", {})
         if not smtp.get("pass"):
             smtp["pass"] = existing_smtp.get("pass", "")
@@ -412,18 +373,198 @@ async def test_notification(req: TestNotifRequest):
 
     success, error = send_email(smtp, req.email, "✦ TPL Mission Control — Test Notification", html)
 
-    conn = get_db()
     if success:
-        conn.execute(
-            "INSERT INTO activity_log (type, message, meta) VALUES (?,?,?)",
-            ("smtp", f"Test notification sent to {req.email}", "{}")
-        )
-    conn.commit()
-    conn.close()
+        supabase.table("activity_log").insert({
+            "type": "smtp",
+            "message": f"Test notification sent to {req.email}",
+            "meta": {}
+        }).execute()
 
     if success:
         return {"success": True}
     return {"success": False, "error": error}
+
+
+# ── CALENDLY WEBHOOK ──
+
+def verify_calendly_signature(payload: bytes, signature_header: str, signing_key: str) -> bool:
+    """Verify Calendly webhook signature. Header format: t=timestamp,v1=signature."""
+    if not signing_key or not signature_header:
+        return False
+    try:
+        parts = dict(p.split("=", 1) for p in signature_header.split(","))
+        timestamp = parts.get("t", "")
+        received_sig = parts.get("v1", "")
+        if not timestamp or not received_sig:
+            return False
+        # Calendly signs: timestamp + "." + payload
+        signed_payload = f"{timestamp}.".encode() + payload
+        expected = hmac.new(signing_key.encode(), signed_payload, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, received_sig)
+    except Exception:
+        return False
+
+
+def build_calendly_email(invitee_name: str, invitee_email: str, event_name: str, start_time: str) -> str:
+    """Build HTML email for Calendly booking notification."""
+    timestamp = datetime.utcnow().strftime("%B %d, %Y at %I:%M %p UTC")
+    try:
+        dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+        call_time = dt.strftime("%B %d, %Y at %I:%M %p UTC")
+    except Exception:
+        call_time = start_time
+
+    return f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
+    <div style="margin-bottom:28px;">
+      <div style="font-size:22px;font-weight:700;color:#e8e8f0;letter-spacing:2px;margin-bottom:4px;">TPL<span style="color:#6c63ff;">.</span></div>
+      <div style="font-size:11px;color:#666;letter-spacing:3px;text-transform:uppercase;">Mission Control &middot; Call Booked</div>
+    </div>
+    <div style="background:#12121a;border:1px solid #2a2a3d;border-radius:12px;overflow:hidden;">
+      <div style="background:#34d399;padding:4px 0;"></div>
+      <div style="padding:28px;">
+        <div style="font-size:11px;color:#34d399;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Discovery Call Scheduled</div>
+        <div style="font-size:24px;font-weight:700;color:#e8e8f0;margin-bottom:4px;">{invitee_name}</div>
+        <div style="font-size:13px;color:#888;margin-bottom:24px;">{timestamp}</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;width:120px;">Email</td><td style="padding:8px 0;"><a href="mailto:{invitee_email}" style="color:#6c63ff;font-size:13px;text-decoration:none;">{invitee_email}</a></td></tr>
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;">Event</td><td style="padding:8px 0;color:#e8e8f0;font-size:13px;">{event_name}</td></tr>
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;">Scheduled</td><td style="padding:8px 0;color:#34d399;font-size:13px;">{call_time}</td></tr>
+        </table>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid #2a2a3d;">
+          <a href="https://mission.tplcollective.ai" style="display:inline-block;background:#6c63ff;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:600;">View in Mission Control &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:20px;font-size:11px;color:#444;text-align:center;">TPL Collective &middot; mission.tplcollective.ai</div>
+  </div>
+</body>
+</html>
+"""
+
+
+@app.post("/api/webhooks/calendly")
+async def calendly_webhook(request: Request):
+    """Handle Calendly webhook events (invitee.created, invitee.canceled)."""
+    body = await request.body()
+
+    # Optional signature verification if signing key is configured
+    settings = load_settings()
+    signing_key = settings.get("calendly_signing_key", "")
+    if signing_key:
+        sig = request.headers.get("Calendly-Webhook-Signature", "")
+        if not verify_calendly_signature(body, sig, signing_key):
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    event_type = data.get("event", "")
+    payload = data.get("payload", {})
+
+    # Extract invitee info
+    invitee = payload.get("invitee", {}) or {}
+    invitee_name = invitee.get("name", "Unknown")
+    invitee_email = invitee.get("email", "")
+    invitee_phone = invitee.get("text_reminder_number", "")
+
+    # Extract event details
+    scheduled_event = payload.get("scheduled_event", {}) or {}
+    event_name = payload.get("event_type", {}).get("name", "Discovery Call") if payload.get("event_type") else "Discovery Call"
+    start_time = scheduled_event.get("start_time", "")
+
+    # Extract UTM/tracking data
+    tracking = payload.get("tracking", {}) or {}
+    utm_source = tracking.get("utm_source", "")
+    utm_campaign = tracking.get("utm_campaign", "")
+
+    # Extract answers to custom questions
+    questions = payload.get("questions_and_answers", []) or []
+    qa_notes = "; ".join([f"{q.get('question', '')}: {q.get('answer', '')}" for q in questions]) if questions else ""
+
+    if event_type == "invitee.created" and invitee_email:
+        # Check if lead already exists by email
+        existing = supabase.table("leads").select("id, status, name").eq("email", invitee_email).execute()
+
+        if existing.data:
+            # Update existing lead to 'meeting' status
+            lead = existing.data[0]
+            lead_id = lead["id"]
+            updates = {
+                "status": "meeting",
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            if invitee_phone and not lead.get("phone"):
+                updates["phone"] = invitee_phone
+            supabase.table("leads").update(updates).eq("id", lead_id).execute()
+
+            supabase.table("activity_log").insert({
+                "type": "calendly",
+                "message": f"Discovery call booked: {lead['name']} ({invitee_email}) — {event_name} at {start_time}",
+                "meta": {"lead_id": lead_id, "event": event_name, "start_time": start_time}
+            }).execute()
+        else:
+            # Create new lead from Calendly booking
+            source = f"calendly"
+            if utm_source:
+                source = f"calendly:{utm_source}"
+
+            result = supabase.table("leads").insert({
+                "name": invitee_name,
+                "email": invitee_email,
+                "phone": invitee_phone or "",
+                "brokerage": "",
+                "deals_per_year": "",
+                "avg_price": "",
+                "source": source,
+                "status": "meeting",
+                "notes": qa_notes if qa_notes else ""
+            }).execute()
+
+            lead_id = result.data[0]["id"]
+
+            supabase.table("activity_log").insert({
+                "type": "calendly",
+                "message": f"New lead via Calendly: {invitee_name} ({invitee_email}) — {event_name} at {start_time}",
+                "meta": {"lead_id": lead_id, "event": event_name, "start_time": start_time}
+            }).execute()
+
+        # Send notification email
+        try:
+            notif = settings.get("notifications", {})
+            if notif.get("newLead", False):
+                to_email = notif.get("email", "")
+                smtp = settings.get("smtp", {})
+                if to_email and smtp.get("pass"):
+                    subject = f"Call Booked: {invitee_name} — TPL Mission Control"
+                    html = build_calendly_email(invitee_name, invitee_email, event_name, start_time)
+                    send_email(smtp, to_email, subject, html)
+        except Exception:
+            pass  # Never let notification failure break webhook
+
+        return {"success": True, "action": "lead_updated" if existing.data else "lead_created", "lead_id": lead_id}
+
+    elif event_type == "invitee.canceled" and invitee_email:
+        # Log cancellation but don't delete the lead
+        existing = supabase.table("leads").select("id, name").eq("email", invitee_email).execute()
+        if existing.data:
+            lead = existing.data[0]
+            supabase.table("activity_log").insert({
+                "type": "calendly",
+                "message": f"Call canceled: {lead['name']} ({invitee_email})",
+                "meta": {"lead_id": lead["id"], "event": event_name}
+            }).execute()
+
+        return {"success": True, "action": "cancellation_logged"}
+
+    # Unhandled event type — acknowledge receipt
+    return {"success": True, "action": "ignored", "event": event_type}
 
 
 # ── SERVE DASHBOARD ──

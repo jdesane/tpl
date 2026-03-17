@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brokerage Comparisons | LPT Realty vs. The Industry &mdash; TPL Collective</title>
+<meta name="description" content="Side-by-side fee comparisons between LPT Realty and every major brokerage. See how much more you'd keep."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 60vh;
+  background: var(--bg);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 140px 5% 80px;
+  text-align: center;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 800px; margin: 0 auto; width: 100%;
+  position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero-eyebrow::after { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 7vw, 80px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); font-weight: 300;
+  max-width: 600px; margin: 0 auto;
+}
+
+/* ── SECTION BASE ── */
+.section { padding: 96px 5%; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 20px;
+}
+.section-title em { font-style: normal; color: var(--accent); }
+.section-sub {
+  font-size: 16px; line-height: 1.7;
+  color: var(--muted); font-weight: 300;
+  max-width: 600px; margin-bottom: 48px;
+}
+
+/* ── COMPARISON CARD GRID ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.comp-card {
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 28px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.comp-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(108,99,255,0.15);
+}
+.comp-card-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px; letter-spacing: 0.03em;
+  color: var(--white); line-height: 1;
+  margin-bottom: 12px;
+}
+.comp-card-savings {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; color: var(--green);
+  line-height: 1; margin-bottom: 6px;
+}
+.comp-card-savings-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 16px;
+}
+.comp-card-desc {
+  font-size: 14px; line-height: 1.6;
+  color: var(--muted); font-weight: 300;
+  flex: 1;
+  margin-bottom: 20px;
+}
+.comp-card-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent); font-weight: 500;
+  transition: color 0.2s;
+}
+.comp-card:hover .comp-card-link { color: var(--accent-hi); }
+.comp-card-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-br);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+/* ── NOT SURE SECTION ── */
+.not-sure {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 48px;
+  margin-top: 80px;
+  text-align: center;
+}
+.not-sure h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; color: var(--white);
+  letter-spacing: 0.02em; margin-bottom: 16px;
+}
+.not-sure p {
+  font-size: 16px; line-height: 1.7;
+  color: var(--muted); font-weight: 300;
+  max-width: 560px; margin: 0 auto 32px;
+}
+.not-sure-actions {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+}
+
+/* ── CTA ── */
+.cta {
+  padding: 100px 5%;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.cta-glow {
+  position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 400px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+}
+.cta-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(42px, 5vw, 68px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 22px;
+  position: relative; z-index: 1;
+}
+.cta-title em { font-style: normal; color: var(--accent); }
+.cta-sub {
+  font-size: 16px; line-height: 1.7;
+  color: var(--muted); font-weight: 300;
+  max-width: 540px; margin: 0 auto 36px;
+  position: relative; z-index: 1;
+}
+.cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+
+/* ── BUTTONS ── */
+.btn-primary {
+  background: var(--accent); color: var(--white);
+  padding: 15px 34px; border-radius: 6px;
+  font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,99,255,0.4); }
+.btn-secondary {
+  border: 1px solid var(--border); color: var(--muted);
+  padding: 15px 32px; border-radius: 6px;
+  font-weight: 500; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s; background: transparent; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 40px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ── ANIMATIONS ── */
+.fade-in {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+.fade-in.delay-1 { transition-delay: 0.1s; }
+.fade-in.delay-2 { transition-delay: 0.2s; }
+.fade-in.delay-3 { transition-delay: 0.3s; }
+
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; letter-spacing: 0.05em !important;
+  text-transform: uppercase; border: none;
+}
+
+/* ── TABLET ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 110px 5% 60px; }
+  .hero h1 { font-size: clamp(42px, 10vw, 64px); }
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+  .section { padding: 64px 5%; }
+  .not-sure { padding: 36px 28px; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE ── */
+@media (max-width: 480px) {
+  .hero { padding: 96px 4% 48px; }
+  .hero h1 { font-size: clamp(38px, 12vw, 52px); }
+  .hero-sub { font-size: 15px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .section { padding: 52px 4%; }
+  .comp-card { padding: 28px 22px; }
+  .not-sure { padding: 32px 20px; margin-top: 48px; }
+  .not-sure-actions { flex-direction: column; align-items: center; }
+  .not-sure-actions .btn-primary,
+  .not-sure-actions .btn-secondary { width: 100%; max-width: 320px; text-align: center; }
+  .cta-actions { flex-direction: column; align-items: center; }
+  .cta-actions .btn-primary,
+  .cta-actions .btn-secondary { width: 100%; max-width: 320px; text-align: center; }
+  .btn-primary, .btn-secondary { padding: 14px 24px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow fade-in">Compare Brokerages</div>
+    <h1 class="fade-in delay-1">How Does LPT Stack Up<br>Against <em>Your Brokerage?</em></h1>
+    <p class="hero-sub fade-in delay-2">Every page uses the same math: real fees, real scenarios, real take-home numbers. Pick your brokerage below and see the difference.</p>
+  </div>
+</section>
+
+<!-- ── COMPARISON CARDS ── -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-label fade-in">Pick Your Brokerage</div>
+    <h2 class="section-title fade-in">Side-by-Side <em>Comparisons</em></h2>
+    <p class="section-sub fade-in">Each page breaks down splits, caps, fees, and annual take-home for a real-world 12-deal scenario.</p>
+
+    <div class="card-grid">
+
+      <a href="/vs/keller-williams" class="comp-card fade-in delay-1">
+        <div class="comp-card-name">Keller Williams</div>
+        <div class="comp-card-savings">$17,883/year</div>
+        <div class="comp-card-savings-label">Estimated Annual Savings</div>
+        <div class="comp-card-desc">30% split + 6% franchise fee + desk fees = the most common brokerage agents switch from</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+      <a href="/vs/exp-realty" class="comp-card fade-in delay-2">
+        <div class="comp-card-name">eXp Realty</div>
+        <div class="comp-card-savings">$10,349/year</div>
+        <div class="comp-card-savings-label">Estimated Annual Savings</div>
+        <div class="comp-card-desc">Same cloud model, $11K lower cap, no monthly tech fee</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+      <a href="/vs/exp-switch" class="comp-card fade-in delay-3">
+        <div class="comp-card-tag">Migration Guide</div>
+        <div class="comp-card-name">eXp &rarr; LPT Switch Guide</div>
+        <div class="comp-card-savings-label" style="margin-bottom: 16px;">Step-by-Step Transition</div>
+        <div class="comp-card-desc">Already thinking about leaving eXp? 8 quarters of decline. Here's what comes next.</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+      <a href="/vs/coldwell-banker" class="comp-card fade-in delay-1">
+        <div class="comp-card-name">Coldwell Banker</div>
+        <div class="comp-card-savings">$42,000+/year</div>
+        <div class="comp-card-savings-label">Estimated Annual Savings</div>
+        <div class="comp-card-desc">No cap, 50/50 starting split, 6-8% franchise fee &mdash; the most expensive model we've analyzed</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+      <a href="/vs/century-21" class="comp-card fade-in delay-2">
+        <div class="comp-card-name">Century 21</div>
+        <div class="comp-card-savings">6% royalty eliminated</div>
+        <div class="comp-card-savings-label">Estimated Annual Savings</div>
+        <div class="comp-card-desc">C21 charges a 6% royalty on every deal. LPT charges $0.</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+      <a href="/vs/real-brokerage" class="comp-card fade-in delay-3">
+        <div class="comp-card-name">REAL Brokerage</div>
+        <div class="comp-card-savings">15% &rarr; $500 flat</div>
+        <div class="comp-card-savings-label">Estimated Annual Savings</div>
+        <div class="comp-card-desc">Solid cloud brokerage, but 85/15 split and $12K cap vs. LPT's $5K</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+      <a href="/vs/remax" class="comp-card fade-in delay-1">
+        <div class="comp-card-name">RE/MAX</div>
+        <div class="comp-card-savings">~$16,960/year</div>
+        <div class="comp-card-savings-label">Estimated Annual Savings</div>
+        <div class="comp-card-desc">Desk fees of $1,000-$3,000/month make RE/MAX one of the most expensive options</div>
+        <div class="comp-card-link">See Comparison &rarr;</div>
+      </a>
+
+    </div>
+
+    <!-- ── NOT SURE ── -->
+    <div class="not-sure fade-in">
+      <h3>Not Sure Which Comparison Applies?</h3>
+      <p>Every agent's situation is different. If your brokerage isn't listed, our commission calculator works with any fee structure.</p>
+      <div class="not-sure-actions">
+        <a href="/commission-calculator" class="btn-primary">Run the Calculator</a>
+        <a href="https://calendly.com/discovertpl" class="btn-secondary">Book a Call</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta">
+  <div class="cta-glow"></div>
+  <div class="cta-eyebrow fade-in">The Numbers Are Clear</div>
+  <h2 class="cta-title fade-in">The Math Speaks<br>for <em>Itself</em></h2>
+  <p class="cta-sub fade-in">Pick a comparison, run the calculator, or book 15 minutes with Joe. No pressure.</p>
+  <div class="cta-actions fade-in">
+    <a href="https://calendly.com/discovertpl" class="btn-primary">Book a Call</a>
+    <a href="/commission-calculator" class="btn-secondary">Free Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/">Home</a><a href="/lpt-explained">LPT Explained</a><a href="/why-tpl">Why TPL</a><a href="/fee-plans">Fee Plans</a><a href="/resources">Free Resources</a><a href="https://calendly.com/discovertpl">Book a Call</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// IntersectionObserver for .fade-in
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
