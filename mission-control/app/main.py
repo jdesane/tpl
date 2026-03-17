@@ -2193,6 +2193,16 @@ async def process_drip_queue():
         subject = step_data["subject"].replace("[Name]", first_name).replace("[name]", first_name)
         body_text = step_data["body"].replace("[Name]", first_name).replace("[name]", first_name)
 
+        # Inject tracking cid into all tplcollective.ai URLs
+        if contact_id:
+            import re
+            def add_cid(match):
+                url = match.group(0)
+                sep = "&" if "?" in url else "?"
+                return f"{url}{sep}cid={contact_id}&ref=drip"
+            body_text = re.sub(r'tplcollective\.ai/[^\s"\'<>]+', add_cid, body_text)
+            body_text = body_text.replace("calendly.com/discovertpl", f"calendly.com/discovertpl?utm_source=drip&utm_campaign=revival&cid={contact_id}")
+
         # Build HTML email
         html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
