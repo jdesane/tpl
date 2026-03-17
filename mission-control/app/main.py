@@ -250,6 +250,20 @@ async def create_lead(lead: LeadIn):
         "meta": {"lead_id": lead_id}
     }).execute()
 
+    # Auto-create opportunity in default pipeline
+    try:
+        default_pipeline = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+        if default_pipeline.data:
+            supabase.table("opportunities").insert({
+                "contact_id": lead_id,
+                "pipeline_id": default_pipeline.data[0]["id"],
+                "stage": "new_fb_lead",
+                "source": lead.source or "Web",
+                "status": "open"
+            }).execute()
+    except Exception:
+        pass  # Never let opportunity creation break lead capture
+
     # Fire notification (non-blocking, never fails the request)
     maybe_notify_new_lead(lead.dict())
 
@@ -451,6 +465,325 @@ def dashboard_pipeline_health():
 def get_hot_leads(limit: int = 5):
     result = supabase.table("leads").select("*").not_.is_("lead_score", "null").order("lead_score", desc=True).limit(limit).execute()
     return result.data
+
+
+# ── CONTACTS (alias for leads — the master database) ──
+
+@app.get("/api/contacts")
+def get_contacts(smart_list: Optional[int] = None, search: Optional[str] = None, limit: int = 500):
+    query = supabase.table("leads").select("*").order("created_at", desc=True).limit(limit)
+
+    if smart_list:
+        sl = supabase.table("smart_lists").select("filters").eq("id", smart_list).execute()
+        if sl.data:
+            filters = sl.data[0].get("filters", {})
+            if filters.get("brokerage"):
+                query = query.or_(f"current_brokerage.ilike.%{filters['brokerage']}%,brokerage.ilike.%{filters['brokerage']}%")
+            if filters.get("min_score"):
+                query = query.gte("lead_score", filters["min_score"])
+            if filters.get("source"):
+                query = query.ilike("source", f"%{filters['source']}%")
+            if filters.get("stale_days"):
+                from datetime import timedelta
+                cutoff = (datetime.utcnow() - timedelta(days=filters["stale_days"])).isoformat()
+                query = query.or_(f"last_contacted_at.is.null,last_contacted_at.lt.{cutoff}")
+
+    if search:
+        query = query.or_(f"name.ilike.%{search}%,email.ilike.%{search}%,phone.ilike.%{search}%,current_brokerage.ilike.%{search}%")
+
+    result = query.execute()
+    return result.data
+
+
+@app.get("/api/contacts/{contact_id}")
+def get_contact(contact_id: int):
+    result = supabase.table("leads").select("*").eq("id", contact_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    contact = result.data[0]
+    # Get active opportunity
+    opp = supabase.table("opportunities").select("*, pipelines(name, stages)").eq("contact_id", contact_id).eq("status", "open").execute()
+    contact["opportunity"] = opp.data[0] if opp.data else None
+    return contact
+
+
+@app.post("/api/contacts")
+async def create_contact(request: Request):
+    data = await request.json()
+    # Auto-split name into first/last
+    if data.get("name") and not data.get("first_name"):
+        parts = data["name"].split(" ", 1)
+        data["first_name"] = parts[0]
+        data["last_name"] = parts[1] if len(parts) > 1 else ""
+    if not data.get("name") and data.get("first_name"):
+        data["name"] = f"{data['first_name']} {data.get('last_name', '')}".strip()
+
+    result = supabase.table("leads").insert(data).execute()
+    contact = result.data[0] if result.data else {}
+    contact_id = contact.get("id")
+
+    if contact_id:
+        supabase.table("lead_activity").insert({
+            "lead_id": contact_id,
+            "activity_type": "created",
+            "description": f"Contact created: {data.get('name', 'Unknown')}"
+        }).execute()
+        supabase.table("activity_log").insert({
+            "type": "lead",
+            "message": f"New contact: {data.get('name', 'Unknown')}",
+            "meta": {"lead_id": contact_id}
+        }).execute()
+
+    return {"success": True, "data": contact}
+
+
+@app.put("/api/contacts/{contact_id}")
+async def update_contact(contact_id: int, request: Request):
+    data = await request.json()
+    data["updated_at"] = datetime.utcnow().isoformat()
+
+    # Track changes for activity log
+    old = supabase.table("leads").select("stage, lead_score, name").eq("id", contact_id).execute()
+    old_data = old.data[0] if old.data else {}
+
+    # Auto-sync name
+    if data.get("first_name") or data.get("last_name"):
+        fn = data.get("first_name", old_data.get("first_name", ""))
+        ln = data.get("last_name", old_data.get("last_name", ""))
+        data["name"] = f"{fn} {ln}".strip()
+
+    supabase.table("leads").update(data).eq("id", contact_id).execute()
+
+    # Log score changes
+    if "lead_score" in data and data["lead_score"] != old_data.get("lead_score"):
+        supabase.table("lead_activity").insert({
+            "lead_id": contact_id,
+            "activity_type": "score_change",
+            "description": f"Score changed: {old_data.get('lead_score', 0)} → {data['lead_score']}",
+            "metadata": {"from": old_data.get("lead_score"), "to": data["lead_score"]}
+        }).execute()
+
+    return {"success": True}
+
+
+@app.post("/api/contacts/import")
+async def import_contacts(request: Request):
+    """Import contacts from CSV data (JSON array of objects)."""
+    data = await request.json()
+    rows = data.get("contacts", [])
+    imported = 0
+    for row in rows:
+        if row.get("name") and not row.get("first_name"):
+            parts = row["name"].split(" ", 1)
+            row["first_name"] = parts[0]
+            row["last_name"] = parts[1] if len(parts) > 1 else ""
+        if not row.get("name") and row.get("first_name"):
+            row["name"] = f"{row['first_name']} {row.get('last_name', '')}".strip()
+        row["source"] = row.get("source", "csv_import")
+        try:
+            supabase.table("leads").insert(row).execute()
+            imported += 1
+        except Exception:
+            pass
+    return {"success": True, "imported": imported, "total": len(rows)}
+
+
+# ── OPPORTUNITIES ──
+
+@app.get("/api/opportunities")
+def get_opportunities(pipeline_id: Optional[int] = None):
+    query = supabase.table("opportunities").select("*, leads(id, name, first_name, last_name, email, phone, current_brokerage, brokerage, lead_score, lead_temperature, source, tags, last_contacted_at, created_at)")
+    if pipeline_id:
+        query = query.eq("pipeline_id", pipeline_id)
+    else:
+        # Default to the default pipeline
+        default = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+        if default.data:
+            query = query.eq("pipeline_id", default.data[0]["id"])
+    query = query.eq("status", "open").order("created_at", desc=False)
+    result = query.execute()
+    return result.data
+
+
+@app.post("/api/opportunities")
+async def create_opportunity(request: Request):
+    data = await request.json()
+    contact_id = data.get("contact_id")
+    if not contact_id:
+        raise HTTPException(status_code=400, detail="contact_id required")
+
+    # Get default pipeline if not specified
+    pipeline_id = data.get("pipeline_id")
+    if not pipeline_id:
+        default = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+        pipeline_id = default.data[0]["id"] if default.data else None
+    if not pipeline_id:
+        raise HTTPException(status_code=400, detail="No pipeline found")
+
+    result = supabase.table("opportunities").insert({
+        "contact_id": contact_id,
+        "pipeline_id": pipeline_id,
+        "stage": data.get("stage", "new_fb_lead"),
+        "opportunity_value": data.get("opportunity_value", 0),
+        "source": data.get("source", ""),
+        "status": "open"
+    }).execute()
+
+    opp = result.data[0] if result.data else {}
+
+    # Log activity
+    supabase.table("lead_activity").insert({
+        "lead_id": contact_id,
+        "activity_type": "opportunity_created",
+        "description": f"Added to pipeline: {data.get('stage', 'new_fb_lead')}"
+    }).execute()
+
+    return {"success": True, "data": opp}
+
+
+@app.put("/api/opportunities/{opp_id}")
+async def update_opportunity(opp_id: int, request: Request):
+    data = await request.json()
+    data["updated_at"] = datetime.utcnow().isoformat()
+
+    # Track stage changes
+    old = supabase.table("opportunities").select("stage, contact_id").eq("id", opp_id).execute()
+    old_data = old.data[0] if old.data else {}
+    old_stage = old_data.get("stage")
+    new_stage = data.get("stage")
+
+    supabase.table("opportunities").update(data).eq("id", opp_id).execute()
+
+    if new_stage and old_stage and new_stage != old_stage:
+        contact_id = old_data.get("contact_id")
+        if contact_id:
+            # Update last_contacted_at on the contact
+            supabase.table("leads").update({
+                "last_contacted_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", contact_id).execute()
+
+            supabase.table("lead_activity").insert({
+                "lead_id": contact_id,
+                "activity_type": "stage_change",
+                "description": f"Stage: {old_stage} → {new_stage}",
+                "metadata": {"from": old_stage, "to": new_stage}
+            }).execute()
+
+            supabase.table("activity_log").insert({
+                "type": "opportunity",
+                "message": f"Opportunity moved: {old_stage} → {new_stage}",
+                "meta": {"opportunity_id": opp_id, "contact_id": contact_id}
+            }).execute()
+
+            # If joined_lpt, create agent record
+            if new_stage == "joined_lpt":
+                contact = supabase.table("leads").select("name, email, phone, current_brokerage").eq("id", contact_id).execute()
+                if contact.data:
+                    c = contact.data[0]
+                    supabase.table("agents").insert({
+                        "name": c["name"],
+                        "email": c.get("email", ""),
+                        "phone": c.get("phone", ""),
+                        "previous_brokerage": c.get("current_brokerage", ""),
+                        "status": "active",
+                        "join_date": datetime.utcnow().strftime("%Y-%m-%d")
+                    }).execute()
+
+    return {"success": True}
+
+
+@app.delete("/api/opportunities/{opp_id}")
+def delete_opportunity(opp_id: int):
+    supabase.table("opportunities").update({"status": "closed"}).eq("id", opp_id).execute()
+    return {"success": True}
+
+
+# ── PIPELINES ──
+
+@app.get("/api/pipelines")
+def get_pipelines():
+    result = supabase.table("pipelines").select("*").order("created_at").execute()
+    return result.data
+
+
+@app.get("/api/pipelines/{pipeline_id}")
+def get_pipeline(pipeline_id: int):
+    result = supabase.table("pipelines").select("*").eq("id", pipeline_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+    return result.data[0]
+
+
+@app.post("/api/pipelines")
+async def create_pipeline(request: Request):
+    data = await request.json()
+    result = supabase.table("pipelines").insert(data).execute()
+    return {"success": True, "data": result.data[0] if result.data else None}
+
+
+@app.put("/api/pipelines/{pipeline_id}")
+async def update_pipeline(pipeline_id: int, request: Request):
+    data = await request.json()
+    data["updated_at"] = datetime.utcnow().isoformat()
+    supabase.table("pipelines").update(data).eq("id", pipeline_id).execute()
+    return {"success": True}
+
+
+# ── SMART LISTS ──
+
+@app.get("/api/smart-lists")
+def get_smart_lists():
+    result = supabase.table("smart_lists").select("*").order("sort_order").execute()
+    # Add counts
+    all_leads = supabase.table("leads").select("id", count="exact").execute()
+    for sl in result.data:
+        if not sl["filters"]:
+            sl["count"] = all_leads.count or 0
+        else:
+            sl["count"] = "—"  # Computed on click
+    return result.data
+
+
+@app.post("/api/smart-lists")
+async def create_smart_list(request: Request):
+    data = await request.json()
+    result = supabase.table("smart_lists").insert(data).execute()
+    return {"success": True, "data": result.data[0] if result.data else None}
+
+
+@app.delete("/api/smart-lists/{list_id}")
+def delete_smart_list(list_id: int):
+    supabase.table("smart_lists").delete().eq("id", list_id).execute()
+    return {"success": True}
+
+
+# ── CONTACT COMMUNICATIONS ──
+
+@app.get("/api/contacts/{contact_id}/communications")
+def get_contact_communications(contact_id: int):
+    result = supabase.table("contact_communications").select("*").eq("contact_id", contact_id).order("created_at", desc=True).execute()
+    return result.data
+
+
+@app.post("/api/contacts/{contact_id}/communications")
+async def add_communication(contact_id: int, request: Request):
+    data = await request.json()
+    data["contact_id"] = contact_id
+    result = supabase.table("contact_communications").insert(data).execute()
+
+    supabase.table("lead_activity").insert({
+        "lead_id": contact_id,
+        "activity_type": "communication",
+        "description": f"{data.get('channel', 'email')} {data.get('direction', 'outbound')}: {data.get('subject', '')}"
+    }).execute()
+
+    # Update last_contacted_at
+    supabase.table("leads").update({
+        "last_contacted_at": datetime.utcnow().isoformat()
+    }).eq("id", contact_id).execute()
+
+    return {"success": True, "data": result.data[0] if result.data else None}
 
 
 # ── LEAD NOTES & ACTIVITY ──

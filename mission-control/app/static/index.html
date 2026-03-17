@@ -137,6 +137,22 @@ a{color:var(--accent);text-decoration:none}
 .tab-btn{padding:8px 16px;font-size:11px;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 .funnel-card:hover{border-color:var(--accent)!important}
+.profile-fields{display:flex;flex-direction:column;gap:8px}
+.profile-field{display:flex;align-items:center;gap:8px}
+.profile-field-label{width:140px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);flex-shrink:0}
+.profile-field-value{flex:1;font-size:13px;color:var(--text);padding:4px 8px;border-radius:4px;cursor:text;min-height:24px;border:1px solid transparent}
+.profile-field-value:hover{border-color:var(--border)}
+.profile-field-value:focus{outline:none;border-color:var(--accent);background:var(--bg)}
+.profile-tab-content{min-height:200px}
+.smart-tab{padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);color:var(--text-muted);background:transparent;transition:all .15s;white-space:nowrap}
+.smart-tab:hover{border-color:var(--accent);color:var(--text)}
+.smart-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.opp-card{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.opp-card:hover{border-color:var(--accent)}
+.opp-card .opp-name{font-weight:600;font-size:12px;margin-bottom:2px}
+.opp-card .opp-broker{font-size:10px;color:var(--text-dim)}
+.opp-card .opp-footer{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:10px}
+@media(max-width:900px){#profile-layout{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -155,8 +171,8 @@ a{color:var(--accent);text-decoration:none}
   <div class="nav-group">
     <div class="nav-group-label">Command</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">&#x2B21;</span>Dashboard</div>
-    <div class="nav-item" onclick="showPage('leads')"><span class="icon">&#x25CE;</span>Leads<span class="nav-badge" id="leads-badge">0</span></div>
-    <div class="nav-item" onclick="showPage('pipeline')"><span class="icon">&#x25B7;</span>Pipeline Board</div>
+    <div class="nav-item" onclick="showPage('contacts')"><span class="icon">&#x25CE;</span>Contacts<span class="nav-badge" id="contacts-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('opportunities')"><span class="icon">&#x25B7;</span>Opportunities</div>
     <div class="nav-item" onclick="showPage('agents')"><span class="icon">&#x2606;</span>Agents</div>
   </div>
   <div class="nav-group">
@@ -248,23 +264,162 @@ a{color:var(--accent);text-decoration:none}
     <div class="panel"><div class="panel-header"><div class="panel-title">System Status</div></div><div id="system-status"></div></div>
   </div>
 </div>
-<div class="page" id="page-leads">
+
+<!-- ═══ CONTACTS PAGE ═══ -->
+<div class="page" id="page-contacts">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div><div class="panel-title" style="font-size:24px">Leads</div><div class="page-subtitle">All leads &middot; Table view</div></div>
-    <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="aiAction('score-leads')">Score All</button><button class="btn btn-primary btn-sm" onclick="openAddLead()">+ Add Lead</button></div>
+    <div>
+      <div class="panel-title" style="font-size:24px">Contacts</div>
+      <div class="page-subtitle">Master database &middot; All leads, prospects, and agents</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="openImportModal()">Import CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddContact()">+ Add Contact</button>
+    </div>
   </div>
-  <div class="leads-toolbar">
-    <input class="leads-search" placeholder="Search leads..." oninput="searchLeads(this.value)">
-    <div class="filter-tabs" id="stage-filters"></div>
-    <div class="view-toggle"><div class="view-btn active" onclick="setView('table')">Table</div><div class="view-btn" onclick="setView('kanban')">Kanban</div></div>
+  <!-- Smart Lists tabs -->
+  <div id="smart-list-tabs" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap"></div>
+  <!-- Search -->
+  <div style="margin-bottom:12px">
+    <input type="text" id="contacts-search" placeholder="Search contacts..." onkeyup="searchContacts(this.value)" style="width:100%;max-width:400px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none">
   </div>
-  <div id="leads-table-wrap"><table class="leads-table"><thead><tr><th>Agent</th><th>Brokerage</th><th>Score</th><th>Stage</th><th>Source</th><th>Date</th><th></th></tr></thead><tbody id="leads-tbody"></tbody></table></div>
-  <div id="leads-kanban-wrap" style="display:none"></div>
+  <!-- Table -->
+  <div class="panel" style="overflow-x:auto">
+    <table class="leads-table" id="contacts-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Brokerage</th>
+          <th>Source</th>
+          <th>Created</th>
+          <th>Last Activity</th>
+          <th>Tags</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody id="contacts-tbody"></tbody>
+    </table>
+  </div>
 </div>
-<div class="page" id="page-pipeline">
-  <div style="margin-bottom:16px"><div class="panel-title" style="font-size:24px">Pipeline Board</div><div class="page-subtitle">Drag to move leads through stages &middot; Board view</div></div>
-  <div class="kanban" id="pipeline-kanban"></div>
+
+<!-- ═══ OPPORTUNITIES PAGE ═══ -->
+<div class="page" id="page-opportunities">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div>
+      <div class="panel-title" style="font-size:24px">Opportunities</div>
+      <div class="page-subtitle">Active recruits moving through pipeline</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="pipeline-select" onchange="loadOpportunities()" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;outline:none"></select>
+      <button class="btn btn-primary btn-sm" onclick="openCreateOpportunity()">+ Add Opportunity</button>
+    </div>
+  </div>
+  <div class="kanban" id="opportunities-kanban"></div>
 </div>
+
+<!-- ═══ CONTACT PROFILE PAGE ═══ -->
+<div class="page" id="page-contact-profile">
+  <div style="margin-bottom:16px">
+    <button class="btn btn-ghost btn-sm" onclick="showPage('contacts')" style="margin-bottom:12px">&larr; Back to Contacts</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="profile-layout">
+    <!-- LEFT COLUMN -->
+    <div id="profile-left">
+      <!-- Header -->
+      <div class="panel" style="margin-bottom:16px" id="profile-header">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div id="profile-avatar" style="width:56px;height:56px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff"></div>
+          <div style="flex:1">
+            <div id="profile-name" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);letter-spacing:1px"></div>
+            <div id="profile-subtitle" style="font-size:12px;color:var(--text-muted)"></div>
+          </div>
+          <div id="profile-score-badge"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="profileAction('email')">Email</button>
+          <button class="btn btn-ghost btn-sm" onclick="profileAction('call')">Call</button>
+          <button class="btn btn-ghost btn-sm" onclick="profileAction('text')">Text</button>
+          <button class="btn btn-ghost btn-sm" onclick="profileAddNote()">Add Note</button>
+          <button class="btn btn-primary btn-sm" onclick="createOpportunityForContact()">+ Opportunity</button>
+        </div>
+      </div>
+      <!-- Basic Info -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Basic Info</div>
+        <div class="profile-fields" id="profile-basic-fields"></div>
+      </div>
+      <!-- Brokerage Intel -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Brokerage Intel</div>
+        <div class="profile-fields" id="profile-brokerage-fields"></div>
+      </div>
+      <!-- Qualifying -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Qualifying</div>
+        <div class="profile-fields" id="profile-qualifying-fields"></div>
+      </div>
+      <!-- Social -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Social</div>
+        <div class="profile-fields" id="profile-social-fields"></div>
+      </div>
+      <!-- Tags -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Tags</div>
+        <div id="profile-tags-display"></div>
+        <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap" id="profile-tag-suggestions"></div>
+        <input id="profile-tag-input" placeholder="Add tag..." onkeydown="if(event.key==='Enter'){event.preventDefault();addProfileTag(this.value);this.value='';}" style="margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;width:100%">
+      </div>
+    </div>
+    <!-- RIGHT COLUMN -->
+    <div id="profile-right">
+      <!-- Opportunity Status -->
+      <div class="panel" style="margin-bottom:16px" id="profile-opportunity-panel"></div>
+      <!-- Tab bar for right column -->
+      <div class="panel" style="padding:0">
+        <div class="tab-bar" style="padding:0 16px">
+          <div class="tab-btn active" onclick="switchProfileTab('notes',this)">Notes</div>
+          <div class="tab-btn" onclick="switchProfileTab('activity',this)">Activity</div>
+          <div class="tab-btn" onclick="switchProfileTab('communications',this)">Comms</div>
+          <div class="tab-btn" onclick="switchProfileTab('tasks',this)">Tasks</div>
+          <div class="tab-btn" onclick="switchProfileTab('sequences',this)">Sequences</div>
+        </div>
+        <!-- Notes Tab -->
+        <div class="profile-tab-content" id="ptab-notes" style="padding:16px">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input type="text" id="profile-note-input" placeholder="Add a note..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
+            <button class="btn btn-primary btn-sm" onclick="addProfileNote()">Add</button>
+          </div>
+          <div id="profile-notes-list" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+        <!-- Activity Tab -->
+        <div class="profile-tab-content" id="ptab-activity" style="padding:16px;display:none">
+          <div id="profile-activity-list" style="max-height:500px;overflow-y:auto"></div>
+        </div>
+        <!-- Communications Tab -->
+        <div class="profile-tab-content" id="ptab-communications" style="padding:16px;display:none">
+          <div id="profile-comms-list" style="max-height:400px;overflow-y:auto"></div>
+          <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+            <input id="profile-email-subject" placeholder="Subject" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px">
+            <textarea id="profile-email-body" placeholder="Email body..." style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:8px"></textarea>
+            <button class="btn btn-primary btn-sm" onclick="sendProfileEmail()">Send Email</button>
+          </div>
+        </div>
+        <!-- Tasks Tab -->
+        <div class="profile-tab-content" id="ptab-tasks" style="padding:16px;display:none">
+          <div id="profile-tasks-list"></div>
+        </div>
+        <!-- Sequences Tab -->
+        <div class="profile-tab-content" id="ptab-sequences" style="padding:16px;display:none">
+          <div id="profile-sequences-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-settings">
   <div class="panel-title" style="font-size:24px;margin-bottom:16px">Settings</div>
   <div class="row-2">
@@ -622,22 +777,23 @@ a{color:var(--accent);text-decoration:none}
 
 <div class="toast" id="toast"></div>
 <script>
-const API='';
-let allLeads=[],currentView='table',currentFilter='all',searchQuery='';
-const STAGES=['new','contacted','discovery_call','presentation','considering','signed','onboarding'];
-const STAGE_LABELS={new:'New',contacted:'Contacted',discovery_call:'Discovery Call',presentation:'Presentation',considering:'Considering',signed:'Signed',onboarding:'Onboarding'};
+var API=window.location.origin;
+var allLeads=[],currentView='table',currentFilter='all',searchQuery='';
+var STAGES=['new','contacted','discovery_call','presentation','considering','signed','onboarding'];
+var STAGE_LABELS={new:'New',contacted:'Contacted',discovery_call:'Discovery Call',presentation:'Presentation',considering:'Considering',signed:'Signed',onboarding:'Onboarding'};
 
-function updateClock(){const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})}
+function updateClock(){var d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})}
 setInterval(updateClock,1000);updateClock();
 
 function showPage(name){window.location.hash=name;
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item:not(.disabled)').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.nav-item:not(.disabled)').forEach(function(n){n.classList.remove('active')});
   document.getElementById('page-'+name).classList.add('active');
-  if(event&&event.target)event.target.closest('.nav-item').classList.add('active');
+  if(event&&event.target){var ni=event.target.closest('.nav-item');if(ni)ni.classList.add('active');}
   if(name==='dashboard')loadDashboard();
-  if(name==='leads')loadLeads();
-  if(name==='pipeline')loadPipelineKanban();
+  if(name==='contacts')loadContacts();
+  if(name==='opportunities')loadOpportunities();
+  if(name==='contact-profile'){}
   if(name==='settings')loadSettings();
   if(name==='agents')loadAgents();
   if(name==='drips')loadDripStats();
@@ -650,14 +806,15 @@ function showPage(name){window.location.hash=name;
 
 async function loadDashboard(){
   try{
-    const[overview,funnel,hot,tasks,health,activity]=await Promise.all([
-      fetch(API+'/api/dashboard/overview').then(r=>r.json()),
-      fetch(API+'/api/dashboard/funnel').then(r=>r.json()),
-      fetch(API+'/api/leads/hot?limit=5').then(r=>r.json()),
-      fetch(API+'/api/tasks/today').then(r=>r.json()),
-      fetch(API+'/api/dashboard/pipeline-health').then(r=>r.json()),
-      fetch(API+'/api/activity?limit=20').then(r=>r.json())
+    var results=await Promise.all([
+      fetch(API+'/api/dashboard/overview').then(function(r){return r.json()}),
+      fetch(API+'/api/dashboard/funnel').then(function(r){return r.json()}),
+      fetch(API+'/api/leads/hot?limit=5').then(function(r){return r.json()}),
+      fetch(API+'/api/tasks/today').then(function(r){return r.json()}),
+      fetch(API+'/api/dashboard/pipeline-health').then(function(r){return r.json()}),
+      fetch(API+'/api/activity?limit=20').then(function(r){return r.json()})
     ]);
+    var overview=results[0],funnel=results[1],hot=results[2],tasks=results[3],health=results[4],activity=results[5];
     document.getElementById('m-agents').textContent=overview.agents.total;
     document.getElementById('m-agents-change').textContent=overview.agents.new_this_month?'+'+overview.agents.new_this_month+' this month':'';
     document.getElementById('m-agents-change').className='change '+(overview.agents.new_this_month>0?'up':'neutral');
@@ -670,7 +827,7 @@ async function loadDashboard(){
     document.getElementById('m-retention-status').textContent=rs>=90?'Healthy':rs>=70?'Warning':'Critical';
     document.getElementById('m-retention-status').className='change '+(rs>=90?'up':rs>=70?'neutral':'down');
     document.getElementById('m-conversion').textContent=overview.leads.conversion_rate+'%';
-    document.getElementById('leads-badge').textContent=overview.leads.total;
+    document.getElementById('contacts-badge').textContent=overview.leads.total;
     // System status - fetch live automation data
     try{
       var autoStatus=await fetch(API+'/api/automations/status').then(function(r){return r.json()});
@@ -688,7 +845,7 @@ async function loadDashboard(){
     }catch(e){}
     var fh='';STAGES.forEach(function(s,i){var c=funnel[s]||0;var o=.15+(.85*(1-i/STAGES.length));fh+='<div class="funnel-stage" style="background:rgba(108,99,255,'+o+')"><span class="count">'+c+'</span><span class="lbl">'+STAGE_LABELS[s]+'</span></div>';});
     document.getElementById('funnel').innerHTML=fh;
-    if(hot.length){document.getElementById('hot-leads').innerHTML=hot.map(function(l){return'<div class="hot-lead" onclick="editLead('+l.id+')"><div class="score '+(l.lead_temperature||'warming')+'">'+(l.lead_score||0)+'</div><div class="info"><div class="name">'+l.name+'</div><div class="brokerage">'+(l.current_brokerage||l.brokerage||'Unknown')+'</div></div><span class="temp-badge '+(l.lead_temperature||'warming')+'">'+(l.lead_temperature||'warming')+'</span></div>';}).join('');}
+    if(hot.length){document.getElementById('hot-leads').innerHTML=hot.map(function(l){return'<div class="hot-lead" onclick="openContactProfile('+l.id+')"><div class="score '+(l.lead_temperature||'warming')+'">'+(l.lead_score||0)+'</div><div class="info"><div class="name">'+l.name+'</div><div class="brokerage">'+(l.current_brokerage||l.brokerage||'Unknown')+'</div></div><span class="temp-badge '+(l.lead_temperature||'warming')+'">'+(l.lead_temperature||'warming')+'</span></div>';}).join('');}
     else{document.getElementById('hot-leads').innerHTML='<div style="color:var(--text-muted);font-size:12px">No leads yet</div>';}
     if(tasks.length){document.getElementById('tasks-today').innerHTML=tasks.map(function(t){return'<div class="task-item"><div class="task-dot '+t.priority+'"></div><div class="task-text">'+t.title+(t.description?'<div class="task-meta">'+t.description+'</div>':'')+'</div><div class="task-action" onclick="completeTask('+t.id+')">Done</div></div>';}).join('');}
     else{document.getElementById('tasks-today').innerHTML='<div style="color:var(--text-muted);font-size:12px">No tasks for today. Click Generate to scan pipeline.</div>';}
@@ -707,6 +864,281 @@ async function loadDashboard(){
 
 document.querySelectorAll('.goal-card').forEach(function(card){card.style.cursor='pointer';card.addEventListener('click',function(){var targetEl=card.querySelector('.goal-target');var key=targetEl.id.replace('goal-','').replace('-target','');var current=targetEl.textContent.replace('$','');var newVal=prompt('Set '+key+' target:',current);if(newVal!==null&&!isNaN(parseInt(newVal))){targetEl.textContent=(key==='revshare'?'$':'')+parseInt(newVal);fetch(API+'/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metric:key,target:parseInt(newVal)})});}});});
 
+// ── CONTACTS ──
+var currentSmartList=null;var contactSearchTimeout=null;
+async function loadContacts(){
+  try{
+    var sl=await fetch(API+'/api/smart-lists').then(function(r){return r.json()});
+    document.getElementById('smart-list-tabs').innerHTML=sl.map(function(s){
+      return'<div class="smart-tab'+(currentSmartList===s.id?' active':(!currentSmartList&&s.sort_order===0?' active':''))+'" onclick="filterSmartList('+(s.id)+')">'+s.icon+' '+s.name+'</div>';
+    }).join('')+'<div class="smart-tab" onclick="openCreateSmartList()" style="border-style:dashed">+ New List</div>';
+
+    var url=API+'/api/contacts'+(currentSmartList?'?smart_list='+currentSmartList:'');
+    var contacts=await fetch(url).then(function(r){return r.json()});
+    document.getElementById('contacts-badge').textContent=contacts.length;
+    document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c){
+      var tags=(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');
+      var scoreColor=c.lead_score>=70?'hot':c.lead_score>=40?'warming':'cold';
+      return'<tr onclick="openContactProfile('+c.id+')" style="cursor:pointer">'+
+        '<td><span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span></td>'+
+        '<td style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</td>'+
+        '<td style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</td>'+
+        '<td style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</td>'+
+        '<td style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</td>'+
+        '<td style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</td>'+
+        '<td style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'—')+'</td>'+
+        '<td>'+tags+'</td>'+
+        '<td><span class="score '+scoreColor+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span></td></tr>';
+    }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
+  }catch(e){console.error(e)}
+}
+function filterSmartList(id){currentSmartList=id;loadContacts();}
+function searchContacts(q){clearTimeout(contactSearchTimeout);contactSearchTimeout=setTimeout(async function(){
+  var url=API+'/api/contacts?search='+encodeURIComponent(q);
+  if(currentSmartList)url+='&smart_list='+currentSmartList;
+  var contacts=await fetch(url).then(function(r){return r.json()});
+  document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c){
+    var tags=(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');
+    var scoreColor=c.lead_score>=70?'hot':c.lead_score>=40?'warming':'cold';
+    return'<tr onclick="openContactProfile('+c.id+')" style="cursor:pointer"><td><span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span></td><td style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</td><td style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</td><td style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</td><td style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</td><td style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'—')+'</td><td>'+tags+'</td><td><span class="score '+scoreColor+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span></td></tr>';
+  }).join('');
+},300);}
+
+// ── OPPORTUNITIES ──
+async function loadOpportunities(){
+  try{
+    var pipelines=await fetch(API+'/api/pipelines').then(function(r){return r.json()});
+    var sel=document.getElementById('pipeline-select');
+    var currentVal=sel.value;
+    sel.innerHTML=pipelines.map(function(p){return'<option value="'+p.id+'">'+p.name+'</option>'}).join('');
+    if(currentVal)sel.value=currentVal;
+    var pipelineId=sel.value||pipelines[0].id;
+
+    var pipeline=pipelines.find(function(p){return p.id==pipelineId});
+    var stages=pipeline?pipeline.stages:[];
+
+    var opps=await fetch(API+'/api/opportunities?pipeline_id='+pipelineId).then(function(r){return r.json()});
+
+    var kanban=document.getElementById('opportunities-kanban');
+    kanban.innerHTML=stages.map(function(s){
+      var stageOpps=opps.filter(function(o){return o.stage===s.key});
+      return'<div class="kanban-col" data-stage="'+s.key+'" ondragover="event.preventDefault()" ondrop="dropOpp(event,\''+s.key+'\')">'+
+        '<div class="kanban-col-header"><span>'+s.label+'</span><span>'+stageOpps.length+'</span></div>'+
+        stageOpps.map(function(o){
+          var c=o.leads||{};
+          var scoreColor=(c.lead_score||0)>=70?'hot':(c.lead_score||0)>=40?'warming':'cold';
+          return'<div class="opp-card" draggable="true" ondragstart="dragOpp(event,'+o.id+')" onclick="openContactProfile('+o.contact_id+')">'+
+            '<div class="opp-name">'+(c.name||c.first_name||'Unknown')+'</div>'+
+            '<div class="opp-broker">'+(c.current_brokerage||c.brokerage||'')+'</div>'+
+            '<div class="opp-footer"><span class="score '+scoreColor+'" style="width:22px;height:22px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span><span style="color:var(--text-muted)">'+fmtDate(o.created_at)+'</span></div></div>';
+        }).join('')+'</div>';
+    }).join('');
+  }catch(e){console.error(e)}
+}
+var draggedOppId=null;
+function dragOpp(e,id){draggedOppId=id;e.dataTransfer.effectAllowed='move';}
+async function dropOpp(e,stage){e.preventDefault();if(!draggedOppId)return;await fetch(API+'/api/opportunities/'+draggedOppId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage:stage})});showToast('Moved to '+stage);loadOpportunities();draggedOppId=null;}
+
+// ── CONTACT PROFILE ──
+var currentProfileId=null;
+async function openContactProfile(id){
+  currentProfileId=id;
+  showPage('contact-profile');
+  try{
+    var c=await fetch(API+'/api/contacts/'+id).then(function(r){return r.json()});
+
+    // Avatar
+    var initials=((c.first_name||c.name||'?')[0]+(c.last_name||'')[0]).toUpperCase();
+    document.getElementById('profile-avatar').textContent=initials;
+
+    // Name & subtitle
+    document.getElementById('profile-name').textContent=(c.first_name||'')+' '+(c.last_name||c.name||'');
+    document.getElementById('profile-subtitle').innerHTML=(c.current_brokerage||c.brokerage||'Unknown')+' &middot; Added '+fmtDate(c.created_at);
+
+    // Score badge
+    var sc=c.lead_score||0;var scColor=sc>=70?'hot':sc>=40?'warming':'cold';
+    document.getElementById('profile-score-badge').innerHTML='<span class="score '+scColor+'" style="width:40px;height:40px;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:50%">'+sc+'</span>';
+
+    // Helper to make inline-editable fields
+    function field(label,value,fieldName,type){
+      type=type||'text';
+      if(type==='select'){return'<div class="profile-field"><div class="profile-field-label">'+label+'</div><select class="profile-field-value" onchange="saveProfileField(\''+fieldName+'\',this.value)" style="background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;padding:4px 8px;cursor:pointer">'+value+'</select></div>';}
+      return'<div class="profile-field"><div class="profile-field-label">'+label+'</div><input class="profile-field-value" type="'+type+'" value="'+(value||'').replace(/"/g,'&quot;')+'" onblur="saveProfileField(\''+fieldName+'\',this.value)" style="background:transparent"></div>';
+    }
+
+    // Basic Info
+    document.getElementById('profile-basic-fields').innerHTML=
+      field('First Name',c.first_name,'first_name')+
+      field('Last Name',c.last_name,'last_name')+
+      field('Email',c.email,'email','email')+
+      field('Phone',c.phone,'phone','tel')+
+      field('Source',c.source,'source')+
+      field('Date Added',fmtDate(c.created_at),'','text')+
+      field('Last Activity',c.last_contacted_at?fmtDate(c.last_contacted_at):'Never','','text');
+
+    // Brokerage Intel
+    var dealsOpts='<option value="">Select...</option>';['0-5','6-10','11-20','21-50','50+'].forEach(function(d){dealsOpts+='<option value="'+d+'"'+(c.deals_per_year===d?' selected':'')+'>'+d+'</option>';});
+    var teamOpts='<option value="">Select...</option>';['Solo','Team Leader','Team Member'].forEach(function(t){teamOpts+='<option value="'+t+'"'+(c.team_or_solo===t?' selected':'')+'>'+t+'</option>';});
+    document.getElementById('profile-brokerage-fields').innerHTML=
+      field('Current Brokerage',c.current_brokerage||c.brokerage,'current_brokerage')+
+      field('Commission Split',c.commission_split,'commission_split')+
+      field('Annual Cap',c.annual_cap,'annual_cap')+
+      field('Monthly Fees',c.monthly_fees,'monthly_fees')+
+      field('Deals / Year',dealsOpts,'deals_per_year','select')+
+      field('Annual GCI',c.annual_gci,'annual_gci')+
+      field('Team or Solo',teamOpts,'team_or_solo','select');
+
+    // Qualifying
+    var stateOpts='<option value="">Select...</option>';['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'].forEach(function(s){stateOpts+='<option value="'+s+'"'+(c.license_state===s?' selected':'')+'>'+s+'</option>';});
+    var timelineOpts='<option value="">Select...</option>';['Now','1-3 months','3-6 months','6-12 months','Just exploring'].forEach(function(t){timelineOpts+='<option value="'+t+'"'+(c.ready_timeline===t?' selected':'')+'>'+t+'</option>';});
+    document.getElementById('profile-qualifying-fields').innerHTML=
+      field('License State',stateOpts,'license_state','select')+
+      field('Ready Timeline',timelineOpts,'ready_timeline','select');
+
+    // Social
+    document.getElementById('profile-social-fields').innerHTML=
+      field('Instagram',c.instagram,'instagram')+
+      field('Facebook',c.facebook,'facebook')+
+      field('LinkedIn',c.linkedin,'linkedin')+
+      field('Website',c.website_url,'website_url');
+
+    // Tags
+    var tags=c.tags||[];
+    document.getElementById('profile-tags-display').innerHTML=tags.map(function(t){return'<span class="tag-chip" onclick="removeProfileTag(\''+t+'\')">'+t+' &times;</span>'}).join('')||'<span style="font-size:11px;color:var(--text-muted)">No tags</span>';
+    var suggested=['hot','eXp refugee','team leader','KW agent','ready to move','needs nurture','referral','top producer','new agent'];
+    document.getElementById('profile-tag-suggestions').innerHTML=suggested.filter(function(s){return tags.indexOf(s)<0}).map(function(s){return'<span style="font-size:9px;padding:2px 6px;border:1px dashed var(--border);border-radius:10px;color:var(--text-muted);cursor:pointer" onclick="addProfileTag(\''+s+'\')">+ '+s+'</span>'}).join('');
+
+    // Opportunity status
+    if(c.opportunity){
+      var o=c.opportunity;
+      var pName=o.pipelines?o.pipelines.name:'Pipeline';
+      document.getElementById('profile-opportunity-panel').innerHTML='<div class="panel-title" style="font-size:14px;margin-bottom:8px">Active Opportunity</div><div style="font-size:12px;color:var(--text-dim)"><strong>'+pName+'</strong> &rarr; <span style="color:var(--accent)">'+o.stage.replace(/_/g,' ')+'</span></div>';
+      document.getElementById('profile-opportunity-panel').style.display='';
+    }else{
+      document.getElementById('profile-opportunity-panel').innerHTML='<div style="text-align:center;padding:12px"><span style="font-size:12px;color:var(--text-muted)">No active opportunity</span><br><button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="createOpportunityForContact()">+ Create Opportunity</button></div>';
+      document.getElementById('profile-opportunity-panel').style.display='';
+    }
+
+    // Load right column data
+    loadProfileNotes(id);
+    loadProfileActivity(id);
+    loadProfileComms(id);
+
+  }catch(e){console.error('Profile load error:',e)}
+}
+
+async function saveProfileField(field,value){
+  if(!currentProfileId||!field)return;
+  var data={};data[field]=value;
+  await fetch(API+'/api/contacts/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+}
+
+async function loadProfileNotes(id){
+  var notes=await fetch(API+'/api/leads/'+id+'/notes').then(function(r){return r.json()});
+  document.getElementById('profile-notes-list').innerHTML=notes.map(function(n){
+    return'<div class="note-item"><div><span class="note-author">'+(n.author||'Joe')+'</span><span class="note-time">'+new Date(n.created_at).toLocaleString()+'</span></div><div class="note-content">'+n.content+'</div></div>';
+  }).join('')||'<div style="font-size:12px;color:var(--text-muted);padding:12px 0">No notes yet</div>';
+}
+
+async function loadProfileActivity(id){
+  var acts=await fetch(API+'/api/leads/'+id+'/activity').then(function(r){return r.json()});
+  var icons={created:'\uD83C\uDD95',stage_change:'\uD83D\uDCCB',score_change:'\uD83C\uDFAF',note:'\uD83D\uDCDD',communication:'\uD83D\uDCE7',opportunity_created:'\uD83D\uDE80'};
+  document.getElementById('profile-activity-list').innerHTML=acts.map(function(a){
+    return'<div class="activity-item-crm"><span>'+(icons[a.activity_type]||'\u2022')+' </span>'+a.description+' <span style="color:var(--text-muted);font-size:10px;margin-left:8px">'+new Date(a.created_at).toLocaleString()+'</span></div>';
+  }).join('')||'<div style="font-size:12px;color:var(--text-muted);padding:12px 0">No activity yet</div>';
+}
+
+async function loadProfileComms(id){
+  var comms=await fetch(API+'/api/contacts/'+id+'/communications').then(function(r){return r.json()});
+  document.getElementById('profile-comms-list').innerHTML=comms.map(function(c){
+    return'<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--text-muted)">'+c.direction+' '+c.channel+' &middot; '+new Date(c.created_at).toLocaleString()+'</div><div style="font-size:12px;font-weight:600;margin-top:2px">'+c.subject+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+c.body+'</div></div>';
+  }).join('')||'<div style="font-size:12px;color:var(--text-muted);padding:12px 0">No communications yet</div>';
+}
+
+async function addProfileNote(){
+  var input=document.getElementById('profile-note-input');
+  var content=input.value.trim();
+  if(!content||!currentProfileId)return;
+  await fetch(API+'/api/leads/'+currentProfileId+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content})});
+  input.value='';showToast('Note added');loadProfileNotes(currentProfileId);loadProfileActivity(currentProfileId);
+}
+
+async function sendProfileEmail(){
+  var subject=document.getElementById('profile-email-subject').value;
+  var body=document.getElementById('profile-email-body').value;
+  if(!subject||!currentProfileId)return;
+  await fetch(API+'/api/contacts/'+currentProfileId+'/communications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'email',direction:'outbound',subject:subject,body:body})});
+  document.getElementById('profile-email-subject').value='';document.getElementById('profile-email-body').value='';
+  showToast('Email logged');loadProfileComms(currentProfileId);loadProfileActivity(currentProfileId);
+}
+
+function switchProfileTab(tab,el){
+  document.querySelectorAll('.profile-tab-content').forEach(function(t){t.style.display='none'});
+  document.querySelectorAll('#profile-right .tab-btn').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('ptab-'+tab).style.display='block';
+  el.classList.add('active');
+}
+
+async function addProfileTag(tag){
+  if(!tag||!currentProfileId)return;
+  var c=await fetch(API+'/api/contacts/'+currentProfileId).then(function(r){return r.json()});
+  var tags=c.tags||[];
+  if(tags.indexOf(tag)>=0)return;
+  tags.push(tag);
+  await fetch(API+'/api/contacts/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tags:tags})});
+  openContactProfile(currentProfileId);
+}
+
+async function removeProfileTag(tag){
+  if(!currentProfileId)return;
+  var c=await fetch(API+'/api/contacts/'+currentProfileId).then(function(r){return r.json()});
+  var tags=(c.tags||[]).filter(function(t){return t!==tag});
+  await fetch(API+'/api/contacts/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tags:tags})});
+  openContactProfile(currentProfileId);
+}
+
+async function createOpportunityForContact(){
+  if(!currentProfileId)return;
+  await fetch(API+'/api/opportunities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contact_id:currentProfileId})});
+  showToast('Opportunity created');openContactProfile(currentProfileId);
+}
+
+function profileAction(type){
+  fetch(API+'/api/contacts/'+currentProfileId).then(function(r){return r.json()}).then(function(c){
+    if(type==='email'&&c.email)window.open('mailto:'+c.email);
+    else if(type==='call'&&c.phone)window.open('tel:'+c.phone);
+    else if(type==='text'&&c.phone)window.open('sms:'+c.phone);
+    else showToast('No '+type+' info available',true);
+  });
+}
+
+function profileAddNote(){
+  document.getElementById('profile-note-input').focus();
+  switchProfileTab('notes',document.querySelector('#profile-right .tab-btn'));
+}
+
+function openAddContact(){
+  document.getElementById('modal-title').textContent='Add Contact';
+  document.getElementById('edit-lead-id').value='';
+  document.getElementById('modal-delete').style.display='none';
+  document.querySelectorAll('#lead-modal input:not([type=hidden]),#lead-modal select,#lead-modal textarea').forEach(function(el){el.value=''});
+  document.getElementById('lead-modal').classList.add('show');
+}
+
+function openCreateOpportunity(){
+  var name=prompt('Contact name or email to add as opportunity:');
+  if(!name)return;
+  fetch(API+'/api/contacts?search='+encodeURIComponent(name)).then(function(r){return r.json()}).then(function(contacts){
+    if(!contacts.length){showToast('No contact found. Create a contact first.',true);return;}
+    var c=contacts[0];
+    fetch(API+'/api/opportunities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contact_id:c.id})}).then(function(){showToast('Opportunity created for '+c.name);loadOpportunities();});
+  });
+}
+
+function openImportModal(){showToast('CSV import coming soon');}
+function openCreateSmartList(){showToast('Smart list builder coming soon');}
+
+// ── LEGACY LEADS (kept for backward compat) ──
 async function loadLeads(){
   try{var data=await fetch(API+'/api/leads?limit=500').then(function(r){return r.json()});allLeads=data;buildStageFilters();renderLeads();}catch(e){console.error(e)}
 }
@@ -714,7 +1146,7 @@ function buildStageFilters(){
   var counts={all:allLeads.length};STAGES.forEach(function(s){counts[s]=allLeads.filter(function(l){return(l.stage||'new')===s}).length});
   var html='<div class="filter-tab '+(currentFilter==='all'?'active':'')+'" onclick="filterStage(\'all\')">All ('+counts.all+')</div>';
   STAGES.forEach(function(s){if(counts[s]>0)html+='<div class="filter-tab '+(currentFilter===s?'active':'')+'" onclick="filterStage(\''+s+'\')">'+STAGE_LABELS[s]+' ('+counts[s]+')</div>';});
-  document.getElementById('stage-filters').innerHTML=html;
+  if(document.getElementById('stage-filters'))document.getElementById('stage-filters').innerHTML=html;
 }
 function filterStage(s){currentFilter=s;renderLeads()}
 function searchLeads(q){searchQuery=q.toLowerCase();renderLeads()}
@@ -723,9 +1155,11 @@ function renderLeads(){
   if(currentFilter!=='all')filtered=filtered.filter(function(l){return(l.stage||'new')===currentFilter});
   if(searchQuery)filtered=filtered.filter(function(l){return(l.name+' '+l.email+' '+(l.brokerage||'')).toLowerCase().indexOf(searchQuery)>=0});
   if(currentView==='table'){
-    document.getElementById('leads-table-wrap').style.display='';document.getElementById('leads-kanban-wrap').style.display='none';
-    document.getElementById('leads-tbody').innerHTML=filtered.map(function(l){return'<tr onclick="editLead('+l.id+')"><td><span class="lead-name">'+l.name+'</span></td><td>'+(l.current_brokerage||l.brokerage||'')+'</td><td><span class="score '+(l.lead_temperature||'warming')+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(l.lead_score||0)+'</span></td><td><span class="stage-badge '+(l.stage||'new')+'">'+STAGE_LABELS[l.stage||'new']+'</span></td><td style="color:var(--text-dim);font-size:12px">'+(l.source||'')+'</td><td style="color:var(--text-dim);font-size:12px">'+fmtDate(l.created_at)+'</td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();draftDm('+l.id+')">Draft DM</button></td></tr>';}).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">No leads</td></tr>';
-  }else{document.getElementById('leads-table-wrap').style.display='none';document.getElementById('leads-kanban-wrap').style.display='';renderKanban(filtered,'leads-kanban-wrap');}
+    var tbWrap=document.getElementById('leads-table-wrap');var kbWrap=document.getElementById('leads-kanban-wrap');
+    if(tbWrap)tbWrap.style.display='';if(kbWrap)kbWrap.style.display='none';
+    var tbody=document.getElementById('leads-tbody');
+    if(tbody)tbody.innerHTML=filtered.map(function(l){return'<tr onclick="editLead('+l.id+')"><td><span class="lead-name">'+l.name+'</span></td><td>'+(l.current_brokerage||l.brokerage||'')+'</td><td><span class="score '+(l.lead_temperature||'warming')+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(l.lead_score||0)+'</span></td><td><span class="stage-badge '+(l.stage||'new')+'">'+STAGE_LABELS[l.stage||'new']+'</span></td><td style="color:var(--text-dim);font-size:12px">'+(l.source||'')+'</td><td style="color:var(--text-dim);font-size:12px">'+fmtDate(l.created_at)+'</td><td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();draftDm('+l.id+')">Draft DM</button></td></tr>';}).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">No leads</td></tr>';
+  }else{var tbWrap2=document.getElementById('leads-table-wrap');var kbWrap2=document.getElementById('leads-kanban-wrap');if(tbWrap2)tbWrap2.style.display='none';if(kbWrap2){kbWrap2.style.display='';renderKanban(filtered,'leads-kanban-wrap');}}
 }
 function renderKanban(leads,cid){
   var c=document.getElementById(cid);
@@ -744,8 +1178,8 @@ function switchLeadTab(tab,el){document.getElementById('lead-tab-notes').style.d
 async function loadLeadNotes(id){try{var notes=await fetch(API+'/api/leads/'+id+'/notes').then(function(r){return r.json()});document.getElementById('lead-notes-timeline').innerHTML=notes.length?notes.map(function(n){var tm=n.created_at?new Date(n.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';return'<div class="note-item"><span class="note-author">'+(n.author||'Joe')+'</span><span class="note-time">'+tm+'</span><div class="note-content">'+n.content+'</div></div>';}).join(''):'<div style="color:var(--text-muted);font-size:11px;padding:12px 0">No notes yet</div>';}catch(e){document.getElementById('lead-notes-timeline').innerHTML='<div style="color:var(--text-muted);font-size:11px;padding:12px 0">No notes yet</div>';}}
 async function loadLeadActivity(id){try{var activity=await fetch(API+'/api/leads/'+id+'/activity').then(function(r){return r.json()});var icons={stage_change:'&#x25B7;',note:'&#x270E;',email:'&#x2709;',call:'&#x260E;',system:'&#x2699;'};document.getElementById('lead-activity-list').innerHTML=activity.length?activity.map(function(a){var tm=a.created_at?new Date(a.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var icon=icons[a.activity_type]||icons.system;return'<div class="activity-item-crm"><span style="margin-right:6px">'+icon+'</span>'+a.description+'<span style="float:right;color:var(--text-muted);font-size:10px">'+tm+'</span></div>';}).join(''):'<div style="color:var(--text-muted);font-size:11px;padding:12px 0">No activity yet</div>';}catch(e){document.getElementById('lead-activity-list').innerHTML='<div style="color:var(--text-muted);font-size:11px;padding:12px 0">No activity yet</div>';}}
 async function addLeadNote(){var id=document.getElementById('edit-lead-id').value;var input=document.getElementById('lead-note-input');var content=input.value.trim();if(!id||!content)return;try{await fetch(API+'/api/leads/'+id+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content})});input.value='';showToast('Note added');loadLeadNotes(id);loadLeadActivity(id);}catch(e){showToast('Failed to add note',true);}}
-async function saveLead(){var id=document.getElementById('edit-lead-id').value;var data={name:document.getElementById('lead-name').value,email:document.getElementById('lead-email').value,phone:document.getElementById('lead-phone').value,brokerage:document.getElementById('lead-brokerage').value,deals_per_year:document.getElementById('lead-deals').value,avg_price:document.getElementById('lead-price').value,source:document.getElementById('lead-source').value,stage:document.getElementById('lead-stage').value,notes:document.getElementById('lead-notes').value,current_brokerage:document.getElementById('lead-brokerage').value,preferred_contact:document.getElementById('lead-preferred-contact').value,follow_up_date:document.getElementById('lead-follow-up').value,tags:currentLeadTags,instagram:document.getElementById('lead-instagram').value,facebook:document.getElementById('lead-facebook').value,linkedin:document.getElementById('lead-linkedin').value};if(id){await fetch(API+'/api/leads/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}else{await fetch(API+'/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}closeModal();showToast(id?'Lead updated':'Lead created');loadLeads();}
-async function deleteLead(){var id=document.getElementById('edit-lead-id').value;if(!id||!confirm('Delete this lead?'))return;await fetch(API+'/api/leads/'+id,{method:'DELETE'});closeModal();showToast('Lead deleted');loadLeads();}
+async function saveLead(){var id=document.getElementById('edit-lead-id').value;var data={name:document.getElementById('lead-name').value,email:document.getElementById('lead-email').value,phone:document.getElementById('lead-phone').value,brokerage:document.getElementById('lead-brokerage').value,deals_per_year:document.getElementById('lead-deals').value,avg_price:document.getElementById('lead-price').value,source:document.getElementById('lead-source').value,stage:document.getElementById('lead-stage').value,notes:document.getElementById('lead-notes').value,current_brokerage:document.getElementById('lead-brokerage').value,preferred_contact:document.getElementById('lead-preferred-contact').value,follow_up_date:document.getElementById('lead-follow-up').value,tags:currentLeadTags,instagram:document.getElementById('lead-instagram').value,facebook:document.getElementById('lead-facebook').value,linkedin:document.getElementById('lead-linkedin').value};if(id){await fetch(API+'/api/leads/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}else{await fetch(API+'/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}closeModal();showToast(id?'Lead updated':'Lead created');loadContacts();}
+async function deleteLead(){var id=document.getElementById('edit-lead-id').value;if(!id||!confirm('Delete this lead?'))return;await fetch(API+'/api/leads/'+id,{method:'DELETE'});closeModal();showToast('Lead deleted');loadContacts();}
 function closeModal(){document.getElementById('lead-modal').classList.remove('show')}
 
 async function completeTask(id){await fetch(API+'/api/tasks/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'done'})});showToast('Task completed');loadDashboard();}
@@ -761,7 +1195,7 @@ async function aiAction(action){
     }else if(action==='weekly-plan'){
       var ph=r.priorities.length?'<div style="margin-bottom:12px"><strong style="color:var(--amber)">Priorities:</strong><ul style="margin:4px 0 0 16px;color:var(--text-dim);font-size:12px">'+r.priorities.map(function(p){return'<li>'+p+'</li>'}).join('')+'</ul></div>':'';
       panel.innerHTML='<h3>Weekly Plan</h3>'+ph+Object.keys(r.daily_actions).map(function(day){return'<div style="margin-bottom:8px"><strong style="font-size:12px">'+day+':</strong> <span style="font-size:11px;color:var(--text-dim)">'+r.daily_actions[day].join(' | ')+'</span></div>';}).join('');
-    }else if(action==='score-leads'){panel.innerHTML='<h3>Lead Scoring</h3><p style="color:var(--green)">'+r.updated+' leads scored</p>';loadLeads();loadDashboard();
+    }else if(action==='score-leads'){panel.innerHTML='<h3>Lead Scoring</h3><p style="color:var(--green)">'+r.updated+' leads scored</p>';loadContacts();loadDashboard();
     }else if(action==='generate-tasks'){panel.innerHTML='<h3>Task Generation</h3><p style="color:var(--green)">'+r.tasks_created+' tasks created</p>';loadDashboard();}
   }catch(e){panel.innerHTML='<h3>Error</h3><p style="color:var(--red)">'+e.message+'</p>'}
 }
@@ -891,12 +1325,13 @@ async function loadLinks(){
 var STAGE_LABELS_FULL={new:'New',contacted:'Contacted',discovery_call:'Discovery Call',presentation:'Presentation',considering:'Considering',signed:'Signed',onboarding:'Onboarding'};
 async function loadFunnelAnalytics(){
   try{
-    var [funnel,sources,timeData,roi]=await Promise.all([
+    var results=await Promise.all([
       fetch(API+'/api/analytics/funnel').then(function(r){return r.json()}),
       fetch(API+'/api/analytics/sources').then(function(r){return r.json()}),
       fetch(API+'/api/analytics/time-in-stage').then(function(r){return r.json()}),
       fetch(API+'/api/analytics/funnel-roi').then(function(r){return r.json()})
     ]);
+    var funnel=results[0],sources=results[1],timeData=results[2],roi=results[3];
     // Conversion funnel
     if(funnel.conversions&&funnel.conversions.length){
       var maxCount=Math.max.apply(null,Object.values(funnel.stage_counts))||1;
@@ -985,11 +1420,12 @@ async function runCalculator(){
 // ── AGENT DETAIL ──
 async function viewAgent(agentId){
   try{
-    var [agent,onboarding,referrals]=await Promise.all([
+    var results=await Promise.all([
       fetch(API+'/api/agents/'+agentId).then(function(r){return r.json()}),
       fetch(API+'/api/agents/'+agentId+'/onboarding').then(function(r){return r.json()}),
       fetch(API+'/api/referrals?agent_id='+agentId).then(function(r){return r.json()})
     ]);
+    var agent=results[0],onboarding=results[1],referrals=results[2];
     document.getElementById('agent-detail-name').textContent=agent.name;
     // Profile
     var plan=(agent.lpt_plan||'').replace('_',' ');
@@ -1036,14 +1472,12 @@ async function sendAiChat(){
   var q=input.value.trim();if(!q)return;
   input.value='';
   appendChat('you',q);
-  // Route to appropriate AI action based on keywords
   var lower=q.toLowerCase();
   if(lower.indexOf('call')>=0||lower.indexOf('contact')>=0||lower.indexOf('who')>=0){await quickChat('who-to-call');return;}
   if(lower.indexOf('plan')>=0||lower.indexOf('week')>=0){await quickChat('weekly-plan');return;}
   if(lower.indexOf('score')>=0){await quickChat('score-leads');return;}
   if(lower.indexOf('task')>=0||lower.indexOf('action')>=0||lower.indexOf('todo')>=0){await quickChat('generate-tasks');return;}
   if(lower.indexOf('draft')>=0||lower.indexOf('dm')>=0||lower.indexOf('message')>=0){
-    // Try to find a lead name in the query
     var leads=allLeads.length?allLeads:await fetch(API+'/api/leads').then(function(r){return r.json()});
     var found=leads.find(function(l){return lower.indexOf(l.name.toLowerCase())>=0||lower.indexOf(l.name.split(' ')[0].toLowerCase())>=0});
     if(found){
@@ -1053,7 +1487,6 @@ async function sendAiChat(){
     }
     appendChat('ai','Specify a lead name. Try: "Draft a DM for [lead name]"');return;
   }
-  // Default: show pipeline summary
   var overview=await fetch(API+'/api/dashboard/overview').then(function(r){return r.json()});
   appendChat('ai','<strong>Pipeline Summary:</strong><br>'+overview.leads.total+' leads ('+overview.leads.new_this_week+' new this week)<br>'+overview.agents.total+' agents ('+overview.agents.retention_rate+'% retention)<br>'+overview.tasks_today+' tasks today<br>'+overview.drip.pending+' drip emails pending');
 }
