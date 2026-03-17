@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-X6WMCMBJ9R');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brokerage Fees Explained | What Agents Actually Pay — TPL Collective</title>
+<meta name="description" content="Comprehensive guide to real estate brokerage fees. Commission splits, caps, desk fees, transaction fees, franchise fees, and how LPT Realty's model compares.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3d;
+  --accent: #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold: #f0c040;
+  --gold-bg: rgba(240,192,64,0.1);
+  --gold-br: rgba(240,192,64,0.25);
+  --green: #34d399;
+  --red: #f87171;
+  --text: #e8e8f0;
+  --muted: #8888aa;
+  --dim: #55556a;
+  --white: #ffffff;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.04em; line-height: 1.1; }
+.label { font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); }
+a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--accent-hi); }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.92); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+}
+.nav-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--white); letter-spacing: 0.06em; }
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 1.8rem; list-style: none; }
+.nav-links a { color: var(--muted); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent); color: var(--white) !important; padding: 0.55rem 1.3rem;
+  border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+  transition: background 0.2s, transform 0.2s;
+}
+.nav-cta:hover { background: var(--accent-hi); transform: translateY(-1px); }
+.hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+.hamburger span { display: block; width: 24px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+.mobile-menu {
+  display: none; position: fixed; top: 60px; left: 0; right: 0; background: var(--surface);
+  border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; z-index: 99;
+  flex-direction: column; gap: 1rem;
+}
+.mobile-menu.active { display: flex; }
+.mobile-menu a { color: var(--text); font-size: 1rem; font-weight: 500; padding: 0.5rem 0; }
+
+/* HERO */
+.hero {
+  padding: 10rem 2rem 5rem; text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(108,99,255,0.08) 0%, transparent 60%);
+}
+.hero .label { margin-bottom: 1.2rem; display: inline-block; }
+.hero h1 { font-size: 4rem; color: var(--white); margin-bottom: 1.5rem; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .subtitle { font-size: 1.15rem; color: var(--muted); max-width: 700px; margin: 0 auto; line-height: 1.8; }
+
+/* SECTIONS */
+section { padding: 5rem 0; }
+section + section { border-top: 1px solid var(--border); }
+.section-label { margin-bottom: 0.8rem; }
+.section-title { font-size: 2.8rem; color: var(--white); margin-bottom: 1.5rem; }
+.section-text { font-size: 1.05rem; color: var(--muted); max-width: 720px; line-height: 1.85; margin-bottom: 1.5rem; }
+
+/* NUMBERED CARD GRID */
+.fee-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 2rem 0;
+}
+.fee-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 1.8rem; position: relative; transition: border-color 0.2s;
+}
+.fee-card:hover { border-color: var(--accent-br); }
+.fee-card .fee-num {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; color: var(--accent);
+  opacity: 0.3; position: absolute; top: 1rem; right: 1.2rem; line-height: 1;
+}
+.fee-card h3 { font-size: 1.4rem; color: var(--white); margin-bottom: 0.6rem; }
+.fee-card p { font-size: 0.92rem; color: var(--muted); line-height: 1.7; }
+.fee-card .fee-range {
+  font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--dim);
+  margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--border);
+}
+
+/* TABLE */
+.fee-table-wrap { overflow-x: auto; margin: 2rem 0; border-radius: 12px; border: 1px solid var(--border); }
+.fee-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.fee-table thead { background: var(--surface2); }
+.fee-table th {
+  font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  padding: 1rem 0.9rem; text-align: left; white-space: nowrap;
+}
+.fee-table td { padding: 0.85rem 0.9rem; border-top: 1px solid var(--border); color: var(--text); font-size: 0.88rem; }
+.fee-table tr:hover td { background: rgba(108,99,255,0.04); }
+.fee-table .highlight-col { background: var(--accent-bg); }
+.fee-table thead .highlight-col { background: rgba(108,99,255,0.18); color: var(--accent); }
+.fee-table .verify { color: var(--dim); font-size: 0.75rem; font-family: 'DM Mono', monospace; }
+.fee-table .green { color: var(--green); font-weight: 600; }
+.fee-table .row-label { font-weight: 600; color: var(--white); white-space: nowrap; }
+
+/* MATH CARD */
+.math-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 2.5rem; margin: 2rem 0;
+}
+.math-card h3 { font-size: 1.6rem; color: var(--white); margin-bottom: 1.5rem; }
+.math-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid rgba(42,42,61,0.5); font-size: 0.95rem; }
+.math-row:last-child { border-bottom: none; }
+.math-row .math-label { color: var(--muted); }
+.math-row .math-value { color: var(--text); font-family: 'DM Mono', monospace; font-weight: 500; }
+.math-row.total { border-top: 2px solid var(--accent-br); padding-top: 1rem; margin-top: 0.5rem; }
+.math-row.total .math-label { color: var(--white); font-weight: 600; }
+.math-row.total .math-value { color: var(--accent); font-weight: 600; font-size: 1.1rem; }
+
+/* COMPARISON LAYOUT */
+.comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; }
+
+/* SAVINGS BADGE */
+.savings-badge {
+  display: inline-block; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 10px; padding: 1.2rem 2rem; margin-top: 1.5rem; text-align: center;
+}
+.savings-badge .amount { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; color: var(--green); line-height: 1; }
+.savings-badge .caption { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+/* 3-COL FEE DISPLAY */
+.fee-display { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin: 2rem 0; }
+.fee-display-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 2rem; text-align: center;
+}
+.fee-display-card .fee-amount {
+  font-family: 'Bebas Neue', sans-serif; font-size: 3rem; color: var(--accent); line-height: 1;
+}
+.fee-display-card .fee-per { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+.fee-display-card .fee-desc { font-size: 0.9rem; color: var(--muted); margin-top: 1rem; line-height: 1.6; }
+
+/* PLUS CARD */
+.plus-card {
+  background: var(--gold-bg); border: 1px solid var(--gold-br); border-radius: 16px;
+  padding: 2.5rem; margin: 2rem 0;
+}
+.plus-card h3 { font-size: 2rem; color: var(--gold); margin-bottom: 0.5rem; }
+.plus-card .plus-pricing {
+  font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--muted); margin-bottom: 1.5rem;
+}
+.plus-features { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.plus-features .feature { font-size: 0.92rem; color: var(--text); padding-left: 1.2rem; position: relative; }
+.plus-features .feature::before { content: "+"; position: absolute; left: 0; color: var(--gold); font-weight: 600; }
+
+/* ZERO FEES */
+.zero-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.zero-chip {
+  background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--green);
+  font-family: 'DM Mono', monospace;
+}
+
+/* CTA */
+.cta-section {
+  padding: 6rem 0; text-align: center;
+  background: radial-gradient(ellipse at 50% 100%, rgba(108,99,255,0.08) 0%, transparent 60%);
+}
+.cta-section h2 { font-size: 3.2rem; color: var(--white); margin-bottom: 2rem; }
+.cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: var(--white); padding: 0.9rem 2.2rem;
+  border-radius: 10px; font-weight: 600; font-size: 1rem;
+  transition: background 0.2s, transform 0.2s; display: inline-block;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); color: var(--white); }
+.btn-secondary {
+  background: transparent; color: var(--accent); padding: 0.9rem 2.2rem;
+  border-radius: 10px; font-weight: 600; font-size: 1rem;
+  border: 1px solid var(--accent-br); transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { background: var(--accent-bg); transform: translateY(-2px); }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border); padding: 3rem 0;
+  background: var(--surface);
+}
+.footer-inner { max-width: 1100px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 2rem; }
+.footer-brand .nav-logo { margin-bottom: 0.5rem; }
+.footer-brand p { color: var(--dim); font-size: 0.85rem; }
+.footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.footer-links a { color: var(--muted); font-size: 0.85rem; }
+.footer-links a:hover { color: var(--white); }
+.footer-copy { width: 100%; text-align: center; color: var(--dim); font-size: 0.8rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+
+/* FADE IN */
+.fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+.fade-in.delay-1 { transition-delay: 0.1s; }
+.fade-in.delay-2 { transition-delay: 0.2s; }
+.fade-in.delay-3 { transition-delay: 0.3s; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .hero h1 { font-size: 2.8rem; }
+  .section-title { font-size: 2.2rem; }
+  .fee-grid { grid-template-columns: 1fr; }
+  .comparison-grid { grid-template-columns: 1fr; }
+  .fee-display { grid-template-columns: 1fr; }
+  .plus-features { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .cta-section h2 { font-size: 2.4rem; }
+}
+@media (max-width: 480px) {
+  .hero { padding: 8rem 1.2rem 3rem; }
+  .hero h1 { font-size: 2.2rem; }
+  .hero .subtitle { font-size: 1rem; }
+  .section-title { font-size: 1.8rem; }
+  .container { padding: 0 1.2rem; }
+  .math-card { padding: 1.5rem; }
+  .plus-card { padding: 1.5rem; }
+  .fee-display-card .fee-amount { font-size: 2.2rem; }
+  .cta-section h2 { font-size: 2rem; }
+  .footer-inner { flex-direction: column; align-items: center; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">TPL<span>.</span></a>
+    <ul class="nav-links">
+      <li><a href="/lpt-explained">LPT Explained</a></li>
+      <li><a href="/why-tpl">Why TPL</a></li>
+      <li><a href="/fee-plans">Fee Plans</a></li>
+      <li><a href="/resources">Free Resources</a></li>
+      <li><a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a></li>
+    </ul>
+    <button class="hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta" style="text-align:center;">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <span class="label fade-in">Know Your Fees</span>
+    <h1 class="fade-in delay-1">Every Fee Your<br><em>Brokerage Charges</em></h1>
+    <p class="subtitle fade-in delay-2">Most agents don't know their actual cost of doing business. Between splits, caps, desk fees, franchise fees, transaction fees, and tech fees — the total is often far more than you think.</p>
+  </div>
+</section>
+
+<!-- SECTION 1: The 7 Fees -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">The Breakdown</span>
+    <h2 class="section-title fade-in delay-1">The 7 Fees Every Agent Should Know</h2>
+    <div class="fee-grid fade-in delay-2">
+      <div class="fee-card">
+        <span class="fee-num">01</span>
+        <h3>Commission Split</h3>
+        <p>The percentage your brokerage keeps from every deal. Ranges from 0% (100% plans) to 50%.</p>
+        <div class="fee-range">Range: 0% – 50%</div>
+      </div>
+      <div class="fee-card">
+        <span class="fee-num">02</span>
+        <h3>Annual Cap</h3>
+        <p>The maximum you pay in splits per year. Once you hit it, you close at 100%. Ranges from $5,000 (LPT) to $36,000 (some KW offices).</p>
+        <div class="fee-range">Range: $5,000 – $36,000</div>
+      </div>
+      <div class="fee-card">
+        <span class="fee-num">03</span>
+        <h3>Transaction Fee</h3>
+        <p>A flat per-deal processing fee. Typically $50–$400. Charged on every closing.</p>
+        <div class="fee-range">Range: $50 – $400/deal</div>
+      </div>
+      <div class="fee-card">
+        <span class="fee-num">04</span>
+        <h3>Desk Fee</h3>
+        <p>Monthly fee for office space/support. $0 at cloud brokerages, $50–$500/mo at brick-and-mortar.</p>
+        <div class="fee-range">Range: $0 – $500/mo</div>
+      </div>
+      <div class="fee-card">
+        <span class="fee-num">05</span>
+        <h3>Franchise Fee</h3>
+        <p>Percentage of GCI paid to the parent franchise company. 3%–8% at franchise brands. $0 at independent/cloud brokerages.</p>
+        <div class="fee-range">Range: 0% – 8% of GCI</div>
+      </div>
+      <div class="fee-card">
+        <span class="fee-num">06</span>
+        <h3>Annual Fee</h3>
+        <p>Yearly brokerage fee. Ranges from $0 to $1,000+.</p>
+        <div class="fee-range">Range: $0 – $1,000+</div>
+      </div>
+      <div class="fee-card" style="grid-column: 1 / -1;">
+        <span class="fee-num">07</span>
+        <h3>Tech / E&O Fee</h3>
+        <p>Technology platform or errors &amp; omissions insurance. Ranges from $0 to $85+/mo.</p>
+        <div class="fee-range">Range: $0 – $85+/mo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: Comparison Table -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">Head to Head</span>
+    <h2 class="section-title fade-in delay-1">How Major Brokerages Compare</h2>
+    <div class="fee-table-wrap fade-in delay-2">
+      <table class="fee-table">
+        <thead>
+          <tr>
+            <th>Fee</th>
+            <th class="highlight-col">LPT Realty (BB)</th>
+            <th>Keller Williams</th>
+            <th>eXp Realty</th>
+            <th>Coldwell Banker</th>
+            <th>RE/MAX</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Split</td>
+            <td class="highlight-col green">100%</td>
+            <td>70/30</td>
+            <td>80/20</td>
+            <td>Varies 50–70% <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Cap</td>
+            <td class="highlight-col green">$5,000</td>
+            <td>$18K–$36K</td>
+            <td>$16,000</td>
+            <td>None at many offices <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Transaction</td>
+            <td class="highlight-col">$195/deal</td>
+            <td>$50–$400</td>
+            <td>$85–$250</td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Desk Fee</td>
+            <td class="highlight-col green">$0/mo</td>
+            <td>$75–$100+/mo</td>
+            <td>$0/mo</td>
+            <td>$100–$500/mo <span class="verify">[VERIFY]</span></td>
+            <td>$200–$1,500/mo <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Franchise</td>
+            <td class="highlight-col green">None</td>
+            <td>6% (cap $3K)</td>
+            <td>None</td>
+            <td>6–8% <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Annual</td>
+            <td class="highlight-col">$500</td>
+            <td>Varies</td>
+            <td>$149</td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">Tech Fee</td>
+            <td class="highlight-col green">$0</td>
+            <td>$0</td>
+            <td>$85/mo</td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: True Cost of Business -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">The Full Math</span>
+    <h2 class="section-title fade-in delay-1">Your True Cost of Business</h2>
+    <p class="section-text fade-in delay-2">12 deals &middot; $450K average price &middot; 2.5% commission = <strong style="color:var(--white);">$135,000 GCI</strong></p>
+
+    <div class="comparison-grid fade-in delay-2">
+      <div class="math-card" style="border-color: var(--accent-br);">
+        <h3>LPT Realty <span style="color:var(--accent);font-size:0.7em;">(Business Builder)</span></h3>
+        <div class="math-row">
+          <span class="math-label">Split</span>
+          <span class="math-value green">$0 (100% plan)</span>
+        </div>
+        <div class="math-row">
+          <span class="math-label">Cap fee ($500/deal x 12, capped)</span>
+          <span class="math-value">$5,000</span>
+        </div>
+        <div class="math-row">
+          <span class="math-label">Transaction ($195 x 12)</span>
+          <span class="math-value">$2,340</span>
+        </div>
+        <div class="math-row">
+          <span class="math-label">Annual fee</span>
+          <span class="math-value">$500</span>
+        </div>
+        <div class="math-row total">
+          <span class="math-label">Total Annual Cost</span>
+          <span class="math-value">$7,840</span>
+        </div>
+        <div class="math-row" style="border: none; padding-top: 0.5rem;">
+          <span class="math-label" style="color: var(--dim);">% of GCI</span>
+          <span class="math-value" style="color: var(--green);">5.8%</span>
+        </div>
+      </div>
+
+      <div class="math-card">
+        <h3>Keller Williams <span style="color:var(--muted);font-size:0.7em;">(Typical)</span></h3>
+        <div class="math-row">
+          <span class="math-label">Split (30%, capped ~$20K)</span>
+          <span class="math-value" style="color:var(--red);">$20,000</span>
+        </div>
+        <div class="math-row">
+          <span class="math-label">Franchise fee (6%, capped $3K)</span>
+          <span class="math-value" style="color:var(--red);">$3,000</span>
+        </div>
+        <div class="math-row">
+          <span class="math-label">Desk fees ($77/mo x 12)</span>
+          <span class="math-value">$923</span>
+        </div>
+        <div class="math-row">
+          <span class="math-label">Transaction ($150 x 12)</span>
+          <span class="math-value">$1,800</span>
+        </div>
+        <div class="math-row total">
+          <span class="math-label">Total Annual Cost</span>
+          <span class="math-value" style="color:var(--red);">$25,723</span>
+        </div>
+        <div class="math-row" style="border: none; padding-top: 0.5rem;">
+          <span class="math-label" style="color: var(--dim);">% of GCI</span>
+          <span class="math-value" style="color: var(--red);">19.1%</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center;" class="fade-in delay-3">
+      <div class="savings-badge">
+        <div class="amount">$17,883/year</div>
+        <div class="caption">saved with LPT Realty vs. Keller Williams</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: What You Pay at LPT -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">Simple Pricing</span>
+    <h2 class="section-title fade-in delay-1">What You Pay at LPT</h2>
+    <p class="section-text fade-in delay-2">LPT Realty's Business Builder plan keeps it simple. Three costs. That's it.</p>
+
+    <div class="fee-display fade-in delay-2">
+      <div class="fee-display-card">
+        <div class="fee-amount">$195</div>
+        <div class="fee-per">per transaction</div>
+        <div class="fee-desc">Flat processing fee on every closing. No hidden add-ons.</div>
+      </div>
+      <div class="fee-display-card">
+        <div class="fee-amount">$500</div>
+        <div class="fee-per">annual fee</div>
+        <div class="fee-desc">Deducted from your first closing of the year.</div>
+      </div>
+      <div class="fee-display-card">
+        <div class="fee-amount" style="font-size: 2.4rem;">$5,000</div>
+        <div class="fee-per">annual cap</div>
+        <div class="fee-desc">$500/deal until you hit $5K. Then you close at 100% the rest of the year.</div>
+      </div>
+    </div>
+
+    <div class="zero-row fade-in delay-3">
+      <span class="zero-chip">$0 desk fees</span>
+      <span class="zero-chip">$0 franchise fees</span>
+      <span class="zero-chip">$0 tech fees</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: LPT Plus -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">Optional Add-On</span>
+    <h2 class="section-title fade-in delay-1">LPT Plus</h2>
+    <p class="section-text fade-in delay-2">An optional subscription that adds prospecting tools, marketing, and benefits on top of your plan.</p>
+
+    <div class="plus-card fade-in delay-2">
+      <h3>LPT Plus</h3>
+      <div class="plus-pricing">$89/mo on Brokerage Partner &middot; $149/mo on Business Builder</div>
+      <div class="plus-features">
+        <div class="feature">Prospecting leads</div>
+        <div class="feature">AMCards</div>
+        <div class="feature">Zoom Enterprise</div>
+        <div class="feature">RealScout</div>
+        <div class="feature">Listing marketing</div>
+        <div class="feature">Health benefits</div>
+        <div class="feature">Masterminds</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2 class="fade-in">Know Your Numbers.<br>Own Your Business.</h2>
+    <div class="cta-buttons fade-in delay-1">
+      <a href="/commission-calculator" class="btn-primary">Run the Calculator</a>
+      <a href="https://calendly.com/discovertpl" class="btn-secondary">Book a Strategy Call</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">TPL<span>.</span></div>
+      <p>Your growth. Your business. Your future.</p>
+    </div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/lpt-explained">LPT Explained</a>
+      <a href="/why-tpl">Why TPL</a>
+      <a href="/fee-plans">Fee Plans</a>
+      <a href="/resources">Free Resources</a>
+      <a href="https://calendly.com/discovertpl">Book a Call</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+  </div>
+</footer>
+
+<script>
+// Hamburger toggle
+const hamburger = document.querySelector('.hamburger');
+const mobileMenu = document.querySelector('.mobile-menu');
+hamburger.addEventListener('click', () => {
+  mobileMenu.classList.toggle('active');
+  hamburger.classList.toggle('active');
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

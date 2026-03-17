@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Leaving eXp Realty? Here's What to Know &mdash; TPL Collective</title>
+<meta name="description" content="eXp agents are leaving in record numbers. 8 straight quarters of decline. If you're thinking about your next move, here's what LPT Realty offers."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HAMBURGER ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px; transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em; transition: color 0.2s;
+}
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; text-transform: uppercase; border: none;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  padding: 140px 24px 100px;
+  text-align: center;
+  overflow: hidden;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(248,113,113,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248,113,113,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -100px; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 400px;
+  background: radial-gradient(ellipse, rgba(248,113,113,0.12) 0%, rgba(108,99,255,0.10) 50%, transparent 70%);
+  pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; }
+.eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px; display: inline-block;
+}
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 9vw, 100px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 em { font-style: normal; color: var(--red); }
+.hero-sub {
+  font-size: clamp(16px, 2vw, 18px);
+  color: var(--muted); max-width: 660px;
+  margin: 0 auto 48px; font-weight: 300; line-height: 1.75;
+}
+.hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* ── BUTTONS ── */
+.btn-primary {
+  display: inline-block; background: var(--accent); color: var(--white);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 16px 40px; border-radius: 6px; text-decoration: none;
+  border: none; cursor: pointer; transition: all 0.2s ease;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(108,99,255,0.35); }
+.btn-secondary {
+  display: inline-block; background: transparent; color: var(--muted);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 16px 32px; border-radius: 6px; text-decoration: none;
+  border: 1px solid var(--border); cursor: pointer; transition: all 0.2s ease;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* ── SECTIONS ── */
+.section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px; display: block;
+}
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1; color: var(--white);
+  margin-bottom: 20px; letter-spacing: 0.02em;
+}
+.section-title em { font-style: normal; color: var(--accent); }
+.section-body {
+  font-size: 17px; color: var(--muted);
+  max-width: 680px; line-height: 1.75; font-weight: 300;
+}
+.divider {
+  border: none; border-top: 1px solid var(--border);
+  max-width: 1100px; margin: 0 auto;
+}
+
+/* ── PAIN POINT CARDS ── */
+.pain-section {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+}
+.pain-inner { max-width: 1100px; margin: 0 auto; }
+.pain-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 24px; margin-top: 48px;
+}
+.pain-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px; position: relative; overflow: hidden;
+}
+.pain-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  opacity: 0.6;
+}
+.pain-card h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 24px;
+  letter-spacing: 0.04em; color: var(--red); margin-bottom: 12px;
+}
+.pain-card p { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+
+/* ── MATH SECTION ── */
+.math-section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.math-scenario {
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  color: var(--dim); letter-spacing: 0.08em; margin-top: 8px;
+}
+.math-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 24px; margin-top: 48px;
+}
+.math-card {
+  border-radius: 16px; padding: 40px; position: relative; overflow: hidden;
+}
+.math-card-exp {
+  background: var(--surface); border: 1px solid var(--border);
+}
+.math-card-lpt {
+  background: linear-gradient(145deg, rgba(52,211,153,0.06), rgba(52,211,153,0.02));
+  border: 1px solid rgba(52,211,153,0.25);
+}
+.math-card-lpt::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+}
+.math-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 20px; display: block;
+}
+.math-label-exp { color: var(--red); }
+.math-label-lpt { color: var(--green); }
+.math-card h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+  letter-spacing: 0.03em; color: var(--white); margin-bottom: 24px;
+}
+.math-line {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  font-size: 14px; color: var(--muted); font-weight: 300;
+}
+.math-line:last-of-type { border-bottom: none; }
+.math-line .val { font-family: 'DM Mono', monospace; font-size: 13px; }
+.math-line .val-red { color: var(--red); }
+.math-line .val-green { color: var(--green); }
+.math-total {
+  margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.math-total .label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim);
+}
+.math-total .amount {
+  font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1;
+}
+.math-total .amount-exp { color: var(--muted); }
+.math-total .amount-lpt { color: var(--green); }
+
+/* ── SAVINGS CALLOUT ── */
+.savings-callout {
+  margin-top: 32px;
+  background: linear-gradient(135deg, rgba(52,211,153,0.08) 0%, rgba(108,99,255,0.06) 100%);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 16px; padding: 48px; text-align: center;
+}
+.savings-callout h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(32px, 4vw, 52px);
+  color: var(--green); line-height: 1; margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.savings-callout p {
+  font-size: 16px; color: var(--muted); font-weight: 300;
+}
+
+/* ── OBJECTION SECTION ── */
+.objection-section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.objection-quote {
+  font-family: 'Bebas Neue', sans-serif; font-size: clamp(28px, 4vw, 40px);
+  color: var(--muted); line-height: 1.1; margin-bottom: 32px;
+  padding-left: 24px; border-left: 3px solid var(--border);
+  letter-spacing: 0.02em;
+}
+.objection-body {
+  font-size: 16px; color: var(--muted); line-height: 1.8; font-weight: 300;
+  max-width: 720px;
+}
+.objection-body p { margin-bottom: 20px; }
+.objection-body strong { color: var(--text); font-weight: 500; }
+
+/* ── STOCK SECTION ── */
+.stock-section {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+}
+.stock-inner { max-width: 1100px; margin: 0 auto; }
+.stock-body {
+  font-size: 16px; color: var(--muted); line-height: 1.8; font-weight: 300;
+  max-width: 720px; margin-top: 28px;
+}
+.stock-body p { margin-bottom: 20px; }
+.stock-body strong { color: var(--text); font-weight: 500; }
+
+/* ── STEPS SECTION ── */
+.steps-section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.steps-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 48px;
+}
+.step-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px; position: relative;
+}
+.step-number {
+  font-family: 'Bebas Neue', sans-serif; font-size: 48px;
+  color: var(--accent); opacity: 0.3; line-height: 1; margin-bottom: 12px;
+}
+.step-card h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 24px;
+  letter-spacing: 0.04em; color: var(--white); margin-bottom: 12px;
+}
+.step-card p { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+
+/* ── CHECKLIST SECTION ── */
+.checklist-section {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+}
+.checklist-inner { max-width: 1100px; margin: 0 auto; }
+.checklist {
+  list-style: none; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin-top: 40px;
+}
+.checklist li {
+  font-size: 15px; color: var(--text); font-weight: 400;
+  padding: 24px 28px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding-left: 52px; position: relative; line-height: 1.6;
+}
+.checklist li::before {
+  content: ''; position: absolute; left: 24px; top: 28px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--green);
+}
+
+/* ── CTA SECTION ── */
+.cta-section {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, transparent 60%);
+  border-top: 1px solid rgba(108,99,255,0.2);
+  padding: 100px 24px; text-align: center;
+}
+.cta-inner { max-width: 640px; margin: 0 auto; }
+.cta-inner h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 6vw, 72px);
+  color: var(--white); line-height: 1;
+  letter-spacing: 0.02em; margin-bottom: 20px;
+}
+.cta-inner h2 em { font-style: normal; color: var(--accent); }
+.cta-inner p { font-size: 17px; color: var(--muted); font-weight: 300; margin-bottom: 40px; line-height: 1.7; }
+.cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+.cta-note {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--dim); letter-spacing: 0.1em;
+}
+
+/* ── DISCLAIMER ── */
+.disclaimer {
+  max-width: 1100px; margin: 0 auto; padding: 40px 24px;
+  font-size: 12px; color: var(--dim); line-height: 1.7; font-weight: 300;
+  border-top: 1px solid var(--border);
+}
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 40px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-brand span { color: var(--accent); }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ── FADE IN ── */
+.fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+
+/* ── TABLET (<=900px) ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .math-grid { grid-template-columns: 1fr; }
+  .pain-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .checklist { grid-template-columns: 1fr; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE (<=480px) ── */
+@media (max-width: 480px) {
+  .hero { padding: 100px 16px 60px; }
+  .hero h1 { font-size: clamp(44px, 13vw, 72px); }
+  .hero-sub { font-size: 15px; }
+  .section, .math-section, .objection-section, .steps-section { padding: 52px 16px; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .pain-section, .stock-section, .checklist-section { padding: 52px 16px; }
+  .math-card { padding: 28px 20px; }
+  .math-total .amount { font-size: 28px; }
+  .pain-card { padding: 28px 22px; }
+  .step-card { padding: 28px 22px; }
+  .savings-callout { padding: 32px 20px; }
+  .savings-callout h3 { font-size: clamp(26px, 7vw, 40px); }
+  .cta-section { padding: 72px 16px; }
+  .btn-primary, .btn-secondary { display: block; width: 100%; text-align: center; margin: 0 0 12px 0; }
+  .hero-ctas { flex-direction: column; }
+  .cta-buttons { flex-direction: column; }
+  .disclaimer { padding: 32px 16px; }
+  .objection-quote { font-size: clamp(22px, 6vw, 32px); }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content fade-in">
+    <span class="eyebrow">For eXp Agents</span>
+    <h1>8 Quarters of Decline.<br><em>Time to Look Around.</em></h1>
+    <p class="hero-sub">
+      You joined eXp for a reason &mdash; the cloud model, the rev share, maybe the stock. But the numbers tell a different story now. Agent count declining 8 straight quarters. Stock down. Monthly tech fees you&rsquo;re paying whether you close or not. You&rsquo;re not alone in asking: <strong style="color:var(--white)">what&rsquo;s next?</strong>
+    </p>
+    <div class="hero-ctas">
+      <a href="#math" class="btn-primary">See the Math &darr;</a>
+      <a href="https://calendly.com/discovertpl" class="btn-secondary">Book a Call</a>
+    </div>
+  </div>
+</section>
+
+<!-- WHY EXP AGENTS ARE LEAVING -->
+<section class="pain-section">
+  <div class="pain-inner">
+    <div class="fade-in">
+      <span class="section-label">The Reality</span>
+      <h2 class="section-title">Why eXp Agents Are <em>Leaving</em></h2>
+    </div>
+    <div class="pain-grid">
+      <div class="pain-card fade-in delay-1">
+        <h3>$85/Month Whether You Close or Not</h3>
+        <p>eXp&rsquo;s mandatory tech fee costs $1,020/year before your first commission check. At LPT Realty, monthly tech fees are $0.</p>
+      </div>
+      <div class="pain-card fade-in delay-2">
+        <h3>$16,000 Cap</h3>
+        <p>eXp caps at $16K. LPT Realty caps at $5,000. That&rsquo;s $11,000 less to reach 100% commission.</p>
+      </div>
+      <div class="pain-card fade-in delay-1">
+        <h3>8 Quarters of Declining Agent Count</h3>
+        <p>eXp hit ~82,000 agents and has been shrinking since. Momentum matters for rev share &mdash; declining headcount means a shrinking pool.</p>
+      </div>
+      <div class="pain-card fade-in delay-2">
+        <h3>Rev Share Trees Plateauing</h3>
+        <p>When agent count declines, rev share slows. Many eXp builders have seen their monthly rev share checks flatten or drop.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE MATH -->
+<section class="math-section" id="math">
+  <div class="fade-in">
+    <span class="section-label">The Math</span>
+    <h2 class="section-title">12 Deals &middot; $450K Avg &middot; 2.5% Commission</h2>
+    <p class="math-scenario">$135,000 Gross Commission Income</p>
+  </div>
+
+  <div class="math-grid">
+    <!-- eXp -->
+    <div class="math-card math-card-exp fade-in delay-1">
+      <span class="math-label math-label-exp">eXp Realty</span>
+      <h3>Cost Breakdown</h3>
+      <div class="math-line">
+        <span>Gross Commission Income</span>
+        <span class="val">$135,000</span>
+      </div>
+      <div class="math-line">
+        <span>20% split (capped at $16K)</span>
+        <span class="val val-red">&minus;$16,000</span>
+      </div>
+      <div class="math-line">
+        <span>Tech fee &mdash; $85/mo</span>
+        <span class="val val-red">&minus;$1,020</span>
+      </div>
+      <div class="math-line">
+        <span>Transaction fees &mdash; $85 &times; 12</span>
+        <span class="val val-red">&minus;$1,020</span>
+      </div>
+      <div class="math-line">
+        <span>Startup fee</span>
+        <span class="val val-red">&minus;$149</span>
+      </div>
+      <div class="math-total">
+        <span class="label">Total Fees</span>
+        <span class="amount amount-exp">~$18,189</span>
+      </div>
+      <div class="math-total" style="border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px;">
+        <span class="label">Take-Home</span>
+        <span class="amount amount-exp">~$116,811</span>
+      </div>
+    </div>
+
+    <!-- LPT -->
+    <div class="math-card math-card-lpt fade-in delay-2">
+      <span class="math-label math-label-lpt">LPT Realty (Business Builder)</span>
+      <h3>Cost Breakdown</h3>
+      <div class="math-line">
+        <span>Gross Commission Income</span>
+        <span class="val">$135,000</span>
+      </div>
+      <div class="math-line">
+        <span>Flat fee (capped at $5K)</span>
+        <span class="val val-green">&minus;$5,000</span>
+      </div>
+      <div class="math-line">
+        <span>Processing fee &mdash; $195 &times; 12</span>
+        <span class="val val-green">&minus;$2,340</span>
+      </div>
+      <div class="math-line">
+        <span>Annual fee</span>
+        <span class="val val-green">&minus;$500</span>
+      </div>
+      <div class="math-total">
+        <span class="label">Total Fees</span>
+        <span class="amount amount-lpt">$7,840</span>
+      </div>
+      <div class="math-total" style="border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px;">
+        <span class="label">Take-Home</span>
+        <span class="amount amount-lpt">$127,160</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Savings Callout -->
+  <div class="savings-callout fade-in">
+    <h3>You'd Keep $10,349 More Per Year at LPT</h3>
+    <p>$862 more per month &middot; $51,745 more over 5 years</p>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- WHAT ABOUT REVENUE SHARE? -->
+<section class="objection-section">
+  <div class="fade-in">
+    <span class="section-label">The #1 Objection</span>
+    <h2 class="section-title">What About <em>Revenue Share?</em></h2>
+  </div>
+  <div class="objection-quote fade-in delay-1">
+    "But I&rsquo;ve built a rev share tree at eXp&hellip;"
+  </div>
+  <div class="objection-body fade-in delay-2">
+    <p>We hear this more than anything. And it&rsquo;s a valid concern &mdash; you put time into building that tree.</p>
+    <p><strong>LPT Realty has HybridShare</strong> &mdash; a 7-tier revenue share structure available on the Brokerage Partner plan. The mechanics are similar to what you already know.</p>
+    <p>The difference: <strong>LPT is growing. eXp is shrinking.</strong> Revenue share pays when agents JOIN and PRODUCE. Growth feeds the pool. Decline starves it.</p>
+    <p>You can&rsquo;t take your eXp tree with you &mdash; but you can start building in a market that&rsquo;s expanding, not contracting. LPT is the #2 fastest-growing company in the US (Deloitte Fast 500). <!-- [VERIFY exact ranking] --></p>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- WHAT ABOUT STOCK? -->
+<section class="stock-section">
+  <div class="stock-inner">
+    <div class="fade-in">
+      <span class="section-label">Equity</span>
+      <h2 class="section-title">What About <em>Stock?</em></h2>
+    </div>
+    <div class="stock-body fade-in delay-1">
+      <p><strong>eXp:</strong> EXPI trades on the Nasdaq &mdash; established but down significantly from its peak. <!-- [VERIFY current price context] --></p>
+      <p><strong>LPT:</strong> LPTA ticker reserved on the Nasdaq &mdash; pre-IPO opportunity. <!-- [VERIFY ticker status] --> Getting in early on a growth-stage company is a different calculus than holding in a declining one.</p>
+      <p>eXp awards stock post-cap. LPT awards stock grants on both plans, with a 2x multiplier on the Brokerage Partner plan. <!-- [VERIFY stock grant details] --></p>
+      <p>This isn&rsquo;t investment advice. But if you&rsquo;re weighing equity &mdash; one company is growing, the other is contracting. That context matters.</p>
+    </div>
+  </div>
+</section>
+
+<!-- THE MIGRATION IS SIMPLE -->
+<section class="steps-section">
+  <div class="fade-in">
+    <span class="section-label">How It Works</span>
+    <h2 class="section-title">The Migration Is <em>Simple</em></h2>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card fade-in delay-1">
+      <div class="step-number">01</div>
+      <h3>Book a Discovery Call</h3>
+      <p>15 minutes. We&rsquo;ll run your actual numbers and compare your current eXp costs to LPT&rsquo;s fee structure.</p>
+    </div>
+    <div class="step-card fade-in delay-2">
+      <h3>Transfer Your License</h3>
+      <div class="step-number">02</div>
+      <p>LPT handles the paperwork. Active deals transfer with you. You&rsquo;re live in 3&ndash;5 business days.</p>
+    </div>
+    <div class="step-card fade-in delay-3">
+      <div class="step-number">03</div>
+      <h3>Start Building</h3>
+      <p>Access AI tools, HybridShare, community, and the fastest-growing network in real estate.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- LPT IS BUILT FOR EXP AGENTS WHO WANT... -->
+<section class="checklist-section">
+  <div class="checklist-inner">
+    <div class="fade-in">
+      <span class="section-label">Built for You</span>
+      <h2 class="section-title">LPT Is Built for eXp Agents Who <em>Want</em></h2>
+    </div>
+    <ul class="checklist">
+      <li class="fade-in delay-1">The same cloud-first model with lower fees</li>
+      <li class="fade-in delay-2">Revenue share that&rsquo;s growing, not plateauing</li>
+      <li class="fade-in delay-1">AI tools that go beyond a CRM</li>
+      <li class="fade-in delay-2">$0/month in mandatory tech fees</li>
+      <li class="fade-in delay-1">A $5,000 cap instead of $16,000</li>
+      <li class="fade-in delay-2">Pre-IPO stock equity <!-- [VERIFY] --></li>
+    </ul>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner fade-in">
+    <span class="eyebrow">Ready to Make the Switch?</span>
+    <h2>Same Cloud Model.<br><em>Better Economics.</em></h2>
+    <p>No pressure. No pitch. Book 15 minutes with Joe and see what your numbers look like at LPT.</p>
+    <div class="cta-buttons">
+      <a href="https://calendly.com/discovertpl" class="btn-primary">Book a Strategy Call &rarr;</a>
+      <a href="/commission-calculator" class="btn-secondary">Run My Numbers</a>
+    </div>
+    <span class="cta-note">Free &middot; No obligation &middot; Calculator requires no email</span>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  eXp Realty fees and agent counts reflect publicly reported data. Stock comparisons are not investment advice. LPT Realty figures reflect the current Business Builder fee structure. TPL Collective is a community platform. LPT Realty is the brokerage.
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL<span>.</span></div>
+  <div class="footer-links">
+    <a href="/">Home</a><a href="/lpt-explained">LPT Explained</a><a href="/why-tpl">Why TPL</a><a href="/fee-plans">Fee Plans</a><a href="/resources">Free Resources</a><a href="https://calendly.com/discovertpl">Book a Call</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

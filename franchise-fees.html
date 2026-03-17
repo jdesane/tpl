@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-X6WMCMBJ9R');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Franchise Fees Explained | Why LPT Realty Charges None — TPL Collective</title>
+<meta name="description" content="Learn what franchise fees are, which brokerages charge them, and why LPT Realty eliminated them entirely.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3d;
+  --accent: #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold: #f0c040;
+  --gold-bg: rgba(240,192,64,0.1);
+  --gold-br: rgba(240,192,64,0.25);
+  --green: #34d399;
+  --red: #f87171;
+  --text: #e8e8f0;
+  --muted: #8888aa;
+  --dim: #55556a;
+  --white: #ffffff;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.04em; line-height: 1.1; }
+.label { font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); }
+a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--accent-hi); }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.92); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+}
+.nav-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--white); letter-spacing: 0.06em; }
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 1.8rem; list-style: none; }
+.nav-links a { color: var(--muted); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent); color: var(--white) !important; padding: 0.55rem 1.3rem;
+  border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+  transition: background 0.2s, transform 0.2s;
+}
+.nav-cta:hover { background: var(--accent-hi); transform: translateY(-1px); }
+.hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+.hamburger span { display: block; width: 24px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+.mobile-menu {
+  display: none; position: fixed; top: 60px; left: 0; right: 0; background: var(--surface);
+  border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; z-index: 99;
+  flex-direction: column; gap: 1rem;
+}
+.mobile-menu.active { display: flex; }
+.mobile-menu a { color: var(--text); font-size: 1rem; font-weight: 500; padding: 0.5rem 0; }
+
+/* HERO */
+.hero {
+  padding: 10rem 2rem 5rem; text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(108,99,255,0.08) 0%, transparent 60%);
+}
+.hero .label { margin-bottom: 1.2rem; display: inline-block; }
+.hero h1 { font-size: 4rem; color: var(--white); margin-bottom: 1.5rem; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .subtitle { font-size: 1.15rem; color: var(--muted); max-width: 680px; margin: 0 auto; line-height: 1.8; }
+
+/* SECTIONS */
+section { padding: 5rem 0; }
+section + section { border-top: 1px solid var(--border); }
+.section-label { margin-bottom: 0.8rem; }
+.section-title { font-size: 2.8rem; color: var(--white); margin-bottom: 1.5rem; }
+.section-text { font-size: 1.05rem; color: var(--muted); max-width: 720px; line-height: 1.85; margin-bottom: 1.5rem; }
+
+/* TABLE */
+.fee-table-wrap { overflow-x: auto; margin: 2rem 0; border-radius: 12px; border: 1px solid var(--border); }
+.fee-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.fee-table thead { background: var(--surface2); }
+.fee-table th {
+  font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  padding: 1rem 1.2rem; text-align: left; white-space: nowrap;
+}
+.fee-table td { padding: 0.9rem 1.2rem; border-top: 1px solid var(--border); color: var(--text); }
+.fee-table tr:hover td { background: rgba(108,99,255,0.04); }
+.fee-table .highlight-row td { background: var(--accent-bg); color: var(--white); font-weight: 600; }
+.fee-table .verify { color: var(--dim); font-size: 0.8rem; font-family: 'DM Mono', monospace; }
+.fee-table .green { color: var(--green); font-weight: 600; }
+
+/* MATH CARD */
+.math-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 2.5rem; margin: 2rem 0;
+}
+.math-card h3 { font-size: 1.6rem; color: var(--white); margin-bottom: 1.5rem; }
+.math-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid rgba(42,42,61,0.5); font-size: 0.95rem; }
+.math-row:last-child { border-bottom: none; }
+.math-row .math-label { color: var(--muted); }
+.math-row .math-value { color: var(--text); font-family: 'DM Mono', monospace; font-weight: 500; }
+.math-row.total { border-top: 2px solid var(--accent-br); padding-top: 1rem; margin-top: 0.5rem; }
+.math-row.total .math-label { color: var(--white); font-weight: 600; }
+.math-row.total .math-value { color: var(--accent); font-weight: 600; font-size: 1.1rem; }
+
+/* CALLOUT */
+.callout {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 3rem; margin: 3rem 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem;
+}
+.callout h3 { font-size: 1.8rem; color: var(--white); margin-bottom: 1rem; }
+.callout .big-number { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; color: var(--green); line-height: 1; }
+.callout .big-caption { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+/* SAVINGS BADGE */
+.savings-badge {
+  display: inline-block; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 10px; padding: 1.2rem 2rem; margin-top: 1.5rem;
+}
+.savings-badge .amount { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; color: var(--green); line-height: 1; }
+.savings-badge .caption { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+/* CTA */
+.cta-section {
+  padding: 6rem 0; text-align: center;
+  background: radial-gradient(ellipse at 50% 100%, rgba(108,99,255,0.08) 0%, transparent 60%);
+}
+.cta-section h2 { font-size: 3.2rem; color: var(--white); margin-bottom: 2rem; }
+.cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: var(--white); padding: 0.9rem 2.2rem;
+  border-radius: 10px; font-weight: 600; font-size: 1rem;
+  transition: background 0.2s, transform 0.2s; display: inline-block;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); color: var(--white); }
+.btn-secondary {
+  background: transparent; color: var(--accent); padding: 0.9rem 2.2rem;
+  border-radius: 10px; font-weight: 600; font-size: 1rem;
+  border: 1px solid var(--accent-br); transition: all 0.2s; display: inline-block;
+}
+.btn-secondary:hover { background: var(--accent-bg); transform: translateY(-2px); }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border); padding: 3rem 0;
+  background: var(--surface);
+}
+.footer-inner { max-width: 1100px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 2rem; }
+.footer-brand .nav-logo { margin-bottom: 0.5rem; }
+.footer-brand p { color: var(--dim); font-size: 0.85rem; }
+.footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.footer-links a { color: var(--muted); font-size: 0.85rem; }
+.footer-links a:hover { color: var(--white); }
+.footer-copy { width: 100%; text-align: center; color: var(--dim); font-size: 0.8rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+
+/* FADE IN */
+.fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+.fade-in.delay-1 { transition-delay: 0.1s; }
+.fade-in.delay-2 { transition-delay: 0.2s; }
+.fade-in.delay-3 { transition-delay: 0.3s; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .hero h1 { font-size: 2.8rem; }
+  .section-title { font-size: 2.2rem; }
+  .callout { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .cta-section h2 { font-size: 2.4rem; }
+}
+@media (max-width: 480px) {
+  .hero { padding: 8rem 1.2rem 3rem; }
+  .hero h1 { font-size: 2.2rem; }
+  .hero .subtitle { font-size: 1rem; }
+  .section-title { font-size: 1.8rem; }
+  .container { padding: 0 1.2rem; }
+  .math-card { padding: 1.5rem; }
+  .callout { padding: 2rem 1.5rem; }
+  .callout .big-number { font-size: 2.5rem; }
+  .cta-section h2 { font-size: 2rem; }
+  .footer-inner { flex-direction: column; align-items: center; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">TPL<span>.</span></a>
+    <ul class="nav-links">
+      <li><a href="/lpt-explained">LPT Explained</a></li>
+      <li><a href="/why-tpl">Why TPL</a></li>
+      <li><a href="/fee-plans">Fee Plans</a></li>
+      <li><a href="/resources">Free Resources</a></li>
+      <li><a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a></li>
+    </ul>
+    <button class="hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta" style="text-align:center;">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <span class="label fade-in">Fee Transparency</span>
+    <h1 class="fade-in delay-1">Franchise Fees:<br><em>The Hidden Tax on Agents</em></h1>
+    <p class="subtitle fade-in delay-2">Some of the biggest names in real estate charge a franchise fee on top of your split. It's a percentage of your GCI that goes to corporate — not to your business. Here's what that looks like.</p>
+  </div>
+</section>
+
+<!-- SECTION 1: What Is a Franchise Fee -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">The Basics</span>
+    <h2 class="section-title fade-in delay-1">What Is a Franchise Fee?</h2>
+    <p class="section-text fade-in delay-2">A franchise fee is a percentage of your gross commission income (GCI) charged by the brokerage's parent company. It's separate from your commission split, separate from your desk fees, and separate from your transaction fees. It's an additional layer of cost — and it adds up fast.</p>
+    <p class="section-text fade-in delay-3">At most franchise brokerages, this fee ranges from 3% to 8% of your GCI, often capped at $3,000–$6,000 per year.</p>
+  </div>
+</section>
+
+<!-- SECTION 2: Who Charges Franchise Fees -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">The Comparison</span>
+    <h2 class="section-title fade-in delay-1">Who Charges Franchise Fees</h2>
+    <div class="fee-table-wrap fade-in delay-2">
+      <table class="fee-table">
+        <thead>
+          <tr>
+            <th>Brokerage</th>
+            <th>Franchise Fee</th>
+            <th>Cap</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Keller Williams</td>
+            <td>6% of GCI</td>
+            <td>Capped at $3,000/yr</td>
+          </tr>
+          <tr>
+            <td>Coldwell Banker</td>
+            <td>6%–8% of GCI <span class="verify">[VERIFY]</span></td>
+            <td>Varies by office <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td>RE/MAX</td>
+            <td>Varies by franchise <span class="verify">[VERIFY]</span></td>
+            <td>Varies <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr>
+            <td>Century 21</td>
+            <td>6%–8% of GCI <span class="verify">[VERIFY]</span></td>
+            <td>Varies by office <span class="verify">[VERIFY]</span></td>
+          </tr>
+          <tr class="highlight-row">
+            <td>LPT Realty</td>
+            <td class="green">None</td>
+            <td class="green">N/A</td>
+          </tr>
+          <tr>
+            <td>eXp Realty</td>
+            <td class="green">None</td>
+            <td class="green">N/A</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: The Math -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">The Numbers</span>
+    <h2 class="section-title fade-in delay-1">The Math</h2>
+    <p class="section-text fade-in delay-2">At $135,000 GCI (12 deals x $450K avg price x 2.5% commission), here's what the franchise fee alone costs you:</p>
+
+    <div class="math-card fade-in delay-3">
+      <h3>Franchise Fee Impact</h3>
+      <div class="math-row">
+        <span class="math-label">6% franchise fee on $135K GCI</span>
+        <span class="math-value">$8,100</span>
+      </div>
+      <div class="math-row">
+        <span class="math-label">Capped at</span>
+        <span class="math-value">$3,000/yr</span>
+      </div>
+      <div class="math-row">
+        <span class="math-label">You pay per year</span>
+        <span class="math-value" style="color: var(--red);">$3,000</span>
+      </div>
+      <div class="math-row">
+        <span class="math-label">Over 5 years</span>
+        <span class="math-value" style="color: var(--red);">$15,000</span>
+      </div>
+      <div class="math-row">
+        <span class="math-label">Over 10 years</span>
+        <span class="math-value" style="color: var(--red);">$30,000</span>
+      </div>
+    </div>
+    <p class="section-text" style="color: var(--muted); font-style: italic;">This is on top of your commission split, desk fees, and transaction fees.</p>
+  </div>
+</section>
+
+<!-- SECTION 4: Why LPT Charges No Franchise Fee -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">The Difference</span>
+    <h2 class="section-title fade-in delay-1">Why LPT Charges No Franchise Fee</h2>
+    <p class="section-text fade-in delay-2">LPT Realty is not a franchise. It operates as a single entity — no franchise model, no franchise fee. The company keeps costs low through a cloud-based structure with no physical offices to maintain, no franchise overhead to pass through.</p>
+    <p class="section-text fade-in delay-3">This is one of the key structural advantages of the model: every dollar you earn goes further because there's no franchise tax on your production.</p>
+  </div>
+</section>
+
+<!-- SECTION 5: Total Cost Impact -->
+<section>
+  <div class="container">
+    <span class="label section-label fade-in">Side by Side</span>
+    <h2 class="section-title fade-in delay-1">Total Cost Impact</h2>
+    <p class="section-text fade-in delay-2">For an agent doing $135K GCI/yr (12 deals), here's the full picture:</p>
+
+    <div class="callout fade-in delay-2">
+      <div>
+        <h3>Keller Williams Agent</h3>
+        <div class="math-card" style="margin: 0; border: 1px solid var(--border);">
+          <div class="math-row">
+            <span class="math-label">Franchise fee (6%, capped)</span>
+            <span class="math-value" style="color: var(--red);">$3,000</span>
+          </div>
+          <div class="math-row">
+            <span class="math-label">30% split (capped ~$20K)</span>
+            <span class="math-value">$20,000</span>
+          </div>
+          <div class="math-row">
+            <span class="math-label">Desk fees ($77/mo)</span>
+            <span class="math-value">$923</span>
+          </div>
+          <div class="math-row">
+            <span class="math-label">Transaction fees ($150 x 12)</span>
+            <span class="math-value">$1,800</span>
+          </div>
+          <div class="math-row total">
+            <span class="math-label">Total Annual Cost</span>
+            <span class="math-value" style="color: var(--red);">$25,723</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>LPT Realty (Business Builder)</h3>
+        <div class="math-card" style="margin: 0; border: 1px solid var(--accent-br);">
+          <div class="math-row">
+            <span class="math-label">$500/deal capped at $5,000</span>
+            <span class="math-value">$5,000</span>
+          </div>
+          <div class="math-row">
+            <span class="math-label">$195 x 12 processing</span>
+            <span class="math-value">$2,340</span>
+          </div>
+          <div class="math-row">
+            <span class="math-label">Annual fee</span>
+            <span class="math-value">$500</span>
+          </div>
+          <div class="math-row total">
+            <span class="math-label">Total Annual Cost</span>
+            <span class="math-value">$7,840</span>
+          </div>
+        </div>
+        <div class="savings-badge" style="margin-top: 1.5rem;">
+          <div class="amount">$17,883</div>
+          <div class="caption">saved per year — $3,000 of that is the franchise fee alone</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2 class="fade-in">Stop Paying the<br>Franchise Tax</h2>
+    <div class="cta-buttons fade-in delay-1">
+      <a href="https://calendly.com/discovertpl" class="btn-primary">Book a Call</a>
+      <a href="/commission-calculator" class="btn-secondary">Run My Numbers</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">TPL<span>.</span></div>
+      <p>Your growth. Your business. Your future.</p>
+    </div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/lpt-explained">LPT Explained</a>
+      <a href="/why-tpl">Why TPL</a>
+      <a href="/fee-plans">Fee Plans</a>
+      <a href="/resources">Free Resources</a>
+      <a href="https://calendly.com/discovertpl">Book a Call</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+  </div>
+</footer>
+
+<script>
+// Hamburger toggle
+const hamburger = document.querySelector('.hamburger');
+const mobileMenu = document.querySelector('.mobile-menu');
+hamburger.addEventListener('click', () => {
+  mobileMenu.classList.toggle('active');
+  hamburger.classList.toggle('active');
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

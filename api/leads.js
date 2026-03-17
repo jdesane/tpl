@@ -1,3 +1,10 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+)
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -7,57 +14,76 @@ export default async function handler(req, res) {
 
   const { name, email, brokerage, phone, deals_per_year, avg_price, source, notes } = req.body;
 
-  // Save lead to VPS
+  // Save lead to Supabase
   try {
-    const auth = Buffer.from('joe:YourPasswordHere').toString('base64');
-    await fetch('https://mission.tplcollective.ai/api/leads', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${auth}`
-      },
-      body: JSON.stringify({ name, email, brokerage, phone, deals_per_year, avg_price, source: source || 'Web', notes })
-    });
-  } catch(e) {
-    console.error('Failed to save lead to VPS:', e);
-  }
+    const { data, error } = await supabase
+      .from('leads')
+      .insert({
+        name,
+        email,
+        phone: phone || '',
+        brokerage: brokerage || '',
+        deals_per_year: deals_per_year || '',
+        avg_price: avg_price || '',
+        source: source || 'Web',
+        notes: notes || '',
+        status: 'new'
+      })
+      .select()
+      .single();
 
-  // Send email notification via Resend
-  try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: 'TPL Mission Control <notifications@tplcollective.ai>',
-          to: ['joe@desaneteam.com'],
-          subject: `New Lead: ${name} — TPL Mission Control`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0f;color:#fff;padding:32px;border-radius:12px;">
-              <h2 style="color:#6c63ff;margin:0 0 24px;">✦ New Lead Captured</h2>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:8px 0;color:#888;">Name</td><td style="padding:8px 0;">${name}</td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Email</td><td style="padding:8px 0;">${email}</td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Phone</td><td style="padding:8px 0;">${phone || '—'}</td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Brokerage</td><td style="padding:8px 0;">${brokerage}</td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Deals/Year</td><td style="padding:8px 0;">${deals_per_year || '—'}</td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Avg Price</td><td style="padding:8px 0;">${avg_price || '—'}</td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Source</td><td style="padding:8px 0;">${source || 'Web'}</td></tr>
-                ${notes ? `<tr><td style="padding:8px 0;color:#888;">Notes</td><td style="padding:8px 0;">${notes}</td></tr>` : ''}
-              </table>
-              <a href="https://mission.tplcollective.ai" style="display:inline-block;margin-top:24px;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:6px;">View in Mission Control</a>
-            </div>
-          `
-        })
-      });
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to save lead' });
     }
-  } catch(e) {
-    console.error('Failed to send email notification:', e);
-  }
 
-  return res.status(200).json({ success: true });
+    // Log activity
+    await supabase.from('activity_log').insert({
+      type: 'lead',
+      message: `New lead: ${name} from ${brokerage || source || 'Web'}`,
+      meta: { lead_id: data.id, source: source || 'Web' }
+    });
+
+    // Send email notification via Resend
+    try {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (apiKey) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'TPL Mission Control <notifications@tplcollective.ai>',
+            to: ['joe@desaneteam.com'],
+            subject: `New Lead: ${name} — TPL Mission Control`,
+            html: `
+              <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0f;color:#fff;padding:32px;border-radius:12px;">
+                <h2 style="color:#6c63ff;margin:0 0 24px;">✦ New Lead Captured</h2>
+                <table style="width:100%;border-collapse:collapse;">
+                  <tr><td style="padding:8px 0;color:#888;">Name</td><td style="padding:8px 0;">${name}</td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Email</td><td style="padding:8px 0;">${email}</td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Phone</td><td style="padding:8px 0;">${phone || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Brokerage</td><td style="padding:8px 0;">${brokerage}</td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Deals/Year</td><td style="padding:8px 0;">${deals_per_year || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Avg Price</td><td style="padding:8px 0;">${avg_price || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Source</td><td style="padding:8px 0;">${source || 'Web'}</td></tr>
+                  ${notes ? `<tr><td style="padding:8px 0;color:#888;">Notes</td><td style="padding:8px 0;">${notes}</td></tr>` : ''}
+                </table>
+                <a href="https://mission.tplcollective.ai" style="display:inline-block;margin-top:24px;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:6px;">View in Mission Control</a>
+              </div>
+            `
+          })
+        });
+      }
+    } catch(e) {
+      console.error('Failed to send email notification:', e);
+    }
+
+    return res.status(200).json({ success: true, id: data.id });
+  } catch(e) {
+    console.error('Failed to save lead:', e);
+    return res.status(500).json({ success: false, error: 'Internal error' });
+  }
 }

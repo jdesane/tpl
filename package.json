@@ -1,0 +1,7 @@
+{
+  "name": "tpl-site",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2"
+  }
+}

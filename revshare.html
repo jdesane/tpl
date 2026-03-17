@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+</script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HybridShare Revenue Share | How It Works — TPL Collective</title>
+<meta name="description" content="Understand LPT Realty's HybridShare revenue share program. 7-tier passive income structure available on the Brokerage Partner plan."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 60vh;
+  background: var(--bg);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 140px 5% 80px;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 900px; margin: 0 auto; width: 100%;
+  text-align: center; position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before, .hero-eyebrow::after { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 7vw, 86px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 24px;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); font-weight: 300;
+  max-width: 640px; margin: 0 auto;
+}
+
+/* ── SECTION BASE ── */
+.section { padding: 96px 5%; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 16px;
+}
+.section-subtitle {
+  font-size: 16px; color: var(--muted); font-weight: 300;
+  line-height: 1.7; max-width: 640px; margin-bottom: 48px;
+}
+
+/* ── HOW IT WORKS CARDS ── */
+.how-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+}
+.how-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 28px;
+  transition: border-color 0.3s;
+}
+.how-card:hover { border-color: var(--accent-br); }
+.how-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px; color: var(--accent); line-height: 1;
+  margin-bottom: 12px; opacity: 0.4;
+}
+.how-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; color: var(--white); letter-spacing: 0.02em;
+  margin-bottom: 10px; line-height: 1.1;
+}
+.how-body {
+  font-size: 14px; color: var(--muted); line-height: 1.65;
+}
+.how-note {
+  margin-top: 32px; padding: 20px 24px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-br);
+  border-radius: 10px;
+  font-size: 14px; color: var(--text); line-height: 1.65;
+}
+.how-note strong { color: var(--accent-hi); font-weight: 600; }
+
+/* ── TIER CARDS ── */
+.tier-stack {
+  display: flex; flex-direction: column; gap: 12px;
+  max-width: 700px;
+}
+.tier-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 28px;
+  display: flex; align-items: center; gap: 24px;
+  transition: border-color 0.3s;
+}
+.tier-card:hover { border-color: var(--accent-br); }
+.tier-depth {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; color: var(--accent); line-height: 1;
+  min-width: 44px; text-align: center; opacity: 0.6;
+}
+.tier-info { flex: 1; }
+.tier-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 2px;
+}
+.tier-pct {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px; color: var(--white); font-weight: 500;
+}
+.tier-pct .verify {
+  color: var(--gold); background: var(--gold-bg);
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; letter-spacing: 0.06em; margin-left: 4px;
+}
+.tier-footnote {
+  margin-top: 24px;
+  font-size: 14px; color: var(--muted); line-height: 1.65;
+  padding: 16px 20px;
+  background: var(--surface2);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+}
+
+/* ── EXAMPLE SCENARIO ── */
+.scenario-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  margin-bottom: 28px;
+}
+.scenario-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.scenario-card:hover { border-color: var(--accent-br); }
+.scenario-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px; color: var(--accent); line-height: 1;
+  margin-bottom: 8px;
+}
+.scenario-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.scenario-detail {
+  font-size: 13px; color: var(--dim); line-height: 1.5;
+}
+.scenario-result {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-br);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+}
+.scenario-result-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.scenario-result-text {
+  font-size: 16px; color: var(--text); line-height: 1.65; font-weight: 300;
+  max-width: 540px; margin: 0 auto 20px;
+}
+.scenario-result .btn-primary { margin-top: 8px; }
+
+/* ── PLAN COMPARISON ── */
+.plan-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.plan-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 40px 36px;
+  position: relative;
+  transition: border-color 0.3s;
+}
+.plan-card:hover { border-color: var(--accent-br); }
+.plan-card.featured {
+  border-color: var(--accent-br);
+  box-shadow: 0 0 60px rgba(108,99,255,0.08);
+}
+.plan-badge {
+  position: absolute; top: -12px; left: 36px;
+  background: var(--accent); color: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 5px 14px; border-radius: 4px;
+}
+.plan-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px; color: var(--white); letter-spacing: 0.02em;
+  margin-bottom: 8px; line-height: 1;
+}
+.plan-highlight {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; color: var(--accent-hi);
+  letter-spacing: 0.06em; margin-bottom: 28px;
+}
+.plan-details { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.plan-details li {
+  font-size: 14px; color: var(--text); line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.plan-details li::before {
+  content: ''; display: block; flex-shrink: 0;
+  width: 6px; height: 6px; margin-top: 7px;
+  border-radius: 50%;
+}
+.plan-card:not(.featured) .plan-details li::before { background: var(--dim); }
+.plan-card.featured .plan-details li::before { background: var(--accent); }
+.detail-label {
+  color: var(--muted); font-size: 12px; display: block;
+  font-family: 'DM Mono', monospace; letter-spacing: 0.05em;
+}
+.detail-value { color: var(--white); font-weight: 500; }
+.detail-locked { color: var(--red); font-weight: 500; }
+.detail-unlocked { color: var(--green); font-weight: 500; }
+
+/* ── FAQ ── */
+.faq-list {
+  display: flex; flex-direction: column; gap: 16px;
+  max-width: 800px;
+}
+.faq-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.faq-item:hover { border-color: var(--accent-br); }
+.faq-q {
+  padding: 24px 28px;
+  font-size: 16px; font-weight: 500; color: var(--white);
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: space-between; gap: 16px;
+  user-select: none;
+}
+.faq-q::after {
+  content: '+'; font-family: 'DM Mono', monospace;
+  font-size: 20px; color: var(--accent); flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.faq-item.open .faq-q::after { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+}
+.faq-item.open .faq-a { max-height: 300px; }
+.faq-a-inner {
+  padding: 0 28px 24px;
+  font-size: 14px; color: var(--muted); line-height: 1.75;
+}
+.faq-a-inner .verify-inline {
+  color: var(--gold); font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+}
+
+/* ── CTA ── */
+.cta-section {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 96px 5%; text-align: center;
+}
+.cta-inner { max-width: 720px; margin: 0 auto; }
+.cta-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 56px);
+  color: var(--white); line-height: 1; margin-bottom: 16px;
+}
+.cta-title em { font-style: normal; color: var(--accent); }
+.cta-sub {
+  font-size: 16px; color: var(--muted); font-weight: 300;
+  line-height: 1.7; margin-bottom: 40px;
+}
+.cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* ── BUTTONS ── */
+.btn-primary {
+  background: var(--accent); color: var(--white);
+  padding: 15px 34px; border-radius: 6px;
+  font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,99,255,0.4); }
+.btn-secondary {
+  border: 1px solid var(--border); color: var(--muted);
+  padding: 15px 32px; border-radius: 6px;
+  font-weight: 500; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s; background: transparent; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 40px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px;
+}
+.footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--white); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* ── ANIMATIONS ── */
+.fade-up { opacity: 0; transform: translateY(28px); animation: fadeUp 0.8s ease forwards; }
+.fade-up.d1 { animation-delay: 0.1s; }
+.fade-up.d2 { animation-delay: 0.25s; }
+.fade-up.d3 { animation-delay: 0.4s; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.fade-in { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.25s; }
+.delay-3 { transition-delay: 0.4s; }
+
+/* ── HAMBURGER / MOBILE ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; letter-spacing: 0.05em !important;
+  text-transform: uppercase; border: none;
+}
+
+/* ── TABLET ── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 100px 5% 60px; }
+  .how-grid { grid-template-columns: 1fr; }
+  .scenario-grid { grid-template-columns: 1fr; }
+  .plan-grid { grid-template-columns: 1fr; }
+  .section { padding: 64px 5%; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* ── PHONE ── */
+@media (max-width: 480px) {
+  .hero { padding: 88px 4% 52px; }
+  .hero h1 { font-size: clamp(40px, 12vw, 56px); }
+  .hero-sub { font-size: 15px; }
+  .section { padding: 52px 4%; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .plan-card { padding: 32px 24px; }
+  .how-card { padding: 24px 20px; }
+  .tier-card { padding: 16px 20px; gap: 16px; }
+  .scenario-card { padding: 24px 20px; }
+  .faq-q { padding: 20px 20px; font-size: 15px; }
+  .faq-a-inner { padding: 0 20px 20px; }
+  .btn-primary { padding: 14px 24px; font-size: 13px; }
+  .btn-secondary { padding: 14px 24px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow fade-up">Passive Income</div>
+    <h1 class="fade-up d1">HybridShare:<br/><em>Income Beyond Closings</em></h1>
+    <p class="hero-sub fade-up d2">Most agents earn only when they close. HybridShare creates a second income stream &mdash; paid monthly &mdash; from the production of agents in your network. It's available exclusively on the Brokerage Partner plan.</p>
+  </div>
+</section>
+
+<!-- SECTION 1: HOW IT WORKS -->
+<section class="section" style="background: var(--surface);">
+  <div class="section-inner">
+    <div class="section-label fade-in">01 &mdash; The Model</div>
+    <h2 class="section-title fade-in delay-1">How HybridShare Works</h2>
+    <p class="section-subtitle fade-in delay-2">A passive income engine built into LPT Realty's Brokerage Partner plan.</p>
+
+    <div class="how-grid">
+      <div class="how-card fade-in">
+        <div class="how-num">01</div>
+        <div class="how-heading">Enroll via Brokerage Partner</div>
+        <p class="how-body">When you choose the Brokerage Partner comp plan (80/20 split), you are automatically enrolled in HybridShare. No separate signup required.</p>
+      </div>
+      <div class="how-card fade-in delay-1">
+        <div class="how-num">02</div>
+        <div class="how-heading">Your Network Produces</div>
+        <p class="how-body">Every time an agent in your network closes a deal, LPT retains 20% as the company dollar. A percentage of that company dollar is paid to you as revenue share.</p>
+      </div>
+      <div class="how-card fade-in delay-2">
+        <div class="how-num">03</div>
+        <div class="how-heading">7 Tiers of Depth</div>
+        <p class="how-body">You earn across seven tiers &mdash; not just from the agents you personally recruit, but from agents they recruit, and so on down to Tier 7.</p>
+      </div>
+    </div>
+
+    <div class="how-note fade-in delay-3">
+      <strong>Important:</strong> HybridShare is <strong>NOT</strong> taken from your recruit's commission. It comes from LPT Realty's retained company dollar. Your recruits keep their full split. Revenue share survives retirement as long as you maintain an active real estate license with LPT. <span style="color:var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.06em;">[VERIFY]</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: THE 7 TIERS -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-label fade-in">02 &mdash; Tier Structure</div>
+    <h2 class="section-title fade-in delay-1">The 7 Tiers</h2>
+    <p class="section-subtitle fade-in delay-2">Each tier represents a generation of depth in your network. You earn a percentage of the company dollar from every closed deal at every tier.</p>
+
+    <div class="tier-stack">
+      <div class="tier-card fade-in">
+        <div class="tier-depth">1</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 1 &mdash; Direct Recruits</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+      <div class="tier-card fade-in delay-1">
+        <div class="tier-depth">2</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 2</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+      <div class="tier-card fade-in delay-1">
+        <div class="tier-depth">3</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 3</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+      <div class="tier-card fade-in delay-2">
+        <div class="tier-depth">4</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 4</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+      <div class="tier-card fade-in delay-2">
+        <div class="tier-depth">5</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 5</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+      <div class="tier-card fade-in delay-3">
+        <div class="tier-depth">6</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 6</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+      <div class="tier-card fade-in delay-3">
+        <div class="tier-depth">7</div>
+        <div class="tier-info">
+          <div class="tier-label">Tier 7</div>
+          <div class="tier-pct"><span class="verify">[VERIFY]</span>% of company dollar</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tier-footnote fade-in">
+      Exact tier percentages vary. Book a call for the current HybridShare structure.
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: EXAMPLE SCENARIO -->
+<section class="section" style="background: var(--surface);">
+  <div class="section-inner">
+    <div class="section-label fade-in">03 &mdash; Example</div>
+    <h2 class="section-title fade-in delay-1">Example Scenario</h2>
+    <p class="section-subtitle fade-in delay-2">A hypothetical look at how HybridShare compounds across just two tiers.</p>
+
+    <div class="scenario-grid">
+      <div class="scenario-card fade-in">
+        <div class="scenario-label">Tier 1</div>
+        <div class="scenario-num">5</div>
+        <div class="scenario-detail">Direct recruits you personally bring to LPT Realty</div>
+      </div>
+      <div class="scenario-card fade-in delay-1">
+        <div class="scenario-label">Tier 2</div>
+        <div class="scenario-num">15</div>
+        <div class="scenario-detail">Each of your 5 recruits brings in 3 agents of their own</div>
+      </div>
+      <div class="scenario-card fade-in delay-2">
+        <div class="scenario-label">Total Network</div>
+        <div class="scenario-num">20</div>
+        <div class="scenario-detail">Producing agents across Tier 1 + Tier 2 alone</div>
+      </div>
+    </div>
+
+    <div class="how-note fade-in delay-2" style="margin-bottom: 24px;">
+      If each agent averages <strong>10 deals per year</strong> at <strong>$10K GCI</strong>, and LPT retains 20% ($2,000 company dollar per deal), that's $400,000 in total company dollar from your first two tiers alone. Your HybridShare percentage applies to each of those transactions &mdash; creating potential monthly passive income. <span style="color:var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.06em;">[VERIFY projected amounts]</span>
+    </div>
+
+    <div class="scenario-result fade-in delay-3">
+      <div class="scenario-result-label">Potential Monthly Rev Share Income</div>
+      <p class="scenario-result-text">The exact amount depends on the tier percentages and your network's production. This example only covers 2 of 7 tiers &mdash; imagine the compounding effect at full depth.</p>
+      <a href="https://calendly.com/discovertpl" class="btn-primary">Book a Call to See Your Projected Income</a>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: PLAN COMPARISON -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-label fade-in">04 &mdash; Plan Comparison</div>
+    <h2 class="section-title fade-in delay-1">Which Plan Unlocks HybridShare?</h2>
+    <p class="section-subtitle fade-in delay-2">LPT Realty offers two comp plans. Only one includes revenue share.</p>
+
+    <div class="plan-grid">
+      <!-- Business Builder -->
+      <div class="plan-card fade-in">
+        <div class="plan-name">Business Builder</div>
+        <div class="plan-highlight">100% Commission</div>
+        <ul class="plan-details">
+          <li>
+            <div><span class="detail-label">Commission</span><span class="detail-value">100% GCI</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Annual Cap</span><span class="detail-value">$5,000</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">HybridShare</span><span class="detail-locked">NO &mdash; Revenue share not available</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Stock Grants</span><span class="detail-value">Standard multiplier</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Brokerage Partner -->
+      <div class="plan-card featured fade-in delay-1">
+        <div class="plan-badge">HybridShare Unlocked</div>
+        <div class="plan-name">Brokerage Partner</div>
+        <div class="plan-highlight">80/20 Split &mdash; Revenue Share Active</div>
+        <ul class="plan-details">
+          <li>
+            <div><span class="detail-label">Commission Split</span><span class="detail-value">80/20</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Annual Cap</span><span class="detail-value">$15,000</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">HybridShare</span><span class="detail-unlocked">UNLOCKED &mdash; 7-tier revenue share</span></div>
+          </li>
+          <li>
+            <div><span class="detail-label">Stock Grants</span><span class="detail-value">2x multiplier</span></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: FAQ -->
+<section class="section" style="background: var(--surface);">
+  <div class="section-inner">
+    <div class="section-label fade-in">05 &mdash; FAQ</div>
+    <h2 class="section-title fade-in delay-1">Common Questions</h2>
+    <p class="section-subtitle fade-in delay-2">What agents ask most about HybridShare.</p>
+
+    <div class="faq-list">
+      <div class="faq-item fade-in">
+        <div class="faq-q">Does HybridShare come out of my recruit's commission?</div>
+        <div class="faq-a">
+          <div class="faq-a-inner">No. HybridShare is paid from LPT Realty's retained company dollar &mdash; the 20% that LPT keeps on the Brokerage Partner split. Your recruits keep their full commission split. Nothing is deducted from their earnings to fund your revenue share.</div>
+        </div>
+      </div>
+      <div class="faq-item fade-in delay-1">
+        <div class="faq-q">Do I need to be on Brokerage Partner forever?</div>
+        <div class="faq-a">
+          <div class="faq-a-inner">No. You can switch plans once per anniversary year. However, switching from Brokerage Partner to Business Builder will pause your HybridShare earnings. Your network stays intact &mdash; if you switch back, your revenue share resumes.</div>
+        </div>
+      </div>
+      <div class="faq-item fade-in delay-2">
+        <div class="faq-q">Is HybridShare the same as eXp's revenue share?</div>
+        <div class="faq-a">
+          <div class="faq-a-inner">Similar concept, different structure. LPT Realty's HybridShare offers a 7-tier revenue share program. The specific percentages and qualification requirements differ from eXp's model. <span class="verify-inline">[VERIFY]</span> Book a call for a side-by-side comparison.</div>
+        </div>
+      </div>
+      <div class="faq-item fade-in delay-3">
+        <div class="faq-q">Can I earn HybridShare in retirement?</div>
+        <div class="faq-a">
+          <div class="faq-a-inner">Yes &mdash; as long as you maintain an active real estate license with LPT Realty, your HybridShare income continues regardless of whether you are actively closing deals. <span class="verify-inline">[VERIFY]</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2 class="cta-title fade-in">See What Your<br/><em>Network Could Earn</em></h2>
+    <p class="cta-sub fade-in delay-1">HybridShare is one of the most misunderstood parts of the model. Book 15 minutes with Joe and we'll map it to your actual recruiting potential.</p>
+    <div class="cta-actions fade-in delay-2">
+      <a href="https://calendly.com/discovertpl" class="btn-primary">Book a Call</a>
+      <a href="/two-lanes" class="btn-secondary">Compare Plans</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="https://calendly.com/discovertpl">Book a Call</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal for .fade-in elements
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// FAQ accordion
+document.querySelectorAll('.faq-q').forEach(q => {
+  q.addEventListener('click', () => {
+    const item = q.parentElement;
+    const wasOpen = item.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    // Toggle clicked
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+</script>
+
+</body>
+</html>

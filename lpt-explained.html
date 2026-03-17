@@ -325,6 +325,53 @@ nav {
 }
 .pillar p { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; }
 
+/* ── MOMENTUM ── */
+.momentum {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+}
+.momentum-inner { max-width: 1100px; margin: 0 auto; }
+.awards-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 48px;
+}
+.award-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px 28px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.award-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(240,192,64,0.5), transparent);
+}
+.award-icon { font-size: 36px; margin-bottom: 16px; display: block; }
+.award-card h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+  letter-spacing: 0.04em; color: var(--gold); margin-bottom: 10px;
+}
+.award-card p { font-size: 13px; color: var(--muted); line-height: 1.6; font-weight: 300; }
+
+/* ── AI TOOLS ── */
+.ai-section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+.ai-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 48px;
+}
+.ai-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px 28px;
+  transition: border-color 0.3s;
+}
+.ai-card:hover { border-color: var(--accent-br); }
+.ai-card-icon { font-size: 28px; margin-bottom: 14px; display: block; }
+.ai-card h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 24px;
+  letter-spacing: 0.04em; color: var(--accent-hi); margin-bottom: 10px;
+}
+.ai-card p { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+
 /* ── CTA ── */
 .cta-section {
   background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, transparent 60%);
@@ -388,6 +435,8 @@ footer {
   .fee-item { border-right: none; border-bottom: 1px solid var(--border); }
   .fee-item:last-child { border-bottom: none; }
   .pillars-grid { grid-template-columns: 1fr; }
+  .awards-grid { grid-template-columns: 1fr; }
+  .ai-grid { grid-template-columns: 1fr; }
   footer { flex-direction: column; text-align: center; }
   .footer-links { justify-content: center; }
 }
@@ -399,7 +448,8 @@ footer {
   .hero-sub { font-size: 15px; }
   .hero-badges { gap: 8px; }
   .badge { font-size: 10px; padding: 6px 12px; }
-  .section, .plans-section, .pillars { padding: 52px 16px; }
+  .section, .plans-section, .pillars, .ai-section { padding: 52px 16px; }
+  .momentum { padding: 52px 16px; }
   .section-title { font-size: clamp(32px, 10vw, 48px); }
   .what-card { padding: 24px; }
   .plan-card { padding: 32px 22px; }
@@ -695,6 +745,68 @@ footer {
         through a downline. Both are valid. LPT doesn't pick a lane for you — it builds
         infrastructure for both.
       </p>
+    </div>
+  </div>
+</section>
+
+<!-- MOMENTUM & AWARDS -->
+<section class="momentum">
+  <div class="momentum-inner">
+    <div class="fade-in">
+      <span class="section-label">Momentum</span>
+      <h2 class="section-title">The Fastest-Growing<br>Brokerage in America</h2>
+      <p class="section-body">
+        LPT Realty isn't a startup experiment. It's a brokerage with 21,000+ agents,
+        national recognition, and the kind of growth trajectory that makes revenue share
+        and stock equity worth paying attention to.
+      </p>
+    </div>
+    <div class="awards-grid">
+      <div class="award-card fade-in delay-1">
+        <span class="award-icon">&#x1F3C6;</span>
+        <h3>Deloitte Fast 500</h3>
+        <p>Ranked on the Deloitte Technology Fast 500 — one of the fastest-growing companies in America across all industries. <!-- [VERIFY] exact ranking and year --></p>
+      </div>
+      <div class="award-card fade-in delay-2">
+        <span class="award-icon">&#x1F4C8;</span>
+        <h3>21,000+ Agents</h3>
+        <p>While legacy brokerages shrink and competitors report declining agent counts, LPT continues to grow quarter over quarter.</p>
+      </div>
+      <div class="award-card fade-in delay-3">
+        <span class="award-icon">&#x1F4B9;</span>
+        <h3>LPTA — Nasdaq Reserved</h3>
+        <p>LPT Realty has reserved the ticker LPTA on Nasdaq, signaling its path toward a public offering and agent equity.<!-- [VERIFY] current IPO timeline --></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI TOOLS -->
+<section class="ai-section">
+  <div class="fade-in">
+    <span class="section-label">Technology</span>
+    <h2 class="section-title">AI Built for<br>Real Estate Agents</h2>
+    <p class="section-body">
+      LPT Realty isn't just adding AI as a buzzword. Through TPL Collective,
+      agents get access to purpose-built AI tools that help them recruit,
+      create content, and manage their business.
+    </p>
+  </div>
+  <div class="ai-grid">
+    <div class="ai-card fade-in delay-1">
+      <span class="ai-card-icon">&#x1F916;</span>
+      <h3>Dezzy.ai</h3>
+      <p>LPT Realty's proprietary AI assistant. Built specifically for real estate agents — not a generic chatbot repackaged with a logo.<!-- [VERIFY] specific Dezzy.ai capabilities --></p>
+    </div>
+    <div class="ai-card fade-in delay-2">
+      <span class="ai-card-icon">&#x1F4E3;</span>
+      <h3>Media Stack</h3>
+      <p>Social media templates, listing graphics, video frameworks, and content calendars — powered by AI, designed for agents who want to build a brand without hiring a team.</p>
+    </div>
+    <div class="ai-card fade-in delay-3">
+      <span class="ai-card-icon">&#x1F50D;</span>
+      <h3>RecruitAssist</h3>
+      <p>AI-powered recruiting tools that help you identify, reach, and convert agents into your HybridShare network. Available through TPL Collective.</p>
     </div>
   </div>
 </section>
