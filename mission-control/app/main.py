@@ -230,39 +230,94 @@ def health():
 
 @app.post("/api/leads")
 async def create_lead(lead: LeadIn):
-    result = supabase.table("leads").insert({
-        "name": lead.name,
-        "email": lead.email,
-        "phone": lead.phone or "",
-        "brokerage": lead.brokerage or "",
-        "deals_per_year": lead.deals_per_year or "",
-        "avg_price": lead.avg_price or "",
-        "source": lead.source or "Web",
-        "status": "new"
-    }).execute()
+    # Check if contact already exists by email
+    existing = None
+    if lead.email:
+        existing_result = supabase.table("leads").select("id, name, lead_score").eq("email", lead.email).execute()
+        if existing_result.data:
+            existing = existing_result.data[0]
 
-    lead_data = result.data[0]
-    lead_id = lead_data["id"]
+    if existing:
+        # UPDATE existing contact instead of creating duplicate
+        lead_id = existing["id"]
+        updates = {"updated_at": datetime.utcnow().isoformat()}
+        if lead.brokerage:
+            updates["current_brokerage"] = lead.brokerage
+            updates["brokerage"] = lead.brokerage
+        if lead.deals_per_year:
+            updates["deals_per_year"] = lead.deals_per_year
+        if lead.avg_price:
+            updates["avg_price"] = lead.avg_price
+        if lead.phone:
+            updates["phone"] = lead.phone
+        # Bump score if they re-engaged
+        old_score = existing.get("lead_score") or 0
+        if old_score < 50:
+            updates["lead_score"] = 50
+            updates["lead_temperature"] = "warming"
+        updates["last_contacted_at"] = datetime.utcnow().isoformat()
+        supabase.table("leads").update(updates).eq("id", lead_id).execute()
 
-    supabase.table("activity_log").insert({
-        "type": "lead",
-        "message": f"New lead: {lead.name} from {lead.brokerage or 'tplcollective.ai'}",
-        "meta": {"lead_id": lead_id}
-    }).execute()
+        supabase.table("lead_activity").insert({
+            "lead_id": lead_id,
+            "activity_type": "re_engaged",
+            "description": f"Re-engaged via {lead.source or 'Web'}. Updated production: {lead.deals_per_year} deals, {lead.avg_price} avg."
+        }).execute()
 
-    # Auto-create opportunity in default pipeline
-    try:
-        default_pipeline = supabase.table("pipelines").select("id").eq("is_default", True).execute()
-        if default_pipeline.data:
-            supabase.table("opportunities").insert({
-                "contact_id": lead_id,
-                "pipeline_id": default_pipeline.data[0]["id"],
-                "stage": "new_fb_lead",
-                "source": lead.source or "Web",
-                "status": "open"
-            }).execute()
-    except Exception:
-        pass  # Never let opportunity creation break lead capture
+        supabase.table("activity_log").insert({
+            "type": "lead",
+            "message": f"Existing contact re-engaged: {existing['name']} via {lead.source or 'Web'}",
+            "meta": {"lead_id": lead_id}
+        }).execute()
+
+        # Move opportunity to "Engaged" if in nurture
+        try:
+            opps = supabase.table("opportunities").select("id, stage").eq("contact_id", lead_id).eq("status", "open").execute()
+            if opps.data and opps.data[0]["stage"] in ("nurture_not_ready", "new_fb_lead"):
+                supabase.table("opportunities").update({
+                    "stage": "engaged", "updated_at": datetime.utcnow().isoformat()
+                }).eq("id", opps.data[0]["id"]).execute()
+        except Exception:
+            pass
+
+    else:
+        # CREATE new contact
+        result = supabase.table("leads").insert({
+            "name": lead.name,
+            "email": lead.email,
+            "phone": lead.phone or "",
+            "brokerage": lead.brokerage or "",
+            "current_brokerage": lead.brokerage or "",
+            "deals_per_year": lead.deals_per_year or "",
+            "avg_price": lead.avg_price or "",
+            "source": lead.source or "Web",
+            "status": "new",
+            "first_name": lead.name.split(" ")[0] if lead.name else "",
+            "last_name": " ".join(lead.name.split(" ")[1:]) if lead.name and " " in lead.name else "",
+        }).execute()
+
+        lead_data = result.data[0]
+        lead_id = lead_data["id"]
+
+        supabase.table("activity_log").insert({
+            "type": "lead",
+            "message": f"New lead: {lead.name} from {lead.brokerage or 'tplcollective.ai'}",
+            "meta": {"lead_id": lead_id}
+        }).execute()
+
+        # Auto-create opportunity in default pipeline
+        try:
+            default_pipeline = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+            if default_pipeline.data:
+                supabase.table("opportunities").insert({
+                    "contact_id": lead_id,
+                    "pipeline_id": default_pipeline.data[0]["id"],
+                    "stage": "new_fb_lead",
+                    "source": lead.source or "Web",
+                    "status": "open"
+                }).execute()
+        except Exception:
+            pass
 
     # Fire notification (non-blocking, never fails the request)
     maybe_notify_new_lead(lead.dict())
@@ -1794,6 +1849,127 @@ async def test_notification(req: TestNotifRequest):
     if success:
         return {"success": True}
     return {"success": False, "error": error}
+
+
+# ── VISITOR TRACKING ──
+
+@app.post("/api/tracking/pageview")
+async def track_pageview(request: Request):
+    """Track page views from known contacts via cid parameter."""
+    data = await request.json()
+    cid = data.get("cid")
+    page = data.get("page", "")
+    referrer = data.get("referrer", "")
+    utm_source = data.get("utm_source", "")
+    utm_campaign = data.get("utm_campaign", "")
+
+    if not cid:
+        return {"success": True, "tracked": False}
+
+    try:
+        cid = int(cid)
+        # Verify contact exists
+        contact = supabase.table("leads").select("id, name").eq("id", cid).execute()
+        if not contact.data:
+            return {"success": True, "tracked": False}
+
+        # Log activity
+        supabase.table("lead_activity").insert({
+            "lead_id": cid,
+            "activity_type": "page_view",
+            "description": f"Visited: {page}",
+            "metadata": {"page": page, "referrer": referrer, "utm_source": utm_source, "utm_campaign": utm_campaign}
+        }).execute()
+
+        # Update last_contacted_at to show engagement
+        supabase.table("leads").update({
+            "last_contacted_at": datetime.utcnow().isoformat()
+        }).eq("id", cid).execute()
+
+        return {"success": True, "tracked": True}
+    except Exception:
+        return {"success": True, "tracked": False}
+
+
+@app.post("/api/tracking/calculator")
+async def track_calculator(request: Request):
+    """Track calculator usage and results for a known contact."""
+    data = await request.json()
+    cid = data.get("cid")
+
+    if not cid:
+        return {"success": True, "tracked": False}
+
+    try:
+        cid = int(cid)
+        contact = supabase.table("leads").select("id, name, lead_score").eq("id", cid).execute()
+        if not contact.data:
+            return {"success": True, "tracked": False}
+
+        c = contact.data[0]
+        updates = {"last_contacted_at": datetime.utcnow().isoformat(), "updated_at": datetime.utcnow().isoformat()}
+
+        # Save calculator inputs to contact record
+        if data.get("deals_per_year"):
+            updates["deals_per_year"] = str(data["deals_per_year"])
+        if data.get("avg_price"):
+            updates["avg_price"] = str(data["avg_price"])
+        if data.get("brokerage"):
+            updates["current_brokerage"] = data["brokerage"]
+
+        # Bump score — they engaged with the calculator
+        old_score = c.get("lead_score") or 20
+        new_score = min(100, max(old_score, 50))  # At least 50 if they used calculator
+        updates["lead_score"] = new_score
+        updates["lead_temperature"] = "hot" if new_score >= 70 else "warming"
+
+        supabase.table("leads").update(updates).eq("id", cid).execute()
+
+        # Log activity with calculator results
+        savings = data.get("savings", "")
+        supabase.table("lead_activity").insert({
+            "lead_id": cid,
+            "activity_type": "calculator_used",
+            "description": f"Used commission calculator. {data.get('deals_per_year', '')} deals, ${data.get('avg_price', '')} avg. Savings: ${savings}",
+            "metadata": data
+        }).execute()
+
+        # Move opportunity to "Engaged" if they were in nurture
+        opps = supabase.table("opportunities").select("id, stage").eq("contact_id", cid).eq("status", "open").execute()
+        if opps.data:
+            opp = opps.data[0]
+            if opp["stage"] in ("nurture_not_ready", "new_fb_lead"):
+                supabase.table("opportunities").update({
+                    "stage": "engaged",
+                    "updated_at": datetime.utcnow().isoformat()
+                }).eq("id", opp["id"]).execute()
+                supabase.table("lead_activity").insert({
+                    "lead_id": cid,
+                    "activity_type": "stage_change",
+                    "description": f"Stage: {opp['stage']} → engaged (calculator engagement)",
+                    "metadata": {"from": opp["stage"], "to": "engaged"}
+                }).execute()
+                supabase.table("activity_log").insert({
+                    "type": "opportunity",
+                    "message": f"Revival lead engaged: {c['name']} used calculator",
+                    "meta": {"contact_id": cid}
+                }).execute()
+
+        return {"success": True, "tracked": True, "score": new_score}
+    except Exception as e:
+        return {"success": True, "tracked": False, "error": str(e)}
+
+
+@app.get("/api/tracking/identify")
+def tracking_identify(cid: int):
+    """Return minimal contact info for tracking script to use (no sensitive data)."""
+    try:
+        contact = supabase.table("leads").select("id, first_name").eq("id", cid).execute()
+        if contact.data:
+            return {"found": True, "cid": cid, "name": contact.data[0].get("first_name", "")}
+    except Exception:
+        pass
+    return {"found": False}
 
 
 # ── CALENDLY WEBHOOK ──

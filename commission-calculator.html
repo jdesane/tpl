@@ -11,6 +11,7 @@
 </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/tpl-tracking.js" defer></script>
   <title>Commission Calculator | TPL Collective</title>
   <meta name="description" content="See exactly how much more you'd keep at LPT Realty vs. your current brokerage. Free interactive commission calculator for real estate agents." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -502,6 +503,31 @@ function calculate() {
   const commRate  = parseFloat(document.getElementById('commRate').value) / 100;
   if (!avgPrice || !deals || !commRate) { alert('Please fill in all production fields.'); return; }
 
+  // If this is a tracked visitor (has cid from email link), skip the gate entirely
+  const trackedCid = window.__tpl_cid || new URLSearchParams(window.location.search).get('cid');
+  if (trackedCid) {
+    // Skip gate — we already know who they are
+    sessionStorage.setItem('tpl_gate_name', 'known');
+    sessionStorage.setItem('tpl_gate_email', 'known');
+    runCalculation();
+    // Track calculator usage back to their contact record
+    try {
+      const brokName = val ? DB[val].name : 'Unknown';
+      fetch('https://mission.tplcollective.ai/api/tracking/calculator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cid: trackedCid,
+          deals_per_year: document.getElementById('annualDeals').value,
+          avg_price: document.getElementById('avgPrice').value,
+          brokerage: brokName,
+          comm_rate: document.getElementById('commRate').value
+        })
+      }).catch(function(){});
+    } catch(e) {}
+    return;
+  }
+
   // Check if already gated this session
   const savedName  = sessionStorage.getItem('tpl_gate_name');
   const savedEmail = sessionStorage.getItem('tpl_gate_email');
@@ -643,6 +669,27 @@ function runCalculation() {
   document.getElementById('step2').classList.remove('active');
   document.getElementById('step3').classList.add('active');
   setTimeout(() => rp.scrollIntoView({ behavior:'smooth', block:'start' }), 200);
+
+  // Track results for known contacts
+  const _cid = window.__tpl_cid;
+  if (_cid && diff > 0) {
+    try {
+      fetch('https://mission.tplcollective.ai/api/tracking/calculator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cid: _cid,
+          deals_per_year: deals.toString(),
+          avg_price: document.getElementById('avgPrice').value,
+          brokerage: bname,
+          savings: Math.round(diff).toString(),
+          lpt_plan: bbWins ? 'Business Builder' : 'Brokerage Partner',
+          current_take_home: Math.round(currentNet).toString(),
+          lpt_take_home: Math.round(lptBest).toString()
+        })
+      }).catch(function(){});
+    } catch(e) {}
+  }
 }
 
 // ── GATE ──
