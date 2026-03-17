@@ -1095,14 +1095,262 @@ def delete_funnel_step(funnel_id: int, step_id: int):
 
 @app.post("/api/ai/generate-content")
 async def ai_generate_content(request: Request):
+    import random
     data = await request.json()
-    prompt = data.get("prompt", "")
-    content_type = data.get("type", "social")  # social, email, dm
+    prompt = data.get("prompt", "").lower()
+    content_type = data.get("type", "social")
 
+    # ── KNOWLEDGE BASE ──
+    brokerage_data = {
+        "kw": {"name": "Keller Williams", "split": "70/30", "cap": "$18K–$25K", "franchise": "6% (capped $3K)", "desk": "$75–$100/mo", "pain": "highest total cost", "savings": "$17,883"},
+        "exp": {"name": "eXp Realty", "split": "80/20", "cap": "$16,000", "franchise": "None", "desk": "$0", "tech": "$85/mo ($1,020/yr)", "pain": "8 quarters of declining agent count", "savings": "$10,349"},
+        "remax": {"name": "RE/MAX", "split": "varies", "cap": "None (desk fee model)", "franchise": "2–5%", "desk": "$500–$3,000/mo", "pain": "desk fees alone exceed LPT's total cost", "savings": "~$16,960"},
+        "cb": {"name": "Coldwell Banker", "split": "50/50 to 90/10", "cap": "None", "franchise": "6–8%", "desk": "$100–$179/mo", "pain": "most expensive model", "savings": "$42,000+"},
+        "c21": {"name": "Century 21", "split": "70/30 starting", "cap": "varies", "franchise": "6% royalty every deal", "desk": "varies", "pain": "6% royalty on every closing", "savings": "significant"},
+        "real": {"name": "REAL Brokerage", "split": "85/15", "cap": "$12,000", "franchise": "None", "desk": "$0", "pain": "$12K cap vs $5K", "savings": "~$7,000"},
+    }
+
+    lpt_facts = {
+        "cap": "LPT Realty caps at $5,000/year on the Business Builder plan. That's 10 deals at $500 each — then you close at 100% the rest of the year.",
+        "split": "100% commission on Business Builder. You keep your entire GCI. LPT charges a flat $500 per transaction, not a percentage.",
+        "fees": "No desk fees. No monthly tech fees. No franchise fees. $195 processing fee per deal. $500 annual fee. That's it.",
+        "revshare": "HybridShare is LPT's 7-tier revenue share program. Available on the Brokerage Partner plan (80/20, $15K cap). You earn monthly from your network's production — for life.",
+        "tools": "Every LPT agent gets Lofty CRM, Dotloop, Listing Power Tools, and $11K+ in marketing tools at no additional cost.",
+        "growth": "LPT Realty is the fastest-growing brokerage in America — Deloitte Fast 500. 21,000+ agents and growing every quarter.",
+        "stock": "LPT has reserved ticker LPTA on Nasdaq. Agents earn stock grants — 2x multiplier on the Brokerage Partner plan.",
+        "ai": "TPL Collective agents get Dezzy.ai, RecruitAssist, and a full AI media stack. Not a CRM — an AI workforce.",
+        "plus": "LPT Plus is an optional add-on: $89/mo (BP) or $149/mo (BB). Includes prospecting leads, AMCards, Zoom Enterprise, RealScout, listing marketing, health benefits via Teladoc, and 2x weekly masterminds.",
+    }
+
+    # ── DETECT CONTEXT FROM PROMPT ──
+    detected_brokerage = None
+    for key, bd in brokerage_data.items():
+        if key in prompt or bd["name"].lower() in prompt:
+            detected_brokerage = key
+            break
+    if "keller" in prompt or "kw " in prompt:
+        detected_brokerage = "kw"
+    elif "exp " in prompt or "exp " in prompt or "exprealty" in prompt:
+        detected_brokerage = "exp"
+    elif "remax" in prompt or "re/max" in prompt:
+        detected_brokerage = "remax"
+    elif "coldwell" in prompt or " cb " in prompt:
+        detected_brokerage = "cb"
+    elif "century" in prompt or "c21" in prompt:
+        detected_brokerage = "c21"
+    elif "real brokerage" in prompt:
+        detected_brokerage = "real"
+
+    detected_topics = []
+    topic_keywords = {
+        "cap": ["cap", "$5k", "$5,000", "annual cap"],
+        "split": ["split", "commission", "100%", "keep more"],
+        "fees": ["fee", "desk fee", "franchise fee", "no fee", "zero fee", "hidden"],
+        "revshare": ["rev share", "revshare", "hybridshare", "passive income", "residual", "downline", "network"],
+        "tools": ["tools", "crm", "lofty", "dotloop", "tech", "technology"],
+        "growth": ["growth", "growing", "deloitte", "fastest", "momentum"],
+        "stock": ["stock", "equity", "lpta", "nasdaq", "ipo"],
+        "ai": ["ai", "dezzy", "recruit assist", "media stack", "artificial intelligence"],
+        "plus": ["lpt plus", "leads", "coaching", "mastermind", "health benefit"],
+    }
+    for topic, keywords in topic_keywords.items():
+        if any(kw in prompt for kw in keywords):
+            detected_topics.append(topic)
+
+    if not detected_topics:
+        detected_topics = random.sample(["cap", "split", "fees", "growth"], 2)
+
+    detected_tone = "professional"
+    if any(w in prompt for w in ["casual", "friendly", "conversational", "chill"]):
+        detected_tone = "casual"
+    elif any(w in prompt for w in ["urgent", "direct", "bold", "aggressive"]):
+        detected_tone = "urgent"
+    elif any(w in prompt for w in ["story", "testimonial", "personal", "narrative"]):
+        detected_tone = "story"
+
+    detected_stage = None
+    if any(w in prompt for w in ["discovery", "call", "booked", "pre-call"]):
+        detected_stage = "pre_call"
+    elif any(w in prompt for w in ["follow up", "follow-up", "after call", "post-call", "didn't commit", "haven't committed"]):
+        detected_stage = "post_call"
+    elif any(w in prompt for w in ["new lead", "first", "welcome", "intro"]):
+        detected_stage = "new"
+    elif any(w in prompt for w in ["considering", "on the fence", "thinking", "deciding"]):
+        detected_stage = "considering"
+    elif any(w in prompt for w in ["no show", "missed", "didn't show", "ghosted"]):
+        detected_stage = "no_show"
+    elif any(w in prompt for w in ["onboard", "joined", "welcome aboard"]):
+        detected_stage = "onboarding"
+
+    bd = brokerage_data.get(detected_brokerage, {})
+
+    # ── GENERATE EMAIL ──
     if content_type == "email":
-        result = f"Subject: {prompt}\n\nHey [Name],\n\n{prompt}\n\nThe math speaks for itself — LPT Realty agents keep $17,883 more per year vs. traditional brokerages. That's not marketing — that's what happens when you remove franchise fees, slash the cap to $5K, and eliminate desk fees.\n\nWould you be open to a 15-minute call this week? No pitch — just numbers.\n\nBest,\nJoe DeSane\nTPL Collective"
+        subject_templates = {
+            "cap": [f"Your brokerage cap vs. $5,000 — the gap is real", f"What if your cap was $5K instead of {bd.get('cap', '$16K+')}?", "The cap math most agents never run"],
+            "split": ["100% of your commission. Every deal.", f"You're giving up {bd.get('split', '20-30%')} of every check — here's the alternative", "What would 100% commission do for your business?"],
+            "fees": [f"The hidden fees your brokerage doesn't talk about", "No desk fees. No franchise fees. No monthly tech fees.", f"You're paying {bd.get('desk', '$75+')} /mo before your first deal — why?"],
+            "revshare": ["Income that doesn't require you to close deals", "What if you earned while you slept?", "Revenue share: the math behind passive income in real estate"],
+            "growth": ["21,000 agents and counting — here's why they're switching", "The fastest-growing brokerage in America isn't who you think", f"While {bd.get('name', 'your brokerage')} shrinks, this one grows"],
+            "pre_call": ["What to expect on our call tomorrow", "Quick prep for our discovery call", "3 things to think about before we chat"],
+            "post_call": ["Following up on our conversation", "The numbers we discussed — in writing", "Still thinking? Here's what other agents decided"],
+            "new": ["Welcome — here's what caught your eye", "The math most agents never run (but you just did)", "Thanks for checking us out — here's the quick version"],
+            "considering": ["The window is open — here's what's on the other side", "3 agents switched this week. Here's what they said.", "Your timeline, your terms — but the math doesn't change"],
+            "no_show": ["We missed you — want to reschedule?", "No pressure, but the math is still waiting", "Life happens. Your calendar link is still open."],
+            "onboarding": ["Welcome to TPL Collective — here's what's next", "You're in. Here's your onboarding checklist.", "Day 1 at LPT — let's get you set up"],
+        }
+
+        body_blocks = {
+            "cap": f"At LPT Realty, the annual cap is $5,000 on the Business Builder plan. That's $500 per deal for your first 10 deals — then you close at 100% for the rest of your plan year.\n\n{'Compare that to ' + bd['name'] + ' where the cap is ' + bd['cap'] + '.' if bd else 'Most brokerages cap between $16K and $36K.'} The difference compounds every single year.",
+            "split": f"LPT Business Builder agents keep 100% of their GCI. Not 80%. Not 70%. All of it.\n\n{'At ' + bd['name'] + ', the standard split is ' + bd['split'] + '.' if bd else 'At most brokerages, you start at 70/30 or 80/20.'} That percentage comes straight out of your closings — every single deal.",
+            "fees": f"Here is what LPT does NOT charge: desk fees, monthly tech fees, franchise fees, or hidden platform costs.\n\n{'At ' + bd['name'] + ', you pay ' + bd.get('desk', 'desk fees') + ' plus ' + bd.get('franchise', 'franchise fees') + ' on top of your split.' if bd else 'At most traditional brokerages, these fees add $3,000-$15,000/year on top of your split.'}\n\nLPT total cost for a 12-deal year: $7,840. Everything included.",
+            "revshare": "HybridShare is LPT Realty's 7-tier revenue share program. When agents in your network close deals, you earn a percentage of the company dollar — monthly, for as long as you hold an active license.\n\nThis isn't taken from the agent's commission. It comes from LPT's retained portion. Your recruits keep their full split. You earn on top of your own production.",
+            "growth": f"LPT Realty was named to the Deloitte Technology Fast 500 — one of the fastest-growing companies in the U.S. across all industries. 21,000+ agents and growing every quarter.\n\n{'Meanwhile, ' + bd['name'] + ' has been ' + bd.get('pain', 'losing agents') + '.' if bd else 'Meanwhile, legacy brokerages are shrinking.'} Momentum matters — especially for revenue share.",
+            "tools": "Every LPT agent gets Lofty CRM (free), Dotloop for e-signatures, Listing Power Tools, and over $11,000 in marketing and technology tools — all included at no additional cost. No monthly tech fee. No activation fee.",
+            "stock": "LPT Realty has reserved the ticker LPTA on Nasdaq. Agents earn stock grants from closings — with a 2x multiplier on the Brokerage Partner plan. Early positioning in a growth-stage company is a different calculus than buying shares of a mature brokerage.",
+            "ai": "Through TPL Collective, agents get access to Dezzy.ai (LPT's proprietary AI assistant), RecruitAssist for automated recruiting outreach, and a full AI-powered media stack for content creation. This isn't a CRM add-on — it's an AI workforce built specifically for real estate.",
+        }
+
+        # Pick subject
+        subject_pool = []
+        if detected_stage and detected_stage in subject_templates:
+            subject_pool = subject_templates[detected_stage]
+        else:
+            for t in detected_topics[:2]:
+                subject_pool.extend(subject_templates.get(t, []))
+        if not subject_pool:
+            subject_pool = subject_templates["cap"] + subject_templates["fees"]
+        subject = random.choice(subject_pool)
+
+        # Build body
+        greeting_options = {
+            "professional": ["Hey [Name],", "Hi [Name],", "[Name],"],
+            "casual": ["Hey [Name] 👋", "What's up [Name],", "Hey there [Name],"],
+            "urgent": ["[Name] —", "[Name], quick one for you:", "Real talk, [Name]:"],
+            "story": ["[Name], quick story:", "Hey [Name] — something happened this week:", "[Name], thought you'd want to hear this:"],
+        }
+        greeting = random.choice(greeting_options.get(detected_tone, greeting_options["professional"]))
+
+        # Assemble body paragraphs
+        body_parts = []
+        for t in detected_topics[:2]:
+            if t in body_blocks:
+                body_parts.append(body_blocks[t])
+
+        if detected_stage == "pre_call":
+            body_parts.insert(0, "Looking forward to connecting with you. Here's a quick overview so you know what to expect:\n\n1. We'll look at your current fee structure — splits, cap, desk fees, everything.\n2. I'll show you exactly what the same production looks like at LPT Realty.\n3. You ask questions. No pitch, no pressure.\n\nThe whole thing takes about 15 minutes.")
+        elif detected_stage == "post_call":
+            body_parts.insert(0, "Thanks for taking the time to chat. I know switching brokerages is a big decision — so here's a recap of what we covered, in case you want to share it with anyone or revisit the numbers.")
+        elif detected_stage == "no_show":
+            body_parts = ["No worries — I know things come up. I'm not going to chase you down.\n\nBut the math doesn't change: LPT Realty agents keep significantly more per deal than most traditional brokerages. If the timing wasn't right, that's fine. My calendar is always open when you're ready."]
+        elif detected_stage == "onboarding":
+            body_parts = ["Welcome to the team. Here's what happens next:\n\n1. License transfer — LPT's compliance team handles the paperwork. Most agents are live in 3–5 business days.\n2. CRM setup — You'll get access to Lofty (free) and Dotloop.\n3. TPL onboarding — Discord community access, AI tools, media engine, and your personalized checklist.\n4. First week check-in — I'll reach out to make sure everything's running smooth.\n\nYour active deals transfer with you. Nothing falls through the cracks."]
+
+        if not body_parts:
+            body_parts.append(body_blocks["cap"])
+
+        # CTA
+        cta_options = {
+            "professional": ["Would you be open to a quick call this week? No pitch — just numbers.\n\nHere's my calendar: calendly.com/discovertpl", "Want to see what your actual numbers look like? Run the calculator: tplcollective.ai/commission-calculator\n\nOr grab 15 minutes with me: calendly.com/discovertpl"],
+            "casual": ["If you're curious, my calendar's always open: calendly.com/discovertpl\n\nNo pitch. No pressure. Just math.", "Run your own numbers anytime: tplcollective.ai/commission-calculator 🔢\n\nOr just reply to this email — happy to chat."],
+            "urgent": ["The numbers are the numbers. Run yours: tplcollective.ai/commission-calculator\n\nOr book a call and I'll walk you through it live: calendly.com/discovertpl", "Every month you wait is money left on the table. Let's at least look at the math: calendly.com/discovertpl"],
+            "story": ["If any of that resonates, I'd love to walk you through what it could look like for you specifically.\n\ncalendly.com/discovertpl — 15 minutes, no strings.", "Happy to share more details. Book a quick call whenever works: calendly.com/discovertpl"],
+        }
+        cta = random.choice(cta_options.get(detected_tone, cta_options["professional"]))
+
+        if detected_stage == "onboarding":
+            cta = "Questions about anything? Just reply to this email or ping me in Discord. I'm here.\n\nLet's build."
+        elif detected_stage == "no_show":
+            cta = "When you're ready: calendly.com/discovertpl\n\nNo expiration. No pressure."
+
+        sign_off_options = ["Best,\nJoe DeSane\nTPL Collective", "Talk soon,\nJoe DeSane\nTPL Collective", "— Joe\nTPL Collective", "Joe DeSane\nTPL Collective\ntplcollective.ai"]
+        sign_off = random.choice(sign_off_options)
+
+        result = f"Subject: {subject}\n\n{greeting}\n\n" + "\n\n".join(body_parts) + f"\n\n{cta}\n\n{sign_off}"
+
+    # ── GENERATE SOCIAL POST ──
     else:
-        result = f"{prompt}\n\nAt LPT Realty, agents keep 100% of their commission with a $5,000 annual cap. No franchise fees. No desk fees. $11K+ in tools included.\n\nThe math matters. Run yours: tplcollective.ai/commission-calculator\n\n#RealEstate #LPTRealty #TPLCollective #AgentLife #KeepMoreEarnMore"
+        hooks = {
+            "cap": [
+                "Your brokerage cap is how much? 👀",
+                f"{'At ' + bd['name'] + ', agents cap at ' + bd['cap'] + '.' if bd else 'Most agents pay $16K–$36K before they see 100%.'} At LPT Realty? $5,000. That's it.",
+                "10 deals. $5,000. Then you close at 100% for the rest of the year. That's the LPT Realty Business Builder plan.",
+                "The average agent doesn't realize their cap is costing them a second mortgage payment every year.",
+            ],
+            "split": [
+                "100% commission. $5K cap. No franchise fees. No desk fees.\n\nThat's not a promo. That's the standard plan.",
+                f"{'Agents at ' + bd['name'] + ' start at ' + bd['split'] + '.' if bd else 'Most agents give up 20-30% of every commission check.'} What would keeping 100% do for your business?",
+                "Stop splitting your commission with a brokerage that needs you more than you need them.",
+            ],
+            "fees": [
+                f"{'At ' + bd['name'] + ', you pay ' + bd.get('desk', 'desk fees') + ' before your first deal closes.' if bd else 'Desk fees, franchise fees, tech fees — most agents pay $3K–$15K/year on top of their split.'}\n\nAt LPT Realty, those fees are $0. All of them.",
+                "Monthly desk fee: $0\nFranchise fee: $0\nTech fee: $0\nMonthly platform fee: $0\n\nLPT Realty. The math is simple.",
+                "You're paying your brokerage every month whether you close or not. Why?",
+            ],
+            "revshare": [
+                "Closing deals is income. Building a network is wealth.\n\nHybridShare at LPT Realty pays you monthly from your network's production — 7 tiers deep.",
+                "Revenue share that survives retirement. That's not a gimmick — it's the Brokerage Partner plan at LPT Realty.",
+                "What if the agents you helped recruit also helped pay your mortgage? That's HybridShare.",
+            ],
+            "growth": [
+                "LPT Realty: Deloitte Fast 500. 21,000+ agents. The fastest-growing brokerage in America.\n\nMomentum matters — especially when your income depends on it.",
+                f"{'While ' + bd['name'] + ' is ' + bd.get('pain', 'shrinking') + ', ' if bd else ''}LPT Realty is growing every single quarter. Where do you want to build?",
+                "21,000 agents didn't switch by accident. They ran the numbers.",
+            ],
+            "tools": [
+                "Lofty CRM. Dotloop. $11K+ in marketing tools. All included. $0/month.\n\nThat's what every LPT agent gets on day one.",
+                "Most brokerages charge you for tools. LPT includes $11K+ worth — for free.",
+            ],
+            "ai": [
+                "Dezzy.ai. RecruitAssist. AI media stack.\n\nTPL Collective agents don't just get a CRM. They get an AI workforce.",
+                "While other agents are writing their own posts, TPL agents are using AI to recruit, create content, and manage their pipeline — automatically.",
+            ],
+            "stock": [
+                "LPTA. Reserved on Nasdaq.\n\nLPT Realty agents earn stock grants from closings. 2x multiplier on the Brokerage Partner plan. Early is everything.",
+                "Pre-IPO stock equity from your closings. That's not a perk — it's a wealth strategy.",
+            ],
+        }
+
+        hashtag_sets = [
+            "#RealEstate #LPTRealty #TPLCollective #KeepMore #AgentLife",
+            "#RealEstateAgent #BrokerageFees #LPTRealty #TPLCollective #CommissionSplit",
+            "#Realtor #PassiveIncome #RevenueShare #LPTRealty #TPL",
+            "#RealEstateLife #NoFranchiseFees #NoDeskFees #LPTRealty #TPLCollective",
+            "#RealtorLife #SwitchBrokerages #KeepMoreEarnMore #LPT #TPL",
+        ]
+
+        brokerage_hashtags = {
+            "kw": " #KellerWilliams #KWAgent",
+            "exp": " #eXpRealty #eXpAgent #CloudBrokerage",
+            "remax": " #REMAX #REMAXAgent",
+            "cb": " #ColdwellBanker #CBAgent",
+            "c21": " #Century21 #C21Agent",
+            "real": " #REALBrokerage",
+        }
+
+        # Pick hooks based on detected topics
+        hook_pool = []
+        for t in detected_topics[:2]:
+            hook_pool.extend(hooks.get(t, []))
+        if not hook_pool:
+            hook_pool = hooks["cap"] + hooks["fees"]
+
+        main_hook = random.choice(hook_pool)
+
+        # Add CTA
+        ctas = [
+            "\n\nRun your numbers: tplcollective.ai/commission-calculator",
+            "\n\n📊 Free calculator: tplcollective.ai/commission-calculator",
+            "\n\nSee the math → tplcollective.ai",
+            "\n\n15-min call. No pitch. Just numbers → calendly.com/discovertpl",
+            "\n\nDM me \"MATH\" and I'll send you the breakdown.",
+        ]
+
+        hashtags = random.choice(hashtag_sets)
+        if detected_brokerage:
+            hashtags += brokerage_hashtags.get(detected_brokerage, "")
+
+        result = main_hook + random.choice(ctas) + "\n\n" + hashtags
 
     return {"success": True, "generated": result, "type": content_type}
 
