@@ -10,6 +10,7 @@ import json
 import hmac
 import hashlib
 import urllib.request
+import urllib.parse
 from datetime import datetime
 
 app = FastAPI(title="TPL Mission Control")
@@ -51,18 +52,109 @@ def save_settings(data: dict):
 
 # ── EMAIL HELPER ──
 
-def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str) -> tuple[bool, str]:
-    """Send email via Resend API. smtp_config.pass is the Resend API key."""
+def check_suppression(to_email: str) -> bool:
+    """Check if an email is on the suppression list. Returns True if suppressed."""
+    try:
+        result = supabase.table("email_suppressions").select("id").eq("email", to_email.lower()).execute()
+        return bool(result.data)
+    except Exception:
+        return False
+
+
+def check_daily_limit(domain: str, limit: int = 50) -> bool:
+    """Check if daily send limit has been reached. Returns True if OK to send."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    try:
+        result = supabase.table("email_daily_limits").select("sent_count, limit_count").eq("send_date", today).eq("domain", domain).execute()
+        if result.data:
+            row = result.data[0]
+            return row["sent_count"] < row.get("limit_count", limit)
+        # No row yet — create one
+        supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 0, "limit_count": limit}).execute()
+        return True
+    except Exception:
+        return True  # Don't block sends on tracking errors
+
+
+def increment_daily_count(domain: str):
+    """Increment the daily send count for a domain."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    try:
+        result = supabase.table("email_daily_limits").select("id, sent_count").eq("send_date", today).eq("domain", domain).execute()
+        if result.data:
+            supabase.table("email_daily_limits").update({"sent_count": result.data[0]["sent_count"] + 1}).eq("id", result.data[0]["id"]).execute()
+        else:
+            supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 1, "limit_count": 50}).execute()
+    except Exception:
+        pass
+
+
+def log_email_send(contact_id, from_addr: str, to_addr: str, subject: str, status: str, resend_id: str = "", error: str = "", campaign: str = ""):
+    """Log every email send attempt."""
+    try:
+        supabase.table("email_send_log").insert({
+            "contact_id": contact_id,
+            "from_address": from_addr,
+            "to_address": to_addr,
+            "subject": subject,
+            "status": status,
+            "resend_id": resend_id,
+            "error": error,
+            "campaign": campaign
+        }).execute()
+    except Exception:
+        pass
+
+
+UNSUBSCRIBE_FOOTER = """
+<div style="margin-top:32px;padding-top:16px;border-top:1px solid #2a2a3d;text-align:center;">
+  <p style="font-size:11px;color:#55556a;margin:0;">TPL Collective &middot; tplcollective.ai</p>
+  <p style="font-size:11px;color:#55556a;margin:4px 0 0 0;">
+    <a href="https://mission.tplcollective.ai/api/email/unsubscribe?email={to_email}" style="color:#6c63ff;text-decoration:none;">Unsubscribe</a>
+    &middot; You received this because you engaged with TPL Collective content.
+  </p>
+</div>
+"""
+
+
+def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, from_address: str = "", contact_id: int = None, campaign: str = "") -> tuple[bool, str]:
+    """Send email via Resend API with rails: suppression check, rate limit, unsubscribe footer, logging."""
     try:
         api_key = smtp_config.get("pass", "")
         if not api_key:
             return False, "Resend API key not configured"
 
+        # Rail 1: Check suppression list
+        if check_suppression(to_email):
+            log_email_send(contact_id, from_address, to_email, subject, "suppressed", campaign=campaign)
+            return False, f"Email suppressed: {to_email}"
+
+        # Rail 2: Check daily send limit
+        domain = from_address.split("@")[1] if "@" in from_address else "tplcollective.co"
+        if not check_daily_limit(domain):
+            log_email_send(contact_id, from_address, to_email, subject, "rate_limited", campaign=campaign)
+            return False, f"Daily send limit reached for {domain}"
+
+        # Rail 3: Add unsubscribe footer
+        unsub = UNSUBSCRIBE_FOOTER.replace("{to_email}", urllib.parse.quote(to_email))
+        if "</body>" in html_body:
+            html_body = html_body.replace("</body>", unsub + "</body>")
+        else:
+            html_body += unsub
+
+        # Determine from address
+        if not from_address:
+            from_address = "Joe DeSane <joe@tplcollective.co>"
+
         payload = json.dumps({
-            "from": "TPL Mission Control <notifications@tplcollective.ai>",
+            "from": from_address,
             "to": [to_email],
             "subject": subject,
-            "html": html_body
+            "html": html_body,
+            "headers": {
+                "List-Unsubscribe": f"<https://mission.tplcollective.ai/api/email/unsubscribe?email={urllib.parse.quote(to_email)}>",
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+            }
         }).encode("utf-8")
 
         req = urllib.request.Request(
@@ -77,12 +169,24 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str) -
 
         with urllib.request.urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read().decode())
+            resend_id = result.get("id", "")
+            increment_daily_count(domain)
+            log_email_send(contact_id, from_address, to_email, subject, "sent", resend_id=resend_id, campaign=campaign)
             return True, ""
 
     except urllib.error.HTTPError as e:
         body = e.read().decode()
-        return False, f"Resend API error {e.code}: {body}"
+        error_msg = f"Resend API error {e.code}: {body}"
+        log_email_send(contact_id, from_address or "", to_email, subject, "failed", error=error_msg, campaign=campaign)
+        # Auto-suppress on hard bounce
+        if e.code == 400 and "bounce" in body.lower():
+            try:
+                supabase.table("email_suppressions").insert({"email": to_email.lower(), "reason": "hard_bounce", "source": "resend"}).execute()
+            except Exception:
+                pass
+        return False, error_msg
     except Exception as e:
+        log_email_send(contact_id, from_address or "", to_email, subject, "failed", error=str(e), campaign=campaign)
         return False, str(e)
 
 
@@ -165,7 +269,8 @@ def maybe_notify_new_lead(lead_data: dict):
         smtp = settings.get("smtp", {})
         subject = f"New Lead: {lead_data.get('name', 'Unknown')} — TPL Mission Control"
         html = build_lead_email(lead_data)
-        success, error = send_email(smtp, to_email, subject, html)
+        # Internal notifications use notifications@ address (no suppression check needed for Joe)
+        success, error = send_email(smtp, to_email, subject, html, from_address="TPL Mission Control <notifications@tplcollective.ai>")
 
         if success:
             supabase.table("activity_log").insert({
@@ -1849,6 +1954,77 @@ async def test_notification(req: TestNotifRequest):
     if success:
         return {"success": True}
     return {"success": False, "error": error}
+
+
+# ── EMAIL MANAGEMENT ──
+
+@app.get("/api/email/unsubscribe")
+def unsubscribe(email: str):
+    """One-click unsubscribe. Returns a simple confirmation page."""
+    email = email.lower().strip()
+    if email:
+        try:
+            supabase.table("email_suppressions").insert({
+                "email": email, "reason": "unsubscribe", "source": "one-click"
+            }).execute()
+        except Exception:
+            pass  # Already suppressed
+        # Log activity if we can find the contact
+        try:
+            contact = supabase.table("leads").select("id").eq("email", email).execute()
+            if contact.data:
+                supabase.table("lead_activity").insert({
+                    "lead_id": contact.data[0]["id"],
+                    "activity_type": "unsubscribed",
+                    "description": "Unsubscribed from emails"
+                }).execute()
+        except Exception:
+            pass
+    return HTMLResponse(content="""
+    <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
+    <style>body{background:#0a0a0f;color:#e8e8f0;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+    .card{text-align:center;max-width:400px;padding:40px;}.h{font-size:28px;font-weight:700;margin-bottom:12px;}.s{color:#8888aa;font-size:14px;line-height:1.6;}</style>
+    </head><body><div class="card"><div class="h">You've been unsubscribed</div><div class="s">You won't receive any more emails from TPL Collective. If this was a mistake, reply to any previous email and we'll re-add you.</div></div></body></html>
+    """)
+
+
+@app.get("/api/email/suppressions")
+def get_suppressions():
+    result = supabase.table("email_suppressions").select("*").order("created_at", desc=True).execute()
+    return result.data
+
+
+@app.delete("/api/email/suppressions/{email}")
+def remove_suppression(email: str):
+    supabase.table("email_suppressions").delete().eq("email", email.lower()).execute()
+    return {"success": True}
+
+
+@app.get("/api/email/send-limits")
+def get_send_limits():
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    result = supabase.table("email_daily_limits").select("*").eq("send_date", today).execute()
+    return result.data
+
+
+@app.put("/api/email/send-limits/{domain}")
+async def update_send_limit(domain: str, request: Request):
+    data = await request.json()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    existing = supabase.table("email_daily_limits").select("id").eq("send_date", today).eq("domain", domain).execute()
+    if existing.data:
+        supabase.table("email_daily_limits").update({"limit_count": data.get("limit", 50)}).eq("id", existing.data[0]["id"]).execute()
+    else:
+        supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 0, "limit_count": data.get("limit", 50)}).execute()
+    return {"success": True}
+
+
+@app.get("/api/email/log")
+def get_email_log(limit: int = 50, campaign: Optional[str] = None):
+    query = supabase.table("email_send_log").select("*").order("created_at", desc=True).limit(limit)
+    if campaign:
+        query = query.eq("campaign", campaign)
+    return query.execute().data
 
 
 # ── VISITOR TRACKING ──
