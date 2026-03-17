@@ -11,6 +11,7 @@ import hmac
 import hashlib
 import urllib.request
 import urllib.parse
+import httpx
 from datetime import datetime
 
 app = FastAPI(title="TPL Mission Control")
@@ -130,7 +131,7 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, f
             return False, f"Email suppressed: {to_email}"
 
         # Rail 2: Check daily send limit
-        domain = from_address.split("@")[1] if "@" in from_address else "tplcollective.co"
+        domain = from_address.split("@")[1].rstrip(">").strip() if "@" in from_address else "tplcollective.co"
         if not check_daily_limit(domain):
             log_email_send(contact_id, from_address, to_email, subject, "rate_limited", campaign=campaign)
             return False, f"Daily send limit reached for {domain}"
@@ -146,45 +147,41 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, f
         if not from_address:
             from_address = "Joe DeSane <joe@tplcollective.co>"
 
-        payload = json.dumps({
-            "from": from_address,
-            "to": [to_email],
-            "subject": subject,
-            "html": html_body,
-            "headers": {
-                "List-Unsubscribe": f"<https://mission.tplcollective.ai/api/email/unsubscribe?email={urllib.parse.quote(to_email)}>",
-                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
-            }
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
+        resp = httpx.post(
             "https://api.resend.com/emails",
-            data=payload,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
-            method="POST"
+            json={
+                "from": from_address,
+                "to": [to_email],
+                "subject": subject,
+                "html": html_body,
+                "headers": {
+                    "List-Unsubscribe": f"<https://mission.tplcollective.ai/api/email/unsubscribe?email={urllib.parse.quote(to_email)}>",
+                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                }
+            },
+            timeout=15
         )
 
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read().decode())
+        if resp.status_code == 200:
+            result = resp.json()
             resend_id = result.get("id", "")
             increment_daily_count(domain)
             log_email_send(contact_id, from_address, to_email, subject, "sent", resend_id=resend_id, campaign=campaign)
             return True, ""
+        else:
+            error_msg = f"Resend API error {resp.status_code}: {resp.text}"
+            log_email_send(contact_id, from_address or "", to_email, subject, "failed", error=error_msg, campaign=campaign)
+            if resp.status_code == 400 and "bounce" in resp.text.lower():
+                try:
+                    supabase.table("email_suppressions").insert({"email": to_email.lower(), "reason": "hard_bounce", "source": "resend"}).execute()
+                except Exception:
+                    pass
+            return False, error_msg
 
-    except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        error_msg = f"Resend API error {e.code}: {body}"
-        log_email_send(contact_id, from_address or "", to_email, subject, "failed", error=error_msg, campaign=campaign)
-        # Auto-suppress on hard bounce
-        if e.code == 400 and "bounce" in body.lower():
-            try:
-                supabase.table("email_suppressions").insert({"email": to_email.lower(), "reason": "hard_bounce", "source": "resend"}).execute()
-            except Exception:
-                pass
-        return False, error_msg
     except Exception as e:
         log_email_send(contact_id, from_address or "", to_email, subject, "failed", error=str(e), campaign=campaign)
         return False, str(e)
@@ -1954,6 +1951,316 @@ async def test_notification(req: TestNotifRequest):
     if success:
         return {"success": True}
     return {"success": False, "error": error}
+
+
+# ── DAILY MORNING REPORT ──
+
+@app.post("/api/reports/daily")
+async def send_daily_report():
+    """Generate and email the daily morning briefing to Joe."""
+    from datetime import timedelta
+
+    settings = load_settings()
+    smtp = settings.get("smtp", {})
+    to_email = settings.get("notifications", {}).get("email", "joe@desaneteam.com")
+
+    now = datetime.utcnow()
+    yesterday = (now - timedelta(hours=24)).isoformat()
+    today_str = now.strftime("%Y-%m-%d")
+    seven_days_ago = (now - timedelta(days=7)).isoformat()
+
+    # ── GATHER DATA ──
+
+    # New leads (24h)
+    new_leads = supabase.table("leads").select("id, name, email, source, lead_score").gte("created_at", yesterday).order("created_at", desc=True).execute().data
+
+    # Re-engagements (24h)
+    re_engagements = supabase.table("lead_activity").select("lead_id, description").in_("activity_type", ["re_engaged", "calculator_used", "page_view"]).gte("created_at", yesterday).execute().data
+
+    # Stage changes (24h)
+    stage_changes = supabase.table("lead_activity").select("lead_id, description").eq("activity_type", "stage_change").gte("created_at", yesterday).execute().data
+
+    # Calendly bookings (24h)
+    calendly = supabase.table("activity_log").select("message").eq("type", "calendly").gte("created_at", yesterday).execute().data
+
+    # Email stats (24h)
+    emails_sent = supabase.table("email_send_log").select("id, status").gte("created_at", yesterday).execute().data
+    sent_count = sum(1 for e in emails_sent if e["status"] == "sent")
+    bounced = sum(1 for e in emails_sent if e["status"] == "failed")
+    suppressed = sum(1 for e in emails_sent if e["status"] == "suppressed")
+
+    # Unsubscribes (24h)
+    unsubs = supabase.table("email_suppressions").select("email").eq("reason", "unsubscribe").gte("created_at", yesterday).execute().data
+
+    # Drip progress
+    drip_active = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "active").execute()
+    drip_completed = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "completed").execute()
+
+    # Today's tasks
+    tasks_today = supabase.table("tasks").select("id, title, priority").eq("due_date", today_str).neq("status", "done").execute().data
+
+    # Follow-ups due today
+    followups = supabase.table("leads").select("id, name, follow_up_date").eq("follow_up_date", today_str).execute().data
+
+    # Stale leads (no contact in 7+ days, still in active pipeline)
+    stale = supabase.table("leads").select("id, name, last_contacted_at").or_(f"last_contacted_at.is.null,last_contacted_at.lt.{seven_days_ago}").not_.in_("stage", ["signed", "onboarding"]).limit(10).execute().data
+
+    # Hot leads
+    hot = supabase.table("leads").select("id, name, lead_score, current_brokerage, lead_temperature").not_.is_("lead_score", "null").order("lead_score", desc=True).limit(5).execute().data
+
+    # Pipeline totals
+    total_contacts = supabase.table("leads").select("id", count="exact").execute()
+    total_opps = supabase.table("opportunities").select("id", count="exact").eq("status", "open").execute()
+
+    # Pipeline health
+    try:
+        health = await dashboard_pipeline_health()
+    except Exception:
+        health = {"score": 0, "status": "Unknown"}
+
+    # Daily send limits
+    limits = supabase.table("email_daily_limits").select("*").eq("send_date", today_str).execute().data
+
+    # ── BUILD HTML ──
+
+    def section(title, content):
+        return f'<div style="margin-bottom:24px;"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6c63ff;margin-bottom:10px;">{title}</div>{content}</div>'
+
+    def stat_row(label, value, color="#e8e8f0"):
+        return f'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2a3d;font-size:13px;"><span style="color:#8888aa;">{label}</span><span style="color:{color};font-weight:600;">{value}</span></div>'
+
+    def item_list(items):
+        if not items:
+            return '<div style="color:#55556a;font-size:12px;padding:8px 0;">None</div>'
+        return ''.join(f'<div style="padding:4px 0;font-size:12px;color:#e8e8f0;border-bottom:1px solid #1a1a26;">{item}</div>' for item in items)
+
+    # Pipeline Pulse
+    pipeline_html = stat_row("New leads (24h)", f"{len(new_leads)}", "#34d399" if new_leads else "#8888aa")
+    pipeline_html += stat_row("Calendly bookings", f"{len(calendly)}", "#34d399" if calendly else "#8888aa")
+    pipeline_html += stat_row("Re-engagements", f"{len(set(r['lead_id'] for r in re_engagements))}", "#f0c040" if re_engagements else "#8888aa")
+    pipeline_html += stat_row("Stage changes", f"{len(stage_changes)}", "#6c63ff" if stage_changes else "#8888aa")
+
+    if new_leads:
+        pipeline_html += '<div style="margin-top:8px;font-size:11px;color:#8888aa;">New: ' + ', '.join(f"{l['name']} ({l.get('source', '')})" for l in new_leads[:5]) + '</div>'
+
+    # Email Performance
+    email_html = stat_row("Sent yesterday", str(sent_count), "#34d399" if sent_count else "#8888aa")
+    email_html += stat_row("Bounced", str(bounced), "#f87171" if bounced else "#34d399")
+    email_html += stat_row("Suppressed", str(suppressed))
+    email_html += stat_row("Unsubscribes", str(len(unsubs)), "#f87171" if unsubs else "#34d399")
+    email_html += stat_row("Drip queue active", str(drip_active.count or 0))
+    email_html += stat_row("Drip completed", str(drip_completed.count or 0))
+
+    if limits:
+        lim = limits[0]
+        email_html += stat_row("Send limit today", f"{lim['sent_count']}/{lim['limit_count']}")
+
+    # Today's Actions
+    task_items = [f"{'🔴' if t.get('priority') == 'urgent' else '🟡'} {t['title']}" for t in tasks_today]
+    followup_items = [f"📞 Follow up: {f['name']}" for f in followups]
+    action_html = item_list(task_items + followup_items)
+
+    # Stale Leads
+    stale_items = [f"⏰ {s['name']} — last contact: {s.get('last_contacted_at', 'never')[:10] if s.get('last_contacted_at') else 'never'}" for s in stale[:5]]
+    stale_html = item_list(stale_items)
+
+    # Hot Leads
+    hot_items = [f"{'🔥' if (l.get('lead_score') or 0) >= 70 else '🟡'} {l['name']} — {l.get('lead_score', 0)} ({l.get('current_brokerage', '')})" for l in hot]
+    hot_html = item_list(hot_items)
+
+    # System Status
+    health_color = "#34d399" if health.get("score", 0) >= 70 else "#fbbf24" if health.get("score", 0) >= 40 else "#f87171"
+    system_html = stat_row("Pipeline health", f"{health.get('score', 0)} — {health.get('status', 'Unknown')}", health_color)
+    system_html += stat_row("Total contacts", str(total_contacts.count or 0))
+    system_html += stat_row("Active opportunities", str(total_opps.count or 0))
+    system_html += stat_row("Stale leads (7d+)", str(len(stale)))
+
+    # Assemble
+    date_display = now.strftime("%A, %B %d, %Y")
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:32px 20px;">
+
+<div style="margin-bottom:28px;">
+  <div style="font-size:24px;font-weight:700;color:#e8e8f0;letter-spacing:2px;margin-bottom:4px;">TPL<span style="color:#6c63ff;">.</span></div>
+  <div style="font-size:11px;color:#55556a;letter-spacing:3px;text-transform:uppercase;">Daily Briefing &middot; {date_display}</div>
+</div>
+
+<div style="background:#12121a;border:1px solid #2a2a3d;border-radius:12px;padding:24px;margin-bottom:16px;">
+{section("Pipeline Pulse", pipeline_html)}
+{section("Email Performance", email_html)}
+{section("Today's Actions", action_html)}
+{section("Stale Leads", stale_html)}
+{section("Hottest Leads", hot_html)}
+{section("System Status", system_html)}
+</div>
+
+<div style="text-align:center;padding:16px 0;">
+  <a href="https://mission.tplcollective.ai" style="display:inline-block;background:#6c63ff;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:13px;font-weight:600;">Open Mission Control &rarr;</a>
+</div>
+
+<div style="text-align:center;font-size:10px;color:#55556a;margin-top:16px;">TPL Collective &middot; mission.tplcollective.ai</div>
+
+</div></body></html>"""
+
+    subject = f"Daily Briefing — {len(new_leads)} new leads, {sent_count} emails sent — {now.strftime('%b %d')}"
+
+    success, error = send_email(
+        smtp, to_email, subject, html,
+        from_address="TPL Mission Control <notifications@tplcollective.co>",
+        campaign="daily_briefing"
+    )
+
+    return {"success": success, "error": error if not success else None}
+
+
+# ── DRIP PROCESSOR ──
+
+@app.post("/api/drip/process")
+async def process_drip_queue():
+    """Process the email drip queue. Call this on a cron schedule (every 15 min)."""
+    settings = load_settings()
+    smtp = settings.get("smtp", {})
+    if not smtp.get("pass"):
+        return {"success": False, "error": "Resend API key not configured"}
+
+    from_address = "Joe DeSane <joe@tplcollective.co>"
+    domain = "tplcollective.co"
+
+    # Check daily limit
+    if not check_daily_limit(domain):
+        return {"success": True, "sent": 0, "reason": "Daily limit reached"}
+
+    # Get active enrollments that need sending
+    enrollments = supabase.table("email_funnel_enrollments").select(
+        "*, leads(id, email, first_name, name), email_funnels(name)"
+    ).eq("status", "active").execute().data
+
+    sent = 0
+    skipped = 0
+    errors = 0
+    now = datetime.utcnow()
+
+    for enrollment in enrollments:
+        # Re-check limit each iteration
+        if not check_daily_limit(domain):
+            break
+
+        contact = enrollment.get("leads") or {}
+        email = contact.get("email", "")
+        contact_id = contact.get("id")
+        first_name = contact.get("first_name") or contact.get("name", "").split(" ")[0] or "there"
+
+        if not email:
+            skipped += 1
+            continue
+
+        # Get the current step
+        funnel_id = enrollment.get("funnel_id")
+        current_step = enrollment.get("current_step", 1)
+        last_sent = enrollment.get("last_sent_at")
+
+        # Get the step details
+        step = supabase.table("email_funnel_steps").select("*").eq("funnel_id", funnel_id).eq("step_order", current_step).execute()
+        if not step.data:
+            # No more steps — mark complete
+            supabase.table("email_funnel_enrollments").update({
+                "status": "completed",
+                "completed_at": now.isoformat()
+            }).eq("id", enrollment["id"]).execute()
+            continue
+
+        step_data = step.data[0]
+        delay_days = step_data.get("delay_days", 0)
+
+        # Check if enough time has passed since last send
+        if last_sent:
+            try:
+                last_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00").replace("+00:00", ""))
+                days_since = (now - last_dt).days
+                if days_since < delay_days:
+                    skipped += 1
+                    continue
+            except Exception:
+                pass
+        elif current_step > 1:
+            # First step has no delay requirement, but subsequent steps need last_sent
+            skipped += 1
+            continue
+
+        # Personalize the email
+        subject = step_data["subject"].replace("[Name]", first_name).replace("[name]", first_name)
+        body_text = step_data["body"].replace("[Name]", first_name).replace("[name]", first_name)
+
+        # Build HTML email
+        html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+<div style="max-width:580px;margin:0 auto;padding:32px 16px;">
+<div style="font-size:15px;color:#e8e8f0;line-height:1.75;white-space:pre-wrap;">{body_text}</div>
+</div></body></html>"""
+
+        funnel_name = (enrollment.get("email_funnels") or {}).get("name", "drip")
+        campaign = f"{funnel_name} - Step {current_step}"
+
+        success, error = send_email(smtp, email, subject, html_body,
+                                     from_address=from_address,
+                                     contact_id=contact_id,
+                                     campaign=campaign)
+
+        if success:
+            sent += 1
+            # Update enrollment
+            next_step = current_step + 1
+            next_step_exists = supabase.table("email_funnel_steps").select("id").eq("funnel_id", funnel_id).eq("step_order", next_step).execute()
+
+            updates = {
+                "last_sent_at": now.isoformat(),
+                "current_step": next_step
+            }
+            if not next_step_exists.data:
+                updates["status"] = "completed"
+                updates["completed_at"] = now.isoformat()
+
+            supabase.table("email_funnel_enrollments").update(updates).eq("id", enrollment["id"]).execute()
+
+            # Log activity
+            if contact_id:
+                supabase.table("lead_activity").insert({
+                    "lead_id": contact_id,
+                    "activity_type": "email_sent",
+                    "description": f"Drip email sent: {subject} ({campaign})"
+                }).execute()
+        else:
+            errors += 1
+            if "suppressed" in (error or ""):
+                skipped += 1
+
+    # Log summary
+    supabase.table("activity_log").insert({
+        "type": "drip",
+        "message": f"Drip processor ran: {sent} sent, {skipped} skipped, {errors} errors",
+        "meta": {"sent": sent, "skipped": skipped, "errors": errors}
+    }).execute()
+
+    return {"success": True, "sent": sent, "skipped": skipped, "errors": errors}
+
+
+@app.get("/api/drip/status")
+def drip_status():
+    """Get overview of drip queue status."""
+    active = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "active").execute()
+    completed = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "completed").execute()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    sent_today = supabase.table("email_send_log").select("id", count="exact").gte("created_at", today).eq("status", "sent").execute()
+    limits = supabase.table("email_daily_limits").select("*").eq("send_date", today).execute()
+
+    return {
+        "active_enrollments": active.count or 0,
+        "completed_enrollments": completed.count or 0,
+        "sent_today": sent_today.count or 0,
+        "daily_limits": limits.data
+    }
 
 
 # ── EMAIL MANAGEMENT ──
