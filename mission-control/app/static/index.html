@@ -145,6 +145,8 @@ a{color:var(--accent);text-decoration:none}
 .profile-field-value:focus{outline:none;border-color:var(--accent);background:var(--bg)}
 .profile-tab-content{min-height:200px}
 .smart-tab{padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);color:var(--text-muted);background:transparent;transition:all .15s;white-space:nowrap}
+.sort-arrow{font-size:10px;color:var(--text-muted)}.sort-arrow.asc::after{content:' \25B2'}.sort-arrow.desc::after{content:' \25BC'}
+th[onclick]:hover{color:var(--accent)}
 .smart-tab:hover{border-color:var(--accent);color:var(--text)}
 .smart-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .opp-card{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
@@ -288,15 +290,15 @@ a{color:var(--accent);text-decoration:none}
     <table class="leads-table" id="contacts-table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Email</th>
-          <th>Brokerage</th>
-          <th>Source</th>
-          <th>Created</th>
-          <th>Last Activity</th>
+          <th onclick="sortContacts('name')" style="cursor:pointer">Name <span id="sort-name" class="sort-arrow"></span></th>
+          <th onclick="sortContacts('phone')" style="cursor:pointer">Phone <span id="sort-phone" class="sort-arrow"></span></th>
+          <th onclick="sortContacts('email')" style="cursor:pointer">Email <span id="sort-email" class="sort-arrow"></span></th>
+          <th onclick="sortContacts('brokerage')" style="cursor:pointer">Brokerage <span id="sort-brokerage" class="sort-arrow"></span></th>
+          <th onclick="sortContacts('source')" style="cursor:pointer">Source <span id="sort-source" class="sort-arrow"></span></th>
+          <th onclick="sortContacts('created_at')" style="cursor:pointer">Created <span id="sort-created_at" class="sort-arrow"></span></th>
+          <th onclick="sortContacts('last_contacted_at')" style="cursor:pointer">Last Activity <span id="sort-last_contacted_at" class="sort-arrow"></span></th>
           <th>Tags</th>
-          <th>Score</th>
+          <th onclick="sortContacts('lead_score')" style="cursor:pointer">Score <span id="sort-lead_score" class="sort-arrow"></span></th>
         </tr>
       </thead>
       <tbody id="contacts-tbody"></tbody>
@@ -322,7 +324,14 @@ a{color:var(--accent);text-decoration:none}
 <!-- ═══ CONTACT PROFILE PAGE ═══ -->
 <div class="page" id="page-contact-profile">
   <div style="margin-bottom:16px">
-    <button class="btn btn-ghost btn-sm" onclick="showPage('contacts')" style="margin-bottom:12px">&larr; Back to Contacts</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button class="btn btn-ghost btn-sm" onclick="showPage('contacts')">&larr; Back to Contacts</button>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-ghost btn-sm" id="profile-prev-btn" onclick="navigateContact(-1)">&larr; Prev</button>
+        <span id="profile-position" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)"></span>
+        <button class="btn btn-ghost btn-sm" id="profile-next-btn" onclick="navigateContact(1)">Next &rarr;</button>
+      </div>
+    </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="profile-layout">
     <!-- LEFT COLUMN -->
@@ -865,7 +874,7 @@ async function loadDashboard(){
 document.querySelectorAll('.goal-card').forEach(function(card){card.style.cursor='pointer';card.addEventListener('click',function(){var targetEl=card.querySelector('.goal-target');var key=targetEl.id.replace('goal-','').replace('-target','');var current=targetEl.textContent.replace('$','');var newVal=prompt('Set '+key+' target:',current);if(newVal!==null&&!isNaN(parseInt(newVal))){targetEl.textContent=(key==='revshare'?'$':'')+parseInt(newVal);fetch(API+'/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metric:key,target:parseInt(newVal)})});}});});
 
 // ── CONTACTS ──
-var currentSmartList=null;var contactSearchTimeout=null;
+var currentSmartList=null;var contactSearchTimeout=null;var allContactsList=[];var currentSortField='created_at';var currentSortDir='desc';var contactNavIndex=-1;
 async function loadContacts(){
   try{
     var sl=await fetch(API+'/api/smart-lists').then(function(r){return r.json()});
@@ -875,24 +884,70 @@ async function loadContacts(){
 
     var url=API+'/api/contacts'+(currentSmartList?'?smart_list='+currentSmartList:'');
     var contacts=await fetch(url).then(function(r){return r.json()});
-    document.getElementById('contacts-badge').textContent=contacts.length;
-    document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c){
-      var tags=(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');
-      var scoreColor=c.lead_score>=70?'hot':c.lead_score>=40?'warming':'cold';
-      return'<tr onclick="openContactProfile('+c.id+')" style="cursor:pointer">'+
-        '<td><span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span></td>'+
-        '<td style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</td>'+
-        '<td style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</td>'+
-        '<td style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</td>'+
-        '<td style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</td>'+
-        '<td style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</td>'+
-        '<td style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'—')+'</td>'+
-        '<td>'+tags+'</td>'+
-        '<td><span class="score '+scoreColor+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span></td></tr>';
-    }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
+    allContactsList=contacts;
+    applySortAndRender();
   }catch(e){console.error(e)}
 }
 function filterSmartList(id){currentSmartList=id;loadContacts();}
+function sortContacts(field){
+  if(currentSortField===field){currentSortDir=currentSortDir==='asc'?'desc':'asc';}
+  else{currentSortField=field;currentSortDir=field==='lead_score'?'desc':'asc';}
+  applySortAndRender();
+}
+function applySortAndRender(){
+  var contacts=allContactsList.slice();
+  // Sort
+  contacts.sort(function(a,b){
+    var av,bv;
+    if(currentSortField==='name'){av=(a.first_name||'')+' '+(a.last_name||a.name||'');bv=(b.first_name||'')+' '+(b.last_name||b.name||'');}
+    else if(currentSortField==='brokerage'){av=a.current_brokerage||a.brokerage||'';bv=b.current_brokerage||b.brokerage||'';}
+    else if(currentSortField==='lead_score'){av=a.lead_score||0;bv=b.lead_score||0;}
+    else{av=a[currentSortField]||'';bv=b[currentSortField]||'';}
+    if(typeof av==='number'&&typeof bv==='number'){return currentSortDir==='asc'?av-bv:bv-av;}
+    av=String(av).toLowerCase();bv=String(bv).toLowerCase();
+    if(av<bv)return currentSortDir==='asc'?-1:1;
+    if(av>bv)return currentSortDir==='asc'?1:-1;
+    return 0;
+  });
+  allContactsList=contacts;
+  // Update sort arrows
+  document.querySelectorAll('.sort-arrow').forEach(function(el){el.className='sort-arrow';});
+  var arrow=document.getElementById('sort-'+currentSortField);
+  if(arrow)arrow.className='sort-arrow '+currentSortDir;
+  // Render
+  document.getElementById('contacts-badge').textContent=contacts.length;
+  document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c,i){
+    var tags=(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');
+    var scoreColor=(c.lead_score||0)>=70?'hot':(c.lead_score||0)>=40?'warming':'cold';
+    return'<tr onclick="openContactFromList('+i+')" style="cursor:pointer">'+
+      '<td><span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span></td>'+
+      '<td style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</td>'+
+      '<td style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</td>'+
+      '<td style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</td>'+
+      '<td style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</td>'+
+      '<td style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</td>'+
+      '<td style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'-')+'</td>'+
+      '<td>'+tags+'</td>'+
+      '<td><span class="score '+scoreColor+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span></td></tr>';
+  }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
+}
+function openContactFromList(index){contactNavIndex=index;openContactProfile(allContactsList[index].id);}
+function navigateContact(dir){
+  var newIdx=contactNavIndex+dir;
+  if(newIdx<0||newIdx>=allContactsList.length)return;
+  contactNavIndex=newIdx;
+  openContactProfile(allContactsList[newIdx].id);
+}
+function updateProfileNav(){
+  var pos=document.getElementById('profile-position');
+  var prevBtn=document.getElementById('profile-prev-btn');
+  var nextBtn=document.getElementById('profile-next-btn');
+  if(contactNavIndex>=0&&allContactsList.length>0){
+    pos.textContent=(contactNavIndex+1)+' of '+allContactsList.length;
+    prevBtn.style.display=contactNavIndex>0?'':'none';
+    nextBtn.style.display=contactNavIndex<allContactsList.length-1?'':'none';
+  }else{pos.textContent='';prevBtn.style.display='none';nextBtn.style.display='none';}
+}
 function searchContacts(q){clearTimeout(contactSearchTimeout);contactSearchTimeout=setTimeout(async function(){
   var url=API+'/api/contacts?search='+encodeURIComponent(q);
   if(currentSmartList)url+='&smart_list='+currentSmartList;
@@ -944,6 +999,7 @@ var currentProfileId=null;
 async function openContactProfile(id){
   currentProfileId=id;
   showPage('contact-profile');
+  updateProfileNav();
   try{
     var c=await fetch(API+'/api/contacts/'+id).then(function(r){return r.json()});
 
@@ -977,15 +1033,18 @@ async function openContactProfile(id){
       field('Last Activity',c.last_contacted_at?fmtDate(c.last_contacted_at):'Never','','text');
 
     // Brokerage Intel
-    var dealsOpts='<option value="">Select...</option>';['0-5','6-10','11-20','21-50','50+'].forEach(function(d){dealsOpts+='<option value="'+d+'"'+(c.deals_per_year===d?' selected':'')+'>'+d+'</option>';});
     var teamOpts='<option value="">Select...</option>';['Solo','Team Leader','Team Member'].forEach(function(t){teamOpts+='<option value="'+t+'"'+(c.team_or_solo===t?' selected':'')+'>'+t+'</option>';});
+    var avgPriceFmt=c.avg_price?'$'+parseInt(c.avg_price).toLocaleString():'';
+    var volumeFmt=(c.deals_per_year&&c.avg_price)?'$'+(parseInt(c.deals_per_year)*parseInt(c.avg_price)).toLocaleString():'';
     document.getElementById('profile-brokerage-fields').innerHTML=
       field('Current Brokerage',c.current_brokerage||c.brokerage,'current_brokerage')+
+      field('Deals / Year',c.deals_per_year||'','deals_per_year')+
+      field('Avg Price',avgPriceFmt,'avg_price')+
+      field('Total Volume (LTM)',volumeFmt,'')+
+      field('Annual GCI',c.annual_gci,'annual_gci')+
       field('Commission Split',c.commission_split,'commission_split')+
       field('Annual Cap',c.annual_cap,'annual_cap')+
       field('Monthly Fees',c.monthly_fees,'monthly_fees')+
-      field('Deals / Year',dealsOpts,'deals_per_year','select')+
-      field('Annual GCI',c.annual_gci,'annual_gci')+
       field('Team or Solo',teamOpts,'team_or_solo','select');
 
     // Qualifying
