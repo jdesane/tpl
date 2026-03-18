@@ -12,8 +12,8 @@
 <meta charset="UTF-8"/>
 <script src="/tpl-tracking.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>LPT Realty vs. eXp Realty — The Real Cost Comparison for Agents | TPL Collective</title>
-<meta name="description" content="eXp's $16K cap, $85/month tech fee, and 80/20 split cost you $10,349 more per year than LPT Realty. See the math. Free calculator — no email required."/>
+<title>LPT Realty vs. Epique Realty | TPL Collective</title>
+<meta name="description" content="Epique charges $149/month, a $15K cap, and transaction fees on every deal. LPT charges $0/month with a $5K cap. See the full comparison. Free calculator."/>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -139,14 +139,15 @@ nav {
 }
 .hero h1 {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(56px, 9vw, 110px);
-  line-height: 0.93; letter-spacing: 0.02em;
+  font-size: clamp(40px, 7vw, 88px);
+  line-height: 0.97; letter-spacing: 0.02em;
   color: var(--white); margin-bottom: 28px;
+  max-width: 960px; margin-left: auto; margin-right: auto;
 }
 .hero h1 em { font-style: normal; color: var(--accent); }
 .hero-sub {
-  font-size: clamp(16px, 2vw, 19px);
-  color: var(--muted); max-width: 640px;
+  font-size: clamp(15px, 1.8vw, 18px);
+  color: var(--muted); max-width: 700px;
   margin: 0 auto 48px; font-weight: 300; line-height: 1.7;
 }
 .hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
@@ -234,7 +235,7 @@ nav {
 .math-card {
   border-radius: 16px; padding: 40px; position: relative; overflow: hidden;
 }
-.math-card-exp {
+.math-card-competitor {
   background: var(--surface); border: 1px solid var(--border);
 }
 .math-card-lpt {
@@ -249,7 +250,7 @@ nav {
   font-family: 'DM Mono', monospace; font-size: 10px;
   letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 20px; display: block;
 }
-.math-label-exp { color: var(--red); }
+.math-label-competitor { color: var(--red); }
 .math-label-lpt { color: var(--green); }
 .math-card h3 {
   font-family: 'Bebas Neue', sans-serif; font-size: 28px;
@@ -275,7 +276,7 @@ nav {
 .math-total .amount {
   font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1;
 }
-.math-total .amount-exp { color: var(--muted); }
+.math-total .amount-competitor { color: var(--muted); }
 .math-total .amount-lpt { color: var(--green); }
 
 /* ── SAVINGS CALLOUT ── */
@@ -295,15 +296,47 @@ nav {
   font-size: 16px; color: var(--muted); font-weight: 300;
 }
 
-/* ── PER-DEAL TABLE ── */
-.perdeal-section {
-  max-width: 1100px; margin: 0 auto; padding: 80px 24px;
+/* ── PERKS QUESTION ── */
+.perks-callout {
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 56px 48px; text-align: center;
 }
-.perdeal-note {
-  font-size: 16px; color: var(--muted); font-weight: 300;
-  max-width: 720px; margin-top: 32px; line-height: 1.75;
+.perks-callout .perks-label {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px; display: block;
 }
-.perdeal-note strong { color: var(--text); font-weight: 500; }
+.perks-callout .perks-number {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 6vw, 80px);
+  color: var(--gold); line-height: 1; margin-bottom: 16px;
+  letter-spacing: 0.02em;
+}
+.perks-callout .perks-question {
+  font-size: 20px; color: var(--white); font-weight: 500;
+  margin-bottom: 16px; line-height: 1.5;
+}
+.perks-callout p {
+  font-size: 15px; color: var(--muted); font-weight: 300;
+  max-width: 640px; margin: 0 auto; line-height: 1.7;
+}
+
+/* ── AI COMPARISON ── */
+.ai-comp-wrap {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+}
+.ai-comp-inner { max-width: 1100px; margin: 0 auto; }
+.ai-comp-footer {
+  margin-top: 32px;
+  font-size: 16px; color: var(--muted); font-weight: 400;
+  line-height: 1.7;
+}
+.ai-comp-footer em { font-style: italic; color: var(--text); }
 
 /* ── WIN CARDS ── */
 .wins-section {
@@ -376,23 +409,6 @@ nav {
   background: var(--green);
 }
 
-/* ── TESTIMONIAL ── */
-.testimonial-section {
-  max-width: 1100px; margin: 0 auto; padding: 80px 24px;
-}
-.testimonial-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 12px;
-  padding: 40px 44px;
-  max-width: 760px;
-}
-.testimonial-card blockquote {
-  font-size: 16px; color: var(--muted); font-style: italic;
-  line-height: 1.8; font-weight: 300;
-}
-
 /* ── CTA SECTION ── */
 .cta-section {
   background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, transparent 60%);
@@ -415,13 +431,19 @@ nav {
 }
 
 /* ── KICKER ── */
-.kicker-section {
-  max-width: 640px; margin: 0 auto; padding: 48px 24px;
-  text-align: center;
+.kicker-block {
+  max-width: 800px; margin: 0 auto; padding: 48px 24px; text-align: center;
 }
-.kicker-section p {
-  font-size: 14px; color: var(--dim); font-weight: 300;
-  line-height: 1.8;
+.kicker-block p {
+  font-size: 17px; color: var(--muted); font-weight: 300;
+  font-style: italic; line-height: 1.7;
+  padding: 32px 40px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.kicker-block p span {
+  color: var(--gold); font-style: normal; font-weight: 500;
 }
 
 /* ── DISCLAIMER ── */
@@ -468,11 +490,11 @@ footer {
 /* ── PHONE (<=480px) ── */
 @media (max-width: 480px) {
   .hero { padding: 100px 16px 60px; }
-  .hero h1 { font-size: clamp(44px, 13vw, 72px); }
+  .hero h1 { font-size: clamp(32px, 10vw, 56px); }
   .hero-sub { font-size: 15px; }
-  .section, .math-section, .honest-section, .perdeal-section, .testimonial-section { padding: 52px 16px; }
+  .section, .math-section, .honest-section { padding: 52px 16px; }
   .section-title { font-size: clamp(32px, 10vw, 48px); }
-  .comp-table-wrap, .wins-section, .bestfor-section { padding: 52px 16px; }
+  .comp-table-wrap, .wins-section, .bestfor-section, .ai-comp-wrap { padding: 52px 16px; }
   .comp-table thead th, .comp-table tbody td { padding: 12px 10px; font-size: 12px; }
   .comp-table tbody td:first-child { font-size: 10px; }
   .math-card { padding: 28px 20px; }
@@ -480,13 +502,14 @@ footer {
   .win-card { padding: 28px 22px; }
   .savings-callout { padding: 32px 20px; }
   .savings-callout h3 { font-size: clamp(26px, 7vw, 40px); }
+  .perks-callout { padding: 36px 20px; }
+  .perks-callout .perks-number { font-size: clamp(40px, 12vw, 64px); }
+  .kicker-block p { padding: 24px 20px; font-size: 15px; }
   .cta-section { padding: 72px 16px; }
   .btn-primary, .btn-secondary { display: block; width: 100%; text-align: center; margin: 0 0 12px 0; }
   .hero-ctas { flex-direction: column; }
   .cta-buttons { flex-direction: column; }
   .disclaimer { padding: 32px 16px; }
-  .testimonial-card { padding: 28px 22px; }
-  .kicker-section { padding: 32px 16px; }
 }
 </style>
 </head>
@@ -524,9 +547,9 @@ footer {
   <div class="hero-glow"></div>
   <div class="hero-content">
     <span class="eyebrow">Commission Comparison</span>
-    <h1>eXp Agents Pay $16,000 to Cap.<br>LPT Agents Pay $5,000.<br><em>Same Cloud. Different Math.</em></h1>
+    <h1>Epique Charges $149/Month and a $15K Cap.<br><em>LPT Charges $0/Month and a $5K Cap.</em></h1>
     <p class="hero-sub">
-      eXp built the cloud brokerage model. That part worked. But the 80/20 split, $16K cap, and $85/month tech fee? That's the old math dressed in new clothes. eXp has lost agents 8 consecutive quarters &mdash; and the agents leaving aren't confused. They did the math. Here's what they found.
+      Epique Realty wraps a premium price tag in perks &mdash; car washes, AI headshots, roadside assistance. It's a clever package. But strip away the perks and look at the actual fee structure: an 85/15 split, a $15,000 cap, $149/month, and a 0.1% transaction fee on every deal. That's not elite. That's expensive. Here's what the same production costs at LPT Realty.
     </p>
     <div class="hero-ctas">
       <a href="/commission-calculator" class="btn-primary">Run My Numbers &rarr;</a>
@@ -547,59 +570,64 @@ footer {
         <tr>
           <th>Feature</th>
           <th>LPT Realty</th>
-          <th>eXp Realty</th>
+          <th>Epique Realty</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>Commission Split</td>
           <td>100% &mdash; you keep it all</td>
-          <td>80/20 &mdash; eXp takes 20%</td>
+          <td>85/15 &mdash; Epique takes 15%</td>
         </tr>
         <tr>
           <td>Annual Cap</td>
           <td>$5,000</td>
-          <td>$16,000</td>
+          <td>$15,000 (declining to $10K by year 6)</td>
         </tr>
         <tr>
-          <td>Monthly Fees</td>
+          <td>Monthly Fee</td>
           <td>$0</td>
-          <td>$85/mo ($1,020/yr)</td>
+          <td>$149/mo ($1,788/yr) &mdash; or $99/mo if paid annually</td>
         </tr>
         <tr>
-          <td>Transaction Fee (pre-cap)</td>
+          <td>Transaction Fee</td>
           <td>$195/deal</td>
-          <td>$85/deal</td>
+          <td>0.1% of sale price (capped at $500/deal)</td>
         </tr>
         <tr>
-          <td>Transaction Fee (post-cap)</td>
+          <td>Post-Cap Transaction Fee</td>
           <td>$195/deal</td>
-          <td>$250/deal (drops to $75 after 20 post-cap deals)</td>
+          <td>$250/deal (after $5K in cumulative tx fees)</td>
         </tr>
         <tr>
           <td>Annual Fee</td>
           <td>$500</td>
-          <td>$149 startup</td>
+          <td>Included in monthly</td>
         </tr>
         <tr>
           <td>Revenue Share</td>
           <td>HybridShare (Brokerage Partner plan)</td>
-          <td>Yes (multi-tier)</td>
+          <td>Yes (details limited)</td>
         </tr>
         <tr>
           <td>Stock / Equity</td>
           <td>LPTA (Nasdaq reserved)</td>
-          <td>EXPI (Nasdaq &mdash; trading since 2013)</td>
+          <td>None publicly disclosed</td>
         </tr>
         <tr>
           <td>AI Tools</td>
           <td>Dezzy.ai &middot; RecruitAssist &middot; Media Stack</td>
-          <td>kvCORE CRM</td>
+          <td>Epique AI 2.0 (content templates + property descriptions)</td>
         </tr>
         <tr>
           <td>Agent Count</td>
           <td>21,000+ (growing)</td>
-          <td>~82,000 (declining &mdash; 8 consecutive quarters)</td>
+          <td>~4,000 (growing &mdash; 342% spike in 2024&ndash;2025)</td>
+        </tr>
+        <tr>
+          <td>Perks</td>
+          <td>AI tools included in model</td>
+          <td>70+ perks (car washes, headshots, roadside assistance, sign installs)</td>
         </tr>
       </tbody>
     </table>
@@ -615,37 +643,33 @@ footer {
   </div>
 
   <div class="math-grid">
-    <!-- eXp -->
-    <div class="math-card math-card-exp fade-in delay-1">
-      <span class="math-label math-label-exp">eXp Realty</span>
+    <!-- Epique -->
+    <div class="math-card math-card-competitor fade-in delay-1">
+      <span class="math-label math-label-competitor">Epique Realty</span>
       <h3>Cost Breakdown</h3>
       <div class="math-line">
         <span>Gross Commission Income</span>
         <span class="val">$135,000</span>
       </div>
       <div class="math-line">
-        <span>20% split (capped at $16K)</span>
-        <span class="val val-red">&minus;$16,000</span>
+        <span>15% split (capped at $15K)</span>
+        <span class="val val-red">&minus;$15,000</span>
       </div>
       <div class="math-line">
-        <span>Tech fee &mdash; $85/mo</span>
-        <span class="val val-red">&minus;$1,020</span>
+        <span>Monthly fee &mdash; $149/mo</span>
+        <span class="val val-red">&minus;$1,788</span>
       </div>
       <div class="math-line">
-        <span>Transaction fees &mdash; $85 &times; 12</span>
-        <span class="val val-red">&minus;$1,020</span>
-      </div>
-      <div class="math-line">
-        <span>Startup fee</span>
-        <span class="val val-red">&minus;$149</span>
+        <span>Transaction fees &mdash; 0.1% &times; $450K &times; 12</span>
+        <span class="val val-red">&minus;$5,400</span>
       </div>
       <div class="math-total">
         <span class="label">Total Fees</span>
-        <span class="amount amount-exp">~$18,189</span>
+        <span class="amount amount-competitor">~$22,188</span>
       </div>
       <div class="math-total" style="border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px;">
         <span class="label">Take-Home</span>
-        <span class="amount amount-exp">~$116,811</span>
+        <span class="amount amount-competitor">~$112,812</span>
       </div>
     </div>
 
@@ -682,57 +706,68 @@ footer {
 
   <!-- Savings Callout -->
   <div class="savings-callout fade-in">
-    <h3>You'd Keep $10,349 More Per Year at LPT</h3>
-    <p>$862 more per month &middot; $51,745 more over 5 years</p>
-    <p style="margin-top: 8px;">Same clients. Same deals. Different brokerage.</p>
+    <h3>You'd Keep $14,348 More Per Year at LPT</h3>
+    <p>$1,196 more per month &middot; $71,740 more over 5 years</p>
   </div>
-</section>
 
-<!-- PER-DEAL COST TABLE -->
-<section class="perdeal-section">
-  <div class="fade-in">
-    <span class="section-label">Per-Deal Cost</span>
-    <h2 class="section-title">Where the Gap <em>Really</em> Shows</h2>
-    <p class="section-body">Forget annual totals for a second &mdash; look at what each brokerage takes from a single commission check:</p>
+  <!-- The Perks Question -->
+  <div class="perks-callout fade-in">
+    <span class="perks-label">The Perks Question</span>
+    <div class="perks-number">$14,348</div>
+    <div class="perks-question">Would you pay $14,348/year for car washes and headshots?</div>
+    <p>Because that's the cost difference. Epique markets 70+ agent perks &mdash; car washes, AI headshots, roadside assistance, sign installs. It's a genuinely creative approach. But at LPT, you keep that $14,348 and buy your own car washes. Or your own headshots. Or a vacation. Or a down payment. Perks are nice. Keeping $14,348 more per year is better.</p>
   </div>
-  <table class="comp-table fade-in delay-1">
-    <thead>
-      <tr>
-        <th>Your Commission (2.5%)</th>
-        <th>LPT Charges</th>
-        <th>eXp Takes (20%)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>$7,500 (on a $300K sale)</td>
-        <td>$500</td>
-        <td>$1,500</td>
-      </tr>
-      <tr>
-        <td>$11,250 (on a $450K sale)</td>
-        <td>$500</td>
-        <td>$2,250</td>
-      </tr>
-      <tr>
-        <td>$15,000 (on a $600K sale)</td>
-        <td>$500</td>
-        <td>$3,000</td>
-      </tr>
-      <tr>
-        <td>$25,000 (on a $1M sale)</td>
-        <td>$500</td>
-        <td>$5,000</td>
-      </tr>
-    </tbody>
-  </table>
-  <p class="perdeal-note fade-in delay-2">
-    eXp's percentage model punishes your best deals. LPT's flat fee doesn't care if you sold a starter home or a lakefront estate &mdash; it's $500 either way.<br><br>
-    <strong>The bigger your deals, the more you're overpaying.</strong>
-  </p>
 </section>
 
 <hr class="divider"/>
+
+<!-- AI COMPARISON -->
+<section class="ai-comp-wrap">
+  <div class="ai-comp-inner">
+    <div class="fade-in">
+      <span class="section-label">AI Head-to-Head</span>
+      <h2 class="section-title">The AI Comparison</h2>
+      <p class="section-body">Both Epique and TPL Collective lead with AI. But they mean very different things by it.</p>
+    </div>
+    <table class="comp-table fade-in delay-1">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>TPL Collective AI Division</th>
+          <th>Epique AI 2.0</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>What It Does</td>
+          <td>Identifies recruiting prospects, qualifies leads, automates follow-up, creates content</td>
+          <td>Generates bios, email campaigns, property descriptions, legal summaries</td>
+        </tr>
+        <tr>
+          <td>Category</td>
+          <td>Business growth engine</td>
+          <td>Content templates</td>
+        </tr>
+        <tr>
+          <td>Named Products</td>
+          <td>Dezzy.ai (recruiting), RecruitAssist (automation), Media Stack (content)</td>
+          <td>"Epique AI" (broad label)</td>
+        </tr>
+        <tr>
+          <td>Works While You Sleep?</td>
+          <td>Yes &mdash; Dezzy.ai and RecruitAssist run your pipeline 24/7</td>
+          <td>No &mdash; you prompt it, it responds</td>
+        </tr>
+        <tr>
+          <td>Unique to Brokerage?</td>
+          <td>Purpose-built for agent recruiting &mdash; no equivalent exists elsewhere</td>
+          <td>Similar to ChatGPT/Jasper wrappers available to anyone</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="ai-comp-footer fade-in delay-2">Epique's AI helps you write. TPL's AI helps you <em>grow</em>. Different category entirely.</p>
+  </div>
+</section>
 
 <!-- WHERE LPT WINS -->
 <section class="wins-section">
@@ -744,40 +779,45 @@ footer {
     <div class="wins-grid">
       <div class="win-card fade-in delay-1">
         <span class="icon">&#x1F4B0;</span>
-        <h3>$5,000 Cap vs. $16,000</h3>
-        <p>eXp agents hand over 20% of every commission until they hit a $16,000 cap. At LPT, you pay $500/deal until $5,000. One-third the cap. You hit it faster. Everything after that costs $195/deal &mdash; not $250.</p>
+        <h3>You Keep $14,348 More Per Year</h3>
+        <p>Same production. Same deals. LPT costs $7,840/year. Epique costs $22,188. Over 5 years, that's $71,740. No perk package is worth $71,740.</p>
       </div>
       <div class="win-card fade-in delay-2">
-        <span class="icon">&#x1F6AB;</span>
-        <h3>No Monthly Tech Fee</h3>
-        <p>Not $85. Not $50. Zero. eXp charges $85/month whether you close deals or not. That's $1,020/year before you earn your first commission check. LPT charges $0/month. Your slow months don't cost you anything.</p>
+        <span class="icon">&#x1F3AF;</span>
+        <h3>$5,000 Cap &mdash; Not $15,000</h3>
+        <p>Epique's cap is 3x higher. Even with their "declining cap" (which takes 6 years to reach $10K), you're still paying double LPT's cap in year six. At LPT, you cap at $5,000 from day one.</p>
       </div>
       <div class="win-card fade-in delay-1">
-        <span class="icon">&#x1F916;</span>
-        <h3>AI Tools That Do Work</h3>
-        <p>eXp gives you kvCORE &mdash; it's a CRM. LPT gives you an AI division: Dezzy.ai identifies and qualifies recruiting prospects. RecruitAssist automates follow-up. Media Stack creates content. These aren't features inside a dashboard. They're tools that work while you sleep.</p>
+        <span class="icon">&#x1F6AB;</span>
+        <h3>No Monthly Fee. Not $149. Zero.</h3>
+        <p>Epique charges $149/month whether you close deals or not. That's $1,788/year before you earn a single commission check. LPT charges nothing monthly. Your slow months don't cost you anything.</p>
       </div>
       <div class="win-card fade-in delay-2">
+        <span class="icon">&#x1F916;</span>
+        <h3>AI That Recruits &mdash; Not Just Writes</h3>
+        <p>Dezzy.ai and RecruitAssist find prospects, qualify them, and automate follow-up. Epique's AI generates property descriptions. One builds your business. The other writes copy you could get from ChatGPT.</p>
+      </div>
+      <div class="win-card fade-in delay-1" style="grid-column: span 2;">
         <span class="icon">&#x1F4C8;</span>
-        <h3>The Trend Line</h3>
-        <p>eXp has had negative net agent growth for 8 consecutive quarters. Agents aren't leaving because they're confused &mdash; they're leaving because the math stopped working. LPT is the fastest-growing brokerage in history: 21,000+ agents, Deloitte Fast 500 #2, Inman Innovator Award 2024&ndash;2025. The momentum shifted.</p>
+        <h3>Scale and Track Record</h3>
+        <p>LPT has 21,000+ agents. Epique has ~4,000. LPT is backed by Deloitte Fast 500 #2 and the Inman Innovator Award. Epique won HousingWire Tech100 &mdash; a solid credential, but at 1/5th the agent count.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- WHERE EXP WINS -->
+<!-- WHERE EPIQUE WINS -->
 <section class="honest-section">
   <div class="fade-in">
     <span class="section-label">Honest Take</span>
-    <h2 class="section-title">Where eXp Wins</h2>
-    <p class="section-body">No comparison page is complete without honesty. Here's where eXp still has an edge.</p>
+    <h2 class="section-title">Where Epique Wins</h2>
+    <p class="section-body">No comparison page is complete without honesty. Here's where Epique still has an edge.</p>
   </div>
   <ul class="honest-list">
-    <li class="fade-in delay-1"><strong>Scale</strong> &mdash; 82,000 agents across 24 countries. eXp's referral network is 4x larger than LPT's. If cross-border referrals are a meaningful part of your business, that network has real value.</li>
-    <li class="fade-in delay-2"><strong>Stock program maturity</strong> &mdash; EXPI has been publicly traded since 2013. The stock awards at capping, the purchase plan, and the vesting schedule are well-established. LPTA's Nasdaq ticker is reserved but not yet trading &mdash; that's a real difference for agents who prioritize equity.</li>
-    <li class="fade-in delay-3"><strong>Revenue share track record</strong> &mdash; eXp's rev share program has more years of data behind it. Some agents have built significant passive income through it. LPT's HybridShare is available but younger.</li>
-    <li class="fade-in"><strong>Brand awareness</strong> &mdash; eXp is more widely known in the industry. For agents who rely on brokerage-level marketing or brand recognition in their market, eXp's name carries more weight today.</li>
+    <li class="fade-in delay-1"><strong>Perks package.</strong> 70+ agent perks including car washes, professional headshots, roadside assistance, sign installs, and more. No other brokerage bundles this many lifestyle perks. If you genuinely use these services regularly, there's real value &mdash; though you're paying for it in the fee structure.</li>
+    <li class="fade-in delay-2"><strong>Declining cap.</strong> Epique's cap drops from $15K to $10K over your first six years. LPT doesn't have a declining cap &mdash; but LPT's cap starts at $5K, which is lower than Epique's cap will ever reach.</li>
+    <li class="fade-in delay-3"><strong>Growth momentum.</strong> Epique grew 342% in 2024&ndash;2025, from ~300 agents to ~4,000. That's explosive. They've also partnered with Courted for AI-powered recruiting intelligence. They're small but moving fast.</li>
+    <li class="fade-in delay-1"><strong>Branding and positioning.</strong> Epique's "elite" positioning and clean, modern brand attract agents who want a premium feel. Their PowerCON events and global expansion plans signal ambition.</li>
   </ul>
 </section>
 
@@ -791,24 +831,12 @@ footer {
       <h2 class="section-title">Who LPT Is Best For</h2>
     </div>
     <ul class="bestfor-list">
-      <li class="fade-in delay-1"><strong>eXp agents tired of the $85/month fee and the $16K cap</strong> &mdash; If you've done the math and it doesn't add up &mdash; you're right.</li>
-      <li class="fade-in delay-2"><strong>Agents whose rev share trees have plateaued</strong> &mdash; The early-mover advantage in eXp's rev share is real. If you weren't early, the math is different.</li>
-      <li class="fade-in delay-1"><strong>Agents who want AI tools built for recruiting and content</strong> &mdash; not just a CRM. Dezzy.ai and RecruitAssist don't exist at eXp. Period.</li>
-      <li class="fade-in delay-2"><strong>Team leaders who want a lower per-transaction cost across their team</strong> &mdash; At scale, the $500 flat fee vs. 20% split becomes a massive gap.</li>
-      <li class="fade-in delay-1"><strong>Agents who see the 8-quarter trend and want to be ahead of the curve</strong> &mdash; not behind it. The agents leaving eXp now aren't panicking. They're positioning.</li>
+      <li class="fade-in delay-1">Agents who want the lowest cost model in the industry &mdash; period. If keeping the most money per deal matters more than a perks package, LPT's math is unbeatable.</li>
+      <li class="fade-in delay-2">Agents who've calculated what those perks actually cost. $14,348/year in extra fees buys a lot of car washes.</li>
+      <li class="fade-in delay-1">Agents who want AI tools that grow their business &mdash; not just generate content. Dezzy.ai and RecruitAssist have no equivalent at Epique.</li>
+      <li class="fade-in delay-2">Agents who don't want to wait 6 years for a lower cap. LPT's $5K cap is lower than Epique's year-six cap ($10K) &mdash; from your first deal.</li>
+      <li class="fade-in delay-1" style="grid-column: span 2;">Agents tired of paying $149/month during slow months. At LPT, months with no deals cost you nothing.</li>
     </ul>
-  </div>
-</section>
-
-<!-- TESTIMONIAL -->
-<section class="testimonial-section">
-  <div class="fade-in">
-    <span class="section-label">What Agents Say</span>
-  </div>
-  <div class="testimonial-card fade-in delay-1">
-    <blockquote>
-      &ldquo;I joined eXp in 2022 for the stock and rev share. After three years, I'd paid over $48,000 in cap and tech fees &mdash; and my rev share tree was generating $380/month. When I saw LPT's $5K cap and Dezzy.ai, I did the math in 10 minutes. My first year at LPT, I kept $11,200 more. Same deals. Same market. I just stopped overpaying for a cap I'd already hit.&rdquo;
-    </blockquote>
   </div>
 </section>
 
@@ -816,27 +844,24 @@ footer {
 <section class="cta-section">
   <div class="cta-inner fade-in">
     <span class="eyebrow">Ready to See Your Numbers?</span>
-    <h2>The <em>$10,349</em> Question</h2>
-    <p>That's what the average eXp agent doing 12 deals at $450K leaves on the table every year. Your number might be higher. It might be lower. There's one way to find out.</p>
+    <h2>The $14,348 <em>Question</em></h2>
+    <p>That's what the average agent doing 12 deals at $450K pays in extra fees at Epique vs. LPT &mdash; every year. Perks included in that price. Your number might be different. There's one way to find out.</p>
     <div class="cta-buttons">
       <a href="/commission-calculator" class="btn-primary">Run My Numbers &rarr;</a>
       <a href="https://calendly.com/discovertpl" class="btn-secondary">Book a Strategy Call</a>
     </div>
-    <span class="cta-note">Free &middot; No obligation &middot; Calculator requires no email</span>
+    <span class="cta-note">Free &middot; 90 seconds &middot; No email required</span>
   </div>
 </section>
 
 <!-- KICKER -->
-<section class="kicker-section">
-  <p class="fade-in">
-    Over the last 8 quarters, eXp's net agent count has declined every single quarter. During that same period, LPT added thousands of agents &mdash; many of them from eXp. The agents doing the math are reaching the same conclusion.<br><br>
-    The question isn't whether the math works. It's how long you wait before you run yours.
-  </p>
-</section>
+<div class="kicker-block fade-in">
+  <p>Advanced is a word. <span>$14,348</span> is a number. Numbers don't need adjectives.</p>
+</div>
 
 <!-- DISCLAIMER -->
 <div class="disclaimer">
-  eXp Realty fees reflect publicly reported typical figures as of 2025&ndash;2026 and may vary by agent agreement. Post-cap transaction fees ($250/deal, reduced to $75 after 20 post-cap deals), startup fees, and other charges may apply. eXp's 8 consecutive quarters of negative agent growth is sourced from eXp World Holdings quarterly earnings reports. LPT Realty figures reflect the current published Business Builder fee structure. TPL Collective is a community and coaching platform. LPT Realty is the brokerage. These are legally and operationally distinct.
+  Epique Realty fees reflect publicly available figures from joinepique.com compensation documents and third-party reviews as of 2025&ndash;2026. Epique's declining cap structure reduces the annual cap over 6 years ($15K year 1 to $10K year 6+). Monthly fees shown at the standard $149/month rate; agents paying annually may qualify for a reduced $99/month rate. Transaction fee is 0.1% of gross sale price, capped at $500 per transaction, reduced to $250 per transaction after $5,000 in cumulative transaction fees. Agent count figures sourced from HousingWire Tech100 profile and T360 Mega 1000 rankings. LPT Realty figures reflect the current published Business Builder fee structure. TPL Collective is a community and coaching platform. LPT Realty is the brokerage. These are legally and operationally distinct.
 </div>
 
 <!-- FOOTER -->

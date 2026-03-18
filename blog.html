@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog & Comparisons | TPL Collective</title>
+  <meta name="description" content="In-depth brokerage comparisons, agent guides, and real estate industry insights from TPL Collective." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-X6WMCMBJ9R');
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #111118;
+      --bg3: #16161f;
+      --accent: #6c63ff;
+      --accent-dim: rgba(108,99,255,0.12);
+      --gold: #f0c040;
+      --green: #34d399;
+      --red: #f87171;
+      --text: #e8e8f0;
+      --muted: #888899;
+      --border: rgba(108,99,255,0.2);
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,10,15,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 0.45rem 1.1rem;
+      border-radius: 6px;
+      font-weight: 600 !important;
+    }
+
+    /* HERO */
+    .blog-hero {
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .blog-hero .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .blog-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      margin-bottom: 1.2rem;
+    }
+
+    .blog-hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    /* FILTER TABS */
+    .filter-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 2rem 2rem 0;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* GRID */
+    .blog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5rem;
+      max-width: 1200px;
+      margin: 2.5rem auto 4rem;
+      padding: 0 2rem;
+    }
+
+    .blog-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .blog-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px rgba(108,99,255,0.15);
+    }
+
+    .card-badge-bar {
+      padding: 1.2rem 1.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+
+    .badge-compare { color: var(--accent); border-color: rgba(108,99,255,0.4); background: var(--accent-dim); }
+    .badge-guide { color: var(--gold); border-color: rgba(240,192,64,0.3); background: rgba(240,192,64,0.08); }
+    .badge-new { color: var(--green); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+
+    .card-body {
+      padding: 1rem 1.5rem 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      letter-spacing: 0.03em;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 0.7rem;
+    }
+
+    .card-desc {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      flex: 1;
+      margin-bottom: 1.2rem;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-meta {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .card-arrow {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .blog-card:hover .card-arrow {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* COMING SOON CARD */
+    .blog-card.coming-soon {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .blog-card.coming-soon .card-title { color: var(--muted); }
+
+    /* DIVIDER LINE */
+    .section-label {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .section-label span {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .blog-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">TPL <span>Collective</span></a>
+  <ul class="nav-links">
+    <li><a href="/why-tpl">Why TPL</a></li>
+    <li><a href="/lpt-explained">LPT Explained</a></li>
+    <li><a href="/resources">Resources</a></li>
+    <li><a href="/commission-calculator">Calculator</a></li>
+    <li><a href="/blog" class="active">Blog</a></li>
+    <li><a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta">Book a Call</a></li>
+  </ul>
+</nav>
+
+<section class="blog-hero">
+  <p class="eyebrow">TPL Collective — Insights</p>
+  <h1>The Real Estate Intel You Actually Need</h1>
+  <p>Side-by-side brokerage breakdowns, commission math, and agent guides — so you can make the move with confidence.</p>
+</section>
+
+<div class="filter-bar">
+  <button class="filter-btn active">All Articles</button>
+  <button class="filter-btn">Brokerage Comparisons</button>
+  <button class="filter-btn">LPT Guides</button>
+  <button class="filter-btn">Career Strategy</button>
+</div>
+
+<div class="section-label" style="margin-top:2.5rem;">
+  <span>Brokerage Comparisons</span>
+</div>
+
+<div class="blog-grid">
+
+  <!-- LIVE: LPT vs eXp -->
+  <a href="/blog/lpt-vs-exp-realty" class="blog-card">
+    <div class="card-badge-bar">
+      <span class="badge badge-compare">Comparison</span>
+      <span class="badge badge-new">New</span>
+    </div>
+    <div class="card-body">
+      <h2 class="card-title">LPT Realty vs eXp Realty: 2026 Breakdown</h2>
+      <p class="card-desc">eXp has lost agents for 8 straight quarters. LPT is growing fast with the lowest cap in the market. Here's the full side-by-side on splits, fees, culture, and upside.</p>
+      <div class="card-footer">
+        <span class="card-meta">March 2026 · 8 min read</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- COMING SOON: LPT vs KW -->
+  <a href="#" class="blog-card coming-soon">
+    <div class="card-badge-bar">
+      <span class="badge badge-compare">Comparison</span>
+    </div>
+    <div class="card-body">
+      <h2 class="card-title">LPT Realty vs Keller Williams: 2026 Breakdown</h2>
+      <p class="card-desc">The world's largest brokerage by agent count — but is the KW model still the right bet for today's agent? Coming soon.</p>
+      <div class="card-footer">
+        <span class="card-meta">Coming Soon</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- COMING SOON: LPT vs REAL -->
+  <a href="#" class="blog-card coming-soon">
+    <div class="card-badge-bar">
+      <span class="badge badge-compare">Comparison</span>
+    </div>
+    <div class="card-body">
+      <h2 class="card-title">LPT Realty vs REAL Broker: 2026 Breakdown</h2>
+      <p class="card-desc">Two fast-growing cloud brokerages with very different models. Which one wins on cost, culture, and long-term wealth? Coming soon.</p>
+      <div class="card-footer">
+        <span class="card-meta">Coming Soon</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- COMING SOON: LPT vs Coldwell -->
+  <a href="#" class="blog-card coming-soon">
+    <div class="card-badge-bar">
+      <span class="badge badge-compare">Comparison</span>
+    </div>
+    <div class="card-body">
+      <h2 class="card-title">LPT Realty vs Coldwell Banker: 2026 Breakdown</h2>
+      <p class="card-desc">A century-old brand vs. the fastest-growing cloud brokerage. What legacy costs you — and what the math actually says. Coming soon.</p>
+      <div class="card-footer">
+        <span class="card-meta">Coming Soon</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<footer>
+  <p>© 2026 TPL Collective · Built on <a href="/lpt-explained">LPT Realty</a> · <a href="https://calendly.com/discovertpl" target="_blank">Book a Discovery Call</a></p>
+</footer>
+
+</body>
+</html>
