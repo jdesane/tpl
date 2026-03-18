@@ -808,6 +808,21 @@ function showReportToast(email) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('gateModal').classList.remove('open'); });
 
+// ── AUTO-SELECT BROKERAGE FROM URL PARAMS ──
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const brokerage = params.get('b') || params.get('brokerage');
+  const ref = params.get('ref') || '';
+  // Auto-select KW for KW campaigns
+  if (brokerage === 'kw' || ref.indexOf('kw') >= 0) {
+    document.getElementById('brokerageSelect').value = 'kw';
+    onBrokerageSelect();
+  } else if (brokerage) {
+    document.getElementById('brokerageSelect').value = brokerage;
+    onBrokerageSelect();
+  }
+})();
+
 // ── HELPERS ──
 function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
 function parseNum(s) { return parseFloat(String(s).replace(/,/g,'')) || 0; }

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -2193,17 +2193,29 @@ async def process_drip_queue():
         subject = step_data["subject"].replace("[Name]", first_name).replace("[name]", first_name)
         body_text = step_data["body"].replace("[Name]", first_name).replace("[name]", first_name)
 
-        # Inject tracking cid into all tplcollective.ai URLs
+        # Replace URLs with clean short links
         if contact_id:
             import re
+            short_map = {
+                "tplcollective.ai/commission-calculator": f"https://mission.tplcollective.ai/go/calc-{contact_id}",
+                "tplcollective.ai/vs/keller-williams": f"https://mission.tplcollective.ai/go/vs-kw-{contact_id}",
+                "tplcollective.ai/vs/exp-realty": f"https://mission.tplcollective.ai/go/vs-exp-{contact_id}",
+                "tplcollective.ai/vs/coldwell-banker": f"https://mission.tplcollective.ai/go/vs-cb-{contact_id}",
+                "tplcollective.ai/fee-plans": f"https://mission.tplcollective.ai/go/fees-{contact_id}",
+                "tplcollective.ai/lpt-explained": f"https://mission.tplcollective.ai/go/lpt-{contact_id}",
+                "tplcollective.ai/join": f"https://mission.tplcollective.ai/go/join-{contact_id}",
+                "calendly.com/discovertpl": f"https://mission.tplcollective.ai/go/book-{contact_id}",
+            }
+            for original, short in short_map.items():
+                body_text = body_text.replace(original, short)
+            # Catch any remaining tplcollective.ai URLs
             def add_cid(match):
                 url = match.group(0)
                 sep = "&" if "?" in url else "?"
                 return f"{url}{sep}cid={contact_id}&ref=drip"
             body_text = re.sub(r'tplcollective\.ai/[^\s"\'<>]+', add_cid, body_text)
-            body_text = body_text.replace("calendly.com/discovertpl", f"calendly.com/discovertpl?utm_source=drip&utm_campaign=revival&cid={contact_id}")
 
-        # Build HTML email
+        # Build HTML email with open tracking pixel
         html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
 <div style="max-width:580px;margin:0 auto;padding:32px 16px;">
@@ -2344,6 +2356,171 @@ def get_email_log(limit: int = 50, campaign: Optional[str] = None):
     return query.execute().data
 
 
+# ── SHORT URL REDIRECTOR ──
+
+@app.get("/go/{code}")
+def short_redirect(code: str):
+    """Short URL redirect. Format: /go/{page}-{cid} e.g., /go/calc-123, /go/vs-kw-123, /go/book-123"""
+    parts = code.rsplit("-", 1)
+    cid = parts[1] if len(parts) == 2 and parts[1].isdigit() else ""
+    slug = parts[0] if len(parts) == 2 else code
+
+    url_map = {
+        "calc": "/commission-calculator",
+        "vs-kw": "/vs/keller-williams",
+        "vs-exp": "/vs/exp-realty",
+        "vs-cb": "/vs/coldwell-banker",
+        "vs-c21": "/vs/century-21",
+        "vs-remax": "/vs/remax",
+        "vs-real": "/vs/real-brokerage",
+        "vs-switch": "/vs/exp-switch",
+        "book": "https://calendly.com/discovertpl",
+        "fees": "/fee-plans",
+        "join": "/join",
+        "why": "/why-tpl",
+        "lpt": "/lpt-explained",
+    }
+
+    base_url = url_map.get(slug, "/commission-calculator")
+
+    # Build redirect URL with tracking params
+    if base_url.startswith("http"):
+        # External URL (Calendly)
+        sep = "&" if "?" in base_url else "?"
+        target = f"{base_url}{sep}utm_source=email&utm_campaign=drip"
+        if cid:
+            target += f"&cid={cid}"
+    else:
+        # Internal URL
+        target = f"https://tplcollective.ai{base_url}?cid={cid}&ref=email" if cid else f"https://tplcollective.ai{base_url}"
+        # Add brokerage hint for calculator
+        if slug == "calc" and cid:
+            target += "&b=kw"
+
+    # Log click if we have a cid
+    if cid:
+        try:
+            supabase.table("lead_activity").insert({
+                "lead_id": int(cid),
+                "activity_type": "email_click",
+                "description": f"Clicked link: {slug}",
+                "metadata": {"url": base_url, "code": code}
+            }).execute()
+        except Exception:
+            pass
+
+    return RedirectResponse(url=target, status_code=302)
+
+
+# ── EMAIL ENGAGEMENT TRACKING ──
+
+@app.get("/api/email/open/{send_id}")
+def track_email_open(send_id: str):
+    """1x1 tracking pixel for email opens. Returns transparent GIF."""
+    try:
+        # Find the send log entry and update
+        log = supabase.table("email_send_log").select("id, contact_id, subject").eq("resend_id", send_id).execute()
+        if log.data:
+            entry = log.data[0]
+            supabase.table("email_send_log").update({"status": "opened"}).eq("id", entry["id"]).execute()
+            if entry.get("contact_id"):
+                # Dedup check — don't log multiple opens
+                recent = supabase.table("lead_activity").select("id").eq("lead_id", entry["contact_id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - __import__('datetime').timedelta(hours=1)).isoformat()).execute()
+                if not recent.data:
+                    supabase.table("lead_activity").insert({
+                        "lead_id": entry["contact_id"],
+                        "activity_type": "email_opened",
+                        "description": f"Opened email: {entry.get('subject', 'Unknown')}",
+                    }).execute()
+    except Exception:
+        pass
+    # Return 1x1 transparent GIF
+    import base64
+    from starlette.responses import Response
+    gif = base64.b64decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+    return Response(content=gif, media_type="image/gif")
+
+
+@app.post("/api/webhooks/resend")
+async def resend_webhook(request: Request):
+    """Handle Resend webhooks for bounces, complaints, deliveries."""
+    data = await request.json()
+    event_type = data.get("type", "")
+    email_data = data.get("data", {})
+    to_email = ""
+    if email_data.get("to"):
+        to_email = email_data["to"][0] if isinstance(email_data["to"], list) else email_data["to"]
+    email_id = email_data.get("email_id", "")
+
+    # Find contact by email
+    contact = None
+    if to_email:
+        result = supabase.table("leads").select("id, name").eq("email", to_email).execute()
+        contact = result.data[0] if result.data else None
+
+    if event_type == "email.delivered":
+        if email_id:
+            supabase.table("email_send_log").update({"status": "delivered"}).eq("resend_id", email_id).execute()
+        if contact:
+            supabase.table("lead_activity").insert({
+                "lead_id": contact["id"],
+                "activity_type": "email_delivered",
+                "description": f"Email delivered to {to_email}"
+            }).execute()
+
+    elif event_type == "email.opened":
+        if email_id:
+            supabase.table("email_send_log").update({"status": "opened"}).eq("resend_id", email_id).execute()
+        if contact:
+            # Dedup
+            from datetime import timedelta
+            recent = supabase.table("lead_activity").select("id").eq("lead_id", contact["id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - timedelta(hours=1)).isoformat()).execute()
+            if not recent.data:
+                supabase.table("lead_activity").insert({
+                    "lead_id": contact["id"],
+                    "activity_type": "email_opened",
+                    "description": f"Opened email"
+                }).execute()
+
+    elif event_type == "email.clicked":
+        if contact:
+            supabase.table("lead_activity").insert({
+                "lead_id": contact["id"],
+                "activity_type": "email_clicked",
+                "description": f"Clicked link in email"
+            }).execute()
+
+    elif event_type == "email.bounced":
+        if email_id:
+            supabase.table("email_send_log").update({"status": "bounced"}).eq("resend_id", email_id).execute()
+        if to_email:
+            try:
+                supabase.table("email_suppressions").insert({"email": to_email.lower(), "reason": "hard_bounce", "source": "resend_webhook"}).execute()
+            except Exception:
+                pass
+        if contact:
+            supabase.table("lead_activity").insert({
+                "lead_id": contact["id"],
+                "activity_type": "email_bounced",
+                "description": f"Email bounced: {to_email}"
+            }).execute()
+
+    elif event_type == "email.complained":
+        if to_email:
+            try:
+                supabase.table("email_suppressions").insert({"email": to_email.lower(), "reason": "complaint", "source": "resend_webhook"}).execute()
+            except Exception:
+                pass
+        if contact:
+            supabase.table("lead_activity").insert({
+                "lead_id": contact["id"],
+                "activity_type": "email_complained",
+                "description": f"Marked as spam: {to_email}"
+            }).execute()
+
+    return {"success": True, "event": event_type}
+
+
 # ── VISITOR TRACKING ──
 
 @app.post("/api/tracking/pageview")
@@ -2366,13 +2543,16 @@ async def track_pageview(request: Request):
         if not contact.data:
             return {"success": True, "tracked": False}
 
-        # Log activity
-        supabase.table("lead_activity").insert({
-            "lead_id": cid,
-            "activity_type": "page_view",
-            "description": f"Visited: {page}",
-            "metadata": {"page": page, "referrer": referrer, "utm_source": utm_source, "utm_campaign": utm_campaign}
-        }).execute()
+        # Dedup: don't log same page view within 5 minutes
+        from datetime import timedelta
+        recent = supabase.table("lead_activity").select("id").eq("lead_id", cid).eq("activity_type", "page_view").eq("description", f"Visited: {page}").gte("created_at", (datetime.utcnow() - timedelta(minutes=5)).isoformat()).execute()
+        if not recent.data:
+            supabase.table("lead_activity").insert({
+                "lead_id": cid,
+                "activity_type": "page_view",
+                "description": f"Visited: {page}",
+                "metadata": {"page": page, "referrer": referrer, "utm_source": utm_source, "utm_campaign": utm_campaign}
+            }).execute()
 
         # Update last_contacted_at to show engagement
         supabase.table("leads").update({
@@ -2418,14 +2598,17 @@ async def track_calculator(request: Request):
 
         supabase.table("leads").update(updates).eq("id", cid).execute()
 
-        # Log activity with calculator results
+        # Log activity with calculator results (dedup: 1 per minute)
         savings = data.get("savings", "")
-        supabase.table("lead_activity").insert({
-            "lead_id": cid,
-            "activity_type": "calculator_used",
-            "description": f"Used commission calculator. {data.get('deals_per_year', '')} deals, ${data.get('avg_price', '')} avg. Savings: ${savings}",
-            "metadata": data
-        }).execute()
+        from datetime import timedelta
+        recent_calc = supabase.table("lead_activity").select("id").eq("lead_id", cid).eq("activity_type", "calculator_used").gte("created_at", (datetime.utcnow() - timedelta(minutes=1)).isoformat()).execute()
+        if not recent_calc.data:
+            supabase.table("lead_activity").insert({
+                "lead_id": cid,
+                "activity_type": "calculator_used",
+                "description": f"Used commission calculator. {data.get('deals_per_year', '')} deals, ${data.get('avg_price', '')} avg. Savings: ${savings}",
+                "metadata": data
+            }).execute()
 
         # Move opportunity to "Engaged" if they were in nurture
         opps = supabase.table("opportunities").select("id, stage").eq("contact_id", cid).eq("status", "open").execute()
