@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -150px; left: 50%; transform: translateX(-50%); width: 800px; height: 500px; background: radial-gradient(ellipse, rgba(108,99,255,0.10) 0%, transparent 70%); }
+.grid-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 100%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; margin-bottom: 8px; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #6c63ff; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #6c63ff; }
+.title { font-family: 'Bebas Neue', sans-serif; font-size: 52px; line-height: 1.0; letter-spacing: 0.02em; color: #ffffff; margin-bottom: 40px; }
+.title em { font-style: normal; color: #f87171; }
+
+.fee-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.fee-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 24px;
+  background: #12121a; border: 1px solid #2a2a3d; border-radius: 8px;
+}
+.fee-row-label { font-size: 16px; color: #e8e8f0; }
+.fee-row-value { font-family: 'DM Mono', monospace; font-size: 15px; color: #f87171; font-weight: 500; }
+.fee-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px;
+  background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px;
+}
+.fee-total-label { font-size: 16px; color: #e8e8f0; font-weight: 600; }
+.fee-total-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #f87171; }
+
+.vs-section {
+  background: rgba(52,211,153,0.04); border: 1px solid rgba(52,211,153,0.2); border-radius: 12px;
+  padding: 28px 32px; margin-top: auto;
+}
+.vs-label { font-family: 'DM Mono', monospace; font-size: 11px; color: #34d399; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 12px; }
+.vs-items { display: flex; flex-direction: column; gap: 8px; }
+.vs-item { display: flex; justify-content: space-between; font-size: 15px; }
+.vs-item-label { color: #e8e8f0; }
+.vs-item-value { font-family: 'DM Mono', monospace; color: #34d399; font-weight: 500; }
+
+.footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="grid-bg"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">Hidden Costs</div>
+  <div class="title">The Fees <em>Beyond</em><br>Your Split</div>
+
+  <div class="fee-stack">
+    <div class="fee-row"><span class="fee-row-label">Desk Fee</span><span class="fee-row-value">$200–$500/mo</span></div>
+    <div class="fee-row"><span class="fee-row-label">Tech Fee</span><span class="fee-row-value">$50–$150/mo</span></div>
+    <div class="fee-row"><span class="fee-row-label">E&O Insurance</span><span class="fee-row-value">$200–$600/yr</span></div>
+    <div class="fee-row"><span class="fee-row-label">Franchise Fee</span><span class="fee-row-value">3–8% off top</span></div>
+    <div class="fee-row"><span class="fee-row-label">CRM (out of pocket)</span><span class="fee-row-value">$40–$100/mo</span></div>
+  </div>
+
+  <div class="fee-total">
+    <span class="fee-total-label">Typical Annual Total (before split)</span>
+    <span class="fee-total-value">$5K–$10K+</span>
+  </div>
+
+  <div class="vs-section">
+    <div class="vs-label">At LPT Realty</div>
+    <div class="vs-items">
+      <div class="vs-item"><span class="vs-item-label">Desk Fees</span><span class="vs-item-value">$0</span></div>
+      <div class="vs-item"><span class="vs-item-label">Tech & CRM Fees</span><span class="vs-item-value">$0</span></div>
+      <div class="vs-item"><span class="vs-item-label">Tools Included</span><span class="vs-item-value">$11K+ value</span></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">tplcollective.ai/fee-plans</div>
+    <div class="footer-right">Joe DeSane · TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -150px; left: 50%; transform: translateX(-50%); width: 800px; height: 500px; background: radial-gradient(ellipse, rgba(108,99,255,0.10) 0%, transparent 70%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; margin-bottom: 8px; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #6c63ff; margin-bottom: 48px; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #6c63ff; }
+.title { font-family: 'Bebas Neue', sans-serif; font-size: 52px; line-height: 1.0; letter-spacing: 0.02em; color: #ffffff; margin-bottom: 48px; }
+.title em { font-style: normal; color: #6c63ff; }
+
+.two-col { display: flex; gap: 24px; flex: 1; }
+.col-card {
+  flex: 1; border-radius: 14px; padding: 36px 30px;
+  display: flex; flex-direction: column;
+}
+.col-card.brokerage { background: #12121a; border: 1px solid rgba(108,99,255,0.25); }
+.col-card.community { background: #12121a; border: 1px solid rgba(52,211,153,0.25); }
+.col-tag { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 12px; }
+.col-card.brokerage .col-tag { color: #8b85ff; }
+.col-card.community .col-tag { color: #34d399; }
+.col-name { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #ffffff; margin-bottom: 24px; line-height: 1; letter-spacing: 0.02em; }
+.col-items { display: flex; flex-direction: column; gap: 16px; }
+.col-item { display: flex; gap: 12px; align-items: flex-start; }
+.col-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 7px; }
+.col-card.brokerage .col-dot { background: #8b85ff; }
+.col-card.community .col-dot { background: #34d399; }
+.col-item-text { font-size: 15px; color: #e8e8f0; line-height: 1.5; font-weight: 400; }
+
+.bottom-note {
+  margin-top: 32px;
+  background: rgba(108,99,255,0.06); border: 1px solid rgba(108,99,255,0.15); border-radius: 10px;
+  padding: 20px 28px;
+  font-size: 15px; color: #8888aa; line-height: 1.6; text-align: center; font-weight: 300;
+}
+.bottom-note strong { color: #e8e8f0; }
+
+.footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">Two Layers, One Platform</div>
+  <div class="title">What TPL Collective<br><em>Actually Is</em></div>
+
+  <div class="two-col">
+    <div class="col-card brokerage">
+      <div class="col-tag">The Brokerage</div>
+      <div class="col-name">LPT Realty</div>
+      <div class="col-items">
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Where your license lives</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Transaction processing</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Commission disbursements</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Compliance & E&O</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Comp plans & HybridShare</div></div>
+      </div>
+    </div>
+    <div class="col-card community">
+      <div class="col-tag">The Community Layer</div>
+      <div class="col-name">TPL Collective</div>
+      <div class="col-items">
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Onboarding & mentorship</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Coaching from active producers</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">AI-powered growth tools</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Content & media engine</div></div>
+        <div class="col-item"><div class="col-dot"></div><div class="col-item-text">Real community — not a logo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-note"><strong>The model + the support.</strong> A great comp plan with no infrastructure is just a number on paper.</div>
+
+  <div class="footer">
+    <div class="footer-left">tplcollective.ai</div>
+    <div class="footer-right">Joe DeSane · TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

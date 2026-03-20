@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  width: 1080px; height: 1080px;
+  background: #0a0a0f;
+  font-family: 'DM Sans', sans-serif;
+  color: #e8e8f0;
+  display: flex;
+  flex-direction: column;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow */
+.glow {
+  position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.10) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Grid */
+.grid-bg {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 100%);
+}
+
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+
+/* Header */
+.brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; letter-spacing: 0.08em;
+  color: #ffffff; margin-bottom: 8px;
+}
+.brand span { color: #6c63ff; }
+
+.eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #6c63ff; margin-bottom: 48px;
+  display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #6c63ff; }
+
+/* Title */
+.title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px; line-height: 1.0; letter-spacing: 0.02em;
+  color: #ffffff; margin-bottom: 48px;
+}
+.title em { font-style: normal; color: #6c63ff; }
+
+/* Comparison */
+.comparison {
+  display: flex; gap: 20px; flex: 1;
+}
+
+.comp-card {
+  flex: 1;
+  background: #12121a;
+  border: 1px solid #2a2a3d;
+  border-radius: 14px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.comp-card.lpt {
+  border-color: rgba(108,99,255,0.3);
+  box-shadow: 0 0 40px rgba(108,99,255,0.06);
+}
+
+.comp-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.comp-card:first-child .comp-label { color: #f87171; }
+.comp-card.lpt .comp-label { color: #34d399; }
+
+.comp-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; color: #ffffff; letter-spacing: 0.02em;
+  margin-bottom: 24px; line-height: 1;
+}
+
+.comp-items { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+
+.comp-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(42,42,61,0.5);
+}
+.comp-item:last-child { border-bottom: none; }
+
+.comp-item-label { font-size: 13px; color: #8888aa; font-weight: 400; }
+.comp-item-value { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+.comp-card:first-child .comp-item-value { color: #f87171; }
+.comp-card.lpt .comp-item-value { color: #34d399; }
+
+.comp-total {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #2a2a3d;
+}
+.comp-total-label { font-size: 12px; color: #8888aa; margin-bottom: 4px; }
+.comp-total-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px; line-height: 1; letter-spacing: 0.02em;
+}
+.comp-card:first-child .comp-total-value { color: #f87171; }
+.comp-card.lpt .comp-total-value { color: #34d399; }
+
+/* Bottom bar */
+.bottom-bar {
+  margin-top: 32px;
+  background: rgba(108,99,255,0.08);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: 10px;
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.diff-label { font-size: 13px; color: #8888aa; }
+.diff-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 44px; color: #6c63ff; line-height: 1; letter-spacing: 0.02em;
+}
+.diff-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: #55556a; letter-spacing: 0.08em;
+}
+
+/* Footer */
+.footer {
+  margin-top: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-left {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: #55556a; letter-spacing: 0.08em;
+}
+.footer-right {
+  font-size: 13px; color: #6c63ff; font-weight: 500;
+}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="grid-bg"></div>
+  <div class="content">
+    <div class="brand">TPL<span>.</span></div>
+    <div class="eyebrow">The Math</div>
+    <div class="title">Same Production.<br><em>Very Different Outcome.</em></div>
+
+    <div class="comparison">
+      <div class="comp-card">
+        <div class="comp-label">Traditional 70/30</div>
+        <div class="comp-name">Your Old Brokerage</div>
+        <div class="comp-items">
+          <div class="comp-item">
+            <span class="comp-item-label">Brokerage Split (30%)</span>
+            <span class="comp-item-value">-$37,500</span>
+          </div>
+          <div class="comp-item">
+            <span class="comp-item-label">Desk Fees (~$300/mo)</span>
+            <span class="comp-item-value">-$3,600</span>
+          </div>
+          <div class="comp-item">
+            <span class="comp-item-label">Tech & CRM</span>
+            <span class="comp-item-value">-$1,200</span>
+          </div>
+          <div class="comp-item">
+            <span class="comp-item-label">Transaction Fees</span>
+            <span class="comp-item-value">-$1,500</span>
+          </div>
+        </div>
+        <div class="comp-total">
+          <div class="comp-total-label">Total Fees Paid</div>
+          <div class="comp-total-value">-$43,800</div>
+        </div>
+      </div>
+
+      <div class="comp-card lpt">
+        <div class="comp-label">100% Commission</div>
+        <div class="comp-name">LPT Business Builder</div>
+        <div class="comp-items">
+          <div class="comp-item">
+            <span class="comp-item-label">Flat Fee ($500/deal)</span>
+            <span class="comp-item-value">-$5,000</span>
+          </div>
+          <div class="comp-item">
+            <span class="comp-item-label">Transaction Fee ($195)</span>
+            <span class="comp-item-value">-$1,950</span>
+          </div>
+          <div class="comp-item">
+            <span class="comp-item-label">Annual Fee</span>
+            <span class="comp-item-value">-$500</span>
+          </div>
+          <div class="comp-item">
+            <span class="comp-item-label">Desk, Tech & CRM</span>
+            <span class="comp-item-value">$0</span>
+          </div>
+        </div>
+        <div class="comp-total">
+          <div class="comp-total-label">Total Fees Paid</div>
+          <div class="comp-total-value">-$7,450</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div>
+        <div class="diff-label">Potential Annual Difference</div>
+        <div class="diff-note">10 deals · $500K avg · 2.5% commission · Results vary</div>
+      </div>
+      <div class="diff-value">$27K+</div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-left">tplcollective.ai/fee-plans</div>
+      <div class="footer-right">Joe DeSane · TPL Collective</div>
+    </div>
+  </div>
+</body>
+</html>

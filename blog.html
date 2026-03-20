@@ -319,7 +319,7 @@
     <li><a href="/resources">Resources</a></li>
     <li><a href="/commission-calculator">Calculator</a></li>
     <li><a href="/blog" class="active">Blog</a></li>
-    <li><a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta">Book a Call</a></li>
+    <li><a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a></li>
   </ul>
 </nav>
 
@@ -441,7 +441,7 @@
 </div>
 
 <footer>
-  <p>© 2026 TPL Collective · Built on <a href="/lpt-explained">LPT Realty</a> · <a href="https://calendly.com/discovertpl" target="_blank">Book a Discovery Call</a></p>
+  <p>© 2026 TPL Collective · Built on <a href="/lpt-explained">LPT Realty</a> · <a href="https://calendly.com/discovertpl" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Discovery Call</a></p>
 </footer>
 
 </body>

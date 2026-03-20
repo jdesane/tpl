@@ -281,26 +281,21 @@ th[onclick]:hover{color:var(--accent)}
   </div>
   <!-- Smart Lists tabs -->
   <div id="smart-list-tabs" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap"></div>
-  <!-- Search -->
-  <div style="margin-bottom:12px">
-    <input type="text" id="contacts-search" placeholder="Search contacts..." onkeyup="searchContacts(this.value)" style="width:100%;max-width:400px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none">
+  <!-- Search + Column Picker -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <input type="text" id="contacts-search" placeholder="Search contacts..." onkeyup="searchContacts(this.value)" style="flex:1;max-width:400px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none">
+    <div style="position:relative">
+      <button class="btn btn-ghost btn-sm" onclick="toggleColumnPicker()" id="col-picker-btn" style="font-size:11px">Columns</button>
+      <div id="col-picker-dropdown" style="display:none;position:absolute;right:0;top:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;z-index:100;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;padding:4px 8px;margin-bottom:4px">Toggle Columns</div>
+        <div id="col-picker-options"></div>
+      </div>
+    </div>
   </div>
   <!-- Table -->
   <div class="panel" style="overflow-x:auto">
     <table class="leads-table" id="contacts-table">
-      <thead>
-        <tr>
-          <th onclick="sortContacts('name')" style="cursor:pointer">Name <span id="sort-name" class="sort-arrow"></span></th>
-          <th onclick="sortContacts('phone')" style="cursor:pointer">Phone <span id="sort-phone" class="sort-arrow"></span></th>
-          <th onclick="sortContacts('email')" style="cursor:pointer">Email <span id="sort-email" class="sort-arrow"></span></th>
-          <th onclick="sortContacts('brokerage')" style="cursor:pointer">Brokerage <span id="sort-brokerage" class="sort-arrow"></span></th>
-          <th onclick="sortContacts('source')" style="cursor:pointer">Source <span id="sort-source" class="sort-arrow"></span></th>
-          <th onclick="sortContacts('created_at')" style="cursor:pointer">Created <span id="sort-created_at" class="sort-arrow"></span></th>
-          <th onclick="sortContacts('last_contacted_at')" style="cursor:pointer">Last Activity <span id="sort-last_contacted_at" class="sort-arrow"></span></th>
-          <th>Tags</th>
-          <th onclick="sortContacts('lead_score')" style="cursor:pointer">Score <span id="sort-lead_score" class="sort-arrow"></span></th>
-        </tr>
-      </thead>
+      <thead><tr id="contacts-thead-row"></tr></thead>
       <tbody id="contacts-tbody"></tbody>
     </table>
   </div>
@@ -346,12 +341,26 @@ th[onclick]:hover{color:var(--accent)}
           </div>
           <div id="profile-score-badge"></div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" onclick="profileAction('email')">Email</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAction('call')">Call</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAction('text')">Text</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAddNote()">Add Note</button>
           <button class="btn btn-primary btn-sm" onclick="createOpportunityForContact()">+ Opportunity</button>
+          <select id="profile-status-select" onchange="updateContactStatus(this.value)" style="margin-left:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;min-width:140px">
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="engaged">Engaged</option>
+            <option value="discovery_call">Discovery Call</option>
+            <option value="nurture">Nurture</option>
+            <option value="ready_to_move">Ready to Move</option>
+            <option value="signed">Signed</option>
+            <option value="onboarding">Onboarding</option>
+            <option value="active_agent">Active Agent</option>
+            <option value="not_interested">Not Interested</option>
+            <option value="unsubscribed">Unsubscribed</option>
+            <option value="lost">Lost</option>
+          </select>
         </div>
       </div>
       <!-- Basic Info -->
@@ -484,8 +493,14 @@ th[onclick]:hover{color:var(--accent)}
   <div id="funnel-detail-panel" style="display:none"></div>
   <div class="panel" style="margin-top:16px">
     <div class="panel-header"><div class="panel-title">AI Email Writer</div></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
       <input type="text" id="ai-email-prompt" placeholder="Describe the email (e.g., 'Follow-up for agents who attended discovery call')" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:13px;outline:none">
+      <select id="ai-model-select" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:12px;outline:none;min-width:160px">
+        <option value="claude-haiku">Claude Haiku</option>
+        <option value="claude-sonnet">Claude Sonnet</option>
+        <option value="gpt-4o-mini">GPT-4o Mini</option>
+        <option value="gpt-4o">GPT-4o</option>
+      </select>
       <button class="btn btn-primary btn-sm" onclick="generateEmail()">Generate</button>
     </div>
     <div id="ai-email-result" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
@@ -519,8 +534,14 @@ th[onclick]:hover{color:var(--accent)}
   </div>
   <div class="panel" style="margin-bottom:16px">
     <div class="panel-header"><div class="panel-title">AI Content Generator</div></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
       <input type="text" id="ai-content-prompt" placeholder="Describe the post you want (e.g., 'Social post about LPT's $5K cap targeting eXp agents')" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:13px;outline:none">
+      <select id="ai-content-model-select" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:12px;outline:none;min-width:160px">
+        <option value="claude-haiku">Claude Haiku</option>
+        <option value="claude-sonnet">Claude Sonnet</option>
+        <option value="gpt-4o-mini">GPT-4o Mini</option>
+        <option value="gpt-4o">GPT-4o</option>
+      </select>
       <button class="btn btn-primary btn-sm" onclick="generateContent()">Generate</button>
     </div>
     <div id="ai-content-result" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
@@ -528,6 +549,26 @@ th[onclick]:hover{color:var(--accent)}
       <div style="margin-top:8px;display:flex;gap:8px">
         <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('ai-content-text').textContent);showToast('Copied!')">Copy</button>
         <button class="btn btn-primary btn-sm" onclick="useGeneratedContent()">Use as New Post</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><div class="panel-title">AI Image Generator</div><span style="font-size:11px;color:var(--text-muted)">DALL-E 3</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="ai-image-prompt" placeholder="Describe the image (e.g., 'Modern real estate agent reviewing commission savings on laptop')" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:13px;outline:none">
+      <select id="ai-image-size" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:12px;outline:none;min-width:130px">
+        <option value="1024x1024">Square (1:1)</option>
+        <option value="1792x1024">Landscape (16:9)</option>
+        <option value="1024x1792">Portrait (9:16)</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="generateImage()">Generate</button>
+    </div>
+    <div id="ai-image-result" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+      <img id="ai-image-preview" src="" style="max-width:100%;border-radius:6px;margin-bottom:8px" />
+      <div id="ai-image-revised" style="font-size:11px;color:var(--text-muted);margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px">
+        <a id="ai-image-download" href="" download="generated-image.png" class="btn btn-ghost btn-sm">Download</a>
+        <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('ai-image-preview').src);showToast('Image URL copied!')">Copy URL</button>
       </div>
     </div>
   </div>
@@ -894,14 +935,55 @@ function sortContacts(field){
   else{currentSortField=field;currentSortDir=field==='lead_score'?'desc':'asc';}
   applySortAndRender();
 }
+
+// ── COLUMN PICKER ──
+var ALL_COLUMNS=[
+  {id:'name',label:'Name',sortable:true,default:true,locked:true,render:function(c){return'<span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span>';}},
+  {id:'status',label:'Status',sortable:true,default:true,render:function(c){var s=c.status||'new';return'<span class="stage-badge '+s+'" style="font-size:10px;padding:2px 8px">'+s.replace(/_/g,' ')+'</span>';}},
+  {id:'phone',label:'Phone',sortable:true,default:true,render:function(c){return'<span style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</span>';}},
+  {id:'email',label:'Email',sortable:true,default:true,render:function(c){return'<span style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</span>';}},
+  {id:'brokerage',label:'Brokerage',sortable:true,default:true,render:function(c){return'<span style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</span>';}},
+  {id:'source',label:'Source',sortable:true,default:false,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</span>';}},
+  {id:'deals_per_year',label:'Deals/yr',sortable:true,default:true,render:function(c){return'<span style="font-size:12px">'+(c.deals_per_year||'-')+'</span>';}},
+  {id:'avg_price',label:'Avg Price',sortable:true,default:false,render:function(c){var p=c.avg_price?'$'+Number(c.avg_price).toLocaleString():'-';return'<span style="font-size:12px">'+p+'</span>';}},
+  {id:'stage',label:'Stage',sortable:true,default:false,render:function(c){var s=c.stage||'new';return'<span class="stage-badge '+s+'" style="font-size:10px;padding:2px 8px">'+(STAGE_LABELS[s]||s)+'</span>';}},
+  {id:'lead_temperature',label:'Temperature',sortable:true,default:false,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+(c.lead_temperature||'-')+'</span>';}},
+  {id:'created_at',label:'Created',sortable:true,default:false,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</span>';}},
+  {id:'last_contacted_at',label:'Last Activity',sortable:true,default:true,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'-')+'</span>';}},
+  {id:'tags',label:'Tags',sortable:false,default:true,render:function(c){return(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');}},
+  {id:'lead_score',label:'Score',sortable:true,default:true,render:function(c){var sc=c.lead_score||0;var cl=sc>=70?'hot':sc>=40?'warming':'cold';return'<span class="score '+cl+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+sc+'</span>';}},
+  {id:'license_state',label:'State',sortable:true,default:false,render:function(c){return'<span style="font-size:12px">'+(c.license_state||'-')+'</span>';}},
+  {id:'follow_up_date',label:'Follow Up',sortable:true,default:false,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+(c.follow_up_date||'-')+'</span>';}}
+];
+var visibleColumns=JSON.parse(localStorage.getItem('mc_visible_cols')||'null')||ALL_COLUMNS.filter(function(c){return c.default}).map(function(c){return c.id});
+
+function toggleColumnPicker(){var d=document.getElementById('col-picker-dropdown');d.style.display=d.style.display==='none'?'block':'none';renderColumnPicker();}
+function renderColumnPicker(){
+  document.getElementById('col-picker-options').innerHTML=ALL_COLUMNS.map(function(col){
+    var checked=visibleColumns.indexOf(col.id)>=0;
+    var disabled=col.locked?'disabled':'';
+    return'<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border-radius:4px;font-size:12px;color:var(--text)" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" '+(checked?'checked':'')+' '+disabled+' onchange="toggleColumn(\''+col.id+'\')"><span>'+col.label+'</span></label>';
+  }).join('');
+}
+function toggleColumn(colId){
+  var idx=visibleColumns.indexOf(colId);
+  if(idx>=0)visibleColumns.splice(idx,1);else visibleColumns.push(colId);
+  localStorage.setItem('mc_visible_cols',JSON.stringify(visibleColumns));
+  applySortAndRender();
+}
+document.addEventListener('click',function(e){var d=document.getElementById('col-picker-dropdown');var b=document.getElementById('col-picker-btn');if(d&&d.style.display==='block'&&!d.contains(e.target)&&e.target!==b)d.style.display='none';});
+
 function applySortAndRender(){
   var contacts=allContactsList.slice();
+  var cols=ALL_COLUMNS.filter(function(c){return visibleColumns.indexOf(c.id)>=0});
   // Sort
   contacts.sort(function(a,b){
     var av,bv;
     if(currentSortField==='name'){av=(a.first_name||'')+' '+(a.last_name||a.name||'');bv=(b.first_name||'')+' '+(b.last_name||b.name||'');}
     else if(currentSortField==='brokerage'){av=a.current_brokerage||a.brokerage||'';bv=b.current_brokerage||b.brokerage||'';}
     else if(currentSortField==='lead_score'){av=a.lead_score||0;bv=b.lead_score||0;}
+    else if(currentSortField==='deals_per_year'){av=parseFloat(a.deals_per_year)||0;bv=parseFloat(b.deals_per_year)||0;}
+    else if(currentSortField==='avg_price'){av=parseFloat(a.avg_price)||0;bv=parseFloat(b.avg_price)||0;}
     else{av=a[currentSortField]||'';bv=b[currentSortField]||'';}
     if(typeof av==='number'&&typeof bv==='number'){return currentSortDir==='asc'?av-bv:bv-av;}
     av=String(av).toLowerCase();bv=String(bv).toLowerCase();
@@ -910,26 +992,16 @@ function applySortAndRender(){
     return 0;
   });
   allContactsList=contacts;
-  // Update sort arrows
-  document.querySelectorAll('.sort-arrow').forEach(function(el){el.className='sort-arrow';});
-  var arrow=document.getElementById('sort-'+currentSortField);
-  if(arrow)arrow.className='sort-arrow '+currentSortDir;
-  // Render
+  // Render header
+  document.getElementById('contacts-thead-row').innerHTML=cols.map(function(col){
+    if(col.sortable)return'<th onclick="sortContacts(\''+col.id+'\')" style="cursor:pointer">'+col.label+' <span id="sort-'+col.id+'" class="sort-arrow'+(currentSortField===col.id?' '+currentSortDir:'')+'"></span></th>';
+    return'<th>'+col.label+'</th>';
+  }).join('');
+  // Render body
   document.getElementById('contacts-badge').textContent=contacts.length;
   document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c,i){
-    var tags=(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');
-    var scoreColor=(c.lead_score||0)>=70?'hot':(c.lead_score||0)>=40?'warming':'cold';
-    return'<tr onclick="openContactFromList('+i+')" style="cursor:pointer">'+
-      '<td><span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span></td>'+
-      '<td style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</td>'+
-      '<td style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</td>'+
-      '<td style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</td>'+
-      '<td style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</td>'+
-      '<td style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</td>'+
-      '<td style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'-')+'</td>'+
-      '<td>'+tags+'</td>'+
-      '<td><span class="score '+scoreColor+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
+    return'<tr onclick="openContactFromList('+i+')" style="cursor:pointer">'+cols.map(function(col){return'<td>'+col.render(c)+'</td>';}).join('')+'</tr>';
+  }).join('')||'<tr><td colspan="'+cols.length+'" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
 }
 function openContactFromList(index){contactNavIndex=index;openContactProfile(allContactsList[index].id);}
 function navigateContact(dir){
@@ -952,11 +1024,8 @@ function searchContacts(q){clearTimeout(contactSearchTimeout);contactSearchTimeo
   var url=API+'/api/contacts?search='+encodeURIComponent(q);
   if(currentSmartList)url+='&smart_list='+currentSmartList;
   var contacts=await fetch(url).then(function(r){return r.json()});
-  document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c){
-    var tags=(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');
-    var scoreColor=c.lead_score>=70?'hot':c.lead_score>=40?'warming':'cold';
-    return'<tr onclick="openContactProfile('+c.id+')" style="cursor:pointer"><td><span class="lead-name">'+(c.first_name||'')+' '+(c.last_name||c.name||'')+'</span></td><td style="font-size:12px;color:var(--text-dim)">'+(c.phone||'')+'</td><td style="font-size:12px;color:var(--text-dim)">'+(c.email||'')+'</td><td style="font-size:12px">'+(c.current_brokerage||c.brokerage||'')+'</td><td style="font-size:11px;color:var(--text-muted)">'+(c.source||'')+'</td><td style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</td><td style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'—')+'</td><td>'+tags+'</td><td><span class="score '+scoreColor+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+(c.lead_score||0)+'</span></td></tr>';
-  }).join('');
+  allContactsList=contacts;
+  applySortAndRender();
 },300);}
 
 // ── OPPORTUNITIES ──
@@ -1014,6 +1083,10 @@ async function openContactProfile(id){
     // Score badge
     var sc=c.lead_score||0;var scColor=sc>=70?'hot':sc>=40?'warming':'cold';
     document.getElementById('profile-score-badge').innerHTML='<span class="score '+scColor+'" style="width:40px;height:40px;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:50%">'+sc+'</span>';
+
+    // Status dropdown
+    var statusSel=document.getElementById('profile-status-select');
+    if(statusSel){statusSel.value=c.status||'new';}
 
     // Helper to make inline-editable fields
     function field(label,value,fieldName,type){
@@ -1090,6 +1163,13 @@ async function saveProfileField(field,value){
   if(!currentProfileId||!field)return;
   var data={};data[field]=value;
   await fetch(API+'/api/contacts/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+}
+async function updateContactStatus(status){
+  if(!currentProfileId)return;
+  await fetch(API+'/api/contacts/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})});
+  showToast('Status updated to '+status.replace(/_/g,' '));
+  // Log activity
+  await fetch(API+'/api/leads/'+currentProfileId+'/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activity_type:'status_change',description:'Status changed to '+status.replace(/_/g,' ')})});
 }
 
 async function loadProfileNotes(id){
@@ -1327,7 +1407,7 @@ function addFunnelStep(funnelId){document.getElementById('step-editor-title').te
 function editStep(funnelId,step){document.getElementById('step-editor-title').textContent='Edit Email Step';document.getElementById('step-editor-funnel-id').value=funnelId;document.getElementById('step-editor-step-id').value=step.id;document.getElementById('step-subject').value=step.subject||'';document.getElementById('step-body').value=step.body||'';document.getElementById('step-delay').value=step.delay_days||0;document.getElementById('step-editor-modal').classList.add('show');}
 async function saveStep(){var funnelId=document.getElementById('step-editor-funnel-id').value;var stepId=document.getElementById('step-editor-step-id').value;var data={subject:document.getElementById('step-subject').value,body:document.getElementById('step-body').value,delay_days:parseInt(document.getElementById('step-delay').value)||0};if(stepId){await fetch(API+'/api/funnels/'+funnelId+'/steps/'+stepId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}else{await fetch(API+'/api/funnels/'+funnelId+'/steps',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}document.getElementById('step-editor-modal').classList.remove('show');showToast(stepId?'Step updated':'Step added');viewFunnel(parseInt(funnelId));}
 async function deleteStep(funnelId,stepId){if(!confirm('Delete this step?'))return;await fetch(API+'/api/funnels/'+funnelId+'/steps/'+stepId,{method:'DELETE'});showToast('Step deleted');viewFunnel(funnelId);}
-async function generateEmail(){var prompt=document.getElementById('ai-email-prompt').value;if(!prompt){showToast('Enter a prompt first',true);return;}showToast('Generating...');try{var r=await fetch(API+'/api/ai/generate-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,type:'email'})}).then(function(r){return r.json()});document.getElementById('ai-email-text').textContent=r.generated;document.getElementById('ai-email-result').style.display='block';}catch(e){showToast('Generation failed',true);}}
+async function generateEmail(){var prompt=document.getElementById('ai-email-prompt').value;var model=document.getElementById('ai-model-select').value;if(!prompt){showToast('Enter a prompt first',true);return;}showToast('Generating...');try{var r=await fetch(API+'/api/ai/generate-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,type:'email',model:model})}).then(function(r){return r.json()});if(r.success){document.getElementById('ai-email-text').textContent=r.generated;document.getElementById('ai-email-result').style.display='block';}else{showToast(r.error||'Generation failed',true);}}catch(e){showToast('Generation failed',true);}}
 
 // ── CONTENT ──
 async function loadContent(){
@@ -1355,8 +1435,9 @@ async function saveContent(){
   else{await fetch(API+'/api/content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}
   document.getElementById('content-modal').classList.remove('show');showToast(id?'Post updated':'Post created');loadContent();
 }
-async function generateContent(){var prompt=document.getElementById('ai-content-prompt').value;if(!prompt){showToast('Enter a prompt first',true);return;}showToast('Generating...');try{var r=await fetch(API+'/api/ai/generate-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,type:'social'})}).then(function(r){return r.json()});document.getElementById('ai-content-text').textContent=r.generated;document.getElementById('ai-content-result').style.display='block';}catch(e){showToast('Generation failed',true);}}
+async function generateContent(){var prompt=document.getElementById('ai-content-prompt').value;var model=document.getElementById('ai-content-model-select').value;if(!prompt){showToast('Enter a prompt first',true);return;}showToast('Generating...');try{var r=await fetch(API+'/api/ai/generate-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,type:'social',model:model})}).then(function(r){return r.json()});if(r.success){document.getElementById('ai-content-text').textContent=r.generated;document.getElementById('ai-content-result').style.display='block';}else{showToast(r.error||'Generation failed',true);}}catch(e){showToast('Generation failed',true);}}
 function useGeneratedContent(){var text=document.getElementById('ai-content-text').textContent;openAddContent();document.getElementById('content-body').value=text;document.getElementById('ai-content-result').style.display='none';}
+async function generateImage(){var prompt=document.getElementById('ai-image-prompt').value;var size=document.getElementById('ai-image-size').value;if(!prompt){showToast('Enter a prompt first',true);return;}showToast('Generating image (this takes ~15s)...');try{var r=await fetch(API+'/api/ai/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,size:size})}).then(function(r){return r.json()});if(r.success){document.getElementById('ai-image-preview').src=r.image_url;document.getElementById('ai-image-download').href=r.image_url;document.getElementById('ai-image-revised').textContent=r.revised_prompt?'DALL-E prompt: '+r.revised_prompt:'';document.getElementById('ai-image-result').style.display='block';showToast('Image generated!');}else{showToast(r.error||'Image generation failed',true);}}catch(e){showToast('Image generation failed',true);}}
 
 // ── RECRUITING LINKS ──
 async function loadLinks(){

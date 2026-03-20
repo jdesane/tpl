@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 900px; height: 500px; background: radial-gradient(ellipse, rgba(240,192,64,0.06) 0%, transparent 70%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; position: absolute; top: 0; left: 0; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #f0c040; margin-bottom: 32px; display: inline-flex; align-items: center; gap: 10px; }
+.eyebrow::before, .eyebrow::after { content: ''; display: block; width: 24px; height: 1px; background: #f0c040; }
+
+.ticker {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 160px; line-height: 0.9; letter-spacing: 0.06em;
+  color: #f0c040; margin-bottom: 12px;
+  text-shadow: 0 0 80px rgba(240,192,64,0.15);
+}
+.ticker-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 16px; color: #8888aa; letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 56px;
+}
+
+.stats-grid { display: flex; gap: 16px; margin-bottom: 48px; }
+.stat-card {
+  background: #12121a; border: 1px solid #2a2a3d; border-radius: 12px;
+  padding: 24px 28px; min-width: 140px;
+}
+.stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #8b85ff; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 11px; color: #8888aa; font-weight: 300; }
+
+.quote {
+  font-size: 18px; color: #8888aa; font-weight: 300; line-height: 1.6;
+  max-width: 640px; margin-bottom: 48px;
+}
+.quote strong { color: #e8e8f0; }
+
+.cta-bar {
+  background: #6c63ff; border-radius: 12px;
+  padding: 24px 48px;
+  display: flex; align-items: center; gap: 24px;
+}
+.cta-text { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #ffffff; letter-spacing: 0.02em; }
+.cta-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.3); }
+.cta-link { font-family: 'DM Mono', monospace; font-size: 13px; color: rgba(255,255,255,0.8); letter-spacing: 0.04em; }
+
+.footer { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">Reserved on Nasdaq</div>
+
+  <div class="ticker">LPTA</div>
+  <div class="ticker-sub">Ticker Reserved on Nasdaq</div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val">21K+</div><div class="stat-label">Agents</div></div>
+    <div class="stat-card"><div class="stat-val">$23.6B</div><div class="stat-label">Volume</div></div>
+    <div class="stat-card"><div class="stat-val">#2</div><div class="stat-label">Deloitte Fast 500</div></div>
+    <div class="stat-card"><div class="stat-val">50</div><div class="stat-label">States</div></div>
+  </div>
+
+  <div class="quote"><strong>The trajectory matters as much as the split.</strong> If you're choosing a brokerage, look at where it's going — not just where it is today.</div>
+
+  <div class="cta-bar">
+    <div class="cta-text">See the Full Picture</div>
+    <div class="cta-divider"></div>
+    <div class="cta-link">calendly.com/discovertpl</div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">tplcollective.ai</div>
+    <div class="footer-right">Joe DeSane · TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

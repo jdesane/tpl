@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -100px; left: 30%; width: 700px; height: 500px; background: radial-gradient(ellipse, rgba(108,99,255,0.08) 0%, transparent 70%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; margin-bottom: 8px; position: absolute; top: 0; left: 0; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #6c63ff; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #6c63ff; }
+
+.quote-mark {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 160px; color: #6c63ff; opacity: 0.2;
+  line-height: 0.6; margin-bottom: -20px;
+}
+
+.quote {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px; line-height: 0.95; letter-spacing: 0.02em;
+  color: #ffffff; margin-bottom: 40px;
+}
+.quote em { font-style: normal; color: #6c63ff; }
+
+.subtext {
+  font-size: 18px; color: #8888aa; line-height: 1.7; font-weight: 300;
+  max-width: 700px; margin-bottom: 48px;
+}
+
+.author-row {
+  display: flex; align-items: center; gap: 16px;
+}
+.author-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, #6c63ff, #8b85ff);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: #ffffff;
+}
+.author-name { font-size: 16px; font-weight: 600; color: #ffffff; }
+.author-detail { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; margin-top: 2px; }
+
+.footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 24px; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">Why I Switched</div>
+
+  <div class="quote-mark">"</div>
+  <div class="quote">Good Culture.<br><em>Bad Math.</em><br>That's Why<br>I Switched.</div>
+
+  <div class="subtext">I didn't leave my brokerage because I was unhappy. I left because the numbers didn't make sense. The model matters more than the logo.</div>
+
+  <div class="author-row">
+    <div class="author-avatar">JD</div>
+    <div>
+      <div class="author-name">Joe DeSane</div>
+      <div class="author-detail">TPL Collective · tplcollective.ai</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">calendly.com/discovertpl</div>
+    <div class="footer-right">TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

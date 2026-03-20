@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -150px; left: 50%; transform: translateX(-50%); width: 800px; height: 500px; background: radial-gradient(ellipse, rgba(108,99,255,0.10) 0%, transparent 70%); }
+.grid-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 30%, transparent 100%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; margin-bottom: 8px; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #6c63ff; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #6c63ff; }
+.title { font-family: 'Bebas Neue', sans-serif; font-size: 52px; line-height: 1.0; letter-spacing: 0.02em; color: #ffffff; margin-bottom: 48px; }
+.title em { font-style: normal; color: #6c63ff; }
+
+.movers { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+.mover-card {
+  background: #12121a; border: 1px solid #2a2a3d; border-radius: 12px;
+  padding: 28px 32px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.mover-left { display: flex; align-items: center; gap: 20px; }
+.mover-avatar {
+  width: 52px; height: 52px; border-radius: 10px;
+  background: linear-gradient(135deg, #6c63ff, #8b85ff);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #ffffff;
+  flex-shrink: 0;
+}
+.mover-name { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 2px; }
+.mover-from { font-family: 'DM Mono', monospace; font-size: 12px; color: #8888aa; letter-spacing: 0.04em; }
+.mover-stats { text-align: right; }
+.mover-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #8b85ff; line-height: 1; }
+.mover-stat-label { font-size: 11px; color: #55556a; }
+
+.arrow { color: #6c63ff; font-size: 20px; margin: 0 16px; }
+
+.bottom-bar {
+  margin-top: 24px;
+  background: rgba(108,99,255,0.06); border: 1px solid rgba(108,99,255,0.15); border-radius: 10px;
+  padding: 20px 28px; text-align: center;
+}
+.bottom-text { font-size: 16px; color: #8888aa; font-weight: 300; }
+.bottom-text strong { color: #e8e8f0; }
+
+.footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="grid-bg"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">The Pattern</div>
+  <div class="title">They Did the Math.<br><em>Then They Moved.</em></div>
+
+  <div class="movers">
+    <div class="mover-card">
+      <div class="mover-left">
+        <div class="mover-avatar">SR</div>
+        <div>
+          <div class="mover-name">Space Real Estate</div>
+          <div class="mover-from">#1 Mega Team in Arizona · from eXp</div>
+        </div>
+      </div>
+      <div class="mover-stats">
+        <div class="mover-stat-val">80</div>
+        <div class="mover-stat-label">agents</div>
+      </div>
+    </div>
+
+    <div class="mover-card">
+      <div class="mover-left">
+        <div class="mover-avatar">JC</div>
+        <div>
+          <div class="mover-name">Jeff Cook Real Estate</div>
+          <div class="mover-from">Independent Operation</div>
+        </div>
+      </div>
+      <div class="mover-stats">
+        <div class="mover-stat-val">150</div>
+        <div class="mover-stat-label">agents</div>
+      </div>
+    </div>
+
+    <div class="mover-card">
+      <div class="mover-left">
+        <div class="mover-avatar">BB</div>
+        <div>
+          <div class="mover-name">Big Block Realty</div>
+          <div class="mover-from">Independent Brokerage · $1.94B volume</div>
+        </div>
+      </div>
+      <div class="mover-stats">
+        <div class="mover-stat-val">613</div>
+        <div class="mover-stat-label">agents</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="bottom-text"><strong>All chose LPT Realty.</strong> When the pattern is this consistent, it warrants examination.</div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">calendly.com/discovertpl</div>
+    <div class="footer-right">Joe DeSane · TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

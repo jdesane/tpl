@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@page { size: letter; margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: #e8e8f0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page {
+  width: 8.5in; height: 11in;
+  background: #0a0a0f;
+  padding: 0.65in 0.7in;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+}
+.page:last-child { page-break-after: avoid; }
+
+/* Subtle grid */
+.page::before {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 40% at 50% 0%, black 30%, transparent 100%);
+}
+
+.page-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+
+/* Header bar */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 16px; border-bottom: 1px solid #2a2a3d;
+  margin-bottom: 28px;
+}
+.logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #ffffff; letter-spacing: 0.08em; }
+.logo span { color: #6c63ff; }
+.header-right { font-family: 'DM Mono', monospace; font-size: 9px; color: #55556a; letter-spacing: 0.1em; }
+
+/* Page footer */
+.page-footer {
+  margin-top: auto;
+  padding-top: 16px; border-top: 1px solid #2a2a3d;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.pf-left { font-family: 'DM Mono', monospace; font-size: 8px; color: #55556a; letter-spacing: 0.08em; }
+.pf-right { font-family: 'DM Mono', monospace; font-size: 8px; color: #6c63ff; letter-spacing: 0.08em; }
+
+/* ── PAGE 1: COVER ── */
+.cover-glow {
+  position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 400px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.12) 0%, transparent 70%);
+}
+.cover-content {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+}
+.cover-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: #6c63ff; margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.cover-eyebrow::before, .cover-eyebrow::after { content: ''; display: block; width: 28px; height: 1px; background: #6c63ff; }
+.cover-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 72px; line-height: 0.92; letter-spacing: 0.02em;
+  color: #ffffff; margin-bottom: 20px;
+}
+.cover-title em { font-style: normal; color: #6c63ff; }
+.cover-sub {
+  font-size: 16px; color: #8888aa; font-weight: 300;
+  line-height: 1.7; max-width: 440px; margin-bottom: 40px;
+}
+.cover-stat {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 100px; color: #6c63ff; line-height: 1; margin-bottom: 8px;
+  text-shadow: 0 0 60px rgba(108,99,255,0.2);
+}
+.cover-stat-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: #55556a; letter-spacing: 0.12em;
+}
+.cover-bottom {
+  margin-top: 48px; padding-top: 24px; border-top: 1px solid #2a2a3d;
+  display: flex; justify-content: center; gap: 40px;
+}
+.cover-bottom-item { text-align: center; }
+.cbi-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #8b85ff; }
+.cbi-label { font-size: 10px; color: #55556a; }
+
+/* ── SECTION STYLES ── */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #6c63ff; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::before { content: ''; display: block; width: 16px; height: 1px; background: #6c63ff; }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; line-height: 1; letter-spacing: 0.02em;
+  color: #ffffff; margin-bottom: 8px;
+}
+.section-title em { font-style: normal; color: #6c63ff; }
+.section-desc {
+  font-size: 13px; color: #8888aa; font-weight: 300; line-height: 1.6;
+  margin-bottom: 24px; max-width: 500px;
+}
+
+/* ── FORM ROWS ── */
+.form-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.form-table td { padding: 10px 0; vertical-align: middle; }
+.ft-label { font-size: 13px; color: #e8e8f0; font-weight: 400; width: 55%; }
+.ft-hint { font-size: 10px; color: #55556a; display: block; margin-top: 2px; }
+.ft-input {
+  width: 100%;
+  border: none; border-bottom: 1px solid #2a2a3d;
+  background: transparent;
+  font-family: 'DM Mono', monospace; font-size: 14px; color: #8b85ff;
+  padding: 4px 0; text-align: right;
+  min-height: 24px;
+}
+.ft-divider td { padding: 6px 0; border-bottom: 1px solid rgba(108,99,255,0.15); }
+
+/* Pre-filled values */
+.ft-value {
+  font-family: 'DM Mono', monospace; font-size: 14px;
+  text-align: right; font-weight: 500;
+}
+.ft-value.green { color: #34d399; }
+.ft-value.red { color: #f87171; }
+.ft-value.accent { color: #8b85ff; }
+
+/* ── RESULT BOX ── */
+.result-box {
+  background: rgba(108,99,255,0.06);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.rb-label { font-size: 14px; color: #e8e8f0; font-weight: 500; }
+.rb-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; line-height: 1; }
+.rb-value.green { color: #34d399; }
+.rb-value.accent { color: #6c63ff; }
+
+/* ── COMPARISON CARDS ── */
+.comp-row { display: flex; gap: 16px; margin-bottom: 16px; }
+.comp-mini {
+  flex: 1; background: #12121a; border: 1px solid #2a2a3d; border-radius: 10px;
+  padding: 20px;
+}
+.comp-mini.highlight { border-color: rgba(108,99,255,0.3); }
+.cm-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #6c63ff; margin-bottom: 8px; }
+.cm-name { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #ffffff; margin-bottom: 12px; line-height: 1; }
+
+/* ── CTA ── */
+.cta-box {
+  background: #6c63ff; border-radius: 10px;
+  padding: 24px 28px; text-align: center;
+}
+.cta-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #ffffff; margin-bottom: 6px; }
+.cta-sub { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 300; }
+.cta-url { font-family: 'DM Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 8px; letter-spacing: 0.04em; }
+
+/* Note block */
+.note-block {
+  background: #12121a; border: 1px solid #2a2a3d; border-radius: 8px;
+  padding: 16px 20px; margin-bottom: 20px;
+}
+.note-block p { font-size: 12px; color: #8888aa; line-height: 1.6; font-weight: 300; }
+.note-block strong { color: #e8e8f0; }
+
+.spacer { height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PAGE 1: COVER ═══════════════ -->
+<div class="page">
+  <div class="cover-glow"></div>
+  <div class="page-content">
+    <div class="header">
+      <div class="logo">TPL<span>.</span></div>
+      <div class="header-right">tplcollective.ai</div>
+    </div>
+
+    <div class="cover-content">
+      <div class="cover-eyebrow">Interactive Worksheet</div>
+      <div class="cover-title">The $27,000<br><em>Question</em></div>
+      <div class="cover-sub">What is your brokerage actually costing you? Most agents have never done this math. This worksheet walks you through it in under 10 minutes.</div>
+      <div class="cover-stat">$27K+</div>
+      <div class="cover-stat-note">Potential annual difference · 10 deals · $500K avg · 2.5% commission</div>
+
+      <div class="cover-bottom">
+        <div class="cover-bottom-item"><div class="cbi-val">4 Pages</div><div class="cbi-label">Fill-in worksheet</div></div>
+        <div class="cover-bottom-item"><div class="cbi-val">10 Min</div><div class="cbi-label">To complete</div></div>
+        <div class="cover-bottom-item"><div class="cbi-val">2 Plans</div><div class="cbi-label">Compared for you</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div class="pf-left">TPL Collective is a community platform. LPT Realty is the licensed brokerage.</div>
+      <div class="pf-right">Page 1 of 4</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE 2: YOUR CURRENT COSTS ═══════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="header">
+      <div class="logo">TPL<span>.</span></div>
+      <div class="header-right">The $27,000 Question Worksheet</div>
+    </div>
+
+    <div class="section-label">Step 1</div>
+    <div class="section-title">Your Production</div>
+    <div class="section-desc">Start with your last 12 months. If you don't have exact numbers, use your best estimate.</div>
+
+    <table class="form-table">
+      <tr><td class="ft-label">Annual deals closed<span class="ft-hint">How many transactions did you close in the last 12 months?</span></td><td style="width:35%"><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Average sale price<span class="ft-hint">Rough average across all your deals</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Your commission rate<span class="ft-hint">Typically 2.5%–3% on your side</span></td><td><div class="ft-input"></div></td></tr>
+      <tr class="ft-divider"><td colspan="2"></td></tr>
+      <tr><td class="ft-label" style="font-weight:600;color:#fff;">Your Gross Commission Income (GCI)<span class="ft-hint">Deals x Avg Price x Commission Rate</span></td><td><div class="ft-input" style="border-bottom-color:#6c63ff;"></div></td></tr>
+    </table>
+
+    <div class="spacer"></div>
+
+    <div class="section-label">Step 2</div>
+    <div class="section-title">What Your Brokerage <em>Actually</em> Costs</div>
+    <div class="section-desc">Add up everything — not just the split. Include all recurring charges.</div>
+
+    <table class="form-table">
+      <tr><td class="ft-label">Your current brokerage<span class="ft-hint">Name of your brokerage</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Your agent split<span class="ft-hint">e.g., 70%, 80%, etc.</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Commission paid to brokerage<span class="ft-hint">GCI x (100% minus your split)</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Franchise / royalty fee<span class="ft-hint">Some brokerages charge 3%–8% before your split</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Monthly desk fee x 12<span class="ft-hint">$0 if none. Many charge $100–$500/mo</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Monthly tech / platform fee x 12<span class="ft-hint">CRM, website, tools charged by brokerage</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Per-transaction fees<span class="ft-hint">Fee per deal x number of deals</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">E&O / insurance<span class="ft-hint">Annual E&O charged by brokerage</span></td><td><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label">Other annual fees<span class="ft-hint">Annual fee, onboarding, compliance, etc.</span></td><td><div class="ft-input"></div></td></tr>
+      <tr class="ft-divider"><td colspan="2"></td></tr>
+    </table>
+
+    <div class="result-box">
+      <div class="rb-label">Total Annual Cost to Your Brokerage<br><span style="font-size:11px;color:#55556a;font-weight:300;">Add up all lines above</span></div>
+      <div class="rb-value" style="color:#f87171;">$________</div>
+    </div>
+
+    <div class="page-footer">
+      <div class="pf-left">TPL Collective is a community platform. LPT Realty is the licensed brokerage.</div>
+      <div class="pf-right">Page 2 of 4</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE 3: LPT COMPARISON ═══════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="header">
+      <div class="logo">TPL<span>.</span></div>
+      <div class="header-right">The $27,000 Question Worksheet</div>
+    </div>
+
+    <div class="section-label">Step 3</div>
+    <div class="section-title">LPT Realty — <em>Your Numbers</em></div>
+    <div class="section-desc">Plug your GCI and deal count from Step 1 into both plans below.</div>
+
+    <div class="comp-row">
+      <div class="comp-mini">
+        <div class="cm-label">Plan A · 100% Commission</div>
+        <div class="cm-name">Business Builder</div>
+        <table class="form-table">
+          <tr><td class="ft-label">Your GCI</td><td class="ft-value accent" style="width:35%;">same as Step 1</td></tr>
+          <tr><td class="ft-label">Flat fee ($500/deal, max $5K)<span class="ft-hint">$500 x your deals, capped at $5,000</span></td><td><div class="ft-input"></div></td></tr>
+          <tr><td class="ft-label">Transaction fee ($195/deal)<span class="ft-hint">$195 x your deals</span></td><td><div class="ft-input"></div></td></tr>
+          <tr><td class="ft-label">Annual fee</td><td class="ft-value accent">$500</td></tr>
+          <tr><td class="ft-label">Desk / tech / CRM fees</td><td class="ft-value green">$0 included</td></tr>
+          <tr class="ft-divider"><td colspan="2"></td></tr>
+          <tr><td class="ft-label" style="font-weight:600;color:#fff;">Total LPT Cost (BB)</td><td><div class="ft-input" style="border-bottom-color:#34d399;"></div></td></tr>
+        </table>
+      </div>
+
+      <div class="comp-mini highlight">
+        <div class="cm-label">Plan B · Revenue Share Unlocked</div>
+        <div class="cm-name">Brokerage Partner</div>
+        <table class="form-table">
+          <tr><td class="ft-label">Your GCI</td><td class="ft-value accent" style="width:35%;">same as Step 1</td></tr>
+          <tr><td class="ft-label">20% split (max $15K)<span class="ft-hint">GCI x 20%, capped at $15,000</span></td><td><div class="ft-input"></div></td></tr>
+          <tr><td class="ft-label">Transaction fee ($195/deal)<span class="ft-hint">$195 x your deals</span></td><td><div class="ft-input"></div></td></tr>
+          <tr><td class="ft-label">Annual fee</td><td class="ft-value accent">$500</td></tr>
+          <tr><td class="ft-label">Desk / tech / CRM fees</td><td class="ft-value green">$0 included</td></tr>
+          <tr class="ft-divider"><td colspan="2"></td></tr>
+          <tr><td class="ft-label" style="font-weight:600;color:#fff;">Total LPT Cost (BP)</td><td><div class="ft-input" style="border-bottom-color:#34d399;"></div></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="note-block">
+      <p><strong>Which plan is better for you?</strong> Business Builder maximizes per-deal take-home. Brokerage Partner unlocks HybridShare — a 7-tier revenue share that pays you when agents in your network close deals. The right plan depends on your goals. You can switch once per anniversary year.</p>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="section-label">Step 4</div>
+    <div class="section-title">The Gap</div>
+
+    <table class="form-table">
+      <tr><td class="ft-label" style="font-weight:500;">A. Your current brokerage total cost (from Step 2)</td><td style="width:35%"><div class="ft-input"></div></td></tr>
+      <tr><td class="ft-label" style="font-weight:500;">B. LPT Realty cost — better plan for you (from Step 3)</td><td><div class="ft-input"></div></td></tr>
+      <tr class="ft-divider"><td colspan="2"></td></tr>
+    </table>
+
+    <div class="result-box" style="border-color:rgba(108,99,255,0.4);background:rgba(108,99,255,0.08);">
+      <div>
+        <div class="rb-label">Your Annual Difference (A minus B)</div>
+        <div style="font-size:11px;color:#55556a;margin-top:4px;">This is what you'd keep — same production, same clients</div>
+      </div>
+      <div class="rb-value accent">$________</div>
+    </div>
+
+    <div class="page-footer">
+      <div class="pf-left">TPL Collective is a community platform. LPT Realty is the licensed brokerage.</div>
+      <div class="pf-right">Page 3 of 4</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE 4: WHAT'S NEXT ═══════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="header">
+      <div class="logo">TPL<span>.</span></div>
+      <div class="header-right">The $27,000 Question Worksheet</div>
+    </div>
+
+    <div class="section-label">What This Doesn't Include</div>
+    <div class="section-title">The Number Above Is <em>Conservative</em></div>
+    <div class="section-desc" style="max-width:100%;margin-bottom:28px;">Your calculation only covers the direct fee comparison. Here's what it doesn't factor in:</div>
+
+    <div style="display:flex;gap:14px;margin-bottom:28px;">
+      <div class="comp-mini" style="flex:1;">
+        <div class="cm-label" style="color:#f0c040;">Not Included in Your Calculation</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:5px;height:5px;border-radius:50%;background:#f0c040;flex-shrink:0;margin-top:6px;"></div><div style="font-size:13px;color:#e8e8f0;line-height:1.5;"><strong>HybridShare income</strong> — revenue share from agents in your network (Brokerage Partner only)</div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:5px;height:5px;border-radius:50%;background:#f0c040;flex-shrink:0;margin-top:6px;"></div><div style="font-size:13px;color:#e8e8f0;line-height:1.5;"><strong>$11K+ in included tools</strong> — Lofty CRM, Dotloop, Listing Power Tools, and more at no extra cost</div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:5px;height:5px;border-radius:50%;background:#f0c040;flex-shrink:0;margin-top:6px;"></div><div style="font-size:13px;color:#e8e8f0;line-height:1.5;"><strong>Stock ownership</strong> — LPTA ticker reserved on Nasdaq; agents earn stock grants</div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;"><div style="width:5px;height:5px;border-radius:50%;background:#f0c040;flex-shrink:0;margin-top:6px;"></div><div style="font-size:13px;color:#e8e8f0;line-height:1.5;"><strong>TPL Collective support</strong> — AI tools, coaching, community, and media engine (when you join through us)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px;margin-bottom:28px;">
+      <div style="flex:1;background:#12121a;border:1px solid #2a2a3d;border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#8b85ff;line-height:1;">21K+</div>
+        <div style="font-size:10px;color:#8888aa;margin-top:4px;">Agents</div>
+      </div>
+      <div style="flex:1;background:#12121a;border:1px solid #2a2a3d;border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#8b85ff;line-height:1;">$23.6B</div>
+        <div style="font-size:10px;color:#8888aa;margin-top:4px;">Volume Submitted</div>
+      </div>
+      <div style="flex:1;background:#12121a;border:1px solid #2a2a3d;border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#8b85ff;line-height:1;">#2</div>
+        <div style="font-size:10px;color:#8888aa;margin-top:4px;">Deloitte Fast 500</div>
+      </div>
+      <div style="flex:1;background:#12121a;border:1px solid #2a2a3d;border-radius:10px;padding:20px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#8b85ff;line-height:1;">50</div>
+        <div style="font-size:10px;color:#8888aa;margin-top:4px;">States</div>
+      </div>
+    </div>
+
+    <div class="section-label">Next Step</div>
+    <div class="section-title">Want the <em>Exact</em> Number?</div>
+    <div class="section-desc" style="max-width:100%;margin-bottom:20px;">This worksheet gives you a solid estimate. For the precise, personalized comparison — including HybridShare projections and a side-by-side PDF report — book a 15-minute call with Joe.</div>
+
+    <div class="cta-box" style="margin-bottom:20px;">
+      <div class="cta-title">Book a Free Strategy Call</div>
+      <div class="cta-sub">No pressure. No pitch. Just your numbers, side by side.</div>
+      <div class="cta-url">calendly.com/discovertpl</div>
+    </div>
+
+    <div class="note-block">
+      <p style="text-align:center;"><strong>Or visit tplcollective.ai</strong> to see the full fee breakdown, comp plan details, what TPL Collective provides, and who's already made the move.</p>
+    </div>
+
+    <div class="page-footer">
+      <div class="pf-left">TPL Collective is a recruiting, coaching, and community platform. LPT Realty is the licensed brokerage where your license lives. Figures sourced from LPT Realty. Verify terms with your broker.</div>
+      <div class="pf-right">Page 4 of 4</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

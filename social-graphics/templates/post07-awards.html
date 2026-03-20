@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -150px; left: 50%; transform: translateX(-50%); width: 800px; height: 500px; background: radial-gradient(ellipse, rgba(240,192,64,0.06) 0%, transparent 70%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; margin-bottom: 8px; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #f0c040; margin-bottom: 48px; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #f0c040; }
+.title { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1.0; letter-spacing: 0.02em; color: #ffffff; margin-bottom: 48px; }
+.title em { font-style: normal; color: #f0c040; }
+
+.award-cards { display: flex; gap: 20px; margin-bottom: 40px; }
+.award-card {
+  flex: 1; background: #12121a; border: 1px solid rgba(240,192,64,0.2); border-radius: 14px;
+  padding: 36px 28px; text-align: center;
+}
+.award-icon { font-size: 48px; margin-bottom: 16px; color: #f0c040; font-family: 'Bebas Neue', sans-serif; }
+.award-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #f0c040; margin-bottom: 8px; letter-spacing: 0.02em; }
+.award-desc { font-size: 13px; color: #8888aa; line-height: 1.5; font-weight: 300; }
+
+.stats-row { display: flex; gap: 16px; margin-top: auto; }
+.stat-box { flex: 1; background: #12121a; border: 1px solid #2a2a3d; border-radius: 10px; padding: 24px; text-align: center; }
+.stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #8b85ff; line-height: 1; margin-bottom: 6px; }
+.stat-label { font-size: 11px; color: #8888aa; font-weight: 300; }
+
+.footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">Third-Party Validation</div>
+  <div class="title">The Numbers<br><em>Speak for Themselves</em></div>
+
+  <div class="award-cards">
+    <div class="award-card">
+      <div class="award-icon">#2</div>
+      <div class="award-title">Deloitte Fast 500</div>
+      <div class="award-desc">North America — all industries.<br>Ranked by verified revenue growth.</div>
+    </div>
+    <div class="award-card">
+      <div class="award-icon">*</div>
+      <div class="award-title">Inman Innovator</div>
+      <div class="award-desc">Most Innovative Brokerage 2024.<br>Voted on by the industry.</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-val">21K+</div><div class="stat-label">Agents</div></div>
+    <div class="stat-box"><div class="stat-val">$23.6B</div><div class="stat-label">Volume</div></div>
+    <div class="stat-box"><div class="stat-val">502%</div><div class="stat-label">Growth (2yr)</div></div>
+    <div class="stat-box"><div class="stat-val">50</div><div class="stat-label">States</div></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">tplcollective.ai</div>
+    <div class="footer-right">Joe DeSane · TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

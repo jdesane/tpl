@@ -62,7 +62,7 @@ def check_suppression(to_email: str) -> bool:
         return False
 
 
-def check_daily_limit(domain: str, limit: int = 50) -> bool:
+def check_daily_limit(domain: str, limit: int = 200) -> bool:
     """Check if daily send limit has been reached. Returns True if OK to send."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     try:
@@ -85,15 +85,15 @@ def increment_daily_count(domain: str):
         if result.data:
             supabase.table("email_daily_limits").update({"sent_count": result.data[0]["sent_count"] + 1}).eq("id", result.data[0]["id"]).execute()
         else:
-            supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 1, "limit_count": 50}).execute()
+            supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 1, "limit_count": 200}).execute()
     except Exception:
         pass
 
 
-def log_email_send(contact_id, from_addr: str, to_addr: str, subject: str, status: str, resend_id: str = "", error: str = "", campaign: str = ""):
+def log_email_send(contact_id, from_addr: str, to_addr: str, subject: str, status: str, resend_id: str = "", error: str = "", campaign: str = "", tracking_id: str = ""):
     """Log every email send attempt."""
     try:
-        supabase.table("email_send_log").insert({
+        row = {
             "contact_id": contact_id,
             "from_address": from_addr,
             "to_address": to_addr,
@@ -102,7 +102,10 @@ def log_email_send(contact_id, from_addr: str, to_addr: str, subject: str, statu
             "resend_id": resend_id,
             "error": error,
             "campaign": campaign
-        }).execute()
+        }
+        if tracking_id:
+            row["tracking_id"] = tracking_id
+        supabase.table("email_send_log").insert(row).execute()
     except Exception:
         pass
 
@@ -119,7 +122,7 @@ UNSUBSCRIBE_FOOTER = """
 
 
 def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, from_address: str = "", contact_id: int = None, campaign: str = "") -> tuple[bool, str]:
-    """Send email via Resend API with rails: suppression check, rate limit, unsubscribe footer, logging."""
+    """Send email via Resend API with rails: suppression check, rate limit, unsubscribe footer, tracking pixel, logging."""
     try:
         api_key = smtp_config.get("pass", "")
         if not api_key:
@@ -143,6 +146,15 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, f
         else:
             html_body += unsub
 
+        # Rail 4: Inject tracking pixel for open tracking
+        import uuid
+        tracking_id = str(uuid.uuid4())
+        pixel = f'<img src="https://mission.tplcollective.ai/api/email/open/{tracking_id}" width="1" height="1" style="display:none;border:0;" alt="" />'
+        if "</body>" in html_body:
+            html_body = html_body.replace("</body>", pixel + "</body>")
+        else:
+            html_body += pixel
+
         # Determine from address
         if not from_address:
             from_address = "Joe DeSane <joe@tplcollective.co>"
@@ -163,17 +175,21 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, f
                     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
                 }
             },
-            timeout=15
+            timeout=30
         )
 
         if resp.status_code == 200:
             result = resp.json()
             resend_id = result.get("id", "")
             increment_daily_count(domain)
-            log_email_send(contact_id, from_address, to_email, subject, "sent", resend_id=resend_id, campaign=campaign)
+            log_email_send(contact_id, from_address, to_email, subject, "sent", resend_id=resend_id, campaign=campaign, tracking_id=tracking_id)
             return True, ""
         else:
-            error_msg = f"Resend API error {resp.status_code}: {resp.text}"
+            try:
+                err_body = resp.text or resp.content.decode('utf-8', errors='replace')
+            except Exception:
+                err_body = str(resp.content[:500])
+            error_msg = f"Resend API error {resp.status_code}: {err_body[:500]}"
             log_email_send(contact_id, from_address or "", to_email, subject, "failed", error=error_msg, campaign=campaign)
             if resp.status_code == 400 and "bounce" in resp.text.lower():
                 try:
@@ -927,6 +943,37 @@ def get_contact_communications(contact_id: int):
 async def add_communication(contact_id: int, request: Request):
     data = await request.json()
     data["contact_id"] = contact_id
+
+    # If this is an outbound email, actually send it via Resend
+    email_sent = False
+    email_error = ""
+    if data.get("channel") == "email" and data.get("direction") == "outbound":
+        # Look up the contact's email
+        contact = supabase.table("leads").select("email, name, first_name").eq("id", contact_id).execute()
+        if contact.data and contact.data[0].get("email"):
+            to_email = contact.data[0]["email"]
+            subject = data.get("subject", "")
+            body_text = data.get("body", "")
+
+            # Build HTML email
+            html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+<div style="max-width:580px;margin:0 auto;padding:32px 16px;">
+<div style="font-size:15px;color:#e8e8f0;line-height:1.75;white-space:pre-wrap;">{body_text}</div>
+</div></body></html>"""
+
+            settings = load_settings()
+            smtp = settings.get("smtp", {})
+            success, error = send_email(smtp, to_email, subject, html_body,
+                                         from_address="Joe DeSane <joe@tplcollective.co>",
+                                         contact_id=contact_id,
+                                         campaign="direct")
+            email_sent = success
+            email_error = error
+        else:
+            email_error = "Contact has no email address"
+
+    # Log the communication record
     result = supabase.table("contact_communications").insert(data).execute()
 
     supabase.table("lead_activity").insert({
@@ -940,7 +987,7 @@ async def add_communication(contact_id: int, request: Request):
         "last_contacted_at": datetime.utcnow().isoformat()
     }).eq("id", contact_id).execute()
 
-    return {"success": True, "data": result.data[0] if result.data else None}
+    return {"success": True, "email_sent": email_sent, "email_error": email_error, "data": result.data[0] if result.data else None}
 
 
 # ── LEAD NOTES & ACTIVITY ──
@@ -1341,175 +1388,229 @@ async def ai_generate_content(request: Request):
 
     bd = brokerage_data.get(detected_brokerage, {})
 
+    # Build shared context
+    brokerage_context = ""
+    if detected_brokerage and bd:
+        brokerage_context = f"\nRecipient's current brokerage: {bd['name']}\n- Their split: {bd.get('split', 'unknown')}\n- Their cap: {bd.get('cap', 'unknown')}\n- Their desk fees: {bd.get('desk', 'unknown')}\n- Their franchise fees: {bd.get('franchise', 'unknown')}\n- Known pain point: {bd.get('pain', 'high costs')}\n- Estimated savings by switching to LPT: {bd.get('savings', 'significant')}"
+
+    settings = load_settings()
+
     # ── GENERATE EMAIL ──
     if content_type == "email":
-        subject_templates = {
-            "cap": [f"Your brokerage cap vs. $5,000 — the gap is real", f"What if your cap was $5K instead of {bd.get('cap', '$16K+')}?", "The cap math most agents never run"],
-            "split": ["100% of your commission. Every deal.", f"You're giving up {bd.get('split', '20-30%')} of every check — here's the alternative", "What would 100% commission do for your business?"],
-            "fees": [f"The hidden fees your brokerage doesn't talk about", "No desk fees. No franchise fees. No monthly tech fees.", f"You're paying {bd.get('desk', '$75+')} /mo before your first deal — why?"],
-            "revshare": ["Income that doesn't require you to close deals", "What if you earned while you slept?", "Revenue share: the math behind passive income in real estate"],
-            "growth": ["21,000 agents and counting — here's why they're switching", "The fastest-growing brokerage in America isn't who you think", f"While {bd.get('name', 'your brokerage')} shrinks, this one grows"],
-            "pre_call": ["What to expect on our call tomorrow", "Quick prep for our discovery call", "3 things to think about before we chat"],
-            "post_call": ["Following up on our conversation", "The numbers we discussed — in writing", "Still thinking? Here's what other agents decided"],
-            "new": ["Welcome — here's what caught your eye", "The math most agents never run (but you just did)", "Thanks for checking us out — here's the quick version"],
-            "considering": ["The window is open — here's what's on the other side", "3 agents switched this week. Here's what they said.", "Your timeline, your terms — but the math doesn't change"],
-            "no_show": ["We missed you — want to reschedule?", "No pressure, but the math is still waiting", "Life happens. Your calendar link is still open."],
-            "onboarding": ["Welcome to TPL Collective — here's what's next", "You're in. Here's your onboarding checklist.", "Day 1 at LPT — let's get you set up"],
+        lpt_context = "\n".join([f"- {k}: {v}" for k, v in lpt_facts.items()])
+
+        system_prompt = f"""You are Joe DeSane, founder of TPL Collective, writing recruiting emails to real estate agents about switching to LPT Realty.
+
+IMPORTANT RULES:
+- Write exactly what the user asks for. Follow their prompt closely.
+- If they mention a name, use that name. If they describe a relationship, reflect it.
+- Sound like a real person, not a marketing template. Conversational, direct, no fluff.
+- NEVER use em dashes (the long dash). Use regular dashes (-) or rewrite the sentence.
+- Keep it concise. Most emails should be under 150 words.
+- Use [Name] as placeholder ONLY if no specific name is given in the prompt.
+- Always sign off as Joe DeSane, TPL Collective.
+- Include calendly.com/discovertpl or tplcollective.ai/commission-calculator as CTA when appropriate.
+- TPL Collective is NOT LPT Realty. TPL is the community/team. LPT is the brokerage.
+
+LPT REALTY FACTS (use only when relevant):
+{lpt_context}
+{brokerage_context}
+
+OUTPUT FORMAT:
+First line must be: Subject: [your subject line]
+Then a blank line, then the email body.
+Do not include any markdown formatting."""
+
+        selected_model = data.get("model", "claude-haiku")
+        user_prompt = data.get("prompt", "")
+
+        model_map = {
+            "claude-haiku": {"provider": "anthropic", "model_id": "claude-haiku-4-5-20251001"},
+            "claude-sonnet": {"provider": "anthropic", "model_id": "claude-sonnet-4-5-20250514"},
+            "gpt-4o-mini": {"provider": "openai", "model_id": "gpt-4o-mini"},
+            "gpt-4o": {"provider": "openai", "model_id": "gpt-4o"},
         }
+        model_info = model_map.get(selected_model, model_map["claude-haiku"])
 
-        body_blocks = {
-            "cap": f"At LPT Realty, the annual cap is $5,000 on the Business Builder plan. That's $500 per deal for your first 10 deals — then you close at 100% for the rest of your plan year.\n\n{'Compare that to ' + bd['name'] + ' where the cap is ' + bd['cap'] + '.' if bd else 'Most brokerages cap between $16K and $36K.'} The difference compounds every single year.",
-            "split": f"LPT Business Builder agents keep 100% of their GCI. Not 80%. Not 70%. All of it.\n\n{'At ' + bd['name'] + ', the standard split is ' + bd['split'] + '.' if bd else 'At most brokerages, you start at 70/30 or 80/20.'} That percentage comes straight out of your closings — every single deal.",
-            "fees": f"Here is what LPT does NOT charge: desk fees, monthly tech fees, franchise fees, or hidden platform costs.\n\n{'At ' + bd['name'] + ', you pay ' + bd.get('desk', 'desk fees') + ' plus ' + bd.get('franchise', 'franchise fees') + ' on top of your split.' if bd else 'At most traditional brokerages, these fees add $3,000-$15,000/year on top of your split.'}\n\nLPT total cost for a 12-deal year: $7,840. Everything included.",
-            "revshare": "HybridShare is LPT Realty's 7-tier revenue share program. When agents in your network close deals, you earn a percentage of the company dollar — monthly, for as long as you hold an active license.\n\nThis isn't taken from the agent's commission. It comes from LPT's retained portion. Your recruits keep their full split. You earn on top of your own production.",
-            "growth": f"LPT Realty was named to the Deloitte Technology Fast 500 — one of the fastest-growing companies in the U.S. across all industries. 21,000+ agents and growing every quarter.\n\n{'Meanwhile, ' + bd['name'] + ' has been ' + bd.get('pain', 'losing agents') + '.' if bd else 'Meanwhile, legacy brokerages are shrinking.'} Momentum matters — especially for revenue share.",
-            "tools": "Every LPT agent gets Lofty CRM (free), Dotloop for e-signatures, Listing Power Tools, and over $11,000 in marketing and technology tools — all included at no additional cost. No monthly tech fee. No activation fee.",
-            "stock": "LPT Realty has reserved the ticker LPTA on Nasdaq. Agents earn stock grants from closings — with a 2x multiplier on the Brokerage Partner plan. Early positioning in a growth-stage company is a different calculus than buying shares of a mature brokerage.",
-            "ai": "Through TPL Collective, agents get access to Dezzy.ai (LPT's proprietary AI assistant), RecruitAssist for automated recruiting outreach, and a full AI-powered media stack for content creation. This isn't a CRM add-on — it's an AI workforce built specifically for real estate.",
-        }
-
-        # Pick subject
-        subject_pool = []
-        if detected_stage and detected_stage in subject_templates:
-            subject_pool = subject_templates[detected_stage]
-        else:
-            for t in detected_topics[:2]:
-                subject_pool.extend(subject_templates.get(t, []))
-        if not subject_pool:
-            subject_pool = subject_templates["cap"] + subject_templates["fees"]
-        subject = random.choice(subject_pool)
-
-        # Build body
-        greeting_options = {
-            "professional": ["Hey [Name],", "Hi [Name],", "[Name],"],
-            "casual": ["Hey [Name] 👋", "What's up [Name],", "Hey there [Name],"],
-            "urgent": ["[Name] —", "[Name], quick one for you:", "Real talk, [Name]:"],
-            "story": ["[Name], quick story:", "Hey [Name] — something happened this week:", "[Name], thought you'd want to hear this:"],
-        }
-        greeting = random.choice(greeting_options.get(detected_tone, greeting_options["professional"]))
-
-        # Assemble body paragraphs
-        body_parts = []
-        for t in detected_topics[:2]:
-            if t in body_blocks:
-                body_parts.append(body_blocks[t])
-
-        if detected_stage == "pre_call":
-            body_parts.insert(0, "Looking forward to connecting with you. Here's a quick overview so you know what to expect:\n\n1. We'll look at your current fee structure — splits, cap, desk fees, everything.\n2. I'll show you exactly what the same production looks like at LPT Realty.\n3. You ask questions. No pitch, no pressure.\n\nThe whole thing takes about 15 minutes.")
-        elif detected_stage == "post_call":
-            body_parts.insert(0, "Thanks for taking the time to chat. I know switching brokerages is a big decision — so here's a recap of what we covered, in case you want to share it with anyone or revisit the numbers.")
-        elif detected_stage == "no_show":
-            body_parts = ["No worries — I know things come up. I'm not going to chase you down.\n\nBut the math doesn't change: LPT Realty agents keep significantly more per deal than most traditional brokerages. If the timing wasn't right, that's fine. My calendar is always open when you're ready."]
-        elif detected_stage == "onboarding":
-            body_parts = ["Welcome to the team. Here's what happens next:\n\n1. License transfer — LPT's compliance team handles the paperwork. Most agents are live in 3–5 business days.\n2. CRM setup — You'll get access to Lofty (free) and Dotloop.\n3. TPL onboarding — Discord community access, AI tools, media engine, and your personalized checklist.\n4. First week check-in — I'll reach out to make sure everything's running smooth.\n\nYour active deals transfer with you. Nothing falls through the cracks."]
-
-        if not body_parts:
-            body_parts.append(body_blocks["cap"])
-
-        # CTA
-        cta_options = {
-            "professional": ["Would you be open to a quick call this week? No pitch — just numbers.\n\nHere's my calendar: calendly.com/discovertpl", "Want to see what your actual numbers look like? Run the calculator: tplcollective.ai/commission-calculator\n\nOr grab 15 minutes with me: calendly.com/discovertpl"],
-            "casual": ["If you're curious, my calendar's always open: calendly.com/discovertpl\n\nNo pitch. No pressure. Just math.", "Run your own numbers anytime: tplcollective.ai/commission-calculator 🔢\n\nOr just reply to this email — happy to chat."],
-            "urgent": ["The numbers are the numbers. Run yours: tplcollective.ai/commission-calculator\n\nOr book a call and I'll walk you through it live: calendly.com/discovertpl", "Every month you wait is money left on the table. Let's at least look at the math: calendly.com/discovertpl"],
-            "story": ["If any of that resonates, I'd love to walk you through what it could look like for you specifically.\n\ncalendly.com/discovertpl — 15 minutes, no strings.", "Happy to share more details. Book a quick call whenever works: calendly.com/discovertpl"],
-        }
-        cta = random.choice(cta_options.get(detected_tone, cta_options["professional"]))
-
-        if detected_stage == "onboarding":
-            cta = "Questions about anything? Just reply to this email or ping me in Discord. I'm here.\n\nLet's build."
-        elif detected_stage == "no_show":
-            cta = "When you're ready: calendly.com/discovertpl\n\nNo expiration. No pressure."
-
-        sign_off_options = ["Best,\nJoe DeSane\nTPL Collective", "Talk soon,\nJoe DeSane\nTPL Collective", "— Joe\nTPL Collective", "Joe DeSane\nTPL Collective\ntplcollective.ai"]
-        sign_off = random.choice(sign_off_options)
-
-        result = f"Subject: {subject}\n\n{greeting}\n\n" + "\n\n".join(body_parts) + f"\n\n{cta}\n\n{sign_off}"
+        try:
+            if model_info["provider"] == "anthropic":
+                api_key = settings.get("anthropic_api_key", "")
+                if not api_key:
+                    return {"success": False, "error": "Anthropic API key not configured"}
+                ai_resp = httpx.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model_info["model_id"],
+                        "system": system_prompt,
+                        "messages": [{"role": "user", "content": user_prompt}],
+                        "temperature": 0.8,
+                        "max_tokens": 800
+                    },
+                    timeout=30
+                )
+                if ai_resp.status_code == 200:
+                    result = ai_resp.json()["content"][0]["text"].strip()
+                else:
+                    return {"success": False, "error": f"Claude API error: {ai_resp.status_code}"}
+            else:
+                api_key = settings.get("openai_api_key", "")
+                if not api_key:
+                    return {"success": False, "error": "OpenAI API key not configured"}
+                ai_resp = httpx.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model_info["model_id"],
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "temperature": 0.8,
+                        "max_tokens": 800
+                    },
+                    timeout=30
+                )
+                if ai_resp.status_code == 200:
+                    result = ai_resp.json()["choices"][0]["message"]["content"].strip()
+                else:
+                    return {"success": False, "error": f"OpenAI API error: {ai_resp.status_code}"}
+        except Exception as e:
+            return {"success": False, "error": f"AI generation failed: {str(e)}"}
 
     # ── GENERATE SOCIAL POST ──
     else:
-        hooks = {
-            "cap": [
-                "Your brokerage cap is how much? 👀",
-                f"{'At ' + bd['name'] + ', agents cap at ' + bd['cap'] + '.' if bd else 'Most agents pay $16K–$36K before they see 100%.'} At LPT Realty? $5,000. That's it.",
-                "10 deals. $5,000. Then you close at 100% for the rest of the year. That's the LPT Realty Business Builder plan.",
-                "The average agent doesn't realize their cap is costing them a second mortgage payment every year.",
-            ],
-            "split": [
-                "100% commission. $5K cap. No franchise fees. No desk fees.\n\nThat's not a promo. That's the standard plan.",
-                f"{'Agents at ' + bd['name'] + ' start at ' + bd['split'] + '.' if bd else 'Most agents give up 20-30% of every commission check.'} What would keeping 100% do for your business?",
-                "Stop splitting your commission with a brokerage that needs you more than you need them.",
-            ],
-            "fees": [
-                f"{'At ' + bd['name'] + ', you pay ' + bd.get('desk', 'desk fees') + ' before your first deal closes.' if bd else 'Desk fees, franchise fees, tech fees — most agents pay $3K–$15K/year on top of their split.'}\n\nAt LPT Realty, those fees are $0. All of them.",
-                "Monthly desk fee: $0\nFranchise fee: $0\nTech fee: $0\nMonthly platform fee: $0\n\nLPT Realty. The math is simple.",
-                "You're paying your brokerage every month whether you close or not. Why?",
-            ],
-            "revshare": [
-                "Closing deals is income. Building a network is wealth.\n\nHybridShare at LPT Realty pays you monthly from your network's production — 7 tiers deep.",
-                "Revenue share that survives retirement. That's not a gimmick — it's the Brokerage Partner plan at LPT Realty.",
-                "What if the agents you helped recruit also helped pay your mortgage? That's HybridShare.",
-            ],
-            "growth": [
-                "LPT Realty: Deloitte Fast 500. 21,000+ agents. The fastest-growing brokerage in America.\n\nMomentum matters — especially when your income depends on it.",
-                f"{'While ' + bd['name'] + ' is ' + bd.get('pain', 'shrinking') + ', ' if bd else ''}LPT Realty is growing every single quarter. Where do you want to build?",
-                "21,000 agents didn't switch by accident. They ran the numbers.",
-            ],
-            "tools": [
-                "Lofty CRM. Dotloop. $11K+ in marketing tools. All included. $0/month.\n\nThat's what every LPT agent gets on day one.",
-                "Most brokerages charge you for tools. LPT includes $11K+ worth — for free.",
-            ],
-            "ai": [
-                "Dezzy.ai. RecruitAssist. AI media stack.\n\nTPL Collective agents don't just get a CRM. They get an AI workforce.",
-                "While other agents are writing their own posts, TPL agents are using AI to recruit, create content, and manage their pipeline — automatically.",
-            ],
-            "stock": [
-                "LPTA. Reserved on Nasdaq.\n\nLPT Realty agents earn stock grants from closings. 2x multiplier on the Brokerage Partner plan. Early is everything.",
-                "Pre-IPO stock equity from your closings. That's not a perk — it's a wealth strategy.",
-            ],
+        social_system_prompt = f"""You are Joe DeSane, founder of TPL Collective, writing social media posts to recruit real estate agents to LPT Realty.
+
+IMPORTANT RULES:
+- Write exactly what the user asks for. Follow their prompt closely.
+- Sound authentic, not corporate. Conversational, punchy, direct.
+- NEVER use em dashes (the long dash). Use regular dashes (-) or rewrite the sentence.
+- Keep posts concise. Most should be under 200 words.
+- Include relevant hashtags at the end (5-7 max).
+- Always include a CTA - either tplcollective.ai/commission-calculator or calendly.com/discovertpl or "DM me".
+- TPL Collective is NOT LPT Realty. TPL is the community/team. LPT is the brokerage.
+- Emojis are fine for social posts but don't overdo it.
+
+LPT REALTY FACTS (use only when relevant):
+""" + chr(10).join([f"- {k}: {v}" for k, v in lpt_facts.items()]) + """
+""" + brokerage_context + """
+
+Do not include any markdown formatting. Just output the post text with hashtags."""
+
+        selected_model = data.get("model", "claude-haiku")
+        user_prompt = data.get("prompt", "")
+
+        model_map = {
+            "claude-haiku": {"provider": "anthropic", "model_id": "claude-haiku-4-5-20251001"},
+            "claude-sonnet": {"provider": "anthropic", "model_id": "claude-sonnet-4-5-20250514"},
+            "gpt-4o-mini": {"provider": "openai", "model_id": "gpt-4o-mini"},
+            "gpt-4o": {"provider": "openai", "model_id": "gpt-4o"},
         }
+        model_info = model_map.get(selected_model, model_map["claude-haiku"])
 
-        hashtag_sets = [
-            "#RealEstate #LPTRealty #TPLCollective #KeepMore #AgentLife",
-            "#RealEstateAgent #BrokerageFees #LPTRealty #TPLCollective #CommissionSplit",
-            "#Realtor #PassiveIncome #RevenueShare #LPTRealty #TPL",
-            "#RealEstateLife #NoFranchiseFees #NoDeskFees #LPTRealty #TPLCollective",
-            "#RealtorLife #SwitchBrokerages #KeepMoreEarnMore #LPT #TPL",
-        ]
-
-        brokerage_hashtags = {
-            "kw": " #KellerWilliams #KWAgent",
-            "exp": " #eXpRealty #eXpAgent #CloudBrokerage",
-            "remax": " #REMAX #REMAXAgent",
-            "cb": " #ColdwellBanker #CBAgent",
-            "c21": " #Century21 #C21Agent",
-            "real": " #REALBrokerage",
-        }
-
-        # Pick hooks based on detected topics
-        hook_pool = []
-        for t in detected_topics[:2]:
-            hook_pool.extend(hooks.get(t, []))
-        if not hook_pool:
-            hook_pool = hooks["cap"] + hooks["fees"]
-
-        main_hook = random.choice(hook_pool)
-
-        # Add CTA
-        ctas = [
-            "\n\nRun your numbers: tplcollective.ai/commission-calculator",
-            "\n\n📊 Free calculator: tplcollective.ai/commission-calculator",
-            "\n\nSee the math → tplcollective.ai",
-            "\n\n15-min call. No pitch. Just numbers → calendly.com/discovertpl",
-            "\n\nDM me \"MATH\" and I'll send you the breakdown.",
-        ]
-
-        hashtags = random.choice(hashtag_sets)
-        if detected_brokerage:
-            hashtags += brokerage_hashtags.get(detected_brokerage, "")
-
-        result = main_hook + random.choice(ctas) + "\n\n" + hashtags
+        try:
+            if model_info["provider"] == "anthropic":
+                api_key = settings.get("anthropic_api_key", "")
+                if not api_key:
+                    return {"success": False, "error": "Anthropic API key not configured"}
+                ai_resp = httpx.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model_info["model_id"],
+                        "system": social_system_prompt,
+                        "messages": [{"role": "user", "content": user_prompt}],
+                        "temperature": 0.8,
+                        "max_tokens": 600
+                    },
+                    timeout=30
+                )
+                if ai_resp.status_code == 200:
+                    result = ai_resp.json()["content"][0]["text"].strip()
+                else:
+                    return {"success": False, "error": f"Claude API error: {ai_resp.status_code}"}
+            else:
+                api_key = settings.get("openai_api_key", "")
+                if not api_key:
+                    return {"success": False, "error": "OpenAI API key not configured"}
+                ai_resp = httpx.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model_info["model_id"],
+                        "messages": [
+                            {"role": "system", "content": social_system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "temperature": 0.8,
+                        "max_tokens": 600
+                    },
+                    timeout=30
+                )
+                if ai_resp.status_code == 200:
+                    result = ai_resp.json()["choices"][0]["message"]["content"].strip()
+                else:
+                    return {"success": False, "error": f"OpenAI API error: {ai_resp.status_code}"}
+        except Exception as e:
+            return {"success": False, "error": f"AI generation failed: {str(e)}"}
 
     return {"success": True, "generated": result, "type": content_type}
+
+
+@app.post("/api/ai/generate-image")
+async def ai_generate_image(request: Request):
+    """Generate an image using DALL-E 3."""
+    data = await request.json()
+    prompt = data.get("prompt", "")
+    size = data.get("size", "1024x1024")
+    if not prompt:
+        return {"success": False, "error": "No prompt provided"}
+
+    settings = load_settings()
+    openai_key = settings.get("openai_api_key", "")
+    if not openai_key:
+        return {"success": False, "error": "OpenAI API key not configured"}
+
+    try:
+        resp = httpx.post(
+            "https://api.openai.com/v1/images/generations",
+            headers={
+                "Authorization": f"Bearer {openai_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "dall-e-3",
+                "prompt": prompt,
+                "n": 1,
+                "size": size,
+                "quality": "standard"
+            },
+            timeout=60
+        )
+        if resp.status_code == 200:
+            result = resp.json()
+            image_url = result["data"][0]["url"]
+            revised_prompt = result["data"][0].get("revised_prompt", "")
+            return {"success": True, "image_url": image_url, "revised_prompt": revised_prompt}
+        else:
+            return {"success": False, "error": f"DALL-E error: {resp.status_code} - {resp.text}"}
+    except Exception as e:
+        return {"success": False, "error": f"Image generation failed: {str(e)}"}
 
 
 # ── REFERRALS ──
@@ -2021,6 +2122,21 @@ async def send_daily_report():
     # Daily send limits
     limits = supabase.table("email_daily_limits").select("*").eq("send_date", today_str).execute().data
 
+    # A/B Test performance (Gut Punch variants)
+    ab_test_funnels = {8: "A: $467K Story", 10: "B: Curiosity", 11: "C: Personalized", 12: "D: Social Proof", 13: "E: Direct Savings"}
+    ab_results = []
+    for fid, fname in ab_test_funnels.items():
+        enrolled = supabase.table("email_funnel_enrollments").select("lead_id", count="exact").eq("funnel_id", fid).execute()
+        sent_logs = supabase.table("email_send_log").select("id, status").ilike("campaign", f"%Step 1%").eq("campaign", f"KW Gut Punch%").execute().data if fid == 8 else []
+        # Get emails sent for this funnel by checking campaign field
+        funnel_name = supabase.table("email_funnels").select("name").eq("id", fid).execute().data
+        fn = funnel_name[0]["name"] if funnel_name else ""
+        campaign_logs = supabase.table("email_send_log").select("id, status").ilike("campaign", f"{fn}%").execute().data
+        total_sent = sum(1 for e in campaign_logs if e["status"] in ("sent", "delivered", "opened"))
+        total_opened = sum(1 for e in campaign_logs if e["status"] == "opened")
+        open_rate = f"{round(total_opened/total_sent*100)}%" if total_sent > 0 else "pending"
+        ab_results.append({"name": fname, "enrolled": enrolled.count or 0, "sent": total_sent, "opened": total_opened, "open_rate": open_rate})
+
     # ── BUILD HTML ──
 
     def section(title, content):
@@ -2075,6 +2191,12 @@ async def send_daily_report():
     system_html += stat_row("Active opportunities", str(total_opps.count or 0))
     system_html += stat_row("Stale leads (7d+)", str(len(stale)))
 
+    # A/B Test HTML
+    ab_html = ""
+    for ab in ab_results:
+        open_color = "#34d399" if ab["open_rate"] not in ("pending", "0%") else "#8888aa"
+        ab_html += stat_row(ab["name"], f"{ab['enrolled']} enrolled / {ab['sent']} sent / {ab['opened']} opened ({ab['open_rate']})", open_color)
+
     # Assemble
     date_display = now.strftime("%A, %B %d, %Y")
 
@@ -2094,6 +2216,7 @@ async def send_daily_report():
 {section("Stale Leads", stale_html)}
 {section("Hottest Leads", hot_html)}
 {section("System Status", system_html)}
+{section("A/B Test: Gut Punch Variants", ab_html)}
 </div>
 
 <div style="text-align:center;padding:16px 0;">
@@ -2215,11 +2338,42 @@ async def process_drip_queue():
                 return f"{url}{sep}cid={contact_id}&ref=drip"
             body_text = re.sub(r'tplcollective\.ai/[^\s"\'<>]+', add_cid, body_text)
 
-        # Build HTML email with open tracking pixel
+        # Convert short URLs into clickable HTML links
+        import re as _re
+        def linkify(text):
+            # Match URLs starting with https://mission.tplcollective.ai/go/
+            def make_link(m):
+                url = m.group(0)
+                # Determine anchor text from the URL
+                if '/go/calc-' in url:
+                    anchor = 'Run your numbers in 30 seconds →'
+                elif '/go/vs-kw-' in url:
+                    anchor = 'See the full KW vs LPT comparison →'
+                elif '/go/vs-exp-' in url:
+                    anchor = 'See the eXp vs LPT comparison →'
+                elif '/go/vs-cb-' in url:
+                    anchor = 'See the Coldwell Banker comparison →'
+                elif '/go/book-' in url:
+                    anchor = 'Book 15 minutes with me →'
+                elif '/go/fees-' in url:
+                    anchor = 'See the full fee breakdown →'
+                elif '/go/join-' in url:
+                    anchor = 'See how to join →'
+                elif '/go/lpt-' in url:
+                    anchor = 'Learn how LPT works →'
+                else:
+                    anchor = url
+                return f'<a href="{url}" style="color:#6c63ff;text-decoration:none;font-weight:600;">{anchor}</a>'
+            text = _re.sub(r'https://mission\.tplcollective\.ai/go/[^\s<>"\']+', make_link, text)
+            return text
+
+        body_html = linkify(body_text)
+
+        # Build HTML email
         html_body = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
 <div style="max-width:580px;margin:0 auto;padding:32px 16px;">
-<div style="font-size:15px;color:#e8e8f0;line-height:1.75;white-space:pre-wrap;">{body_text}</div>
+<div style="font-size:15px;color:#e8e8f0;line-height:1.75;white-space:pre-wrap;">{body_html}</div>
 </div></body></html>"""
 
         funnel_name = (enrollment.get("email_funnels") or {}).get("name", "drip")
@@ -2298,14 +2452,33 @@ def unsubscribe(email: str):
             }).execute()
         except Exception:
             pass  # Already suppressed
-        # Log activity if we can find the contact
+        # Update contact: add tag, remove from pipelines, log activity
         try:
-            contact = supabase.table("leads").select("id").eq("email", email).execute()
+            contact = supabase.table("leads").select("id, tags").eq("email", email).execute()
             if contact.data:
+                cid = contact.data[0]["id"]
+                existing_tags = contact.data[0].get("tags") or []
+                if "unsubscribed" not in existing_tags:
+                    existing_tags.append("unsubscribed")
+                supabase.table("leads").update({
+                    "tags": existing_tags,
+                    "status": "unsubscribed"
+                }).eq("id", cid).execute()
+
+                # Close all open opportunities
+                supabase.table("opportunities").update({
+                    "status": "lost"
+                }).eq("contact_id", cid).eq("status", "open").execute()
+
+                # Cancel all active drip enrollments
+                supabase.table("email_funnel_enrollments").update({
+                    "status": "cancelled"
+                }).eq("lead_id", cid).eq("status", "active").execute()
+
                 supabase.table("lead_activity").insert({
-                    "lead_id": contact.data[0]["id"],
+                    "lead_id": cid,
                     "activity_type": "unsubscribed",
-                    "description": "Unsubscribed from emails"
+                    "description": "Unsubscribed from emails. Removed from pipelines and drip sequences."
                 }).execute()
         except Exception:
             pass
@@ -2418,14 +2591,19 @@ def short_redirect(code: str):
 def track_email_open(send_id: str):
     """1x1 tracking pixel for email opens. Returns transparent GIF."""
     try:
-        # Find the send log entry and update
-        log = supabase.table("email_send_log").select("id, contact_id, subject").eq("resend_id", send_id).execute()
+        # Look up by tracking_id first (new UUID-based), then fall back to resend_id (legacy)
+        log = supabase.table("email_send_log").select("id, contact_id, subject, status").eq("tracking_id", send_id).execute()
+        if not log.data:
+            log = supabase.table("email_send_log").select("id, contact_id, subject, status").eq("resend_id", send_id).execute()
         if log.data:
             entry = log.data[0]
-            supabase.table("email_send_log").update({"status": "opened"}).eq("id", entry["id"]).execute()
+            # Only update status if not already a higher-value status
+            if entry.get("status") in ("sent", "delivered"):
+                supabase.table("email_send_log").update({"status": "opened"}).eq("id", entry["id"]).execute()
             if entry.get("contact_id"):
-                # Dedup check — don't log multiple opens
-                recent = supabase.table("lead_activity").select("id").eq("lead_id", entry["contact_id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - __import__('datetime').timedelta(hours=1)).isoformat()).execute()
+                # Dedup check - don't log multiple opens within 1 hour
+                from datetime import timedelta
+                recent = supabase.table("lead_activity").select("id").eq("lead_id", entry["contact_id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - timedelta(hours=1)).isoformat()).execute()
                 if not recent.data:
                     supabase.table("lead_activity").insert({
                         "lead_id": entry["contact_id"],
@@ -2438,7 +2616,7 @@ def track_email_open(send_id: str):
     import base64
     from starlette.responses import Response
     gif = base64.b64decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-    return Response(content=gif, media_type="image/gif")
+    return Response(content=gif, media_type="image/gif", headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
 
 
 @app.post("/api/webhooks/resend")
@@ -2462,11 +2640,14 @@ async def resend_webhook(request: Request):
         if email_id:
             supabase.table("email_send_log").update({"status": "delivered"}).eq("resend_id", email_id).execute()
         if contact:
-            supabase.table("lead_activity").insert({
-                "lead_id": contact["id"],
-                "activity_type": "email_delivered",
-                "description": f"Email delivered to {to_email}"
-            }).execute()
+            from datetime import timedelta
+            recent = supabase.table("lead_activity").select("id").eq("lead_id", contact["id"]).eq("activity_type", "email_delivered").gte("created_at", (datetime.utcnow() - timedelta(minutes=5)).isoformat()).execute()
+            if not recent.data:
+                supabase.table("lead_activity").insert({
+                    "lead_id": contact["id"],
+                    "activity_type": "email_delivered",
+                    "description": f"Email delivered to {to_email}"
+                }).execute()
 
     elif event_type == "email.opened":
         if email_id:

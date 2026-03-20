@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1080px; height: 1080px; background: #0a0a0f; font-family: 'DM Sans', sans-serif; color: #e8e8f0; display: flex; flex-direction: column; padding: 60px; position: relative; overflow: hidden; }
+.glow { position: absolute; top: -150px; left: 50%; transform: translateX(-50%); width: 800px; height: 500px; background: radial-gradient(ellipse, rgba(108,99,255,0.10) 0%, transparent 70%); }
+.content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+.brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; color: #ffffff; margin-bottom: 8px; }
+.brand span { color: #6c63ff; }
+.eyebrow { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #6c63ff; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: #6c63ff; }
+.title { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1.0; letter-spacing: 0.02em; color: #ffffff; margin-bottom: 48px; }
+.title em { font-style: normal; color: #6c63ff; }
+
+.flow-diagram {
+  display: flex; flex-direction: column; gap: 16px;
+  background: #12121a; border: 1px solid #2a2a3d; border-radius: 14px;
+  padding: 36px; margin-bottom: 24px;
+}
+.flow-step { display: flex; align-items: center; gap: 16px; }
+.flow-icon {
+  width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #ffffff;
+}
+.flow-icon.you { background: linear-gradient(135deg, #6c63ff, #8b85ff); }
+.flow-icon.agent { background: linear-gradient(135deg, #34d399, #2dd4bf); }
+.flow-icon.lpt { background: linear-gradient(135deg, #f0c040, #fbbf24); color: #0a0a0f; }
+.flow-text { font-size: 16px; color: #e8e8f0; line-height: 1.5; }
+.flow-text em { font-style: normal; color: #8b85ff; }
+.flow-arrow { text-align: center; color: #2a2a3d; font-size: 24px; padding: 0 0 0 20px; }
+
+.key-points { display: flex; gap: 16px; margin-bottom: 24px; }
+.key-point {
+  flex: 1; background: #12121a; border: 1px solid #2a2a3d; border-radius: 10px;
+  padding: 24px 20px; text-align: center;
+}
+.kp-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #8b85ff; line-height: 1; margin-bottom: 8px; }
+.kp-label { font-size: 12px; color: #8888aa; line-height: 1.4; font-weight: 300; }
+
+.note-bar {
+  background: rgba(108,99,255,0.06); border: 1px solid rgba(108,99,255,0.15); border-radius: 10px;
+  padding: 18px 24px; text-align: center;
+  font-size: 14px; color: #8888aa; font-weight: 300; margin-top: auto;
+}
+.note-bar strong { color: #e8e8f0; }
+
+.footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+.footer-left { font-family: 'DM Mono', monospace; font-size: 11px; color: #55556a; letter-spacing: 0.08em; }
+.footer-right { font-size: 13px; color: #6c63ff; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="content">
+  <div class="brand">TPL<span>.</span></div>
+  <div class="eyebrow">Revenue Share</div>
+  <div class="title">HybridShare<br><em>Explained Simply</em></div>
+
+  <div class="flow-diagram">
+    <div class="flow-step">
+      <div class="flow-icon you">You</div>
+      <div class="flow-text">You introduce an agent to LPT Realty</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-step">
+      <div class="flow-icon agent">B</div>
+      <div class="flow-text">That agent closes deals and pays their fees to LPT</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-step">
+      <div class="flow-icon lpt">LPT</div>
+      <div class="flow-text">LPT retains their portion of the commission</div>
+    </div>
+    <div class="flow-arrow">|</div>
+    <div class="flow-step">
+      <div class="flow-icon you">You</div>
+      <div class="flow-text">You earn a share of <em>what LPT retains</em> — not from the agent's pocket</div>
+    </div>
+  </div>
+
+  <div class="key-points">
+    <div class="key-point"><div class="kp-val">7</div><div class="kp-label">Tiers deep</div></div>
+    <div class="key-point"><div class="kp-val">$0</div><div class="kp-label">Cost to the<br>producing agent</div></div>
+    <div class="key-point"><div class="kp-val">80/20</div><div class="kp-label">Brokerage Partner<br>plan only</div></div>
+  </div>
+
+  <div class="note-bar"><strong>Income that survives retirement.</strong> HybridShare continues as long as your network produces — even after you stop closing.</div>
+
+  <div class="footer">
+    <div class="footer-left">tplcollective.ai/fee-plans</div>
+    <div class="footer-right">Joe DeSane · TPL Collective</div>
+  </div>
+</div>
+</body>
+</html>

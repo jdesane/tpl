@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Portal — TPL Collective</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#111118;--surface-2:#1a1a24;--surface-3:#222230;--border:#2a2a3a;--accent:#6c63ff;--accent-glow:rgba(108,99,255,.15);--green:#34d399;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--gold:#f0c040;--text:#e8e8ed;--text-dim:#8888a0;--text-muted:#55556a;--cyan:#22d3ee}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
+a{color:var(--accent);text-decoration:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:380px;text-align:center}
+.login-box .logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;margin-bottom:4px}
+.login-box .logo span{color:var(--accent)}
+.login-box .tagline{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px}
+.login-box input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;margin-bottom:12px;font-family:'DM Sans',sans-serif}
+.login-box input:focus{border-color:var(--accent)}
+.login-box .btn{width:100%;padding:12px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;margin-top:8px}
+.login-box .btn:hover{opacity:.9}
+.login-error{color:var(--red);font-size:12px;margin-top:8px;display:none}
+
+/* Layout */
+.topbar{position:fixed;top:0;left:0;right:0;height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100}
+.topbar .logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px}.logo span{color:var(--accent)}
+.topbar .subtitle{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{font-size:11px;color:var(--text-muted);cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:6px}
+.logout-btn:hover{color:var(--text);border-color:var(--text-dim)}
+
+.sidebar{position:fixed;top:52px;left:0;width:200px;height:calc(100vh - 52px);background:var(--surface);border-right:1px solid var(--border);padding:16px 0;z-index:90}
+.nav-group{margin-bottom:16px}
+.nav-group-label{padding:4px 20px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;color:var(--text-dim);font-size:13px;transition:all .15s}
+.nav-item:hover{color:var(--text);background:var(--surface-2)}
+.nav-item.active{color:var(--accent);background:var(--accent-glow);border-right:2px solid var(--accent)}
+.nav-item .icon{width:18px;text-align:center}
+
+.main{margin-left:200px;margin-top:52px;padding:24px;min-height:calc(100vh - 52px)}
+.page{display:none}.page.active{display:block}
+
+/* Cards */
+.welcome-banner{background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(108,99,255,.05));border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:24px;margin-bottom:20px;display:flex;align-items:center;gap:20px}
+.welcome-text h1{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:4px}
+.welcome-text p{color:var(--text-dim);font-size:13px}
+.progress-ring{width:80px;height:80px;position:relative;flex-shrink:0}
+.progress-ring svg{transform:rotate(-90deg)}
+.progress-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;margin-bottom:12px}
+
+/* Onboarding */
+.step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}.step:last-child{border:none}
+.step-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;transition:all .15s}
+.step-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.step-check:hover{border-color:var(--accent)}
+.step-label{flex:1;font-size:13px}.step-label.done{color:var(--text-dim);text-decoration:line-through}
+
+/* Quick access */
+.quick-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .15s}
+.quick-card:hover{border-color:var(--accent);background:var(--accent-glow)}
+.quick-card .qc-icon{font-size:28px;margin-bottom:8px}
+.quick-card .qc-label{font-size:12px;font-weight:600}
+
+/* Resources */
+.resource-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s;margin-bottom:8px}
+.resource-card:hover{border-color:var(--accent)}
+.resource-icon{width:40px;height:40px;border-radius:8px;background:var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.resource-info{flex:1}.resource-info .title{font-weight:600;font-size:13px}.resource-info .desc{font-size:11px;color:var(--text-dim);margin-top:2px}
+.resource-dl{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
+
+/* Referrals */
+.ref-table{width:100%;border-collapse:collapse}
+.ref-table th{text-align:left;padding:8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.ref-table td{padding:8px;font-size:13px;border-bottom:1px solid rgba(42,42,58,.3)}
+.ref-status{font-size:10px;padding:2px 8px;border-radius:10px;font-family:'DM Mono',monospace}
+.ref-status.interested{background:rgba(108,99,255,.15);color:var(--accent)}
+.ref-status.call_scheduled{background:rgba(251,191,36,.15);color:var(--amber)}
+.ref-status.joined{background:rgba(52,211,153,.15);color:var(--green)}
+.ref-status.declined{background:rgba(248,113,113,.15);color:var(--red)}
+
+.btn{padding:8px 20px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.9}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim)}
+.btn-sm{padding:4px 12px;font-size:11px}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:12px 20px;font-size:13px;z-index:300;display:none;animation:slideIn .3s}
+.toast.show{display:block}
+@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+@media(max-width:800px){.sidebar{display:none}.main{margin-left:0}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-box">
+    <div class="logo">TPL<span>.</span></div>
+    <div class="tagline">Agent Portal</div>
+    <input id="login-email" placeholder="Email" type="email">
+    <input id="login-password" placeholder="Password" type="password">
+    <button class="btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP (hidden until login) -->
+<div id="app-shell" style="display:none">
+
+<div class="topbar">
+  <div style="display:flex;align-items:center">
+    <div class="logo">TPL<span>.</span></div>
+    <div class="subtitle">Agent Portal</div>
+  </div>
+  <div class="topbar-right">
+    <span style="font-size:13px" id="greeting"></span>
+    <div class="avatar" id="portal-avatar">??</div>
+    <div class="logout-btn" onclick="doLogout()">Logout</div>
+  </div>
+</div>
+
+<div class="sidebar">
+  <div class="nav-group">
+    <div class="nav-group-label">Home</div>
+    <div class="nav-item active" onclick="portalPage('home')"><span class="icon">&#x2302;</span>Dashboard</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Learn</div>
+    <div class="nav-item" onclick="portalPage('training')"><span class="icon">&#x1F3AC;</span>Training</div>
+    <div class="nav-item" onclick="portalPage('resources')"><span class="icon">&#x1F4DA;</span>Resources</div>
+    <div class="nav-item" onclick="portalPage('aitools')"><span class="icon">&#x1F916;</span>AI Tools</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Grow</div>
+    <div class="nav-item" onclick="portalPage('referrals')"><span class="icon">&#x1F91D;</span>Referrals</div>
+    <div class="nav-item" onclick="portalPage('community')"><span class="icon">&#x1F465;</span>Community</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">LPT Tools</div>
+    <div class="nav-item" onclick="window.open('https://connect.lpt.com','_blank')"><span class="icon">&#x1F310;</span>Lofty CRM</div>
+    <div class="nav-item" onclick="window.open('https://www.dotloop.com','_blank')"><span class="icon">&#x1F4DD;</span>Dotloop</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- HOME -->
+<div class="page active" id="portal-home">
+  <div class="welcome-banner">
+    <div class="progress-ring" id="progress-ring"></div>
+    <div class="welcome-text">
+      <h1 id="welcome-name">Welcome</h1>
+      <p>Complete your onboarding steps to get the most out of TPL Collective.</p>
+    </div>
+  </div>
+
+  <div class="grid-4">
+    <div class="quick-card" onclick="portalPage('resources')"><div class="qc-icon">&#x1F4DA;</div><div class="qc-label">Resource Vault</div></div>
+    <div class="quick-card" onclick="window.open('https://dezzy.ai','_blank')"><div class="qc-icon">&#x1F916;</div><div class="qc-label">AI Tools</div></div>
+    <div class="quick-card" onclick="portalPage('referrals')"><div class="qc-icon">&#x1F91D;</div><div class="qc-label">My Referrals</div></div>
+    <div class="quick-card" onclick="portalPage('community')"><div class="qc-icon">&#x1F465;</div><div class="qc-label">Community</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title">Onboarding Checklist</div>
+      <div id="onboarding-list"><div style="color:var(--text-muted);font-size:12px">Loading...</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">My Referrals</div>
+      <div id="home-referrals"><div style="color:var(--text-muted);font-size:12px">No referrals yet</div></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="portalPage('referrals')">View All</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESOURCES -->
+<div class="page" id="portal-resources">
+  <div class="panel-title" style="font-size:24px;margin-bottom:16px">Resource Vault</div>
+  <div id="resource-list"><div style="color:var(--text-muted)">Loading...</div></div>
+</div>
+
+<!-- REFERRALS -->
+<div class="page" id="portal-referrals">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="panel-title" style="font-size:24px">My Referrals</div>
+    <button class="btn btn-primary btn-sm" onclick="openAddReferral()">+ Refer Someone</button>
+  </div>
+  <div class="panel">
+    <table class="ref-table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody id="referral-tbody"></tbody></table>
+  </div>
+
+  <!-- Referral Modal -->
+  <div id="referral-form" style="display:none;margin-top:16px" class="panel">
+    <div class="panel-title">Refer a New Agent</div>
+    <div class="grid-2">
+      <div><label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">NAME</label><input id="ref-name" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none"></div>
+      <div><label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">EMAIL</label><input id="ref-email" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none"></div>
+    </div>
+    <div style="margin-top:8px"><label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">PHONE</label><input id="ref-phone" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none"></div>
+    <div style="margin-top:12px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="submitReferral()">Submit</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('referral-form').style.display='none'">Cancel</button></div>
+  </div>
+</div>
+
+<!-- COMMUNITY -->
+<div class="page" id="portal-community">
+  <div class="panel-title" style="font-size:24px;margin-bottom:16px">Community</div>
+  <div class="grid-2">
+    <div class="panel" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:12px">&#x1F4AC;</div>
+      <div class="panel-title">TPL Discord</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px">Connect with other TPL agents, get support, share wins, and join weekly masterminds.</p>
+      <a href="https://discord.gg/tplcollective" target="_blank" class="btn btn-primary">Join Discord</a>
+    </div>
+    <div class="panel" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:12px">&#x1F4DE;</div>
+      <div class="panel-title">Book 1-on-1 with Joe</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px">Strategy session, production review, or just a check-in. I'm here for you.</p>
+      <a href="https://calendly.com/discovertpl" target="_blank" class="btn btn-primary">Schedule Call</a>
+    </div>
+  </div>
+</div>
+
+<!-- TRAINING -->
+<div class="page" id="portal-training">
+  <div class="panel-title" style="font-size:24px;margin-bottom:16px">Training Library</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-primary btn-sm" onclick="filterTraining('all')">All</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterTraining('getting_started')">Getting Started</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterTraining('lead_gen')">Lead Gen</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterTraining('social_media')">Social Media</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterTraining('ai_tools')">AI Tools</button>
+    <button class="btn btn-ghost btn-sm" onclick="filterTraining('revshare')">Revenue Share</button>
+  </div>
+  <div class="grid-2" id="training-list"></div>
+</div>
+
+<!-- AI TOOLS -->
+<div class="page" id="portal-aitools">
+  <div class="panel-title" style="font-size:24px;margin-bottom:16px">AI Tools &amp; Prompt Templates</div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="panel" style="text-align:center;padding:24px;cursor:pointer" onclick="window.open('https://dezzy.ai','_blank')">
+      <div style="font-size:36px;margin-bottom:8px">&#x1F916;</div>
+      <div class="panel-title" style="font-size:16px">Dezzy.ai</div>
+      <p style="color:var(--text-dim);font-size:12px">TPL's AI assistant for real estate</p>
+    </div>
+    <div class="panel" style="text-align:center;padding:24px;cursor:pointer" onclick="window.open('https://chatgpt.com','_blank')">
+      <div style="font-size:36px;margin-bottom:8px">&#x1F4AC;</div>
+      <div class="panel-title" style="font-size:16px">ChatGPT</div>
+      <p style="color:var(--text-dim);font-size:12px">Use with the prompts below</p>
+    </div>
+  </div>
+  <div class="panel-title" style="font-size:18px;margin-bottom:12px">Prompt Templates</div>
+  <div id="prompt-templates">
+    <div class="panel" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600">Listing Description</span><button class="btn btn-ghost btn-sm" onclick="copyPrompt(0)">Copy</button></div>
+      <div style="font-size:12px;color:var(--text-dim);background:var(--surface-2);border-radius:6px;padding:10px;line-height:1.6" id="prompt-0">Write a compelling MLS listing description for a [bedrooms] bed, [bathrooms] bath home at [address] in [city]. Price: [price]. Key features: [features]. Tone: professional but warm. Include neighborhood highlights. Keep it under 250 words.</div>
+    </div>
+    <div class="panel" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600">Lead Follow-Up Email</span><button class="btn btn-ghost btn-sm" onclick="copyPrompt(1)">Copy</button></div>
+      <div style="font-size:12px;color:var(--text-dim);background:var(--surface-2);border-radius:6px;padding:10px;line-height:1.6" id="prompt-1">Write a follow-up email to a real estate lead named [name] who expressed interest in [buying/selling] in [area]. They previously mentioned [detail]. Keep it personal, not salesy. Include a soft call-to-action to schedule a call. Sign as [your name], [brokerage].</div>
+    </div>
+    <div class="panel" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600">Social Media Post</span><button class="btn btn-ghost btn-sm" onclick="copyPrompt(2)">Copy</button></div>
+      <div style="font-size:12px;color:var(--text-dim);background:var(--surface-2);border-radius:6px;padding:10px;line-height:1.6" id="prompt-2">Write a [platform] post for a real estate agent about [topic]. Tone: [professional/casual/educational]. Include 3-5 relevant hashtags. Keep it engaging and under [150/280] characters for the main hook. Add a call-to-action at the end.</div>
+    </div>
+    <div class="panel" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600">Market Analysis</span><button class="btn btn-ghost btn-sm" onclick="copyPrompt(3)">Copy</button></div>
+      <div style="font-size:12px;color:var(--text-dim);background:var(--surface-2);border-radius:6px;padding:10px;line-height:1.6" id="prompt-3">Create a market analysis summary for [city/neighborhood] real estate. Include: median home price trends, days on market, inventory levels, buyer vs seller market indicators, and a 3-month forecast. Format with bullet points. Note: use this as a template and fill in actual MLS data.</div>
+    </div>
+    <div class="panel" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600">Recruiting Outreach DM</span><button class="btn btn-ghost btn-sm" onclick="copyPrompt(4)">Copy</button></div>
+      <div style="font-size:12px;color:var(--text-dim);background:var(--surface-2);border-radius:6px;padding:10px;line-height:1.6" id="prompt-4">Write a short, casual DM to a real estate agent named [name] at [brokerage]. I want to introduce them to LPT Realty through TPL Collective. Mention that I'm an active agent (not a recruiter), highlight the math advantage, and invite them to a no-pressure 15-minute call. Keep it under 100 words. Don't be salesy.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app-shell -->
+
+<div class="toast" id="portal-toast"></div>
+
+<script>
+var API_BASE=window.location.origin;
+var token=localStorage.getItem('portal_token');
+var currentUser=null;
+var agentData=null;
+
+// ── AUTH ──
+async function doLogin(){
+  var email=document.getElementById('login-email').value;
+  var pw=document.getElementById('login-password').value;
+  var errEl=document.getElementById('login-error');
+  errEl.style.display='none';
+  try{
+    var r=await fetch(API_BASE+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pw})}).then(function(r){return r.json()});
+    if(r.token){
+      token=r.token;currentUser=r.user;
+      localStorage.setItem('portal_token',token);
+      localStorage.setItem('portal_user',JSON.stringify(r.user));
+      showApp();
+    }else{errEl.textContent=r.detail||'Invalid credentials';errEl.style.display='block';}
+  }catch(e){errEl.textContent='Login failed';errEl.style.display='block';}
+}
+
+function doLogout(){localStorage.removeItem('portal_token');localStorage.removeItem('portal_user');token=null;currentUser=null;document.getElementById('app-shell').style.display='none';document.getElementById('login-screen').style.display='flex';}
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-shell').style.display='block';
+  if(!currentUser){try{currentUser=JSON.parse(localStorage.getItem('portal_user'));}catch(e){}}
+  if(currentUser){
+    document.getElementById('greeting').textContent='Hey, '+(currentUser.name||'').split(' ')[0];
+    document.getElementById('portal-avatar').textContent=currentUser.avatar_initials||'??';
+    document.getElementById('welcome-name').textContent='Welcome, '+(currentUser.name||'').split(' ')[0];
+  }
+  loadPortalHome();
+}
+
+function authHeaders(){return{'Authorization':'Bearer '+token,'Content-Type':'application/json'}}
+
+// ── NAV ──
+function portalPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  document.getElementById('portal-'+name).classList.add('active');
+  if(event&&event.target)event.target.closest('.nav-item').classList.add('active');
+  if(name==='home')loadPortalHome();
+  if(name==='training')loadTraining('all');
+  if(name==='resources')loadResources();
+  if(name==='referrals')loadReferrals();
+  if(name==='aitools'){}
+}
+
+// ── HOME ──
+async function loadPortalHome(){
+  // Find agent record
+  try{
+    var agents=await fetch(API_BASE+'/api/agents',{headers:authHeaders()}).then(function(r){return r.json()});
+    if(currentUser){agentData=agents.find(function(a){return a.email===currentUser.email})||null;}
+    if(agentData){
+      // Onboarding
+      var steps=await fetch(API_BASE+'/api/agents/'+agentData.id+'/onboarding',{headers:authHeaders()}).then(function(r){return r.json()});
+      var done=steps.filter(function(s){return s.completed}).length;
+      var total=steps.length;
+      var pct=total?Math.round(done/total*100):0;
+      // Progress ring
+      var r=35,c=2*Math.PI*r,off=c-(pct/100)*c;
+      document.getElementById('progress-ring').innerHTML='<svg width="80" height="80"><circle cx="40" cy="40" r="'+r+'" fill="none" stroke="var(--surface-3)" stroke-width="6"/><circle cx="40" cy="40" r="'+r+'" fill="none" stroke="var(--accent)" stroke-width="6" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" stroke-linecap="round"/></svg><div class="pct">'+pct+'%</div>';
+      // Steps
+      document.getElementById('onboarding-list').innerHTML=steps.map(function(s){return'<div class="step"><div class="step-check '+(s.completed?'done':'')+'" onclick="toggleStep('+agentData.id+',\''+s.step_key+'\','+!s.completed+')">'+(s.completed?'&#x2713;':'')+'</div><div class="step-label '+(s.completed?'done':'')+'">'+s.step_label+'</div></div>';}).join('');
+      // Referrals summary
+      var refs=await fetch(API_BASE+'/api/referrals?agent_id='+agentData.id,{headers:authHeaders()}).then(function(r){return r.json()});
+      if(refs.length){
+        var joined=refs.filter(function(r){return r.status==='joined'}).length;
+        document.getElementById('home-referrals').innerHTML='<div style="display:flex;gap:16px;margin-bottom:12px"><div><span style="font-family:Bebas Neue;font-size:28px">'+refs.length+'</span><div style="font-size:10px;color:var(--text-muted)">Total</div></div><div><span style="font-family:Bebas Neue;font-size:28px;color:var(--green)">'+joined+'</span><div style="font-size:10px;color:var(--text-muted)">Joined</div></div></div>'+refs.slice(0,3).map(function(r){return'<div style="font-size:12px;padding:4px 0;color:var(--text-dim)">'+r.referred_name+' <span class="ref-status '+r.status+'">'+r.status+'</span></div>';}).join('');
+      }
+    }else{document.getElementById('onboarding-list').innerHTML='<div style="color:var(--text-muted);font-size:12px">No agent profile linked to this account yet.</div>';}
+  }catch(e){console.error(e)}
+}
+
+async function toggleStep(agentId,stepKey,complete){
+  if(complete){await fetch(API_BASE+'/api/agents/'+agentId+'/onboarding/'+stepKey,{method:'PUT',headers:authHeaders()});}
+  loadPortalHome();
+}
+
+// ── RESOURCES ──
+async function loadResources(){
+  try{
+    var res=await fetch(API_BASE+'/api/resources',{headers:authHeaders()}).then(function(r){return r.json()});
+    if(!res.length){document.getElementById('resource-list').innerHTML='<div style="color:var(--text-muted)">No resources available yet.</div>';return;}
+    var icons={pdf:'&#x1F4C4;',video:'&#x1F3AC;',link:'&#x1F517;',template:'&#x1F4CB;'};
+    document.getElementById('resource-list').innerHTML=res.map(function(r){return'<div class="resource-card" onclick="downloadResource('+r.id+',\''+encodeURIComponent(r.file_path||'')+'\')"><div class="resource-icon">'+(icons[r.file_type]||'&#x1F4C1;')+'</div><div class="resource-info"><div class="title">'+r.title+'</div><div class="desc">'+(r.description||'')+'</div></div><div class="resource-dl">'+r.download_count+' downloads</div></div>';}).join('');
+  }catch(e){console.error(e)}
+}
+
+async function downloadResource(id,path){
+  await fetch(API_BASE+'/api/resources/'+id+'/download',{method:'POST',headers:authHeaders()});
+  if(path)window.open(decodeURIComponent(path),'_blank');
+  pToast('Download tracked');loadResources();
+}
+
+// ── REFERRALS ──
+async function loadReferrals(){
+  if(!agentData)return;
+  try{
+    var refs=await fetch(API_BASE+'/api/referrals?agent_id='+agentData.id,{headers:authHeaders()}).then(function(r){return r.json()});
+    document.getElementById('referral-tbody').innerHTML=refs.map(function(r){return'<tr><td>'+r.referred_name+'</td><td style="color:var(--text-dim)">'+(r.referred_email||'')+'</td><td><span class="ref-status '+r.status+'">'+r.status+'</span></td><td style="font-size:12px;color:var(--text-muted)">'+fmtDate(r.created_at)+'</td></tr>';}).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">No referrals yet. Start referring agents to grow your network!</td></tr>';
+  }catch(e){console.error(e)}
+}
+
+function openAddReferral(){document.getElementById('referral-form').style.display='block';['ref-name','ref-email','ref-phone'].forEach(function(id){document.getElementById(id).value=''});}
+
+async function submitReferral(){
+  if(!agentData){pToast('No agent profile linked');return;}
+  var data={referring_agent_id:agentData.id,referred_name:document.getElementById('ref-name').value,referred_email:document.getElementById('ref-email').value,referred_phone:document.getElementById('ref-phone').value};
+  await fetch(API_BASE+'/api/referrals',{method:'POST',headers:authHeaders(),body:JSON.stringify(data)});
+  document.getElementById('referral-form').style.display='none';
+  pToast('Referral submitted!');loadReferrals();loadPortalHome();
+}
+
+// ── HELPERS ──
+function fmtDate(s){if(!s)return'';var d=new Date(s);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+function pToast(msg){var t=document.getElementById('portal-toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.classList.remove('show')},3200)}
+
+// ── TRAINING ──
+var trainingContent=[
+  {title:'Welcome to TPL Collective',desc:'Your first steps after joining LPT through TPL',category:'getting_started',type:'video',duration:'12 min'},
+  {title:'Setting Up Lofty CRM',desc:'Complete walkthrough of your CRM setup and configuration',category:'getting_started',type:'video',duration:'18 min'},
+  {title:'Dotloop Essentials',desc:'How to manage transactions with Dotloop',category:'getting_started',type:'video',duration:'15 min'},
+  {title:'Understanding Your Fee Plan',desc:'Business Builder vs Brokerage Partner explained',category:'getting_started',type:'link',duration:'8 min'},
+  {title:'Social Media Lead Gen System',desc:'The exact system I use to generate leads on social media',category:'social_media',type:'video',duration:'25 min'},
+  {title:'Instagram Reels for Agents',desc:'Creating engaging short-form content that converts',category:'social_media',type:'video',duration:'20 min'},
+  {title:'Facebook Group Strategy',desc:'Building a community that generates referrals',category:'social_media',type:'video',duration:'22 min'},
+  {title:'AI-Powered Lead Follow-Up',desc:'Using AI to write personalized follow-ups at scale',category:'ai_tools',type:'video',duration:'16 min'},
+  {title:'ChatGPT Prompts for Agents',desc:'30+ prompts that save hours every week',category:'ai_tools',type:'template',duration:'10 min'},
+  {title:'Dezzy.ai Walkthrough',desc:'Getting the most out of TPL\'s AI assistant',category:'ai_tools',type:'video',duration:'14 min'},
+  {title:'HybridShare Explained',desc:'How revenue share works and how to maximize it',category:'revshare',type:'video',duration:'20 min'},
+  {title:'Building Your Network',desc:'Recruiting strategies that work without being pushy',category:'revshare',type:'video',duration:'28 min'},
+  {title:'The $27K Conversation',desc:'How to present the math to prospects',category:'lead_gen',type:'video',duration:'18 min'},
+  {title:'Commission Calculator Scripts',desc:'What to say when someone runs their numbers',category:'lead_gen',type:'template',duration:'12 min'},
+];
+var trainingFilter='all';
+function loadTraining(cat){
+  trainingFilter=cat;
+  var filtered=cat==='all'?trainingContent:trainingContent.filter(function(t){return t.category===cat});
+  var icons={video:'&#x1F3AC;',link:'&#x1F517;',template:'&#x1F4CB;'};
+  document.getElementById('training-list').innerHTML=filtered.map(function(t){
+    return'<div class="panel" style="cursor:pointer"><div style="display:flex;align-items:center;gap:12px"><div style="width:48px;height:48px;border-radius:8px;background:var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+(icons[t.type]||'&#x1F4C1;')+'</div><div style="flex:1"><div style="font-weight:600;font-size:13px">'+t.title+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+t.desc+'</div></div><div style="text-align:right"><div style="font-family:DM Mono,monospace;font-size:10px;color:var(--text-muted)">'+t.duration+'</div><div style="font-size:10px;color:var(--accent);margin-top:2px;text-transform:capitalize">'+t.type+'</div></div></div></div>';
+  }).join('')||'<div style="color:var(--text-muted);grid-column:1/-1">No content in this category yet.</div>';
+}
+function filterTraining(cat){loadTraining(cat);}
+function copyPrompt(idx){var el=document.getElementById('prompt-'+idx);navigator.clipboard.writeText(el.textContent);pToast('Prompt copied!');}
+
+// ── INIT ──
+if(token){
+  try{currentUser=JSON.parse(localStorage.getItem('portal_user'));showApp();}
+  catch(e){doLogout();}
+}
+</script>
+</body>
+</html>
