@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TPL Recruiting</title>
+  <style>
+    /* ── TPL Design System ── */
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #12121a;
+      --surface2:  #1a1a26;
+      --border:    #2a2a3d;
+      --text:      #e8e8f0;
+      --muted:     #8888aa;
+      --dim:       #55556a;
+      --accent:    #6c63ff;
+      --accent-hi: #8b85ff;
+      --gold:      #f0c040;
+      --green:     #34d399;
+      --card-grad: linear-gradient(145deg, #13132a, #0f0f1f);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top Bar ── */
+    .topbar {
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    .topbar-brand {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .topbar-brand span {
+      color: var(--accent);
+    }
+
+    .topbar-search {
+      flex: 1;
+      max-width: 360px;
+      margin-left: 24px;
+    }
+
+    .topbar-search input {
+      width: 100%;
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .topbar-search input::placeholder { color: var(--dim); }
+    .topbar-search input:focus { border-color: var(--accent); }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hot-badge {
+      background: var(--green);
+      color: var(--bg);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    /* ── Left Nav ── */
+    .sidenav {
+      width: 60px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 16px;
+      gap: 8px;
+      z-index: 90;
+    }
+
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .nav-btn:hover { background: var(--surface2); color: var(--muted); }
+    .nav-btn.active { background: var(--accent); color: var(--text); }
+
+    .nav-btn svg { width: 20px; height: 20px; }
+
+    .nav-btn .tooltip {
+      display: none;
+      position: absolute;
+      left: 52px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover .tooltip { display: block; }
+
+    /* ── Main Content ── */
+    .main {
+      margin-top: 56px;
+      margin-left: 60px;
+      padding: 24px;
+      flex: 1;
+    }
+
+    /* ── KPI Row ── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--card-grad);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--dim);
+      margin-top: 6px;
+    }
+
+    .kpi-value.accent { color: var(--accent); }
+    .kpi-value.green { color: var(--green); }
+    .kpi-value.gold { color: var(--gold); }
+
+    /* ── Prospect List ── */
+    .panel {
+      background: var(--card-grad);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .panel-count {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 2px 10px;
+      border-radius: 8px;
+    }
+
+    .prospect-list {
+      list-style: none;
+    }
+
+    .prospect-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 20px;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .prospect-row:last-child { border-bottom: none; }
+    .prospect-row:hover { background: var(--surface2); }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .prospect-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .prospect-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .prospect-brokerage {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .stage-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .stage-badge.deciding   { background: rgba(240, 192, 64, 0.15); color: var(--gold); }
+    .stage-badge.new        { background: rgba(108, 99, 255, 0.15); color: var(--accent-hi); }
+    .stage-badge.contacted  { background: rgba(136, 136, 170, 0.15); color: var(--muted); }
+    .stage-badge.interested { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+    .stage-badge.joined     { background: rgba(52, 211, 153, 0.25); color: var(--green); }
+
+    .temp-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .temp-dot.hot  { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
+    .temp-dot.warm { background: var(--gold); box-shadow: 0 0 6px rgba(240, 192, 64, 0.4); }
+    .temp-dot.cold { background: var(--dim); }
+
+    .prospect-gci {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    /* ── Loading State ── */
+    .loading-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--dim);
+      font-size: 13px;
+    }
+
+    .loading-row .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .sidenav { display: none; }
+      .main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top Bar ── -->
+  <header class="topbar">
+    <div class="topbar-brand">TPL <span>Recruiting</span></div>
+    <div class="topbar-search">
+      <input type="text" id="searchInput" placeholder="Search prospects...">
+    </div>
+    <div class="topbar-right">
+      <span class="hot-badge" id="hotBadge">0 hot prospects</span>
+    </div>
+  </header>
+
+  <!-- ── Left Nav ── -->
+  <nav class="sidenav">
+    <button class="nav-btn active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span class="tooltip">Dashboard</span>
+    </button>
+    <button class="nav-btn" data-view="pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      <span class="tooltip">Pipeline</span>
+    </button>
+    <button class="nav-btn" data-view="prospects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span class="tooltip">Prospects</span>
+    </button>
+    <button class="nav-btn" data-view="tasks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+      <span class="tooltip">Tasks</span>
+    </button>
+  </nav>
+
+  <!-- ── Main Content ── -->
+  <main class="main">
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Prospects in Pipeline</div>
+        <div class="kpi-value accent" id="kpiProspects">-</div>
+        <div class="kpi-sub">active prospects</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Agents Joined YTD</div>
+        <div class="kpi-value green" id="kpiJoined">0</div>
+        <div class="kpi-sub">year to date</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Follow-ups Due Today</div>
+        <div class="kpi-value gold" id="kpiFollowups">-</div>
+        <div class="kpi-sub">tasks due</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Projected GCI</div>
+        <div class="kpi-value" id="kpiGci">$-</div>
+        <div class="kpi-sub">pipeline value</div>
+      </div>
+    </div>
+
+    <!-- Prospect List -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Prospects</div>
+        <div class="panel-count" id="prospectCount">-</div>
+      </div>
+      <ul class="prospect-list" id="prospectList">
+        <li class="loading-row">
+          <div class="spinner"></div>
+          Loading prospects...
+        </li>
+      </ul>
+    </div>
+  </main>
+
+  <!-- ── Scripts ── -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
