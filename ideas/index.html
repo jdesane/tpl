@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Capture | TPL Collective</title>
+<meta name="description" content="Quick idea capture for TPL Collective"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="TPL Capture"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<link rel="manifest" href="/ideas/manifest.json"/>
+<link rel="apple-touch-icon" href="/ideas/icon-192.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3d;
+  --accent: #6c63ff;
+  --accent-hi: #8b85ff;
+  --gold: #f0c040;
+  --green: #34d399;
+  --red: #f87171;
+  --text: #e8e8f0;
+  --muted: #8888aa;
+  --dim: #55556a;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  color: var(--gold);
+}
+.header p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Form */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.form-group .required { color: var(--accent); }
+
+input[type="text"],
+input[type="url"],
+textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+input:focus, textarea:focus {
+  border-color: var(--accent);
+}
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Type selector */
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.type-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  line-height: 1.3;
+}
+.type-btn .icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.type-btn.active {
+  background: rgba(108,99,255,0.15);
+  border-color: var(--accent);
+  color: var(--text);
+}
+.type-btn:active { transform: scale(0.96); }
+
+/* URL field with fetch indicator */
+.url-wrap { position: relative; }
+.url-wrap .fetch-status {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--muted);
+}
+.url-wrap .fetch-status.ok { color: var(--green); }
+.url-wrap .fetch-status.err { color: var(--red); }
+
+/* File upload */
+.upload-zone {
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-zone:active { transform: scale(0.98); }
+.upload-zone.has-file {
+  border-color: var(--accent);
+  border-style: solid;
+  padding: 12px;
+}
+.upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
+.upload-zone .upload-text {
+  font-size: 14px;
+  color: var(--muted);
+}
+.upload-zone .upload-hint {
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 4px;
+}
+.file-input { display: none; }
+
+/* File preview */
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.file-preview img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--surface2);
+}
+.file-preview .file-info { flex: 1; min-width: 0; }
+.file-preview .file-name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-preview .file-size {
+  font-size: 12px;
+  color: var(--muted);
+}
+.file-preview .remove-file {
+  background: rgba(248,113,113,0.15);
+  border: none;
+  color: var(--red);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Submit */
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 8px;
+}
+.submit-btn:active { transform: scale(0.97); background: var(--accent-hi); }
+.submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  margin-top: 12px;
+  overflow: hidden;
+  display: none;
+}
+.progress-bar.active { display: block; }
+.progress-bar .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.3s;
+}
+
+/* Success state */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.success-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.success-check {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(52,211,153,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+.success-overlay h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 2px;
+  color: var(--green);
+}
+.success-overlay p {
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 14px;
+}
+.success-overlay .again-btn {
+  margin-top: 24px;
+  padding: 12px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Error toast */
+.toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--red);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 200;
+  transition: transform 0.3s;
+  max-width: calc(100% - 32px);
+  text-align: center;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>TPL CAPTURE</h1>
+    <p>Ideas, links, content - save it fast</p>
+  </div>
+
+  <form id="captureForm" autocomplete="off">
+    <!-- Title -->
+    <div class="form-group">
+      <label>Title / Idea <span class="required">*</span></label>
+      <input type="text" id="title" placeholder="What's the idea?" required autofocus/>
+    </div>
+
+    <!-- Type -->
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-grid">
+        <button type="button" class="type-btn active" data-type="idea">
+          <span class="icon">&#x1f4a1;</span>Idea
+        </button>
+        <button type="button" class="type-btn" data-type="link">
+          <span class="icon">&#x1f517;</span>Link
+        </button>
+        <button type="button" class="type-btn" data-type="video">
+          <span class="icon">&#x1f3ac;</span>Video
+        </button>
+        <button type="button" class="type-btn" data-type="screenshot">
+          <span class="icon">&#x1f4f7;</span>Screenshot
+        </button>
+        <button type="button" class="type-btn" data-type="screen_recording">
+          <span class="icon">&#x1f4f1;</span>Recording
+        </button>
+      </div>
+    </div>
+
+    <!-- URL -->
+    <div class="form-group">
+      <label>Source URL</label>
+      <div class="url-wrap">
+        <input type="url" id="sourceUrl" placeholder="Paste a link (optional)"/>
+        <span class="fetch-status" id="fetchStatus"></span>
+      </div>
+    </div>
+
+    <!-- File upload -->
+    <div class="form-group">
+      <label>Attachment</label>
+      <div class="upload-zone" id="uploadZone">
+        <div id="uploadPlaceholder">
+          <div class="upload-icon">&#x1f4ce;</div>
+          <div class="upload-text">Tap to attach image or video</div>
+          <div class="upload-hint">JPG, PNG, GIF, HEIC, MP4, MOV</div>
+        </div>
+        <div class="file-preview" id="filePreview" style="display:none">
+          <img id="previewImg" src="" alt=""/>
+          <div class="file-info">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+          </div>
+          <button type="button" class="remove-file" id="removeFile">&times;</button>
+        </div>
+      </div>
+      <input type="file" class="file-input" id="fileInput"
+        accept="image/jpeg,image/png,image/gif,image/heic,video/mp4,video/quicktime"/>
+    </div>
+
+    <!-- Notes -->
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="notes" placeholder="Any extra context (optional)" rows="3"></textarea>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="submit-btn" id="submitBtn">SAVE IT</button>
+    <div class="progress-bar" id="progressBar"><div class="fill" id="progressFill"></div></div>
+  </form>
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-check">&#x2713;</div>
+  <h2>SAVED</h2>
+  <p>Idea captured successfully</p>
+  <button class="again-btn" id="againBtn">Capture Another</button>
+</div>
+
+<!-- Error toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://zyonidiybzrgklrmalbt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b25pZGl5YnpyZ2tscm1hbGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTY5NzUsImV4cCI6MjA4ODI5Mjk3NX0.5See-qjLkXA4CoJi9tNfcLAX_cdvZhPaxw8iViKM8S8';
+
+// State
+let selectedType = 'idea';
+let selectedFile = null;
+
+// Type buttons
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = btn.dataset.type;
+  });
+});
+
+// File upload
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const filePreview = document.getElementById('filePreview');
+const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+const previewImg = document.getElementById('previewImg');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const removeFile = document.getElementById('removeFile');
+
+uploadZone.addEventListener('click', (e) => {
+  if (e.target.closest('.remove-file')) return;
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  selectedFile = file;
+  showFilePreview(file);
+});
+
+function showFilePreview(file) {
+  uploadZone.classList.add('has-file');
+  uploadPlaceholder.style.display = 'none';
+  filePreview.style.display = 'flex';
+  fileName.textContent = file.name;
+  fileSize.textContent = formatBytes(file.size);
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => { previewImg.src = e.target.result; };
+    reader.readAsDataURL(file);
+    previewImg.style.display = 'block';
+  } else {
+    previewImg.style.display = 'none';
+  }
+}
+
+removeFile.addEventListener('click', (e) => {
+  e.stopPropagation();
+  clearFile();
+});
+
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  uploadZone.classList.remove('has-file');
+  uploadPlaceholder.style.display = '';
+  filePreview.style.display = 'none';
+  previewImg.src = '';
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// URL auto-fetch title
+let fetchTimeout;
+const sourceUrl = document.getElementById('sourceUrl');
+const fetchStatus = document.getElementById('fetchStatus');
+const titleInput = document.getElementById('title');
+
+sourceUrl.addEventListener('input', () => {
+  clearTimeout(fetchTimeout);
+  fetchStatus.textContent = '';
+  fetchStatus.className = 'fetch-status';
+
+  const url = sourceUrl.value.trim();
+  if (!url || !url.startsWith('http')) return;
+
+  // Only auto-fetch if title is empty
+  if (titleInput.value.trim()) return;
+
+  fetchStatus.textContent = '...';
+  fetchTimeout = setTimeout(() => fetchTitle(url), 600);
+});
+
+async function fetchTitle(url) {
+  try {
+    const resp = await fetch('/api/fetch-title?url=' + encodeURIComponent(url));
+    if (!resp.ok) throw new Error();
+    const data = await resp.json();
+    if (data.title && !titleInput.value.trim()) {
+      titleInput.value = data.title;
+      fetchStatus.textContent = '\u2713';
+      fetchStatus.className = 'fetch-status ok';
+    }
+  } catch {
+    fetchStatus.textContent = '';
+  }
+}
+
+// Upload file to Supabase Storage
+async function uploadFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+  const resp = await fetch(`${SUPABASE_URL}/storage/v1/object/idea-attachments/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'apikey': SUPABASE_KEY,
+      'Content-Type': file.type,
+    },
+    body: file,
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error('Upload failed: ' + err);
+  }
+
+  return `${SUPABASE_URL}/storage/v1/object/public/idea-attachments/${path}`;
+}
+
+// Submit
+const form = document.getElementById('captureForm');
+const submitBtn = document.getElementById('submitBtn');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const title = titleInput.value.trim();
+  if (!title) return;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'SAVING...';
+  progressBar.classList.add('active');
+  progressFill.style.width = '20%';
+
+  try {
+    let attachment_url = null;
+
+    // Upload file if present
+    if (selectedFile) {
+      progressFill.style.width = '40%';
+      attachment_url = await uploadFile(selectedFile);
+    }
+
+    progressFill.style.width = '70%';
+
+    // Insert row
+    const row = {
+      title: title,
+      type: selectedType,
+      url: sourceUrl.value.trim() || null,
+      notes: document.getElementById('notes').value.trim() || null,
+      attachment_url: attachment_url,
+    };
+
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/ideas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'apikey': SUPABASE_KEY,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(row),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(err);
+    }
+
+    progressFill.style.width = '100%';
+    showSuccess();
+  } catch (err) {
+    showToast('Failed to save - ' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'SAVE IT';
+    progressBar.classList.remove('active');
+    progressFill.style.width = '0%';
+  }
+});
+
+// Success
+function showSuccess() {
+  document.getElementById('successOverlay').classList.add('show');
+}
+
+document.getElementById('againBtn').addEventListener('click', () => {
+  document.getElementById('successOverlay').classList.remove('show');
+  form.reset();
+  clearFile();
+  selectedType = 'idea';
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-type="idea"]').classList.add('active');
+  fetchStatus.textContent = '';
+  fetchStatus.className = 'fetch-status';
+  titleInput.focus();
+});
+
+// Toast
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/ideas/sw.js');
+}
+</script>
+
+</body>
+</html>
