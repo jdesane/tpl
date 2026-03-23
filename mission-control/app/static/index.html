@@ -189,6 +189,10 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-item" onclick="showPage('links')"><span class="icon">&#x2693;</span>Recruiting Links</div>
   </div>
   <div class="nav-group">
+    <div class="nav-group-label">Capture</div>
+    <div class="nav-item" onclick="showPage('ideas')"><span class="icon">&#x26A1;</span>Ideas<span class="nav-badge" id="ideas-badge" style="display:none">0</span></div>
+  </div>
+  <div class="nav-group">
     <div class="nav-group-label">Systems</div>
     <div class="nav-item" onclick="showPage('openclaw')"><span class="icon">&#x2699;</span>Automations</div>
     <div class="nav-item" onclick="showPage('settings')"><span class="icon">&#x2638;</span>Settings</div>
@@ -699,6 +703,47 @@ th[onclick]:hover{color:var(--accent)}
   </div>
 </div>
 
+<div class="page" id="page-ideas">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div>
+      <div class="panel-title" style="font-size:24px">Ideas Inbox</div>
+      <div class="page-subtitle">Captured from TPL Capture PWA</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="https://tplcollective.ai/ideas" target="_blank" class="btn btn-ghost btn-sm">Open Capture Form &rarr;</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="filter-tab active" onclick="filterIdeas('all',this)">All</button>
+    <button class="filter-tab" onclick="filterIdeas('inbox',this)">Inbox</button>
+    <button class="filter-tab" onclick="filterIdeas('reviewed',this)">Reviewed</button>
+    <button class="filter-tab" onclick="filterIdeas('actioned',this)">Actioned</button>
+    <button class="filter-tab" onclick="filterIdeas('archived',this)">Archived</button>
+  </div>
+
+  <div class="metric-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+    <div class="metric-card"><div class="label">Inbox</div><div class="value" id="ideas-inbox-count">0</div></div>
+    <div class="metric-card"><div class="label">Reviewed</div><div class="value" id="ideas-reviewed-count">0</div></div>
+    <div class="metric-card"><div class="label">Actioned</div><div class="value" id="ideas-actioned-count">0</div></div>
+    <div class="metric-card"><div class="label">Total</div><div class="value" id="ideas-total-count">0</div></div>
+  </div>
+
+  <div class="panel" style="overflow-x:auto">
+    <table class="leads-table">
+      <thead><tr>
+        <th style="width:30px"></th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Captured</th>
+        <th style="width:120px"></th>
+      </tr></thead>
+      <tbody id="ideas-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 </div>
 <div class="modal-overlay" id="lead-modal">
   <div class="modal" style="width:900px;max-width:900px">
@@ -852,6 +897,7 @@ function showPage(name){window.location.hash=name;
   if(name==='analytics')loadFunnelAnalytics();
   if(name==='revshare')loadRevShare();
   if(name==='openclaw')loadAutomations();
+  if(name==='ideas')loadIdeas();
 }
 
 async function loadDashboard(){
@@ -1684,6 +1730,92 @@ async function runWorkflowNow(workflow){
   var r=await fetch(API+'/api/automations/'+workflow+'/run',{method:'POST'}).then(function(r){return r.json()});
   showToast(r.success?'Workflow complete':'Error: '+(r.error||''),!r.success);
   loadAutomations();
+}
+
+// ── IDEAS INBOX ──
+var ideasCache=[];
+var ideasFilter='all';
+
+async function loadIdeas(){
+  try{
+    var data=await fetch(API+'/api/ideas').then(function(r){return r.json()});
+    ideasCache=data;
+    renderIdeas();
+  }catch(e){console.error('loadIdeas',e);}
+}
+
+function renderIdeas(){
+  var filtered=ideasFilter==='all'?ideasCache:ideasCache.filter(function(i){return i.status===ideasFilter});
+  var inbox=ideasCache.filter(function(i){return i.status==='inbox'}).length;
+  var reviewed=ideasCache.filter(function(i){return i.status==='reviewed'}).length;
+  var actioned=ideasCache.filter(function(i){return i.status==='actioned'}).length;
+
+  document.getElementById('ideas-inbox-count').textContent=inbox;
+  document.getElementById('ideas-reviewed-count').textContent=reviewed;
+  document.getElementById('ideas-actioned-count').textContent=actioned;
+  document.getElementById('ideas-total-count').textContent=ideasCache.length;
+
+  var badge=document.getElementById('ideas-badge');
+  if(inbox>0){badge.textContent=inbox;badge.style.display='';}
+  else{badge.style.display='none';}
+
+  var typeIcons={'idea':'\u{1F4A1}','link':'\u{1F517}','video':'\u{1F3AC}','screenshot':'\u{1F4F7}','screen_recording':'\u{1F4F1}'};
+  var statusColors={'inbox':'var(--accent)','reviewed':'var(--amber)','actioned':'var(--green)','archived':'var(--text-muted)'};
+
+  document.getElementById('ideas-tbody').innerHTML=filtered.map(function(idea){
+    var icon=typeIcons[idea.type]||'\u{1F4A1}';
+    var time=idea.created_at?new Date(idea.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    var titleHtml='<div class="lead-name">'+idea.title+'</div>';
+    if(idea.url) titleHtml+='<div style="font-size:11px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px"><a href="'+idea.url+'" target="_blank" style="color:var(--accent)">'+idea.url+'</a></div>';
+    if(idea.notes) titleHtml+='<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+idea.notes+'</div>';
+
+    var attachHtml='';
+    if(idea.attachment_url){
+      var isImage=/\.(jpg|jpeg|png|gif|heic)$/i.test(idea.attachment_url);
+      attachHtml=isImage?'<a href="'+idea.attachment_url+'" target="_blank"><img src="'+idea.attachment_url+'" style="width:32px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border)"></a>':'<a href="'+idea.attachment_url+'" target="_blank" style="font-size:18px">\u{1F4CE}</a>';
+    }
+
+    return '<tr>'+
+      '<td>'+attachHtml+'</td>'+
+      '<td>'+titleHtml+'</td>'+
+      '<td><span style="font-size:18px" title="'+idea.type+'">'+icon+'</span></td>'+
+      '<td><select onchange="updateIdeaStatus(\''+idea.id+'\',this.value)" style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:'+statusColors[idea.status]+';font-size:11px;font-family:DM Mono,monospace;outline:none">'+
+        '<option value="inbox"'+(idea.status==='inbox'?' selected':'')+'>INBOX</option>'+
+        '<option value="reviewed"'+(idea.status==='reviewed'?' selected':'')+'>REVIEWED</option>'+
+        '<option value="actioned"'+(idea.status==='actioned'?' selected':'')+'>ACTIONED</option>'+
+        '<option value="archived"'+(idea.status==='archived'?' selected':'')+'>ARCHIVED</option>'+
+      '</select></td>'+
+      '<td style="font-size:11px;color:var(--text-muted);font-family:DM Mono,monospace">'+time+'</td>'+
+      '<td><button class="btn btn-danger btn-sm" onclick="deleteIdea(\''+idea.id+'\')">Delete</button></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">No ideas yet</td></tr>';
+}
+
+function filterIdeas(status,btn){
+  ideasFilter=status;
+  document.querySelectorAll('#page-ideas .filter-tab').forEach(function(t){t.classList.remove('active')});
+  btn.classList.add('active');
+  renderIdeas();
+}
+
+async function updateIdeaStatus(id,status){
+  try{
+    await fetch(API+'/api/ideas/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})});
+    var idea=ideasCache.find(function(i){return i.id===id});
+    if(idea)idea.status=status;
+    renderIdeas();
+    showToast('Status updated');
+  }catch(e){showToast('Error updating',true);}
+}
+
+async function deleteIdea(id){
+  if(!confirm('Delete this idea?'))return;
+  try{
+    await fetch(API+'/api/ideas/'+id,{method:'DELETE'});
+    ideasCache=ideasCache.filter(function(i){return i.id!==id});
+    renderIdeas();
+    showToast('Idea deleted');
+  }catch(e){showToast('Error deleting',true);}
 }
 
 var startPage=window.location.hash.replace('#','');

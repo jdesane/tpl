@@ -2054,6 +2054,32 @@ async def test_notification(req: TestNotifRequest):
     return {"success": False, "error": error}
 
 
+# ── IDEAS INBOX ──
+
+@app.get("/api/ideas")
+async def list_ideas():
+    """List all ideas, newest first."""
+    data = supabase.table("ideas").select("*").order("created_at", desc=True).execute()
+    return data.data
+
+@app.patch("/api/ideas/{idea_id}")
+async def update_idea(idea_id: str, request: Request):
+    """Update an idea (status, notes, etc.)."""
+    body = await request.json()
+    allowed = {"status", "title", "notes", "type"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    if not updates:
+        raise HTTPException(400, "No valid fields to update")
+    supabase.table("ideas").update(updates).eq("id", idea_id).execute()
+    return {"success": True}
+
+@app.delete("/api/ideas/{idea_id}")
+async def delete_idea(idea_id: str):
+    """Delete an idea."""
+    supabase.table("ideas").delete().eq("id", idea_id).execute()
+    return {"success": True}
+
+
 # ── DAILY MORNING REPORT ──
 
 @app.post("/api/reports/daily")
@@ -2121,6 +2147,10 @@ async def send_daily_report():
 
     # Daily send limits
     limits = supabase.table("email_daily_limits").select("*").eq("send_date", today_str).execute().data
+
+    # Ideas captured (24h)
+    new_ideas = supabase.table("ideas").select("id, title, type, url, created_at").gte("created_at", yesterday).order("created_at", desc=True).execute().data
+    ideas_inbox = supabase.table("ideas").select("id", count="exact").eq("status", "inbox").execute()
 
     # A/B Test performance (Gut Punch variants)
     ab_test_funnels = {8: "A: $467K Story", 10: "B: Curiosity", 11: "C: Personalized", 12: "D: Social Proof", 13: "E: Direct Savings"}
@@ -2191,6 +2221,14 @@ async def send_daily_report():
     system_html += stat_row("Active opportunities", str(total_opps.count or 0))
     system_html += stat_row("Stale leads (7d+)", str(len(stale)))
 
+    # Ideas Captured
+    type_icons = {"idea": "\U0001F4A1", "link": "\U0001F517", "video": "\U0001F3AC", "screenshot": "\U0001F4F7", "screen_recording": "\U0001F4F1"}
+    idea_items = [f"{type_icons.get(i.get('type', 'idea'), '\U0001F4A1')} {i['title']}" + (f" — {i['url']}" if i.get('url') else "") for i in new_ideas]
+    ideas_html = stat_row("New ideas (24h)", str(len(new_ideas)), "#f0c040" if new_ideas else "#8888aa")
+    ideas_html += stat_row("Total in inbox", str(ideas_inbox.count or 0), "#6c63ff" if (ideas_inbox.count or 0) > 0 else "#8888aa")
+    if idea_items:
+        ideas_html += '<div style="margin-top:8px;">' + item_list(idea_items[:5]) + '</div>'
+
     # A/B Test HTML
     ab_html = ""
     for ab in ab_results:
@@ -2216,6 +2254,7 @@ async def send_daily_report():
 {section("Stale Leads", stale_html)}
 {section("Hottest Leads", hot_html)}
 {section("System Status", system_html)}
+{section("Ideas Captured", ideas_html)}
 {section("A/B Test: Gut Punch Variants", ab_html)}
 </div>
 
