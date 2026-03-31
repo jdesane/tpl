@@ -1770,8 +1770,9 @@ async def ai_weekly_plan():
 
 @app.post("/api/ai/score-leads")
 async def ai_score_leads():
-    leads = supabase.table("leads").select("id, name, stage, status, brokerage, current_brokerage, deals_per_year, created_at, updated_at").execute().data
+    leads = supabase.table("leads").select("id, name, email, phone, stage, status, brokerage, current_brokerage, deals_per_year, lead_temperature, created_at, updated_at").execute().data
     updated = 0
+    hot_alerts_sent = 0
     for lead in leads:
         score = 10  # base
         if lead.get("deals_per_year"):
@@ -1787,9 +1788,62 @@ async def ai_score_leads():
         score += stage_scores.get(stage, 0)
         score = min(100, score)
         temp = "hot" if score >= 70 else "warming" if score >= 40 else "cold"
+        prev_temp = lead.get("lead_temperature", "cold")
         supabase.table("leads").update({"lead_score": score, "lead_temperature": temp}).eq("id", lead["id"]).execute()
         updated += 1
-    return {"success": True, "updated": updated}
+
+        # Hot lead alert - only fire when temperature changes TO hot
+        if temp == "hot" and prev_temp != "hot":
+            try:
+                settings = load_settings()
+                smtp = settings.get("smtp", {})
+                to_email = settings.get("notifications", {}).get("email", "joe@desaneteam.com")
+                lead_name = lead.get("name", "Unknown")
+                lead_brokerage = lead.get("brokerage") or lead.get("current_brokerage") or "N/A"
+                lead_email = lead.get("email", "N/A")
+                lead_phone = lead.get("phone", "N/A")
+                subject = f"Hot Lead Alert: {lead_name} ({lead_brokerage}) - Score: {score}"
+                html_body = f"""<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#0e0e1a;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:24px auto;background:#161627;border-radius:12px;padding:28px;border:1px solid #6c63ff;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <span style="background:#ff4d4d;color:#fff;padding:6px 16px;border-radius:20px;font-weight:bold;font-size:14px;">HOT LEAD ALERT</span>
+    </div>
+    <h2 style="color:#fff;margin:0 0 16px 0;text-align:center;">{lead_name}</h2>
+    <table style="width:100%;color:#c4c4d4;font-size:14px;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#888;">Email</td><td style="padding:6px 0;color:#fff;">{lead_email}</td></tr>
+      <tr><td style="padding:6px 0;color:#888;">Phone</td><td style="padding:6px 0;color:#fff;">{lead_phone}</td></tr>
+      <tr><td style="padding:6px 0;color:#888;">Brokerage</td><td style="padding:6px 0;color:#fff;">{lead_brokerage}</td></tr>
+      <tr><td style="padding:6px 0;color:#888;">Lead Score</td><td style="padding:6px 0;color:#ff4d4d;font-weight:bold;font-size:18px;">{score}/100</td></tr>
+      <tr><td style="padding:6px 0;color:#888;">Temperature</td><td style="padding:6px 0;color:#ff4d4d;font-weight:bold;">HOT</td></tr>
+    </table>
+    <div style="margin-top:20px;padding:14px;background:#1e1e36;border-radius:8px;border-left:3px solid #ff4d4d;">
+      <p style="color:#ff9f43;font-weight:bold;margin:0 0 4px 0;">Suggested Action</p>
+      <p style="color:#c4c4d4;margin:0;">Call within 24 hours while interest is high.</p>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <a href="https://mission.tplcollective.ai" style="display:inline-block;background:#6c63ff;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-right:8px;">View in Mission Control</a>
+      <a href="https://calendly.com/discovertpl" style="display:inline-block;background:#1e1e36;color:#6c63ff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;border:1px solid #6c63ff;">Schedule via Calendly</a>
+    </div>
+    <div style="margin-top:20px;font-size:11px;color:#444;text-align:center;">TPL Mission Control - Hot Lead Alert</div>
+  </div>
+</body></html>"""
+                success, error = send_email(
+                    smtp, to_email, subject, html_body,
+                    from_address="TPL Mission Control <notifications@tplcollective.ai>",
+                    campaign="hot_lead_alert"
+                )
+                if success:
+                    hot_alerts_sent += 1
+                    supabase.table("activity_log").insert({
+                        "type": "alert",
+                        "message": f"Hot lead alert sent for {lead_name} (score: {score})",
+                        "meta": {"lead_id": lead["id"], "score": score}
+                    }).execute()
+            except Exception:
+                pass  # Don't let alert failures break scoring
+
+    return {"success": True, "updated": updated, "hot_alerts_sent": hot_alerts_sent}
 
 
 @app.post("/api/ai/generate-tasks")
