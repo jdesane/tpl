@@ -8,7 +8,25 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="UTF-8"/>
 <script src="/tpl-tracking.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -692,7 +710,7 @@ footer {
       <h1 class="fade-up d2">Why Agents<br>Choose <em>TPL</em></h1>
       <p class="hero-sub fade-up d3">Most brokerages profit from agents. LPT Realty was built to change that — with a flat-fee model that lets you keep what you earn. TPL Collective layers AI infrastructure, a media engine, and a growth community on top. Together, it's an unfair advantage.</p>
       <div class="hero-actions fade-up d4">
-        <a href="https://calendly.com/discovertpl" target="_blank" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Strategy Call</a>
+        <a href="https://calendly.com/discovertpl" target="_blank" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Strategy Call</a>
         <a href="/lpt-explained" class="btn-secondary">See the Numbers</a>
       </div>
     </div>
@@ -1181,7 +1199,7 @@ footer {
   <h2 class="cta-title reveal">Book Your <em>Strategy Call</em></h2>
   <p class="cta-sub reveal">A no-pressure 20–30 minute conversation. We'll run your numbers, answer every question honestly, and let you decide if TPL Collective is the right fit — even if the answer is not right now.</p>
   <div class="cta-actions reveal">
-    <a href="https://calendly.com/discovertpl" class="btn-primary" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Private Call</a>
+    <a href="https://calendly.com/discovertpl" class="btn-primary" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Private Call</a>
     <a href="/lpt-explained" class="btn-secondary">Learn About LPT First</a>
   </div>
   <p class="cta-note reveal">No pitch. No pressure. Just clarity.</p>

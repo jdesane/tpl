@@ -8,7 +8,25 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="/tpl-tracking.js" defer></script>
@@ -212,7 +230,7 @@
     <li><a href="/why-tpl">Why TPL</a></li>
     <li><a href="/resources">Free Resources</a></li>
       <li><a href="/blog">Blog</a></li>
-    <li><a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a></li>
+    <li><a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a></li>
   </ul>
   <button class="hamburger" id="hamburger" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -224,13 +242,13 @@
   <a href="/why-tpl">Why TPL</a>
   <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-  <a href="https://calendly.com/discovertpl" target="_blank" class="mob-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+  <a href="https://calendly.com/discovertpl" target="_blank" class="mob-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
 </div>
 
 <section class="hero">
   <div class="hero-label">🧮 Free Tool</div>
   <h1>See What You're <em>Actually</em><br>Leaving on the Table</h1>
-  <p>Select your brokerage, confirm your comp plan details, and see your exact take-home vs. both LPT plans. No email required.</p>
+  <p>Select your brokerage, confirm your comp plan details, and see your exact take-home vs. both LPT plans.</p>
 </section>
 
 <section class="calc-section">
@@ -388,7 +406,7 @@
       <h3>Ready to Make the Switch?</h3>
       <p>These numbers don't include HybridShare income, stock awards, or the tools included at no extra cost. Book a free call to see the full picture.</p>
       <div class="cta-buttons">
-        <a href="https://calendly.com/discovertpl" target="_blank" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Free Call →</a>
+        <a href="https://calendly.com/discovertpl" target="_blank" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Free Call →</a>
         <a href="/lpt-explained" class="btn-secondary">Learn How LPT Works</a>
       </div>
     </div>
@@ -409,7 +427,7 @@
     <button class="modal-close" onclick="document.getElementById('gateModal').classList.remove('open')">&#10005;</button>
     <div class="modal-eyebrow">🧮 Your Results Are Ready</div>
     <div class="modal-title">See Your Numbers</div>
-    <div class="modal-sub">Enter your name and email to unlock your personalized commission comparison. No spam — ever.</div>
+    <div class="modal-sub">Enter your info to unlock your personalized commission comparison. We'll also email you a PDF copy of your results.</div>
     <div class="modal-field">
       <label>First Name</label>
       <input type="text" id="gateFirst" placeholder="Your first name" autocomplete="given-name" />
@@ -418,9 +436,13 @@
       <label>Email Address</label>
       <input type="email" id="gateEmail" placeholder="you@email.com" autocomplete="email" />
     </div>
+    <div class="modal-field">
+      <label>Phone <span style="font-weight:400;letter-spacing:0;text-transform:none;font-family:'DM Sans',sans-serif;color:var(--dim)">(optional)</span></label>
+      <input type="tel" id="gatePhone" placeholder="(555) 123-4567" autocomplete="tel" />
+    </div>
     <div class="modal-error" id="gateError">Please fill in all fields with a valid email.</div>
-    <button class="modal-submit" id="gateSubmit" onclick="submitCalcGate()">Show My Results →</button>
-    <div class="modal-privacy">No spam. No brokerage pressure. Unsubscribe anytime.</div>
+    <button class="modal-submit" id="gateSubmit" onclick="submitCalcGate()">See My Results</button>
+    <div class="modal-privacy">Your info stays private. No spam.</div>
   </div>
 </div>
 
@@ -537,14 +559,16 @@ function calculate() {
     document.getElementById('gateError').style.display = 'none';
     document.getElementById('gateFirst').value = '';
     document.getElementById('gateEmail').value = '';
+    document.getElementById('gatePhone').value = '';
     document.getElementById('gateSubmit').disabled = false;
-    document.getElementById('gateSubmit').textContent = 'Show My Results →';
+    document.getElementById('gateSubmit').textContent = 'See My Results';
     document.getElementById('gateModal').classList.add('open');
     setTimeout(() => document.getElementById('gateFirst').focus(), 100);
     return;
   }
   // If already gated, fire lead capture in background and show results
-  captureCalcLead(savedName, savedEmail);
+  const savedPhone = sessionStorage.getItem('tpl_gate_phone') || '';
+  captureCalcLead(savedName, savedEmail, savedPhone);
   runCalculation();
 }
 
@@ -698,6 +722,7 @@ function runCalculation() {
 async function submitCalcGate() {
   const first = document.getElementById('gateFirst').value.trim();
   const email = document.getElementById('gateEmail').value.trim();
+  const phone = document.getElementById('gatePhone').value.trim();
   const errEl = document.getElementById('gateError');
 
   if (!first || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -708,17 +733,18 @@ async function submitCalcGate() {
 
   const btn = document.getElementById('gateSubmit');
   btn.disabled = true;
-  btn.textContent = 'Loading…';
+  btn.textContent = 'Loading...';
 
   sessionStorage.setItem('tpl_gate_name', first);
   sessionStorage.setItem('tpl_gate_email', email);
+  if (phone) sessionStorage.setItem('tpl_gate_phone', phone);
 
-  await captureCalcLead(first, email);
+  await captureCalcLead(first, email, phone);
   document.getElementById('gateModal').classList.remove('open');
   runCalculation();
 }
 
-async function captureCalcLead(first, email) {
+async function captureCalcLead(first, email, phone) {
   const val = document.getElementById('brokerageSelect').value;
   const brokerage = val ? DB[val].name : 'Unknown';
   const deals = document.getElementById('annualDeals').value;
@@ -732,7 +758,7 @@ async function captureCalcLead(first, email) {
       body: JSON.stringify({
         name: first,
         email: email,
-        phone: '',
+        phone: phone || '',
         brokerage: brokerage,
         deals_per_year: deals,
         avg_price: avgPrice,

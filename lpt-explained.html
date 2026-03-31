@@ -8,7 +8,25 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="UTF-8"/>
 <script src="/tpl-tracking.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -823,7 +841,7 @@ footer {
       you are in your career right now. Book a call and we'll walk through
       both plans with your actual numbers — no pressure, no pitch, just clarity.
     </p>
-    <a href="https://calendly.com/discovertpl" target="_blank" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call with Joe</a>
+    <a href="https://calendly.com/discovertpl" target="_blank" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call with Joe</a>
     <a href="/why-tpl" class="btn-secondary">Why TPL Collective</a>
   </div>
   <div style="max-width:760px;margin:56px auto 0;" class="fade-in">

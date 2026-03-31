@@ -8,7 +8,25 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="UTF-8"/>
 <script src="/tpl-tracking.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -503,7 +521,7 @@ footer {
     <a href="/fee-plans">Fee Plans</a>
     <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-    <a href="https://calendly.com/discovertpl" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
   </div>
   <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
 </nav>
@@ -513,7 +531,7 @@ footer {
   <a href="/fee-plans">Fee Plans</a>
   <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-  <a href="https://calendly.com/discovertpl" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
 </div>
 
 <!-- HERO -->
@@ -655,7 +673,7 @@ footer {
     <div class="scenario-result fade-in delay-3">
       <div class="scenario-result-label">Potential Monthly Rev Share Income</div>
       <p class="scenario-result-text">The exact amount depends on the tier percentages and your network's production. This example only covers 2 of 7 tiers &mdash; imagine the compounding effect at full depth.</p>
-      <a href="https://calendly.com/discovertpl" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call to See Your Projected Income</a>
+      <a href="https://calendly.com/discovertpl" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call to See Your Projected Income</a>
     </div>
   </div>
 </section>
@@ -754,7 +772,7 @@ footer {
     <h2 class="cta-title fade-in">See What Your<br/><em>Network Could Earn</em></h2>
     <p class="cta-sub fade-in delay-1">HybridShare is one of the most misunderstood parts of the model. Book 15 minutes with Joe and we'll map it to your actual recruiting potential.</p>
     <div class="cta-actions fade-in delay-2">
-      <a href="https://calendly.com/discovertpl" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+      <a href="https://calendly.com/discovertpl" class="btn-primary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
       <a href="/two-lanes" class="btn-secondary">Compare Plans</a>
     </div>
   </div>
@@ -770,7 +788,7 @@ footer {
     <a href="/fee-plans">Fee Plans</a>
     <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-    <a href="https://calendly.com/discovertpl" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+    <a href="https://calendly.com/discovertpl" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
   </div>
   <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
 </footer>

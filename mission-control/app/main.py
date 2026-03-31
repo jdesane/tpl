@@ -437,6 +437,39 @@ async def create_lead(lead: LeadIn):
         except Exception:
             pass
 
+    # Auto-enroll into brokerage-specific drip sequence
+    brokerage_lower = (lead.brokerage or "").lower()
+    funnel_trigger = "new_general_lead"  # default
+
+    if "keller" in brokerage_lower or "kw" in brokerage_lower:
+        funnel_trigger = "new_kw_lead"
+    elif "exp" in brokerage_lower:
+        funnel_trigger = "new_exp_lead"
+    elif "remax" in brokerage_lower or "re/max" in brokerage_lower:
+        funnel_trigger = "new_remax_lead"
+    elif "coldwell" in brokerage_lower or "century" in brokerage_lower or "cb" in brokerage_lower or "c21" in brokerage_lower:
+        funnel_trigger = "new_legacy_lead"
+
+    try:
+        funnel = supabase.table("email_funnels").select("id").eq("trigger_stage", funnel_trigger).eq("active", True).execute()
+        if funnel.data:
+            funnel_id = funnel.data[0]["id"]
+            existing_enrollment = supabase.table("email_funnel_enrollments").select("id").eq("lead_id", lead_id).eq("funnel_id", funnel_id).execute()
+            if not existing_enrollment.data:
+                supabase.table("email_funnel_enrollments").insert({
+                    "lead_id": lead_id,
+                    "funnel_id": funnel_id,
+                    "current_step": 1,
+                    "status": "active"
+                }).execute()
+                supabase.table("activity_log").insert({
+                    "type": "drip",
+                    "message": f"Auto-enrolled into {funnel_trigger} drip sequence",
+                    "meta": {"lead_id": lead_id, "funnel_id": funnel_id}
+                }).execute()
+    except Exception as e:
+        print(f"[AUTO-ENROLL] Error: {e}")
+
     # Fire notification (non-blocking, never fails the request)
     maybe_notify_new_lead(lead.dict())
 
@@ -2339,13 +2372,15 @@ async def process_drip_queue():
         # Check if enough time has passed since last send
         if last_sent:
             try:
-                last_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00").replace("+00:00", ""))
+                last_dt = datetime.fromisoformat(last_sent.replace("Z", "+00:00"))
                 days_since = (now - last_dt).days
                 if days_since < delay_days:
                     skipped += 1
                     continue
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[DRIP] Date parse error for enrollment {enrollment.get('id')}: {e}")
+                skipped += 1
+                continue
         elif current_step > 1:
             # First step has no delay requirement, but subsequent steps need last_sent
             skipped += 1

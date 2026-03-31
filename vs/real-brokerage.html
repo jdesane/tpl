@@ -8,7 +8,25 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <meta charset="UTF-8"/>
 <script src="/tpl-tracking.js" defer></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -497,7 +515,7 @@ footer {
     <a href="/#who-joined">Who Joined</a>
     <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-    <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+    <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
   </div>
   <button class="hamburger" id="hamburger" aria-label="Open menu">
     <span></span><span></span><span></span>
@@ -510,7 +528,7 @@ footer {
   <a href="/#who-joined">Who Joined</a>
   <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-  <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+  <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
 </div>
 
 <!-- HERO -->
@@ -523,7 +541,7 @@ footer {
     <p class="hero-sub fade-up d3">REAL Brokerage is a solid cloud brokerage with a great community. But their 85/15 split still takes a percentage of every commission &mdash; and their $12,000 cap is more than double LPT's.</p>
     <div class="hero-actions fade-up d4">
       <a href="/commission-calculator" class="btn-primary">Run My Numbers &rarr;</a>
-      <a href="https://calendly.com/discovertpl" target="_blank" class="btn-secondary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Strategy Call</a>
+      <a href="https://calendly.com/discovertpl" target="_blank" class="btn-secondary" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Strategy Call</a>
     </div>
   </div>
 </section>
@@ -811,7 +829,7 @@ footer {
   <p class="cta-sub reveal">No pressure. No pitch deck. Run the calculator or book 20 minutes with Joe.</p>
   <div class="cta-actions reveal">
     <a href="/commission-calculator" class="btn-primary" style="font-size:15px;padding:17px 42px;">Run My Numbers &rarr;</a>
-    <a href="https://calendly.com/discovertpl" target="_blank" class="btn-secondary" style="font-size:15px;padding:17px 42px;" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Strategy Call</a>
+    <a href="https://calendly.com/discovertpl" target="_blank" class="btn-secondary" style="font-size:15px;padding:17px 42px;" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Strategy Call</a>
   </div>
   <div class="cta-note reveal">Free &middot; No obligation &middot; Calculator requires no email</div>
 </section>
@@ -831,7 +849,7 @@ footer {
     <a href="/#who-joined">Who Joined</a>
     <a href="/resources">Free Resources</a>
     <a href="/blog">Blog</a>
-    <a href="https://calendly.com/discovertpl" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname})">Book a Call</a>
+    <a href="https://calendly.com/discovertpl" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
   </div>
   <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
 </footer>
