@@ -94,9 +94,13 @@
 - All pages include GA (G-X6WMCMBJ9R), Google Ads (AW-11351310286), Meta Pixel (34463024060012400)
 - All competitor numbers marked [VERIFY] for manual review
 
-## Remaining DNS Task
-- Add A record: `portal.tplcollective.ai` → `187.77.213.230` in Namecheap
-- Traefik is already configured to handle it — SSL will auto-provision via Let's Encrypt
+## DNS — Complete ✅
+- `@` → 216.198.79.1 (root domain)
+- `mission` → 187.77.213.230 (Mission Control)
+- `portal` → 187.77.213.230 (Agent Portal)
+- `www` → Vercel CNAME
+- `send` MX → Amazon SES (Resend)
+- Traefik handles SSL via Let's Encrypt for mission + portal subdomains
 
 ## Rules
 - TPL Collective ≠ LPT Realty — never conflate the two
