@@ -2,7 +2,7 @@
 
 ## Infrastructure
 - **Database**: Supabase (Postgres) — project `zyonidiybzrgklrmalbt`, region us-west-2
-  - 13 tables: leads, activity_log, emails_sent, drip_queue, users, agents, tasks, onboarding_steps, resources, email_queue, referrals, recruiting_links, content_posts
+  - 37 tables including: leads (187), activity_log, emails_sent, drip_queue, users, agents, tasks (1,588), onboarding_steps, resources, email_queue, referrals, recruiting_links (40), content_posts, lead_stage_history, revshare_entries, automation_runs, automation_settings, goals, lead_notes, lead_activity, email_funnels, email_funnel_steps, email_funnel_enrollments (239), pipelines, opportunities (188), smart_lists, contact_communications, email_suppressions, email_send_log (24,804), email_daily_limits, buyer_intake_submissions, ideas, prospects, activities, recruiting_tasks, newsletter_subscribers, newsletter_issues
   - RLS enabled on all tables, service role policies for backend access
 - VPS at 187.77.213.230 runs Mission Control in Docker (`/docker/mission-control/`)
 - FastAPI backend — modular: `main.py`, `auth.py`, `models.py`, `extended_routes.py`, `report_generator_v2.py`
@@ -57,8 +57,10 @@
 - Static marketing site deployed via Vercel
 - `api/leads.js` — Vercel serverless function, writes leads directly to Supabase
 - `package.json` — has `@supabase/supabase-js` dependency
-- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, revshare, two-lanes, franchise-fees, brokerage-fees
-- Comparison pages: vs/keller-williams, vs/exp-realty, vs/exp-switch, vs/coldwell-banker, vs/century-21, vs/real-brokerage, vs/remax, vs/index (hub)
+- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, revshare, two-lanes, franchise-fees, brokerage-fees, privacy-policy
+- Comparison pages: vs/keller-williams, vs/exp-realty, vs/exp-switch, vs/coldwell-banker, vs/century-21, vs/real-brokerage, vs/remax, vs/epique-realty, vs/compass, vs/homesmart, vs/berkshire-hathaway, vs/index (hub) — 11 comparison pages total
+- Blog articles (blog/): lpt-vs-exp-realty, lpt-vs-keller-williams, lpt-vs-real-brokerage, lpt-vs-coldwell-banker, lpt-vs-epique-realty, lpt-vs-century-21, how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees — 11 blog posts total
+- Blog index (blog.html) with filter tabs, comparison + guide categories
 
 ## Build Plan (v2 Architecture) — ALL COMPLETE
 - Session 1: Database migration (13 Supabase tables, 40 recruiting links seeded) ✅
@@ -81,6 +83,16 @@
 - Supports invitee.created and invitee.canceled events
 - Optional HMAC signature verification via `calendly_signing_key` in settings.json
 - To activate: set Calendly webhook URL to `https://mission.tplcollective.ai/api/webhooks/calendly`
+
+## Phase 5 — SEO Content Expansion + Cross-Linking ✅
+- 3 new comparison pages: vs/compass, vs/homesmart, vs/berkshire-hathaway
+- 5 new SEO blog articles: how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees
+- Updated vs/index.html hub with 3 new comparison cards (now 11 total)
+- Updated blog.html with Agent Guides section (5 new cards)
+- Cross-linked 6 existing pages (index, fee-plans, lpt-explained, why-tpl, join, revshare) with new content
+- Added REAL Brokerage, HomeSmart, Epique to homepage lead form brokerage dropdown
+- All pages include GA (G-X6WMCMBJ9R), Google Ads (AW-11351310286), Meta Pixel (34463024060012400)
+- All competitor numbers marked [VERIFY] for manual review
 
 ## Remaining DNS Task
 - Add A record: `portal.tplcollective.ai` → `187.77.213.230` in Namecheap
