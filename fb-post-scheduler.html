@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="canonical" href="https://tplcollective.ai/fb-post-scheduler" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TPL Facebook Post Scheduler</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e8e8e8; min-height: 100vh; }
+
+  .header { background: #1a1a2e; border-bottom: 1px solid #2a2a4a; padding: 18px 24px; display: flex; align-items: center; gap: 16px; }
+  .header h1 { font-size: 18px; font-weight: 700; color: #fff; }
+  .header .logo { width: 36px; height: 36px; background: #1877f2; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header .badge { margin-left: auto; background: #1a3a1a; color: #4caf50; border: 1px solid #2d6a2d; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+  .tabs { display: flex; gap: 0; background: #141414; border-bottom: 1px solid #2a2a2a; padding: 0 24px; }
+  .tab { padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: #888; border-bottom: 2px solid transparent; transition: all .2s; }
+  .tab:hover { color: #ccc; }
+  .tab.active { color: #1877f2; border-bottom-color: #1877f2; }
+
+  .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Setup panel */
+  .setup-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; margin-bottom: 20px; }
+  .setup-card h2 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+  .setup-card p { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.6; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: #111; border: 1px solid #333; border-radius: 8px;
+    color: #e8e8e8; padding: 10px 14px; font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #1877f2; }
+  textarea { resize: vertical; font-family: inherit; line-height: 1.5; }
+  .form-row { margin-bottom: 16px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: #1877f2; color: #fff; }
+  .btn-primary:hover { background: #166fe5; }
+  .btn-success { background: #1a5c2a; color: #4caf50; border: 1px solid #2d6a2d; }
+  .btn-success:hover { background: #1e6b30; }
+  .btn-danger { background: #3a1a1a; color: #f44336; border: 1px solid #6a2d2d; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-ok { color: #4caf50; font-size: 13px; margin-top: 8px; display: none; }
+  .status-err { color: #f44336; font-size: 13px; margin-top: 8px; display: none; }
+
+  /* Queue panel */
+  .queue-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .queue-controls .info { font-size: 13px; color: #888; }
+  .progress-bar-wrap { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; margin-bottom: 20px; display: none; }
+  .progress-bar-wrap h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #fff; }
+  .progress-bar { background: #2a2a2a; border-radius: 20px; height: 8px; overflow: hidden; margin-bottom: 10px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #1877f2, #42a5f5); border-radius: 20px; transition: width .3s; width: 0%; }
+  .progress-log { font-size: 12px; color: #888; max-height: 120px; overflow-y: auto; }
+  .progress-log div { padding: 2px 0; }
+  .progress-log .log-ok { color: #4caf50; }
+  .progress-log .log-err { color: #f44336; }
+  .progress-log .log-info { color: #1877f2; }
+
+  .post-grid { display: grid; gap: 12px; }
+  .post-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 16px; transition: border-color .2s; }
+  .post-card:hover { border-color: #3a3a3a; }
+  .post-card.selected { border-color: #1877f2; }
+  .post-card.posted { border-color: #2d6a2d; background: #0d1a0d; }
+  .post-card.error { border-color: #6a2d2d; background: #1a0d0d; }
+
+  .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .post-day { background: #1877f2; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; min-width: 40px; text-align: center; }
+  .post-date { font-size: 12px; color: #888; }
+  .post-type { font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 4px; }
+  .post-type.value { background: #1a2a3a; color: #64b5f6; }
+  .post-type.social_proof { background: #1a3a1a; color: #81c784; }
+  .post-type.educational { background: #2a2a1a; color: #ffcc02; }
+  .post-type.direct_cta { background: #3a1a3a; color: #ce93d8; }
+  .post-time-picker { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .post-time-picker input { width: 110px; padding: 5px 8px; font-size: 12px; }
+  .post-caption { font-size: 13px; color: #ccc; line-height: 1.6; max-height: 80px; overflow: hidden; cursor: pointer; }
+  .post-caption.expanded { max-height: none; }
+  .post-caption-toggle { font-size: 11px; color: #1877f2; cursor: pointer; margin-top: 4px; }
+  .post-footer { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #222; }
+  .post-status { font-size: 12px; margin-left: auto; }
+  .post-status.pending { color: #888; }
+  .post-status.scheduled { color: #4caf50; }
+  .post-status.error { color: #f44336; }
+  .post-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #1877f2; }
+
+  .select-all-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #aaa; }
+  .select-all-row input { width: 16px; height: 16px; cursor: pointer; accent-color: #1877f2; }
+
+  .time-settings { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .time-settings label { margin-bottom: 0; font-size: 12px; }
+  .time-settings input { width: 120px; }
+  .time-settings .apply-btn { margin-left: auto; }
+
+  .summary-bar { background: #0d1a2a; border: 1px solid #1a3a5a; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px; display: flex; gap: 24px; flex-wrap: wrap; }
+  .summary-bar .stat { font-size: 12px; }
+  .summary-bar .stat span { font-weight: 700; color: #fff; }
+  .summary-bar .stat.green span { color: #4caf50; }
+  .summary-bar .stat.red span { color: #f44336; }
+  .summary-bar .stat.blue span { color: #1877f2; }
+
+  /* Instructions */
+  .instructions { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; }
+  .instructions h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #fff; }
+  .instructions ol { padding-left: 18px; }
+  .instructions li { font-size: 13px; color: #aaa; margin-bottom: 8px; line-height: 1.5; }
+  .instructions li strong { color: #e8e8e8; }
+  .instructions a { color: #1877f2; text-decoration: none; }
+  .instructions a:hover { text-decoration: underline; }
+  .instructions code { background: #2a2a2a; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #e8e8e8; }
+
+  .alert { border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; }
+  .alert-yellow { background: #2a2a0a; border: 1px solid #4a4a1a; color: #ffcc02; }
+  .alert-blue { background: #0a1a2a; border: 1px solid #1a3a5a; color: #64b5f6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">f</div>
+  <h1>TPL Collective - Facebook Post Scheduler</h1>
+  <div class="badge">30 Posts Ready</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('setup')">Setup</div>
+  <div class="tab" onclick="showTab('queue')">Post Queue (30)</div>
+</div>
+
+<div class="content">
+
+  <!-- SETUP PANEL -->
+  <div class="panel active" id="panel-setup">
+    <div class="instructions" style="margin-bottom:20px;">
+      <h3>How to get your Page Access Token</h3>
+      <ol>
+        <li>Go to <a href="https://developers.facebook.com/tools/explorer/" target="_blank">developers.facebook.com/tools/explorer</a></li>
+        <li>Select <strong>Tpl Collective App</strong> from the Meta App dropdown</li>
+        <li>Change the token type dropdown from <strong>User Token</strong> to <strong>Tpl Collective</strong> (your page)</li>
+        <li>Click <strong>Generate Access Token</strong> - approve any permissions it asks for</li>
+        <li>Copy the full token that appears and paste it below</li>
+      </ol>
+    </div>
+
+    <div class="setup-card">
+      <h2>Connection Settings</h2>
+      <p>Paste your Page Access Token below. The Page ID is pre-filled for TPL Collective.</p>
+
+      <div class="form-row">
+        <label>Page Access Token</label>
+        <input type="text" id="access-token" placeholder="EAA..." />
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Page ID</label>
+          <input type="text" id="page-id" value="221433304542300" />
+        </div>
+        <div class="form-row">
+          <label>Default Post Time (Eastern)</label>
+          <input type="time" id="default-time" value="09:00" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="verifyToken()">Verify Connection</button>
+      <div class="status-ok" id="verify-ok">Connected! Page verified.</div>
+      <div class="status-err" id="verify-err">Connection failed. Check your token.</div>
+    </div>
+
+    <div class="alert alert-yellow">
+      <strong>Note:</strong> Page Access Tokens expire. If you get auth errors while scheduling, come back here and generate a fresh token from Graph API Explorer.
+    </div>
+
+    <div class="alert alert-blue">
+      <strong>Facebook Scheduling Rules:</strong> Posts must be scheduled at least 10 minutes in the future and no more than 6 months ahead. All 30 April posts are within that window.
+    </div>
+  </div>
+
+  <!-- QUEUE PANEL -->
+  <div class="panel" id="panel-queue">
+
+    <div class="time-settings">
+      <label>Apply post time to all:</label>
+      <input type="time" id="bulk-time" value="09:00" />
+      <select id="bulk-timezone">
+        <option value="-4">Eastern (EDT, UTC-4)</option>
+        <option value="-5">Central (CDT, UTC-5)</option>
+        <option value="-6">Mountain (MDT, UTC-6)</option>
+        <option value="-7">Pacific (PDT, UTC-7)</option>
+      </select>
+      <button class="btn btn-sm btn-primary apply-btn" onclick="applyBulkTime()">Apply to All</button>
+    </div>
+
+    <div id="summary-bar" class="summary-bar" style="display:none;">
+      <div class="stat blue">Selected: <span id="stat-selected">0</span></div>
+      <div class="stat green">Scheduled: <span id="stat-scheduled">0</span></div>
+      <div class="stat red">Errors: <span id="stat-errors">0</span></div>
+      <div class="stat">Remaining: <span id="stat-remaining">0</span></div>
+    </div>
+
+    <div class="queue-controls">
+      <div class="select-all-row">
+        <input type="checkbox" id="select-all" checked onchange="toggleAll(this.checked)" />
+        <label for="select-all" style="text-transform:none; letter-spacing:0; font-size:13px; color:#aaa; margin-bottom:0;">Select all posts</label>
+      </div>
+      <button class="btn btn-success" id="schedule-btn" onclick="scheduleSelected()">Schedule Selected Posts</button>
+      <span class="info" id="queue-info">Select posts above, then click Schedule</span>
+    </div>
+
+    <div class="progress-bar-wrap" id="progress-wrap">
+      <h3 id="progress-title">Scheduling posts...</h3>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-log" id="progress-log"></div>
+    </div>
+
+    <div class="post-grid" id="post-grid"></div>
+  </div>
+
+</div>
+
+<script>
+const PAGE_ID = '221433304542300';
+
+// All 30 posts
+const POSTS = [
+  { day: 1, date: "2026-04-01", type: "value", caption: "Let's talk about the math your brokerage doesn't want you to see.\n\nIf you closed 20 deals last year at a $10K average commission, you earned $200K gross.\n\nAt a traditional 70/30 split, you kept $140K.\nAt a 80/20 split with franchise fees, maybe $148K.\n\nAt LPT Realty on the Business Builder plan? $500 per transaction. That's $10K in fees total.\n\nYou keep $190K.\n\nThat's a $42K-$50K difference. Same effort, same clients, same closings.\n\nRun your own numbers and see what you'd actually keep.\n\n#RealEstate #100PercentCommission #BrokerageSwitch #RealtorLife #TPLCollective #LPTRealty" },
+  { day: 2, date: "2026-04-02", type: "social_proof", caption: "Another TPL agent just hit their annual cap in Q1. That means every deal for the rest of 2026 is at 100% commission - zero fees to the brokerage.\n\n$5K annual cap. Once you hit it, you're done paying.\n\nMost agents at traditional brokerages never stop paying. Think about that.\n\n#TPLCollective #LPTRealty #RealEstateAgent #100PercentCommission #RealtorLife" },
+  { day: 3, date: "2026-04-03", type: "educational", caption: "How does LPT Realty's fee structure actually work? Here's the simple version.\n\nBusiness Builder Plan:\n- 100% commission on every deal\n- $500 flat transaction fee\n- $5,000 annual cap on those fees\n- Once you cap, $0 to the brokerage for the rest of the year\n\nNo royalty fees. No franchise fees. No desk fees eating into your check.\n\nTPL Collective is how we support agents making the switch - AI tools, lead gen systems, and a community that actually helps you produce.\n\nQuestions? That's literally what we're here for.\n\n#LPTRealty #TPLCollective #RealEstate #BrokerageSwitch #RealEstateAgent #100PercentCommission" },
+  { day: 4, date: "2026-04-04", type: "value", caption: "Your brokerage split isn't the only thing costing you money.\n\nAdd up what you're really paying:\n- Commission split (20-30% of every check)\n- Desk fees ($200-$800/month)\n- Technology fees ($50-$150/month)\n- Franchise fees (3-8% off the top)\n- E&O insurance markup\n- Transaction coordinator fees\n\nMost agents at big-name brokerages are giving away $25K-$50K per year in fees they don't even think about.\n\nThere's a reason agents keep switching to flat-fee models. The math is hard to argue with.\n\n#RealEstate #RealtorLife #BrokerageSwitch #RealEstateAgent #TPLCollective" },
+  { day: 5, date: "2026-04-05", type: "social_proof", caption: "We asked a TPL agent what changed after switching from Keller Williams.\n\n\"I kept an extra $27K last year. Same number of deals. Same market. I just stopped giving away a third of my income.\"\n\nThat's not a typo. $27K more in the bank from doing the exact same work.\n\n#TPLCollective #LPTRealty #RealEstate #BrokerageSwitch #RealtorLife #100PercentCommission" },
+  { day: 6, date: "2026-04-06", type: "direct_cta", caption: "Curious what you'd actually keep on a 100% commission plan?\n\nWe built a calculator for that. Plug in your average sale price, your deal count, and see the side-by-side in 30 seconds.\n\nNo sign-up. No email required. Just math.\n\nLink in bio or right here: tplcollective.ai/commission-calculator\n\n#RealEstate #100PercentCommission #TPLCollective #RealEstateAgent #BrokerageSwitch" },
+  { day: 7, date: "2026-04-07", type: "value", caption: "If you close one deal per month at a $350K sale price, here's what that looks like.\n\nAt 3% commission = $10,500 per deal.\n\n70/30 split: You keep $7,350. Brokerage keeps $3,150.\n80/20 split: You keep $8,400. Brokerage keeps $2,100.\n$500 flat fee: You keep $10,000. Brokerage gets $500.\n\nOver 12 deals that's:\n- 70/30 = $88,200 kept\n- 80/20 = $100,800 kept\n- Flat fee = $120,000 kept\n\nSame production. $20K-$32K difference.\n\n#RealEstate #RealtorLife #100PercentCommission #BrokerageSwitch #TPLCollective #LPTRealty" },
+  { day: 8, date: "2026-04-08", type: "value", caption: "Real talk - your brokerage's \"training\" and \"culture\" are not worth $30K a year.\n\nYou can get mentorship, AI tools, lead systems, and a real community without giving away a third of your commissions.\n\nTPL Collective exists because we believe agents deserve support AND their money.\n\n#TPLCollective #RealEstate #RealtorLife #BrokerageSwitch #RealEstateAgent" },
+  { day: 9, date: "2026-04-09", type: "social_proof", caption: "TPL Collective is growing because the math speaks for itself.\n\nAgents are tired of working harder just to pay their brokerage more. When you show someone they could keep an extra $20K-$40K per year, the conversation gets real.\n\nWe're not recruiting agents to fill a quota. We're helping agents who are ready to stop leaving money on the table.\n\n#TPLCollective #LPTRealty #RealEstate #100PercentCommission #RealEstateAgent" },
+  { day: 10, date: "2026-04-10", type: "educational", caption: "What is revenue share and why does it matter?\n\nAt LPT Realty, when you refer agents to the brokerage, you earn a percentage of the company's revenue from their transactions. Not from their commission - from the company's portion.\n\nThis creates a passive income stream that grows as your network grows. Some agents are earning $5K-$10K+ per month just from rev share.\n\nTPL Collective helps you build that network strategically with real tools and systems, not just \"invite your friends.\"\n\n#LPTRealty #TPLCollective #RealEstate #RevenueShare #PassiveIncome #RealEstateAgent" },
+  { day: 11, date: "2026-04-11", type: "direct_cta", caption: "15 minutes could save you $30K a year.\n\nNot a sales pitch. Just a conversation about what your current brokerage costs you vs. what it could look like.\n\nBook a quick discovery call. Worst case, you leave with clarity. Best case, you leave with a plan.\n\ncalendly.com/discovertpl\n\n#TPLCollective #BrokerageSwitch #RealEstate #RealtorLife #RealEstateAgent" },
+  { day: 12, date: "2026-04-12", type: "value", caption: "Franchise fees are the silent killer of agent income.\n\nKeller Williams: 6% franchise fee on every deal.\nColdwell Banker: 6-8% franchise fee.\nCentury 21: 6% franchise fee.\nRE/MAX: up to 5% plus monthly dues.\n\nThat's ON TOP of your commission split.\n\nSo when your brokerage says \"80/20 split\" - it's really more like 72/28 after franchise fees.\n\nLPT Realty has zero franchise fees. $500 per deal. Period.\n\n#RealEstate #BrokerageSwitch #RealtorLife #FranchiseFees #TPLCollective #100PercentCommission" },
+  { day: 13, date: "2026-04-13", type: "social_proof", caption: "\"I was paying $1,400/month just in desk fees and tech fees at my old brokerage. Before I even sold a house.\"\n\nThat's $16,800 a year gone before your first closing.\n\nAt LPT Realty you pay when you close. Not before. Not whether you sell or not. When you close.\n\nThe model just makes more sense.\n\n#RealEstate #TPLCollective #LPTRealty #BrokerageSwitch #RealtorLife" },
+  { day: 14, date: "2026-04-14", type: "value", caption: "Monday reminder: You don't owe your brokerage loyalty. They don't owe you anything either.\n\nThis is a business. Run it like one.\n\nIf a vendor charged you 25% of your revenue for services you could get for a flat $500 - you'd fire them immediately.\n\nYour brokerage split is no different. It's a business expense. And it might be your biggest one.\n\nTime to audit your P&L.\n\n#RealEstate #RealtorLife #BrokerageSwitch #RealEstateAgent #TPLCollective" },
+  { day: 15, date: "2026-04-15", type: "value", caption: "Tax day reality check.\n\nAfter splits, franchise fees, desk fees, tech fees, marketing costs, gas, and self-employment tax - most agents keep about 40-45 cents of every dollar they earn.\n\nYou can't control taxes. You can't control gas prices. But you CAN control how much your brokerage takes.\n\nSwitching from a 70/30 split to a $500 flat fee could put $20K-$40K back in your pocket. That's real money.\n\n#RealEstate #TaxDay #RealtorLife #BrokerageSwitch #100PercentCommission #TPLCollective" },
+  { day: 16, date: "2026-04-16", type: "educational", caption: "People ask: \"What's the difference between TPL Collective and LPT Realty?\"\n\nLPT Realty is the brokerage. Cloud-based, 100% commission model, $500 per deal, growing fast nationwide.\n\nTPL Collective is the team and community layer we built on top of LPT. We provide:\n- AI-powered tools for lead gen and follow-up\n- Recruiting systems and support\n- A real community (not just a Slack channel)\n- Hands-on mentorship\n\nThink of it this way: LPT gives you the best fee structure in real estate. TPL gives you the support system to actually crush it.\n\n#TPLCollective #LPTRealty #RealEstate #RealEstateAgent #BrokerageSwitch" },
+  { day: 17, date: "2026-04-17", type: "social_proof", caption: "A new agent joined TPL last month. First week, they used our AI tools to draft personalized outreach to their entire sphere.\n\nSecond week, they had 3 listing appointments booked.\n\nThat's not luck. That's what happens when you pair motivated agents with actual systems instead of just a desk and a logo.\n\n#TPLCollective #RealEstate #RealEstateAgent #RealtorLife #LPTRealty" },
+  { day: 18, date: "2026-04-18", type: "direct_cta", caption: "Weekend project: Run your numbers.\n\nTake 5 minutes and plug your real production into our calculator. Your average sale price, your deal count, your current split.\n\nSee what you'd keep at a $500 flat fee vs. what you're keeping now.\n\nNo email. No sign-up. Just the math.\n\ntplcollective.ai/commission-calculator\n\n#RealEstate #100PercentCommission #BrokerageSwitch #TPLCollective #RealtorLife" },
+  { day: 19, date: "2026-04-19", type: "value", caption: "The \"80/20 split\" at your brokerage isn't really 80/20.\n\nHere's what it actually looks like after all the fees:\n\n$10,000 commission\n- 20% split = -$2,000\n- 6% franchise fee = -$600\n- E&O fee = -$50\n- Tech fee = -$75\n- Transaction fee = -$300\n\nYou keep: $6,975 (69.75%)\n\nAt LPT: $10,000 - $500 = $9,500 (95%)\n\nThat's a $2,525 difference on a single deal. Multiply that by your annual volume.\n\n#RealEstate #BrokerageSwitch #RealtorLife #100PercentCommission #TPLCollective #RealEstateAgent" },
+  { day: 20, date: "2026-04-20", type: "social_proof", caption: "One of our agents built their revenue share to the point where it covers their mortgage payment. Every month. Passively.\n\nThey didn't do it by spamming their contacts. They did it by having real conversations with agents who were already frustrated with their splits.\n\nThe money you're leaving on the table at your current brokerage? Other agents see it too. Help them see it, and everyone wins.\n\n#TPLCollective #LPTRealty #RevenueShare #PassiveIncome #RealEstate #RealEstateAgent" },
+  { day: 21, date: "2026-04-21", type: "value", caption: "Thinking about leaving eXp Realty?\n\nYou're not alone. A lot of agents joined eXp for the stock and rev share. But the reality is:\n- $16K cap is steep\n- Stock incentives aren't what they used to be\n- Monthly cloud brokerage fees add up\n\nLPT Realty: $5K cap, $500/deal, and a rev share program that's growing fast.\n\nSame cloud model. Better math.\n\n#RealEstate #BrokerageSwitch #eXpRealty #LPTRealty #TPLCollective #100PercentCommission" },
+  { day: 22, date: "2026-04-22", type: "direct_cta", caption: "If you've been thinking about making a move, here's your sign.\n\nBook a 15-minute call with Joe. No pressure, no pitch deck, no \"let me get my manager.\"\n\nJust an honest conversation about where you are, where you want to be, and whether TPL Collective is the right fit.\n\nIf it's not? No hard feelings. But you owe it to yourself to at least look at the numbers.\n\ncalendly.com/discovertpl\n\n#TPLCollective #BrokerageSwitch #RealEstate #RealtorLife #RealEstateAgent" },
+  { day: 23, date: "2026-04-23", type: "value", caption: "Quick math for RE/MAX agents:\n\nRE/MAX model: 95/5 split sounds great - until you add the $2,000-$3,000/month in desk fees, advertising fees, and monthly dues.\n\nThat's $24K-$36K per year in overhead before your split even kicks in.\n\nLPT model: $500 per deal, $5K annual cap, zero monthly fees.\n\nAgent closing 15 deals/year:\n- RE/MAX: $30K+ in total fees\n- LPT: $5,000 (capped)\n\nThe \"95/5 split\" is a mirage when the fees are this high.\n\n#RealEstate #BrokerageSwitch #REMAX #LPTRealty #TPLCollective #100PercentCommission" },
+  { day: 24, date: "2026-04-24", type: "educational", caption: "FAQ: \"Is switching brokerages hard?\"\n\nHonest answer: It takes about a week of paperwork. That's it.\n\nYour clients don't care what brokerage logo is on your card. They hired YOU. Your relationships, your CRM data, your sphere - all of that goes with you.\n\nThe hardest part isn't the switch. The hardest part is admitting your current brokerage is costing you more than it's giving you.\n\nTPL Collective walks you through every step of the transition.\n\n#RealEstate #BrokerageSwitch #TPLCollective #RealtorLife #RealEstateAgent" },
+  { day: 25, date: "2026-04-25", type: "social_proof", caption: "We had 4 agents join TPL Collective this month alone.\n\nFrom Keller Williams. From Coldwell Banker. From boutique brokerages.\n\nDifferent backgrounds, different markets, same realization: they were paying too much for too little.\n\nThe movement is real.\n\n#TPLCollective #LPTRealty #RealEstate #BrokerageSwitch #100PercentCommission #RealEstateAgent" },
+  { day: 26, date: "2026-04-26", type: "value", caption: "What would you do with an extra $2,000 per month?\n\nThat's roughly what an agent closing 2 deals/month saves by switching from a 75/25 split to a $500 flat fee.\n\n$2K/month = $24K/year.\n\nPay off debt. Invest in marketing. Take a vacation. Save for retirement. Or just breathe a little easier.\n\nThe money is already yours. You're just giving it away right now.\n\n#RealEstate #RealtorLife #100PercentCommission #BrokerageSwitch #TPLCollective" },
+  { day: 27, date: "2026-04-27", type: "social_proof", caption: "Biggest misconception about flat-fee brokerages: \"You don't get any support.\"\n\nAt TPL Collective, our agents get:\n- AI-powered lead generation tools\n- Automated follow-up systems\n- A real community (not a Facebook group ghost town)\n- Weekly strategy calls\n- Mentorship from producing agents\n\nThe difference? You get all of that for $500/deal instead of 25% of your income.\n\nSupport and savings aren't mutually exclusive.\n\n#TPLCollective #LPTRealty #RealEstate #RealEstateAgent #BrokerageSwitch #RealtorLife" },
+  { day: 28, date: "2026-04-28", type: "value", caption: "Let's talk about the Century 21 and Coldwell Banker agents reading this.\n\nYou joined for the brand name. But your buyers and sellers? They found YOU on Zillow, Realtor.com, or through a referral. Not because of the logo on your jacket.\n\nYour brand is your name. Your reputation. Your reviews.\n\nSo why are you paying 6-8% in franchise fees for a logo that isn't driving your business?\n\nKeep your brand. Lose the fees.\n\n#RealEstate #BrokerageSwitch #ColdwellBanker #Century21 #TPLCollective #100PercentCommission" },
+  { day: 29, date: "2026-04-29", type: "direct_cta", caption: "We're not for everyone. And that's fine.\n\nTPL Collective is for agents who:\n- Want to keep more of what they earn\n- Are willing to run their business like a business\n- Value community over corporate\n- Want AI tools that actually help them produce\n- Are done making their brokerage rich\n\nIf that sounds like you, let's have a conversation.\n\ncalendly.com/discovertpl\n\n#TPLCollective #BrokerageSwitch #RealEstate #100PercentCommission #RealtorLife #RealEstateAgent" },
+  { day: 30, date: "2026-04-30", type: "direct_cta", caption: "April's almost over. How much did your brokerage take this month?\n\nAdd up your splits, franchise fees, desk fees, and monthly charges. Write that number down.\n\nNow imagine keeping most of that. Every month. For the rest of your career.\n\nThat's not a dream. That's a $500 flat fee.\n\nMay is a fresh start. Let's make it count.\n\ntplcollective.ai\n\n#RealEstate #BrokerageSwitch #TPLCollective #LPTRealty #100PercentCommission #RealtorLife #RealEstateAgent" }
+];
+
+// State
+let postStates = POSTS.map(p => ({
+  ...p,
+  selected: true,
+  time: "09:00",
+  status: "pending",
+  scheduledId: null,
+  error: null
+}));
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="showTab('${tab}')"]`).classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  if (tab === 'queue') renderQueue();
+}
+
+// Get timestamp for a date + time in Eastern time
+function getTimestamp(dateStr, timeStr, tzOffset) {
+  // dateStr: "2026-04-01", timeStr: "09:00", tzOffset: -4 (EDT)
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+  // Create UTC time by adding tzOffset hours
+  const utcHour = hour - parseInt(tzOffset);
+  const d = new Date(Date.UTC(year, month - 1, day, utcHour, minute, 0));
+  return Math.floor(d.getTime() / 1000);
+}
+
+function verifyToken() {
+  const token = document.getElementById('access-token').value.trim();
+  const pageId = document.getElementById('page-id').value.trim();
+  if (!token || !pageId) { showVerifyError('Enter token and page ID'); return; }
+
+  document.getElementById('verify-ok').style.display = 'none';
+  document.getElementById('verify-err').style.display = 'none';
+
+  fetch(`https://graph.facebook.com/v21.0/${pageId}?fields=name,id&access_token=${token}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { showVerifyError(data.error.message); return; }
+      document.getElementById('verify-ok').textContent = `Connected! Page: ${data.name} (${data.id})`;
+      document.getElementById('verify-ok').style.display = 'block';
+    })
+    .catch(() => showVerifyError('Network error - check token and try again'));
+}
+
+function showVerifyError(msg) {
+  const el = document.getElementById('verify-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function applyBulkTime() {
+  const t = document.getElementById('bulk-time').value;
+  postStates.forEach(p => p.time = t);
+  renderQueue();
+}
+
+function toggleAll(checked) {
+  postStates.forEach(p => p.status === 'pending' ? p.selected = checked : null);
+  renderQueue();
+}
+
+function togglePost(idx) {
+  if (postStates[idx].status !== 'pending') return;
+  postStates[idx].selected = !postStates[idx].selected;
+  updateCard(idx);
+  updateSummary();
+}
+
+function updateTime(idx, val) {
+  postStates[idx].time = val;
+}
+
+function expandCaption(idx) {
+  const el = document.getElementById(`caption-${idx}`);
+  const toggle = document.getElementById(`toggle-${idx}`);
+  el.classList.toggle('expanded');
+  toggle.textContent = el.classList.contains('expanded') ? 'Show less' : 'Show more';
+}
+
+function renderQueue() {
+  const grid = document.getElementById('post-grid');
+  grid.innerHTML = postStates.map((p, i) => `
+    <div class="post-card ${p.selected ? 'selected' : ''} ${p.status}" id="card-${i}">
+      <div class="post-header">
+        <input type="checkbox" class="post-checkbox" ${p.selected ? 'checked' : ''} ${p.status !== 'pending' ? 'disabled' : ''} onchange="togglePost(${i})" />
+        <div class="post-day">Day ${p.day}</div>
+        <div class="post-date">${formatDate(p.date)}</div>
+        <span class="post-type ${p.type}">${p.type.replace('_', ' ')}</span>
+        <div class="post-time-picker">
+          <input type="time" value="${p.time}" onchange="updateTime(${i}, this.value)" ${p.status !== 'pending' ? 'disabled' : ''} />
+        </div>
+      </div>
+      <div class="post-caption" id="caption-${i}">${escHtml(p.caption)}</div>
+      <div class="post-caption-toggle" id="toggle-${i}" onclick="expandCaption(${i})">Show more</div>
+      <div class="post-footer">
+        <div class="post-status ${p.status}" id="status-${i}">
+          ${p.status === 'pending' ? 'Pending' : ''}
+          ${p.status === 'scheduled' ? '✓ Scheduled' : ''}
+          ${p.status === 'error' ? '✗ ' + (p.error || 'Error') : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+  updateSummary();
+}
+
+function updateCard(idx) {
+  const p = postStates[idx];
+  const card = document.getElementById(`card-${idx}`);
+  card.className = `post-card ${p.selected ? 'selected' : ''} ${p.status}`;
+  const cb = card.querySelector('.post-checkbox');
+  if (cb) cb.checked = p.selected;
+  updateSummary();
+}
+
+function updateSummary() {
+  const sel = postStates.filter(p => p.selected && p.status === 'pending').length;
+  const sched = postStates.filter(p => p.status === 'scheduled').length;
+  const errs = postStates.filter(p => p.status === 'error').length;
+  const rem = postStates.filter(p => p.status === 'pending' && !p.selected).length;
+  document.getElementById('stat-selected').textContent = sel;
+  document.getElementById('stat-scheduled').textContent = sched;
+  document.getElementById('stat-errors').textContent = errs;
+  document.getElementById('stat-remaining').textContent = rem;
+  document.getElementById('summary-bar').style.display = 'flex';
+}
+
+function formatDate(d) {
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function logProgress(msg, type) {
+  const log = document.getElementById('progress-log');
+  const div = document.createElement('div');
+  div.className = `log-${type || 'info'}`;
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function scheduleSelected() {
+  const token = document.getElementById('access-token').value.trim();
+  const pageId = document.getElementById('page-id').value.trim();
+  const tzOffset = document.getElementById('bulk-timezone').value;
+
+  if (!token) { alert('Paste your Page Access Token in the Setup tab first.'); showTab('setup'); return; }
+
+  const toSchedule = postStates.filter(p => p.selected && p.status === 'pending');
+  if (toSchedule.length === 0) { alert('No posts selected.'); return; }
+
+  const btn = document.getElementById('schedule-btn');
+  btn.disabled = true;
+  btn.textContent = 'Scheduling...';
+
+  const wrap = document.getElementById('progress-wrap');
+  wrap.style.display = 'block';
+  document.getElementById('progress-log').innerHTML = '';
+
+  const total = toSchedule.length;
+  let done = 0;
+
+  logProgress(`Starting to schedule ${total} posts...`, 'info');
+
+  for (let i = 0; i < postStates.length; i++) {
+    const p = postStates[i];
+    if (!p.selected || p.status !== 'pending') continue;
+
+    const ts = getTimestamp(p.date, p.time, tzOffset);
+    const now = Math.floor(Date.now() / 1000);
+    const minTs = now + 600; // 10 min in future
+
+    if (ts < minTs) {
+      p.status = 'error';
+      p.error = 'Too soon (needs 10min future)';
+      logProgress(`Day ${p.day} (${p.date}): Skipped - time is in the past or too soon`, 'err');
+      updateCard(i);
+      done++;
+      setProgress(done, total);
+      continue;
+    }
+
+    logProgress(`Day ${p.day} (${p.date}): Scheduling at ${p.time} Eastern...`, 'info');
+
+    try {
+      const body = new URLSearchParams({
+        message: p.caption,
+        scheduled_publish_time: ts,
+        published: 'false',
+        access_token: token
+      });
+
+      const resp = await fetch(`https://graph.facebook.com/v21.0/${pageId}/feed`, {
+        method: 'POST',
+        body: body
+      });
+
+      const data = await resp.json();
+
+      if (data.error) {
+        p.status = 'error';
+        p.error = data.error.message.substring(0, 60);
+        logProgress(`Day ${p.day}: FAILED - ${data.error.message}`, 'err');
+      } else {
+        p.status = 'scheduled';
+        p.scheduledId = data.id;
+        logProgress(`Day ${p.day}: Scheduled! Post ID: ${data.id}`, 'ok');
+      }
+    } catch (e) {
+      p.status = 'error';
+      p.error = 'Network error';
+      logProgress(`Day ${p.day}: Network error`, 'err');
+    }
+
+    updateCard(i);
+    done++;
+    setProgress(done, total);
+
+    // Small delay to avoid rate limiting
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  const scheduled = postStates.filter(p => p.status === 'scheduled').length;
+  const errors = postStates.filter(p => p.status === 'error').length;
+  document.getElementById('progress-title').textContent = `Done! ${scheduled} scheduled, ${errors} errors`;
+  logProgress(`Complete: ${scheduled}/${total} posts scheduled successfully`, 'ok');
+
+  btn.disabled = false;
+  btn.textContent = 'Schedule Selected Posts';
+  updateSummary();
+}
+
+function setProgress(done, total) {
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// Init queue on load
+renderQueue();
+</script>
+</body>
+</html>

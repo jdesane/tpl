@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -3137,6 +3137,13 @@ async def calendly_webhook(request: Request):
 
     # Unhandled event type — acknowledge receipt
     return {"success": True, "action": "ignored", "event": event_type}
+
+
+# ── ROBOTS.TXT (block all crawlers from Mission Control) ──
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+def robots_txt():
+    return "User-agent: *\nDisallow: /\n"
 
 
 # ── SERVE DASHBOARD ──
