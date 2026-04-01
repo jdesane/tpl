@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<meta charset="UTF-8"/>
+<script src="/tpl-tracking.js" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LPT Realty vs. Berkshire Hathaway HomeServices | Fee Comparison - TPL Collective</title>
+<meta name="description" content="Berkshire Hathaway HomeServices charges franchise fees and high splits. See how much more you'd keep at LPT Realty."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #12121a;
+  --surface2:  #1a1a26;
+  --border:    #2a2a3d;
+  --accent:    #6c63ff;
+  --accent-bg: rgba(108,99,255,0.12);
+  --accent-br: rgba(108,99,255,0.3);
+  --accent-hi: #8b85ff;
+  --gold:      #f0c040;
+  --gold-bg:   rgba(240,192,64,0.1);
+  --gold-br:   rgba(240,192,64,0.25);
+  --green:     #34d399;
+  --red:       #f87171;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --dim:       #55556a;
+  --white:     #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* -- NAV -- */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 0.08em;
+  color: var(--white); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  background: var(--accent) !important; color: var(--white) !important;
+  padding: 9px 22px; border-radius: 5px;
+  font-weight: 600 !important; font-size: 13px !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase;
+  transition: all 0.2s !important;
+}
+.nav-cta:hover { background: var(--accent-hi) !important; transform: translateY(-1px); }
+
+/* -- HERO -- */
+.hero {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 120px 5% 80px;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+}
+.hero-glow {
+  position: absolute; top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 800px; margin: 0 auto; width: 100%;
+  text-align: center;
+  position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero-eyebrow::after { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 6.5vw, 86px);
+  line-height: 0.95; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 28px;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); font-weight: 300;
+  margin-bottom: 44px; max-width: 640px;
+  margin-left: auto; margin-right: auto;
+}
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.btn-primary {
+  background: var(--accent); color: var(--white);
+  padding: 15px 34px; border-radius: 6px;
+  font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-primary:hover { background: var(--accent-hi); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,99,255,0.4); }
+.btn-secondary {
+  border: 1px solid var(--border); color: var(--muted);
+  padding: 15px 32px; border-radius: 6px;
+  font-weight: 500; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s; background: transparent; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-hi); transform: translateY(-2px); }
+
+/* -- SECTION BASE -- */
+.section { padding: 96px 5%; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 20px;
+}
+.section-title em { font-style: normal; color: var(--accent-hi); }
+.section-sub {
+  font-size: 17px; line-height: 1.75;
+  color: var(--muted); max-width: 560px; font-weight: 300;
+}
+
+/* -- COMPARE TABLE -- */
+.compare-section { background: var(--surface); padding: 96px 5%; }
+.compare-table {
+  margin-top: 48px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.compare-header {
+  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.compare-header-cell {
+  padding: 16px 20px; font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--dim); font-weight: 500;
+}
+.compare-header-cell.tpl-col { color: var(--accent-hi); }
+.compare-header-cell.other-col { color: var(--muted); }
+.compare-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  border-bottom: 1px solid rgba(42,42,61,0.5);
+  transition: background 0.15s;
+}
+.compare-row:last-child { border-bottom: none; }
+.compare-row:hover { background: rgba(108,99,255,0.04); }
+.compare-cell { padding: 14px 20px; font-size: 14px; display: flex; align-items: center; }
+.compare-cell.feature { color: var(--text); font-weight: 400; }
+.compare-cell.tpl-val { color: var(--green); font-weight: 600; font-size: 15px; }
+.compare-cell.other-val { color: var(--red); font-weight: 600; font-size: 15px; }
+
+/* -- MATH SECTION -- */
+.math-section { background: var(--bg); padding: 96px 5%; }
+.math-cards {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 24px; margin-top: 48px;
+}
+.math-card {
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border-radius: 14px; padding: 40px 36px;
+  position: relative; overflow: hidden;
+}
+.math-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.math-card.rm-card { border: 1px solid rgba(248,113,113,0.25); }
+.math-card.rm-card::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+.math-card.lpt-card { border: 1px solid rgba(52,211,153,0.25); }
+.math-card.lpt-card::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+.math-card-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; margin-bottom: 24px;
+}
+.math-card.rm-card .math-card-label { color: var(--red); }
+.math-card.lpt-card .math-card-label { color: var(--green); }
+.math-line {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid rgba(42,42,61,0.4);
+  font-size: 14px; color: var(--muted); font-weight: 300;
+}
+.math-line:last-child { border-bottom: none; }
+.math-line-val { font-weight: 500; color: var(--text); }
+.math-line-val.neg { color: var(--red); }
+.math-total {
+  margin-top: 20px; padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.math-total-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--dim);
+}
+.math-total-val {
+  font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1;
+  letter-spacing: 0.02em;
+}
+.math-card.rm-card .math-total-val { color: var(--red); }
+.math-card.lpt-card .math-total-val { color: var(--green); }
+.math-takehome {
+  margin-top: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.math-takehome-label {
+  font-size: 14px; color: var(--muted); font-weight: 400;
+}
+.math-takehome-val {
+  font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1;
+  letter-spacing: 0.02em;
+}
+.math-card.rm-card .math-takehome-val { color: var(--muted); }
+.math-card.lpt-card .math-takehome-val { color: var(--green); }
+
+.math-callout {
+  margin-top: 32px;
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border: 1px solid var(--accent-br); border-radius: 14px;
+  padding: 44px 40px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.math-callout::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.math-callout-stat {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(42px, 5vw, 72px); color: var(--accent-hi);
+  line-height: 1; margin-bottom: 12px;
+}
+.math-callout-text {
+  font-size: 17px; color: var(--muted); line-height: 1.65; font-weight: 300;
+}
+.math-callout-sub {
+  font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+  color: var(--green); margin-top: 16px;
+}
+
+/* -- WHERE LPT WINS -- */
+.wins-section { background: var(--surface); padding: 96px 5%; }
+.wins-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 16px; margin-top: 48px;
+}
+.win-card {
+  background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 28px 26px; display: flex; gap: 18px; align-items: flex-start;
+  transition: all 0.2s;
+}
+.win-card:hover { border-color: var(--accent-br); transform: translateY(-2px); }
+.win-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.win-title { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 6px; }
+.win-desc { font-size: 13px; line-height: 1.65; color: var(--muted); font-weight: 300; }
+
+/* -- WHERE BHHS WINS -- */
+.honest-section { background: var(--bg); padding: 96px 5%; }
+.honest-list {
+  display: flex; flex-direction: column; gap: 16px;
+  margin-top: 48px; max-width: 800px;
+}
+.honest-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 22px 26px;
+  background: var(--surface);
+  border-radius: 8px;
+  border-left: 2px solid var(--gold);
+}
+.honest-check { color: var(--gold); font-size: 16px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+.honest-text { font-size: 14px; line-height: 1.65; color: var(--muted); font-weight: 300; }
+
+/* -- WHO IS LPT FOR -- */
+.fit-section { background: var(--surface); padding: 96px 5%; }
+.fit-list {
+  display: flex; flex-direction: column; gap: 14px;
+  margin-top: 48px; max-width: 700px;
+}
+.fit-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  font-size: 15px; color: var(--text); line-height: 1.6; font-weight: 300;
+}
+.fit-check { color: var(--green); font-size: 14px; font-weight: 700; flex-shrink: 0; margin-top: 3px; }
+
+/* -- CTA -- */
+.cta-section {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, transparent 60%);
+  border-top: 1px solid rgba(108,99,255,0.2);
+  padding: 100px 5%; text-align: center;
+  position: relative;
+}
+.cta-section::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(108,99,255,0.06), transparent);
+}
+.cta-eyebrow {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 20px;
+  position: relative; z-index: 1;
+}
+.cta-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 6vw, 80px); line-height: 1; letter-spacing: 0.02em;
+  color: var(--white); margin-bottom: 20px;
+  position: relative; z-index: 1;
+}
+.cta-title em { font-style: normal; color: var(--accent-hi); }
+.cta-sub {
+  font-size: 17px; color: var(--muted); font-weight: 300;
+  max-width: 560px; margin: 0 auto 40px; line-height: 1.75;
+  position: relative; z-index: 1;
+}
+.cta-actions {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  position: relative; z-index: 1; margin-bottom: 20px;
+}
+.cta-note {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em;
+  color: var(--dim); text-transform: uppercase;
+  position: relative; z-index: 1;
+}
+
+/* -- DISCLAIMER -- */
+.disclaimer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 40px 5%;
+}
+.disclaimer p {
+  max-width: 900px; margin: 0 auto;
+  font-size: 11px; line-height: 1.8; color: var(--dim);
+  font-weight: 300; text-align: center;
+}
+
+/* -- FOOTER -- */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 40px 5%; text-align: center;
+}
+.footer-brand {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  color: var(--white); letter-spacing: 0.1em; margin-bottom: 20px;
+}
+.footer-brand span { color: var(--accent); }
+.footer-links { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.footer-links a { color: var(--dim); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--accent-hi); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+
+/* -- REVEAL ANIMATION -- */
+.reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+.d1 { transition-delay: 0.05s; } .d2 { transition-delay: 0.15s; }
+.d3 { transition-delay: 0.25s; } .d4 { transition-delay: 0.35s; }
+
+/* -- HAMBURGER -- */
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.mobile-menu {
+  display: none; position: fixed; top: 68px; left: 0; right: 0;
+  background: rgba(10,10,15,0.98); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-direction: column; padding: 20px 5% 28px; gap: 0; z-index: 99;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  color: var(--muted); font-size: 15px; font-weight: 500;
+  text-decoration: none; padding: 14px 0;
+  border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--white); }
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu .nav-cta {
+  margin-top: 16px; text-align: center;
+  background: var(--accent) !important; color: var(--white) !important;
+  border-radius: 6px; padding: 13px !important;
+  font-weight: 600 !important; letter-spacing: 0.05em !important;
+  text-transform: uppercase; border: none;
+}
+
+/* -- TABLET (<=900px) -- */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero { padding: 100px 5% 60px; }
+  .math-cards { grid-template-columns: 1fr; }
+  .wins-grid { grid-template-columns: 1fr; }
+  .compare-table { overflow-x: auto; }
+  .compare-header, .compare-row { grid-template-columns: 2fr 1fr 1fr; min-width: 480px; }
+  .section { padding: 64px 5%; }
+  footer { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
+/* -- PHONE (<=480px) -- */
+@media (max-width: 480px) {
+  .hero { padding: 88px 4% 52px; min-height: auto; }
+  .hero h1 { font-size: clamp(40px, 12vw, 60px); }
+  .hero-sub { font-size: 15px; }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-secondary { width: 100%; text-align: center; }
+  .section { padding: 52px 4%; }
+  .section-title { font-size: clamp(32px, 10vw, 48px); }
+  .math-callout-stat { font-size: 48px; }
+  .math-total-val { font-size: 28px; }
+  .math-takehome-val { font-size: 32px; }
+  .math-card { padding: 28px 22px; }
+  .cta-actions { flex-direction: column; align-items: center; }
+  .cta-actions .btn-primary,
+  .cta-actions .btn-secondary { width: 100%; max-width: 320px; text-align: center; }
+  .btn-primary, .btn-secondary { padding: 14px 24px; font-size: 13px; }
+  .win-card { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/resources">Free Resources</a>
+    <a href="/blog">Blog</a>
+    <a href="https://calendly.com/discovertpl" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/resources">Free Resources</a>
+  <a href="/blog">Blog</a>
+  <a href="https://calendly.com/discovertpl" class="nav-cta" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow fade-up d1">Commission Comparison</div>
+    <h1 class="fade-up d2">The Berkshire Name Is Costing You<br><em>Tens of Thousands a Year</em></h1>
+    <p class="hero-sub fade-up d3">Berkshire Hathaway HomeServices carries one of the most recognized names in business. But that prestige comes with high splits, franchise fees, and no cap in most offices. Here's what the numbers actually look like.</p>
+    <div class="hero-actions fade-up d4">
+      <a href="/commission-calculator" class="btn-primary">Run My Numbers &rarr;</a>
+      <a href="https://calendly.com/discovertpl" class="btn-secondary" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Strategy Call</a>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON TABLE -->
+<section class="compare-section section">
+  <div class="section-inner">
+    <div class="section-label reveal">Side by Side</div>
+    <h2 class="section-title reveal">The Numbers Don't Lie</h2>
+    <div class="compare-table reveal">
+      <div class="compare-header">
+        <div class="compare-header-cell">Feature</div>
+        <div class="compare-header-cell tpl-col">LPT Realty</div>
+        <div class="compare-header-cell other-col">BHHS</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Commission Split</div>
+        <div class="compare-cell tpl-val">100% - you keep it all</div>
+        <div class="compare-cell other-val">60/40 to 80/20 (varies) [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Annual Cap</div>
+        <div class="compare-cell tpl-val">$5,000</div>
+        <div class="compare-cell other-val">No cap in most offices [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Franchise Fee</div>
+        <div class="compare-cell tpl-val">None</div>
+        <div class="compare-cell other-val">6-8% on top of splits [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Desk Fee</div>
+        <div class="compare-cell tpl-val">$0</div>
+        <div class="compare-cell other-val">Varies - many offices charge [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Per-Deal Fee</div>
+        <div class="compare-cell tpl-val">$500 flat (capped at $5K) + $195 processing</div>
+        <div class="compare-cell other-val">$200-$500/deal [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Annual Fee</div>
+        <div class="compare-cell tpl-val">$500</div>
+        <div class="compare-cell other-val">Varies by office [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Revenue Share</div>
+        <div class="compare-cell tpl-val">HybridShare available</div>
+        <div class="compare-cell other-val">None [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">Stock / Equity</div>
+        <div class="compare-cell tpl-val">LPTA (Nasdaq reserved)</div>
+        <div class="compare-cell other-val">None for agents [VERIFY]</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell feature">AI Tools</div>
+        <div class="compare-cell tpl-val">Dezzy.ai &middot; RecruitAssist &middot; Media Stack</div>
+        <div class="compare-cell other-val">Limited - varies by office [VERIFY]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MATH SECTION -->
+<section class="math-section section">
+  <div class="section-inner">
+    <div class="section-label reveal">The Math</div>
+    <h2 class="section-title reveal">Same Agent. Same 12 Deals. <em>Different Take-Home.</em></h2>
+    <p class="section-sub reveal" style="margin-bottom: 8px;">12 deals &middot; $450K avg price &middot; 2.5% commission &middot; $135,000 GCI</p>
+
+    <div class="math-cards">
+      <!-- BHHS Card -->
+      <div class="math-card rm-card reveal">
+        <div class="math-card-label">BHHS (Typical 70/30 Office) [VERIFY]</div>
+        <div class="math-line">
+          <span>Gross Commission (GCI)</span>
+          <span class="math-line-val">$135,000</span>
+        </div>
+        <div class="math-line">
+          <span>Brokerage split (30% of GCI) [VERIFY]</span>
+          <span class="math-line-val neg">&minus;$40,500</span>
+        </div>
+        <div class="math-line">
+          <span>Franchise fee (~6% of GCI) [VERIFY]</span>
+          <span class="math-line-val neg">&minus;$8,100</span>
+        </div>
+        <div class="math-line">
+          <span>Transaction fees ($295 &times; 12) [VERIFY]</span>
+          <span class="math-line-val neg">&minus;$3,540</span>
+        </div>
+        <div class="math-line">
+          <span>Annual/E&amp;O fees [VERIFY]</span>
+          <span class="math-line-val neg">&minus;$800</span>
+        </div>
+        <div class="math-total">
+          <span class="math-total-label">Total Cost</span>
+          <span class="math-total-val">$52,940</span>
+        </div>
+        <div class="math-takehome">
+          <span class="math-takehome-label">Take-Home</span>
+          <span class="math-takehome-val">$82,060</span>
+        </div>
+      </div>
+
+      <!-- LPT Card -->
+      <div class="math-card lpt-card reveal">
+        <div class="math-card-label">LPT Realty (Business Builder)</div>
+        <div class="math-line">
+          <span>Gross Commission (GCI)</span>
+          <span class="math-line-val">$135,000</span>
+        </div>
+        <div class="math-line">
+          <span>Flat fees ($500/deal, capped $5K)</span>
+          <span class="math-line-val neg">&minus;$5,000</span>
+        </div>
+        <div class="math-line">
+          <span>Processing fees ($195 &times; 12)</span>
+          <span class="math-line-val neg">&minus;$2,340</span>
+        </div>
+        <div class="math-line">
+          <span>Annual fee</span>
+          <span class="math-line-val neg">&minus;$500</span>
+        </div>
+        <div class="math-total">
+          <span class="math-total-label">Total Cost</span>
+          <span class="math-total-val">$7,840</span>
+        </div>
+        <div class="math-takehome">
+          <span class="math-takehome-label">Take-Home</span>
+          <span class="math-takehome-val">$127,160</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Callout -->
+    <div class="math-callout reveal">
+      <div class="math-callout-stat">You'd Keep ~$45,100 More Per Year at LPT</div>
+      <p class="math-callout-sub">Based on a typical BHHS office with 70/30 split + 6% franchise fee [VERIFY]</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHERE LPT WINS -->
+<section class="wins-section section">
+  <div class="section-inner">
+    <div class="section-label reveal">Where LPT Wins</div>
+    <h2 class="section-title reveal">The <em>Advantages</em> Are Clear</h2>
+    <div class="wins-grid">
+      <div class="win-card fade-up d1">
+        <div class="win-icon">&#x1F4B0;</div>
+        <div>
+          <div class="win-title">100% Commission, $5K Cap</div>
+          <div class="win-desc">BHHS agents give up 20-40% of every check. At LPT, you keep 100% of your commission with a $5,000 annual cap on flat fees. No splits. Ever.</div>
+        </div>
+      </div>
+      <div class="win-card fade-up d2">
+        <div class="win-icon">&#x1F6AB;</div>
+        <div>
+          <div class="win-title">No Franchise Fees</div>
+          <div class="win-desc">BHHS charges 6-8% franchise fees on top of your split. LPT is not a franchise - no royalty payments eating into your commission.</div>
+        </div>
+      </div>
+      <div class="win-card fade-up d3">
+        <div class="win-icon">&#x1F916;</div>
+        <div>
+          <div class="win-title">AI Tools No Other Brokerage Has</div>
+          <div class="win-desc">Dezzy.ai, RecruitAssist, and Media Stack are built exclusively for TPL Collective agents. BHHS offices rely on whatever tech the local franchise provides.</div>
+        </div>
+      </div>
+      <div class="win-card fade-up d4">
+        <div class="win-icon">&#x1F4C8;</div>
+        <div>
+          <div class="win-title">HybridShare Revenue Share</div>
+          <div class="win-desc">BHHS doesn't offer revenue share or equity for agents. LPT's Brokerage Partner plan includes 7-tier HybridShare - build passive income by growing your team.</div>
+        </div>
+      </div>
+      <div class="win-card fade-up d1">
+        <div class="win-icon">&#x1F4CA;</div>
+        <div>
+          <div class="win-title">Agent Equity (LPTA)</div>
+          <div class="win-desc">LPT agents can earn stock equity as they produce. BHHS agents build the brand's value with zero ownership upside.</div>
+        </div>
+      </div>
+      <div class="win-card fade-up d2">
+        <div class="win-icon">&#x1F3AF;</div>
+        <div>
+          <div class="win-title">Predictable, Low Costs</div>
+          <div class="win-desc">$500/deal flat fee, $195 processing, $500/year. That's it. No percentage-based splits that punish you for closing bigger deals.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHERE BHHS WINS -->
+<section class="honest-section section">
+  <div class="section-inner">
+    <div class="section-label reveal">Where BHHS Wins</div>
+    <h2 class="section-title reveal">We'll Be <em>Honest</em></h2>
+    <div class="honest-list">
+      <div class="honest-item fade-up d1">
+        <div class="honest-check">&#10003;</div>
+        <div class="honest-text">Luxury brand prestige - The Berkshire Hathaway name carries weight, especially in the luxury market. For high-end listings, the brand recognition can help open doors. [VERIFY]</div>
+      </div>
+      <div class="honest-item fade-up d2">
+        <div class="honest-check">&#10003;</div>
+        <div class="honest-text">Established referral networks - BHHS has built-in referral networks across their offices nationwide. Agents who rely heavily on company-generated leads may benefit from those pipelines. [VERIFY]</div>
+      </div>
+      <div class="honest-item fade-up d3">
+        <div class="honest-check">&#10003;</div>
+        <div class="honest-text">In-person offices and mentorship - For newer agents who want a physical office, in-person training, and hands-on mentorship from a managing broker, BHHS offices provide that structure. [VERIFY]</div>
+      </div>
+      <div class="honest-item fade-up d4">
+        <div class="honest-check">&#10003;</div>
+        <div class="honest-text">Name recognition with sellers - Some sellers specifically seek out agents at well-known brokerages. The Berkshire Hathaway name can be a differentiator in competitive listing presentations. [VERIFY]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO IS LPT BEST FOR -->
+<section class="fit-section section">
+  <div class="section-inner">
+    <div class="section-label reveal">Is LPT Right for You?</div>
+    <h2 class="section-title reveal">LPT Is Built for Agents Who&hellip;</h2>
+    <div class="fit-list">
+      <div class="fit-item fade-up d1">
+        <span class="fit-check">&#10003;</span>
+        <span>Are BHHS agents losing thousands every year to splits and franchise fees</span>
+      </div>
+      <div class="fit-item fade-up d2">
+        <span class="fit-check">&#10003;</span>
+        <span>Don't need the Berkshire Hathaway brand name to win listings and close deals</span>
+      </div>
+      <div class="fit-item fade-up d3">
+        <span class="fit-check">&#10003;</span>
+        <span>Want AI-powered technology and recruiting tools built into their brokerage</span>
+      </div>
+      <div class="fit-item fade-up d4">
+        <span class="fit-check">&#10003;</span>
+        <span>Are looking for revenue share income and equity on top of commissions</span>
+      </div>
+      <div class="fit-item fade-up d4">
+        <span class="fit-check">&#10003;</span>
+        <span>Are tired of watching 20-40% of every check go to their brokerage</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-eyebrow reveal">Ready to See Your Numbers?</div>
+  <h2 class="cta-title reveal">Your Split Is<br><em>Costing You a Fortune</em></h2>
+  <p class="cta-sub reveal">No pressure. No pitch deck. Run the calculator yourself or book 20 minutes with Joe. Either way - just math.</p>
+  <div class="cta-actions reveal">
+    <a href="/commission-calculator" class="btn-primary">Run My Numbers &rarr;</a>
+    <a href="https://calendly.com/discovertpl" class="btn-secondary" target="_blank" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Strategy Call</a>
+  </div>
+  <p class="cta-note reveal">Free &middot; No obligation &middot; Calculator requires no email</p>
+</section>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  <p>Berkshire Hathaway HomeServices fees vary significantly by franchise office, region, and individual agent agreement. Figures shown are estimated ranges based on publicly reported data and are marked [VERIFY]. BHHS is a franchise - each office is independently owned and operated. LPT Realty figures reflect the current published Business Builder fee structure. TPL Collective is a community platform. LPT Realty is the brokerage.</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL<span>.</span></div>
+  <div class="footer-links">
+    <a href="/">Home</a><a href="/lpt-explained">LPT Explained</a><a href="/why-tpl">Why TPL</a><a href="/fee-plans">Fee Plans</a><a href="/resources">Free Resources</a><a href="/blog">Blog</a><a href="https://calendly.com/discovertpl" onclick="gtag('event','calendly_click',{'page_location':window.location.pathname});fbq('track','Schedule',{content_name:'Discovery Call'})">Book a Call</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal, .fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
