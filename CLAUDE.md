@@ -19,9 +19,10 @@
 - 7-day token expiry, role-based access (admin/agent)
 - Login: POST /api/auth/login returns JWT + user object
 
-## API Endpoints (all sessions complete)
+## API Endpoints
 - **Auth**: login, me, set-password
 - **Leads**: full CRUD with lead_score, ai_draft, stage, temperature, /stats, /hot, backward-compatible POST
+- **Contacts**: CRUD + profile views, status management, column picker, communications log
 - **Tasks**: CRUD + /today (powers "Today's Actions")
 - **Agents**: CRUD + /stats, /leaderboard, /tree, onboarding steps auto-created
 - **Dashboard**: /overview, /funnel, /growth, /pipeline-health, /tasks-today
@@ -29,35 +30,53 @@
 - **Referrals**: CRUD with agent relationships
 - **Recruiting Links**: CRUD + click tracking (40 seeded)
 - **Content Posts**: CRUD + calendar view
-- **Email**: /queue, /stats
-- **AI Actions**: score-leads, who-to-call, draft-dm, weekly-plan, generate-tasks
+- **Pipelines & Opportunities**: CRUD, pipeline management (188 opportunities tracked)
+- **Email Funnels**: CRUD + steps + enrollments (18 funnels, 48 steps, 239 enrollments)
+- **Email**: /queue, /stats, /send-log, /daily-limits, /suppressions, open tracking pixel
+- **Smart Lists**: CRUD (7 saved filters)
+- **Lead Notes & Activity**: CRUD (112 notes, 1,254 activity entries)
+- **AI Actions**: score-leads, who-to-call, draft-dm, weekly-plan, generate-tasks, generate-content, generate-image
 - **Drip**: process, status, cancel
+- **Webhooks**: POST /api/webhooks/calendly, POST /api/webhooks/resend
+- **Newsletter**: subscribers + issues CRUD (4 issues)
+- **Ideas Inbox**: CRUD (PWA at /ideas)
+- **Automations**: automation_runs, automation_settings (daily briefing, hot alerts)
 - **Settings/Notifications**: Resend API key, notification toggles
 
 ## Mission Control Dashboard (mission.tplcollective.ai)
 - **Dashboard**: 5 metric cards, recruiting funnel, hottest leads, Today's Actions, pipeline health gauge, 4 AI quick-action buttons, activity feed, system status
-- **Leads**: table + kanban, stage filters, search, scored lead cards, Draft DM per lead
-- **Pipeline**: full kanban board
+- **Contacts/Leads**: full CRM with column picker, profile views, status dropdown, stage management, lead notes, activity timeline, communications log, unsubscribe flow with auto-tag
+- **Pipeline**: kanban board with opportunities (188 tracked)
+- **Email Funnels**: 18 funnels with 48 steps, 239 enrollments, visual builder
+- **Smart Lists**: 7 saved filtered views
 - **Agents**: stats cards, agent table with production/engagement, Add Agent with auto-onboarding
-- **Email Drips**: stats + 5-step drip sequence reference
-- **Content Hub**: social post grid with create/edit
+- **Email System**: send log (24,800+ tracked), daily rate limits, suppression list, open/click tracking
+- **Content Hub**: social post grid with create/edit, 30-day content calendar
 - **Recruiting Links**: brokerage filter dropdown, grouped link tables with Copy button
-- **Settings**: notification toggles, Resend API key
+- **Ideas Inbox**: capture and track business ideas
+- **Newsletter**: subscriber management + issue tracking
+- **AI Generators**: Email Writer, Content Generator (multi-model), Image Generator (DALL-E 3)
+- **Automations**: daily morning briefing (4 AM EST), hot lead alerts, 1,262 automation runs logged
+- **Settings**: notification toggles, Resend API key, automation config
 
-## Agent Portal (mission.tplcollective.ai/portal)
+## Agent Portal (portal.tplcollective.ai)
 - JWT login page (agents use own credentials)
 - Dashboard: onboarding progress ring, checklist with toggle-to-complete, referrals summary, quick access cards
 - Resources: downloadable resource vault
 - Referrals: tracker table + refer form
 - Community: Discord invite + Book 1-on-1 with Joe
 - LPT Tools: external links to Lofty CRM + Dotloop
-- **DNS**: needs portal.tplcollective.ai A record pointing to 187.77.213.230 (Traefik routing ready)
+- DNS: portal A record -> 187.77.213.230 (done, SSL auto-provisioned via Traefik)
 
 ## Local site (this repo)
-- Static marketing site deployed via Vercel
+- Static marketing site deployed via Vercel (auto-deploy on push to main)
 - `api/leads.js` — Vercel serverless function, writes leads directly to Supabase
+- `api/fetch-title.js` — Vercel serverless function, fetches page titles
 - `package.json` — has `@supabase/supabase-js` dependency
-- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, revshare, two-lanes, franchise-fees, brokerage-fees, privacy-policy
+- `tpl-tracking.js` — custom visitor tracking script loaded on all pages
+- `downloads/` — 8 PDF resources (20-questions, tax-deductions, buyer-checklist, listing-checklist, 90-day-plan, open-house-sign-in, soi-tracker, 27k-worksheet)
+- `social-graphics/` — Puppeteer-based social media graphics generator
+- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, revshare, two-lanes, franchise-fees, brokerage-fees, privacy-policy, 404, fb-post-scheduler, ideas/index
 - Comparison pages: vs/keller-williams, vs/exp-realty, vs/exp-switch, vs/coldwell-banker, vs/century-21, vs/real-brokerage, vs/remax, vs/epique-realty, vs/compass, vs/homesmart, vs/berkshire-hathaway, vs/index (hub) — 11 comparison pages total
 - Blog articles (blog/): lpt-vs-exp-realty, lpt-vs-keller-williams, lpt-vs-real-brokerage, lpt-vs-coldwell-banker, lpt-vs-epique-realty, lpt-vs-century-21, how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees — 11 blog posts total
 - Blog index (blog.html) with filter tabs, comparison + guide categories
@@ -84,7 +103,25 @@
 - Optional HMAC signature verification via `calendly_signing_key` in settings.json
 - To activate: set Calendly webhook URL to `https://mission.tplcollective.ai/api/webhooks/calendly`
 
-## Phase 5 — SEO Content Expansion + Cross-Linking ✅
+## Phase 5 — CRM & Automation Expansion ✅
+- Full contacts system with column picker, profile views, status management, unsubscribe flow
+- Opportunities & Pipelines (188 opportunities tracked)
+- Email Funnels system (18 funnels, 48 steps, 239 enrollments)
+- Smart Lists (7 saved filters)
+- Email rails: suppression list, daily rate limits, send logging (24,800+ sends), unsubscribe with auto-tag
+- Daily morning briefing automation (4 AM EST)
+- Hot lead alerts
+- Ideas Inbox with PWA capture form at /ideas
+- Newsletter system (subscribers + 4 issues)
+- AI generators: Email Writer, Content Generator (multi-model), Image Generator (DALL-E 3)
+- Visitor tracking + calculator gate bypass
+- Short URLs + dedup activities + email engagement tracking
+- Facebook ad copy + Google ad copy + 30-day content calendar
+- Meta Pixel + Google Ads conversion tags on all pages
+- Privacy policy page for Meta app approval
+- Database expanded from 13 to 37 tables
+
+## Phase 6 — SEO Content Expansion + Cross-Linking ✅
 - 3 new comparison pages: vs/compass, vs/homesmart, vs/berkshire-hathaway
 - 5 new SEO blog articles: how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees
 - Updated vs/index.html hub with 3 new comparison cards (now 11 total)
