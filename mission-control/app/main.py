@@ -2310,7 +2310,8 @@ async def send_daily_report():
 
     # Ideas Captured
     type_icons = {"idea": "\U0001F4A1", "link": "\U0001F517", "video": "\U0001F3AC", "screenshot": "\U0001F4F7", "screen_recording": "\U0001F4F1"}
-    idea_items = [f"{type_icons.get(i.get('type', 'idea'), '\U0001F4A1')} {i['title']}" + (f" — {i['url']}" if i.get('url') else "") for i in new_ideas]
+    bulb = "\U0001F4A1"
+    idea_items = [f"{type_icons.get(i.get('type', 'idea'), bulb)} {i['title']}" + (f" - {i['url']}" if i.get('url') else "") for i in new_ideas]
     ideas_html = stat_row("New ideas (24h)", str(len(new_ideas)), "#f0c040" if new_ideas else "#8888aa")
     ideas_html += stat_row("Total in inbox", str(ideas_inbox.count or 0), "#6c63ff" if (ideas_inbox.count or 0) > 0 else "#8888aa")
     if idea_items:
