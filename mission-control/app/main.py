@@ -3140,6 +3140,317 @@ async def calendly_webhook(request: Request):
     return {"success": True, "action": "ignored", "event": event_type}
 
 
+# ── META LEADS WEBHOOK ──
+
+@app.get("/api/webhooks/meta-leads")
+async def meta_leads_verify(request: Request):
+    """Handle Meta webhook verification challenge (required for setup)."""
+    params = request.query_params
+    mode = params.get("hub.mode", "")
+    token = params.get("hub.verify_token", "")
+    challenge = params.get("hub.challenge", "")
+
+    settings = load_settings()
+    verify_token = settings.get("meta_webhook_verify_token", "tpl-meta-leads-2026")
+
+    if mode == "subscribe" and token == verify_token:
+        return PlainTextResponse(content=challenge)
+    raise HTTPException(status_code=403, detail="Verification failed")
+
+
+@app.post("/api/webhooks/meta-leads")
+async def meta_leads_webhook(request: Request):
+    """Handle Meta Lead Ads webhook - fetches lead data from Graph API and creates lead in Supabase."""
+    body = await request.body()
+
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    settings = load_settings()
+    page_access_token = settings.get("meta_page_access_token", "")
+
+    leads_created = []
+
+    # Meta sends: {"entry": [{"changes": [{"field": "leadgen", "value": {"leadgen_id": "...", "page_id": "..."}}]}]}
+    entries = data.get("entry", [])
+    if not entries:
+        # Also support direct POST format: {"name": "...", "email": "...", "phone": "..."}
+        # This allows Zapier/Make or manual integrations
+        if data.get("email"):
+            lead_result = await _create_meta_lead(
+                name=data.get("full_name") or data.get("name", "Unknown"),
+                email=data["email"],
+                phone=data.get("phone_number") or data.get("phone", ""),
+                form_name=data.get("form_name", "Direct Post"),
+                campaign_name=data.get("campaign_name", ""),
+                ad_name=data.get("ad_name", ""),
+                platform=data.get("platform", "meta"),
+                settings=settings
+            )
+            return {"success": True, "action": "lead_created", "leads": [lead_result]}
+        return {"success": True, "action": "no_entries"}
+
+    for entry in entries:
+        changes = entry.get("changes", [])
+        for change in changes:
+            if change.get("field") != "leadgen":
+                continue
+
+            value = change.get("value", {})
+            leadgen_id = value.get("leadgen_id", "")
+            form_id = value.get("form_id", "")
+
+            if not leadgen_id or not page_access_token:
+                # If no access token, log what we got and skip Graph API call
+                supabase.table("activity_log").insert({
+                    "type": "meta_lead",
+                    "message": f"Meta lead received but no page access token configured. Leadgen ID: {leadgen_id}",
+                    "meta": {"leadgen_id": leadgen_id, "form_id": form_id}
+                }).execute()
+                continue
+
+            # Fetch lead data from Meta Graph API
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(
+                        f"https://graph.facebook.com/v21.0/{leadgen_id}",
+                        params={"access_token": page_access_token}
+                    )
+                    if resp.status_code != 200:
+                        supabase.table("activity_log").insert({
+                            "type": "meta_lead",
+                            "message": f"Failed to fetch lead {leadgen_id} from Graph API: {resp.status_code}",
+                            "meta": {"leadgen_id": leadgen_id, "response": resp.text[:500]}
+                        }).execute()
+                        continue
+
+                    lead_data = resp.json()
+            except Exception as e:
+                supabase.table("activity_log").insert({
+                    "type": "meta_lead",
+                    "message": f"Error fetching lead {leadgen_id}: {str(e)}",
+                    "meta": {"leadgen_id": leadgen_id}
+                }).execute()
+                continue
+
+            # Parse field_data from Meta response
+            # Format: {"field_data": [{"name": "email", "values": ["user@example.com"]}, ...]}
+            fields = {}
+            for field in lead_data.get("field_data", []):
+                field_name = field.get("name", "").lower()
+                field_values = field.get("values", [])
+                if field_values:
+                    fields[field_name] = field_values[0]
+
+            email = fields.get("email", "")
+            if not email:
+                continue
+
+            name = fields.get("full_name", "") or fields.get("name", "Unknown")
+            phone = fields.get("phone_number", "") or fields.get("phone", "")
+
+            # Fetch form name for better source tracking
+            form_name = lead_data.get("form_name", "Meta Lead Form")
+
+            lead_result = await _create_meta_lead(
+                name=name,
+                email=email,
+                phone=phone,
+                form_name=form_name,
+                campaign_name="",
+                ad_name="",
+                platform=lead_data.get("platform", "fb"),
+                settings=settings
+            )
+            leads_created.append(lead_result)
+
+    return {"success": True, "action": "processed", "leads_created": len(leads_created), "leads": leads_created}
+
+
+async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
+                             campaign_name: str, ad_name: str, platform: str, settings: dict) -> dict:
+    """Create or update a lead from Meta Lead Ads."""
+    # Parse first/last name
+    name_parts = name.strip().split(" ", 1)
+    first_name = name_parts[0] if name_parts else "Unknown"
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+    source = "Meta Ads"
+    source_page = form_name
+    if ad_name:
+        source_page = f"{ad_name} - {form_name}"
+
+    # Check if lead already exists
+    existing = supabase.table("leads").select("id, name, status").eq("email", email).execute()
+
+    if existing.data:
+        lead = existing.data[0]
+        lead_id = lead["id"]
+        updates = {
+            "updated_at": datetime.utcnow().isoformat(),
+            "lead_temperature": "warm"
+        }
+        if phone:
+            updates["phone"] = phone
+        supabase.table("leads").update(updates).eq("id", lead_id).execute()
+
+        supabase.table("activity_log").insert({
+            "type": "meta_lead",
+            "message": f"Existing lead submitted Meta form: {name} ({email}) - {form_name}",
+            "meta": {"lead_id": lead_id, "form": form_name, "platform": platform}
+        }).execute()
+
+        # Log lead activity
+        try:
+            supabase.table("lead_activity").insert({
+                "lead_id": lead_id,
+                "type": "form_submission",
+                "description": f"Submitted Meta lead form: {form_name}",
+                "meta": {"form": form_name, "campaign": campaign_name, "ad": ad_name, "platform": platform}
+            }).execute()
+        except Exception:
+            pass
+
+        return {"lead_id": lead_id, "action": "updated", "name": name}
+    else:
+        # Detect brokerage from form/campaign name for routing
+        form_campaign_str = (form_name + " " + (campaign_name or "") + " " + (ad_name or "")).upper()
+        if "KW" in form_campaign_str or "KELLER" in form_campaign_str:
+            current_brokerage = "Keller Williams"
+            funnel_id = 20  # Commission Comparison - KW
+        elif "EXP" in form_campaign_str:
+            current_brokerage = "eXp Realty"
+            funnel_id = 16  # eXp Reality Check
+        elif "REMAX" in form_campaign_str or "RE/MAX" in form_campaign_str:
+            current_brokerage = "RE/MAX"
+            funnel_id = 17  # RE/MAX Wake Up
+        elif "CENTURY" in form_campaign_str or "C21" in form_campaign_str:
+            current_brokerage = "Century 21"
+            funnel_id = 19  # The Numbers Don't Lie (general - until C21 funnel built)
+        elif "COLDWELL" in form_campaign_str:
+            current_brokerage = "Coldwell Banker"
+            funnel_id = 18  # Legacy Brokerage Escape
+        else:
+            current_brokerage = ""
+            funnel_id = 19  # The Numbers Don't Lie (general)
+
+        # Create new lead with pipeline-ready stage
+        result = supabase.table("leads").insert({
+            "name": name,
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "phone": phone or "",
+            "source": source,
+            "source_page": source_page,
+            "stage": "new_fb_lead",
+            "lead_temperature": "warm",
+            "status": "new",
+            "current_brokerage": current_brokerage,
+            "notes": f"Meta Lead Ad submission via {form_name}. Platform: {platform}."
+        }).execute()
+
+        lead_id = result.data[0]["id"]
+
+        # Create opportunity in LPT Recruiting pipeline
+        try:
+            supabase.table("opportunities").insert({
+                "contact_id": lead_id,
+                "pipeline_id": 1,
+                "stage": "new_fb_lead",
+                "source": f"Meta Ads - {form_name}",
+                "status": "open",
+                "notes": f"Auto-created from Meta lead form. Ad: {ad_name or 'N/A'}. Campaign: {campaign_name or 'N/A'}."
+            }).execute()
+        except Exception:
+            pass
+
+        # Auto-enroll in email funnel
+        try:
+            supabase.table("email_funnel_enrollments").insert({
+                "lead_id": lead_id,
+                "funnel_id": funnel_id,
+                "current_step": 1,
+                "status": "active",
+                "enrolled_at": datetime.utcnow().isoformat()
+            }).execute()
+        except Exception:
+            pass
+
+        supabase.table("activity_log").insert({
+            "type": "meta_lead",
+            "message": f"New lead via Meta Ads: {name} ({email}) - {form_name}",
+            "meta": {"lead_id": lead_id, "form": form_name, "platform": platform, "funnel_id": funnel_id, "brokerage": current_brokerage}
+        }).execute()
+
+        # Log lead activity
+        try:
+            supabase.table("lead_activity").insert({
+                "lead_id": lead_id,
+                "type": "form_submission",
+                "description": f"Submitted Meta lead form: {form_name}",
+                "meta": {"form": form_name, "campaign": campaign_name, "ad": ad_name, "platform": platform}
+            }).execute()
+        except Exception:
+            pass
+
+        # Send notification email
+        try:
+            notif = settings.get("notifications", {})
+            if notif.get("newLead", False):
+                to_email = notif.get("email", "")
+                smtp = settings.get("smtp", {})
+                if to_email and smtp.get("pass"):
+                    subject = f"New Meta Lead: {name} - TPL Mission Control"
+                    html = _build_meta_lead_email(name, email, phone, form_name, platform)
+                    send_email(smtp, to_email, subject, html)
+        except Exception:
+            pass
+
+        return {"lead_id": lead_id, "action": "created", "name": name, "funnel_id": funnel_id, "brokerage": current_brokerage}
+
+
+def _build_meta_lead_email(name: str, email: str, phone: str, form_name: str, platform: str) -> str:
+    """Build HTML email for Meta lead notification."""
+    timestamp = datetime.utcnow().strftime("%B %d, %Y at %I:%M %p UTC")
+    platform_label = "Facebook" if platform == "fb" else "Instagram" if platform == "ig" else platform.title()
+
+    return f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
+    <div style="margin-bottom:28px;">
+      <div style="font-size:22px;font-weight:700;color:#e8e8f0;letter-spacing:2px;margin-bottom:4px;">TPL<span style="color:#6c63ff;">.</span></div>
+      <div style="font-size:11px;color:#666;letter-spacing:3px;text-transform:uppercase;">Mission Control - Meta Lead</div>
+    </div>
+    <div style="background:#12121a;border:1px solid #2a2a3d;border-radius:12px;overflow:hidden;">
+      <div style="background:#6c63ff;padding:4px 0;"></div>
+      <div style="padding:28px;">
+        <div style="font-size:11px;color:#6c63ff;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">New Lead from {platform_label}</div>
+        <div style="font-size:24px;font-weight:700;color:#e8e8f0;margin-bottom:4px;">{name}</div>
+        <div style="font-size:13px;color:#888;margin-bottom:24px;">{timestamp}</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;width:120px;">Email</td><td style="padding:8px 0;"><a href="mailto:{email}" style="color:#6c63ff;font-size:13px;text-decoration:none;">{email}</a></td></tr>
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;">Phone</td><td style="padding:8px 0;color:#e8e8f0;font-size:13px;">{phone or 'Not provided'}</td></tr>
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;">Form</td><td style="padding:8px 0;color:#e8e8f0;font-size:13px;">{form_name}</td></tr>
+          <tr><td style="padding:8px 0;color:#888;font-size:13px;">Platform</td><td style="padding:8px 0;color:#e8e8f0;font-size:13px;">{platform_label}</td></tr>
+        </table>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid #2a2a3d;">
+          <a href="https://mission.tplcollective.ai" style="display:inline-block;background:#6c63ff;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:600;">View in Mission Control &rarr;</a>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:20px;font-size:11px;color:#444;text-align:center;">TPL Collective - mission.tplcollective.ai</div>
+  </div>
+</body>
+</html>
+"""
+
+
 # ── ROBOTS.TXT (block all crawlers from Mission Control) ──
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
