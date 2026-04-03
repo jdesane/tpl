@@ -131,6 +131,20 @@
 - All pages include GA (G-X6WMCMBJ9R), Google Ads (AW-11351310286), Meta Pixel (34463024060012400)
 - All competitor numbers marked [VERIFY] for manual review
 
+## Phase 7 — Meta Ads + Lead Pipeline ✅
+- Meta ad campaign "TPL Agent Recruiting - April 2026" live at $30/day
+- Ad 1A "The 30% Reality" targeting KW agents via Advantage+ with KW employer suggestions
+- KW Commission Comparison instant form (Form ID: 2446350272487229)
+- POST /api/webhooks/meta-leads — receives Meta leadgen webhooks, fetches lead data via Graph API
+- GET /api/webhooks/meta-leads — handles Meta webhook verification challenge
+- Auto-detects brokerage from form/campaign name (KW, eXp, RE/MAX, C21, Coldwell Banker)
+- Creates opportunity in LPT Recruiting pipeline at new_fb_lead stage
+- Auto-enrolls in brokerage-specific email funnel
+- "Commission Comparison - KW" email funnel (7 emails over 21 days, funnel ID 20, trigger: new_fb_lead_kw)
+- Permanent Meta Page Access Token (never expires) stored in VPS settings
+- GHL/LeadConnector fully disconnected from Meta
+- Tpl Collective App (911974931609986) webhook subscribed to Page leadgen events
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
