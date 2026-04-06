@@ -540,6 +540,27 @@ def update_lead(lead_id: int, update: LeadUpdate):
 
 @app.delete("/api/leads/{lead_id}")
 def delete_lead(lead_id: int):
+    # Delete related records first to avoid foreign key constraint errors
+    try:
+        supabase.table("email_funnel_enrollments").delete().eq("lead_id", lead_id).execute()
+    except Exception:
+        pass
+    try:
+        supabase.table("opportunities").delete().eq("contact_id", lead_id).execute()
+    except Exception:
+        pass
+    try:
+        supabase.table("lead_activity").delete().eq("lead_id", lead_id).execute()
+    except Exception:
+        pass
+    try:
+        supabase.table("lead_notes").delete().eq("lead_id", lead_id).execute()
+    except Exception:
+        pass
+    try:
+        supabase.table("drip_queue").delete().eq("lead_id", lead_id).execute()
+    except Exception:
+        pass
     supabase.table("leads").delete().eq("id", lead_id).execute()
     return {"success": True}
 

@@ -296,6 +296,24 @@ th[onclick]:hover{color:var(--accent)}
       </div>
     </div>
   </div>
+  <!-- Bulk Actions Bar -->
+  <div id="bulk-action-bar" style="display:none;background:var(--accent-bg);border:1px solid var(--accent-br);border-radius:8px;padding:10px 16px;margin-bottom:12px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="bulk-count" style="font-size:12px;color:var(--accent);font-weight:600">0 selected</span>
+    <select id="bulk-status-select" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:11px">
+      <option value="">Set Status...</option>
+      <option value="new">New</option>
+      <option value="contacted">Contacted</option>
+      <option value="engaged">Engaged</option>
+      <option value="nurture">Nurture</option>
+      <option value="not_interested">Not Interested</option>
+      <option value="lost">Lost</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus()" style="font-size:11px">Apply Status</button>
+    <input type="text" id="bulk-tag-input" placeholder="Add tag..." style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:11px;width:120px">
+    <button class="btn btn-ghost btn-sm" onclick="bulkAddTag()" style="font-size:11px">Add Tag</button>
+    <button class="btn btn-sm" onclick="bulkDelete()" style="color:var(--red);border:1px solid var(--red);background:transparent;font-size:11px;margin-left:auto">Delete Selected</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearSelection()" style="font-size:11px">Clear</button>
+  </div>
   <!-- Table -->
   <div class="panel" style="overflow-x:auto">
     <table class="leads-table" id="contacts-table">
@@ -351,6 +369,7 @@ th[onclick]:hover{color:var(--accent)}
           <button class="btn btn-ghost btn-sm" onclick="profileAction('text')">Text</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAddNote()">Add Note</button>
           <button class="btn btn-primary btn-sm" onclick="createOpportunityForContact()">+ Opportunity</button>
+          <button class="btn btn-sm" onclick="deleteContact()" style="margin-left:8px;color:var(--red);border:1px solid var(--red);background:transparent">Delete</button>
           <select id="profile-status-select" onchange="updateContactStatus(this.value)" style="margin-left:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;min-width:140px">
             <option value="new">New</option>
             <option value="contacted">Contacted</option>
@@ -994,7 +1013,7 @@ var ALL_COLUMNS=[
   {id:'avg_price',label:'Avg Price',sortable:true,default:false,render:function(c){var p=c.avg_price?'$'+Number(c.avg_price).toLocaleString():'-';return'<span style="font-size:12px">'+p+'</span>';}},
   {id:'stage',label:'Stage',sortable:true,default:false,render:function(c){var s=c.stage||'new';return'<span class="stage-badge '+s+'" style="font-size:10px;padding:2px 8px">'+(STAGE_LABELS[s]||s)+'</span>';}},
   {id:'lead_temperature',label:'Temperature',sortable:true,default:false,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+(c.lead_temperature||'-')+'</span>';}},
-  {id:'created_at',label:'Created',sortable:true,default:false,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</span>';}},
+  {id:'created_at',label:'Date Added',sortable:true,default:true,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+fmtDate(c.created_at)+'</span>';}},
   {id:'last_contacted_at',label:'Last Activity',sortable:true,default:true,render:function(c){return'<span style="font-size:11px;color:var(--text-muted)">'+(c.last_contacted_at?fmtDate(c.last_contacted_at):'-')+'</span>';}},
   {id:'tags',label:'Tags',sortable:false,default:true,render:function(c){return(c.tags||[]).map(function(t){return'<span class="tag-chip" style="font-size:9px;padding:1px 6px">'+t+'</span>'}).join('');}},
   {id:'lead_score',label:'Score',sortable:true,default:true,render:function(c){var sc=c.lead_score||0;var cl=sc>=70?'hot':sc>=40?'warming':'cold';return'<span class="score '+cl+'" style="width:28px;height:28px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%">'+sc+'</span>';}},
@@ -1039,15 +1058,16 @@ function applySortAndRender(){
   });
   allContactsList=contacts;
   // Render header
-  document.getElementById('contacts-thead-row').innerHTML=cols.map(function(col){
+  document.getElementById('contacts-thead-row').innerHTML='<th style="width:32px"><input type="checkbox" onchange="toggleSelectAll(this.checked)" id="select-all-cb"></th>'+cols.map(function(col){
     if(col.sortable)return'<th onclick="sortContacts(\''+col.id+'\')" style="cursor:pointer">'+col.label+' <span id="sort-'+col.id+'" class="sort-arrow'+(currentSortField===col.id?' '+currentSortDir:'')+'"></span></th>';
     return'<th>'+col.label+'</th>';
   }).join('');
   // Render body
   document.getElementById('contacts-badge').textContent=contacts.length;
   document.getElementById('contacts-tbody').innerHTML=contacts.map(function(c,i){
-    return'<tr onclick="openContactFromList('+i+')" style="cursor:pointer">'+cols.map(function(col){return'<td>'+col.render(c)+'</td>';}).join('')+'</tr>';
-  }).join('')||'<tr><td colspan="'+cols.length+'" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
+    var checked=selectedContactIds.indexOf(c.id)>=0?'checked':'';
+    return'<tr style="cursor:pointer"><td onclick="event.stopPropagation()"><input type="checkbox" '+checked+' onchange="toggleSelectContact('+c.id+',this.checked)"></td>'+cols.map(function(col){return'<td onclick="openContactFromList('+i+')">'+col.render(c)+'</td>';}).join('')+'</tr>';
+  }).join('')||'<tr><td colspan="'+(cols.length+1)+'" style="text-align:center;color:var(--text-muted);padding:20px">No contacts</td></tr>';
 }
 function openContactFromList(index){contactNavIndex=index;openContactProfile(allContactsList[index].id);}
 function navigateContact(dir){
@@ -1286,6 +1306,77 @@ async function createOpportunityForContact(){
   if(!currentProfileId)return;
   await fetch(API+'/api/opportunities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contact_id:currentProfileId})});
   showToast('Opportunity created');openContactProfile(currentProfileId);
+}
+
+async function deleteContact(){
+  if(!currentProfileId||!confirm('Delete this contact and all related records? This cannot be undone.'))return;
+  await fetch(API+'/api/leads/'+currentProfileId,{method:'DELETE'});
+  showToast('Contact deleted');
+  showPage('contacts');
+  loadContacts();
+}
+
+// ── BULK SELECTION & ACTIONS ──
+var selectedContactIds=[];
+function updateBulkBar(){
+  var bar=document.getElementById('bulk-action-bar');
+  if(selectedContactIds.length>0){
+    bar.style.display='flex';
+    document.getElementById('bulk-count').textContent=selectedContactIds.length+' selected';
+  }else{
+    bar.style.display='none';
+  }
+}
+function toggleSelectContact(id,checked){
+  if(checked&&selectedContactIds.indexOf(id)<0){selectedContactIds.push(id);}
+  else if(!checked){selectedContactIds=selectedContactIds.filter(function(x){return x!==id});}
+  updateBulkBar();
+}
+function toggleSelectAll(checked){
+  if(checked){selectedContactIds=allContactsList.map(function(c){return c.id});}
+  else{selectedContactIds=[];}
+  applySortAndRender();
+  updateBulkBar();
+}
+function clearSelection(){
+  selectedContactIds=[];
+  var cb=document.getElementById('select-all-cb');if(cb)cb.checked=false;
+  applySortAndRender();
+  updateBulkBar();
+}
+async function bulkDelete(){
+  if(!selectedContactIds.length)return;
+  if(!confirm('Delete '+selectedContactIds.length+' contacts and all their related records? This cannot be undone.'))return;
+  for(var i=0;i<selectedContactIds.length;i++){
+    await fetch(API+'/api/leads/'+selectedContactIds[i],{method:'DELETE'});
+  }
+  showToast(selectedContactIds.length+' contacts deleted');
+  selectedContactIds=[];
+  updateBulkBar();
+  loadContacts();
+}
+async function bulkSetStatus(){
+  var status=document.getElementById('bulk-status-select').value;
+  if(!status||!selectedContactIds.length)return;
+  for(var i=0;i<selectedContactIds.length;i++){
+    await fetch(API+'/api/leads/'+selectedContactIds[i],{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})});
+  }
+  showToast(selectedContactIds.length+' contacts updated to '+status);
+  document.getElementById('bulk-status-select').value='';
+  loadContacts();
+}
+async function bulkAddTag(){
+  var tag=document.getElementById('bulk-tag-input').value.trim();
+  if(!tag||!selectedContactIds.length)return;
+  for(var i=0;i<selectedContactIds.length;i++){
+    var c=allContactsList.find(function(x){return x.id===selectedContactIds[i]});
+    var tags=(c&&c.tags&&Array.isArray(c.tags))?c.tags.slice():[];
+    if(tags.indexOf(tag)<0){tags.push(tag);}
+    await fetch(API+'/api/leads/'+selectedContactIds[i],{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tags:tags})});
+  }
+  showToast('Tag "'+tag+'" added to '+selectedContactIds.length+' contacts');
+  document.getElementById('bulk-tag-input').value='';
+  loadContacts();
 }
 
 function profileAction(type){
