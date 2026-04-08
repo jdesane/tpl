@@ -1287,9 +1287,25 @@ async function loadProfileNotes(id){
 
 async function loadProfileActivity(id){
   var acts=await fetch(API+'/api/leads/'+id+'/activity').then(function(r){return r.json()});
-  var icons={created:'\uD83C\uDD95',stage_change:'\uD83D\uDCCB',score_change:'\uD83C\uDFAF',note:'\uD83D\uDCDD',communication:'\uD83D\uDCE7',opportunity_created:'\uD83D\uDE80'};
+  var icons={created:'\uD83C\uDD95',stage_change:'\uD83D\uDCCB',score_change:'\uD83C\uDFAF',note:'\uD83D\uDCDD',communication:'\uD83D\uDCE7',opportunity_created:'\uD83D\uDE80',call:'\uD83D\uDCDE',meeting:'\uD83E\uDD1D',video_call:'\uD83D\uDCF9',text:'\uD83D\uDCAC',form_submission:'\uD83D\uDCCB',enrichment:'\uD83D\uDD0D'};
   document.getElementById('profile-activity-list').innerHTML=acts.map(function(a){
-    return'<div class="activity-item-crm"><span>'+(icons[a.activity_type]||'\u2022')+' </span>'+a.description+' <span style="color:var(--text-muted);font-size:10px;margin-left:8px">'+new Date(a.created_at).toLocaleString()+'</span></div>';
+    var desc=a.description||'';
+    // Check if this is a call/meeting log with outline
+    var hasOutline=desc.indexOf('TOPICS DISCUSSED:')>=0||desc.indexOf('OBJECTIONS')>=0||desc.indexOf('ACTION ITEMS:')>=0;
+    var formattedDesc=desc.replace(/\n/g,'<br>');
+    if(hasOutline){
+      // Split into summary (first line) and outline (rest)
+      var lines=desc.split('\n');
+      var summaryLine=lines[0];
+      var outlineText=lines.slice(1).join('\n').trim();
+      var outlineId='outline-'+a.id;
+      return'<div class="activity-item-crm" style="padding:10px 0;border-bottom:1px solid var(--border)">'+
+        '<div><span>'+(icons[a.activity_type]||icons[a.type]||'\u2022')+' </span><strong>'+summaryLine+'</strong> <span style="color:var(--text-muted);font-size:10px;margin-left:8px">'+new Date(a.created_at).toLocaleString()+'</span></div>'+
+        (outlineText?'<div onclick="var el=document.getElementById(\''+outlineId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="cursor:pointer;color:var(--accent);font-size:11px;margin-top:4px">View call outline</div>'+
+        '<div id="'+outlineId+'" style="display:none;margin-top:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:11px;white-space:pre-wrap;line-height:1.6;color:var(--text-dim)">'+outlineText+'</div>':'')+
+      '</div>';
+    }
+    return'<div class="activity-item-crm"><span>'+(icons[a.activity_type]||icons[a.type]||'\u2022')+' </span>'+formattedDesc+' <span style="color:var(--text-muted);font-size:10px;margin-left:8px">'+new Date(a.created_at).toLocaleString()+'</span></div>';
   }).join('')||'<div style="font-size:12px;color:var(--text-muted);padding:12px 0">No activity yet</div>';
 }
 
@@ -1390,21 +1406,26 @@ function logCallMeeting(){
   var modal=document.createElement('div');
   modal.id='log-call-modal';
   modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center';
-  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:500px;width:90%">'+
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto">'+
     '<div style="font-family:Bebas Neue;font-size:20px;color:var(--text);margin-bottom:16px">Log Call / Meeting</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:12px">'+
       '<select id="log-type" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
-        '<option value="call">Phone Call</option><option value="meeting">Meeting</option><option value="video_call">Video Call</option><option value="text">Text</option>'+
+        '<option value="call">Phone Call</option><option value="meeting">In-Person Meeting</option><option value="video_call">Video Call</option><option value="text">Text</option>'+
       '</select>'+
       '<select id="log-outcome" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
-        '<option value="connected">Connected</option><option value="no_answer">No Answer</option><option value="left_voicemail">Left Voicemail</option><option value="scheduled_follow_up">Scheduled Follow Up</option><option value="not_interested">Not Interested</option>'+
+        '<option value="connected">Connected</option><option value="no_answer">No Answer</option><option value="left_voicemail">Left Voicemail</option><option value="scheduled_follow_up">Scheduled Follow Up</option><option value="interested">Interested</option><option value="not_interested">Not Interested</option>'+
       '</select>'+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:12px">'+
       '<input type="date" id="log-date" value="'+new Date().toISOString().split("T")[0]+'" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
+      '<input type="time" id="log-time" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
       '<input type="text" id="log-duration" placeholder="Duration (e.g. 15 min)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
     '</div>'+
-    '<textarea id="log-notes" placeholder="Notes from the call/meeting..." style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:12px"></textarea>'+
+    '<div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Call Outline</div>'+
+    '<textarea id="log-topics" placeholder="Topics Discussed\n- Current brokerage pain points\n- Commission structure comparison\n- Revenue share interest" style="width:100%;min-height:70px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:8px"></textarea>'+
+    '<textarea id="log-objections" placeholder="Objections / Concerns\n- Worried about losing listings\n- Wants to keep team together" style="width:100%;min-height:50px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:8px"></textarea>'+
+    '<textarea id="log-action-items" placeholder="Action Items / Next Steps\n- Send comparison PDF\n- Schedule follow-up call for Thursday" style="width:100%;min-height:50px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:8px"></textarea>'+
+    '<textarea id="log-notes" placeholder="Additional notes..." style="width:100%;min-height:50px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:12px"></textarea>'+
     '<div style="display:flex;gap:8px;justify-content:flex-end">'+
       '<button class="btn btn-ghost" onclick="document.getElementById(\'log-call-modal\').remove()">Cancel</button>'+
       '<button class="btn btn-primary" onclick="saveCallLog()">Save</button>'+
@@ -1417,32 +1438,45 @@ async function saveCallLog(){
   var type=document.getElementById('log-type').value;
   var outcome=document.getElementById('log-outcome').value;
   var date=document.getElementById('log-date').value;
+  var time=document.getElementById('log-time').value;
   var duration=document.getElementById('log-duration').value;
-  var notes=document.getElementById('log-notes').value;
+  var topics=document.getElementById('log-topics').value.trim();
+  var objections=document.getElementById('log-objections').value.trim();
+  var actionItems=document.getElementById('log-action-items').value.trim();
+  var notes=document.getElementById('log-notes').value.trim();
 
   var summary=type.replace(/_/g,' ')+' - '+outcome.replace(/_/g,' ')+(duration?' ('+duration+')':'');
+
+  // Build structured call outline
+  var outline='';
+  if(topics)outline+='TOPICS DISCUSSED:\n'+topics+'\n\n';
+  if(objections)outline+='OBJECTIONS/CONCERNS:\n'+objections+'\n\n';
+  if(actionItems)outline+='ACTION ITEMS:\n'+actionItems+'\n\n';
+  if(notes)outline+='NOTES:\n'+notes;
+  outline=outline.trim();
+
+  var fullBody=summary+'\n'+(time?'Time: '+time+'\n':'')+(outline?'\n'+outline:'');
 
   // Log as communication
   await fetch(API+'/api/contacts/'+currentProfileId+'/communications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     channel:type,
     direction:'outbound',
     subject:summary,
-    body:notes||'No notes',
-    created_at:date?date+'T12:00:00Z':undefined
+    body:fullBody,
+    created_at:date?(date+'T'+(time||'12:00')+':00Z'):undefined
   })});
 
-  // Log as activity
+  // Log as activity with full outline
   await fetch(API+'/api/leads/'+currentProfileId+'/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     type:type,
-    description:summary+(notes?' - '+notes:'')
+    description:summary+'\n'+outline
   })}).catch(function(){});
 
-  // Add as note too
-  if(notes){
-    await fetch(API+'/api/leads/'+currentProfileId+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      content:'['+type.toUpperCase()+'] '+outcome.replace(/_/g,' ')+(duration?' ('+duration+')':'')+': '+notes
-    })});
-  }
+  // Add as note with structured format
+  var noteContent='['+type.toUpperCase()+'] '+outcome.replace(/_/g,' ')+(duration?' ('+duration+')':'')+'\n'+outline;
+  await fetch(API+'/api/leads/'+currentProfileId+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    content:noteContent
+  })});
 
   // Update last_contacted_at
   await fetch(API+'/api/leads/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -1450,7 +1484,7 @@ async function saveCallLog(){
   })});
 
   document.getElementById('log-call-modal').remove();
-  showToast(type.replace(/_/g,' ')+' logged');
+  showToast(type.replace(/_/g,' ')+' logged with outline');
   openContactProfile(currentProfileId);
 }
 
