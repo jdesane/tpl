@@ -144,6 +144,22 @@
 - Permanent Meta Page Access Token (never expires) stored in VPS settings
 - GHL/LeadConnector fully disconnected from Meta
 - Tpl Collective App (911974931609986) webhook subscribed to Page leadgen events
+- sync_meta_leads.py cron backup (every 15 min) polls Meta Graph API for missed leads
+- Deleted Meta lead emails tracked in settings to prevent sync re-import
+
+## Phase 8 — Contact Enrichment + CRM UX ✅
+- Apollo.io API integration (API key in VPS settings, Basic plan with 2,505 credits)
+- POST /api/leads/{id}/enrich — Apollo enrichment preview (no auto-apply)
+- POST /api/leads/{id}/enrich-web — web-based real estate enrichment via DuckDuckGo search
+- POST /api/leads/{id}/enrich-apply — apply user-approved fields only
+- Web enrichment finds: Realtor.com, Zillow, Facebook, LinkedIn, FL license lookup URLs
+- Enrich button runs Apollo + Web search in parallel, shows combined preview modal
+- Preview modal: side-by-side current vs found values, source labels, clickable URLs, checkbox approval
+- Empty fields pre-checked, existing fields unchecked to prevent overwrites
+- Delete button on contact profile view (clears all related records: enrollments, opportunities, activity, notes, drip)
+- Bulk actions on contacts page: select all, bulk delete, bulk status update, bulk tag, bulk enrich
+- Date Added column (sortable, default visible)
+- Delete function fixed: clears FK-constrained records before deleting lead
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
