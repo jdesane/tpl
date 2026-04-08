@@ -1101,12 +1101,14 @@ def get_tasks_today():
 
 
 @app.get("/api/tasks")
-def get_tasks(status: Optional[str] = None, assigned_to: Optional[str] = None):
-    query = supabase.table("tasks").select("*").order("created_at", desc=True)
+def get_tasks(status: Optional[str] = None, assigned_to: Optional[str] = None, lead_id: Optional[int] = None):
+    query = supabase.table("tasks").select("*").order("due_date", desc=False)
     if status:
         query = query.eq("status", status)
     if assigned_to:
         query = query.eq("assigned_to", assigned_to)
+    if lead_id:
+        query = query.eq("lead_id", lead_id)
     return query.execute().data
 
 

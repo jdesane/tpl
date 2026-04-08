@@ -368,6 +368,7 @@ th[onclick]:hover{color:var(--accent)}
           <button class="btn btn-ghost btn-sm" onclick="profileAction('email')">Email</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAction('call')">Call</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAction('text')">Text</button>
+          <button class="btn btn-ghost btn-sm" onclick="logCallMeeting()">Log Call/Meeting</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAddNote()">Add Note</button>
           <button class="btn btn-primary btn-sm" onclick="createOpportunityForContact()">+ Opportunity</button>
           <button class="btn btn-sm" id="enrich-btn" onclick="enrichContact()" style="margin-left:8px;color:var(--gold);border:1px solid var(--gold);background:transparent">Enrich</button>
@@ -403,9 +404,14 @@ th[onclick]:hover{color:var(--accent)}
         <div class="panel-title" style="font-size:14px;margin-bottom:12px">Qualifying</div>
         <div class="profile-fields" id="profile-qualifying-fields"></div>
       </div>
-      <!-- Social -->
+      <!-- DISC Personality -->
       <div class="panel" style="margin-bottom:16px">
-        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Social</div>
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Personality (DISC)</div>
+        <div class="profile-fields" id="profile-disc-fields"></div>
+      </div>
+      <!-- Social / Websites -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Social / Websites</div>
         <div class="profile-fields" id="profile-social-fields"></div>
       </div>
       <!-- Tags -->
@@ -452,7 +458,27 @@ th[onclick]:hover{color:var(--accent)}
         </div>
         <!-- Tasks Tab -->
         <div class="profile-tab-content" id="ptab-tasks" style="padding:16px;display:none">
-          <div id="profile-tasks-list"></div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <input type="text" id="task-title-input" placeholder="Task description..." style="flex:1;min-width:150px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
+            <select id="task-type-input" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px">
+              <option value="follow_up">Follow Up</option>
+              <option value="call">Call</option>
+              <option value="meeting">Meeting</option>
+              <option value="email">Email</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <input type="date" id="task-date-input" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px">
+            <input type="time" id="task-time-input" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px">
+            <select id="task-priority-input" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="createProfileTask()">Add Task</button>
+          </div>
+          <div id="profile-tasks-list" style="max-height:400px;overflow-y:auto"></div>
         </div>
         <!-- Sequences Tab -->
         <div class="profile-tab-content" id="ptab-sequences" style="padding:16px;display:none">
@@ -1195,12 +1221,23 @@ async function openContactProfile(id){
       field('License State',stateOpts,'license_state','select')+
       field('Ready Timeline',timelineOpts,'ready_timeline','select');
 
-    // Social
+    // DISC Personality
+    var discOpts='<option value="">Select...</option>';
+    ['D - Dominance','I - Influence','S - Steadiness','C - Conscientiousness','DI','ID','IS','SI','SC','CS','CD','DC'].forEach(function(d){
+      discOpts+='<option value="'+d+'"'+(c.disc_type===d?' selected':'')+'>'+d+'</option>';
+    });
+    document.getElementById('profile-disc-fields').innerHTML=
+      field('DISC Type',discOpts,'disc_type','select')+
+      field('Notes',c.disc_notes||'','disc_notes');
+
+    // Social / Websites
     document.getElementById('profile-social-fields').innerHTML=
-      field('Instagram',c.instagram,'instagram')+
+      field('Realtor.com',c.zillow_profile||'','zillow_profile')+
+      field('Zillow',c.website_url||'','website_url')+
       field('Facebook',c.facebook,'facebook')+
       field('LinkedIn',c.linkedin,'linkedin')+
-      field('Website',c.website_url,'website_url');
+      field('Instagram',c.instagram,'instagram')+
+      field('YouTube',c.youtube||'','youtube');
 
     // Tags
     var tags=c.tags||[];
@@ -1223,6 +1260,7 @@ async function openContactProfile(id){
     loadProfileNotes(id);
     loadProfileActivity(id);
     loadProfileComms(id);
+    loadProfileTasks(id);
 
   }catch(e){console.error('Profile load error:',e)}
 }
@@ -1277,6 +1315,143 @@ async function sendProfileEmail(){
   await fetch(API+'/api/contacts/'+currentProfileId+'/communications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'email',direction:'outbound',subject:subject,body:body})});
   document.getElementById('profile-email-subject').value='';document.getElementById('profile-email-body').value='';
   showToast('Email logged');loadProfileComms(currentProfileId);loadProfileActivity(currentProfileId);
+}
+
+// ── TASKS ──
+async function loadProfileTasks(id){
+  var tasks=await fetch(API+'/api/tasks?lead_id='+id).then(function(r){return r.json()});
+  if(!tasks.length){
+    document.getElementById('profile-tasks-list').innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:12px 0">No tasks yet</div>';
+    return;
+  }
+  document.getElementById('profile-tasks-list').innerHTML=tasks.map(function(t){
+    var done=t.status==='completed';
+    var typeIcons={follow_up:'&#9742;',call:'&#9742;',meeting:'&#128197;',email:'&#9993;',other:'&#9733;'};
+    var icon=typeIcons[t.task_type]||'&#9733;';
+    var priorityColor=t.priority==='high'?'var(--red)':t.priority==='low'?'var(--dim)':'var(--gold)';
+    var dueStr='';
+    if(t.due_date){
+      dueStr=new Date(t.due_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      if(t.due_time)dueStr+=' '+t.due_time;
+    }
+    return'<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);opacity:'+(done?'0.5':'1')+'">'+
+      '<input type="checkbox" '+(done?'checked':'')+' onchange="toggleTask('+t.id+',this.checked)" style="margin-top:3px">'+
+      '<div style="flex:1">'+
+        '<div style="font-size:12px;'+(done?'text-decoration:line-through;':'')+'">'+ icon+' '+t.title+'</div>'+
+        '<div style="font-size:10px;color:var(--text-muted);margin-top:2px">'+
+          '<span style="color:'+priorityColor+'">'+t.priority+'</span>'+
+          (dueStr?' &middot; '+dueStr:'')+
+          ' &middot; '+t.task_type.replace(/_/g,' ')+
+        '</div>'+
+      '</div>'+
+      '<button class="btn btn-ghost" onclick="deleteProfileTask('+t.id+')" style="font-size:10px;padding:2px 6px;color:var(--dim)">&times;</button>'+
+    '</div>';
+  }).join('');
+}
+
+async function createProfileTask(){
+  var title=document.getElementById('task-title-input').value.trim();
+  if(!title||!currentProfileId)return;
+  var data={
+    title:title,
+    lead_id:currentProfileId,
+    task_type:document.getElementById('task-type-input').value,
+    due_date:document.getElementById('task-date-input').value||null,
+    due_time:document.getElementById('task-time-input').value||null,
+    priority:document.getElementById('task-priority-input').value,
+    status:'pending',
+    created_by:'joe'
+  };
+  await fetch(API+'/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  document.getElementById('task-title-input').value='';
+  document.getElementById('task-date-input').value='';
+  document.getElementById('task-time-input').value='';
+  showToast('Task created');
+  loadProfileTasks(currentProfileId);
+}
+
+async function toggleTask(taskId,checked){
+  await fetch(API+'/api/tasks/'+taskId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    status:checked?'completed':'pending',
+    completed_at:checked?new Date().toISOString():null
+  })});
+  loadProfileTasks(currentProfileId);
+}
+
+async function deleteProfileTask(taskId){
+  if(!confirm('Delete this task?'))return;
+  await fetch(API+'/api/tasks/'+taskId,{method:'DELETE'});
+  showToast('Task deleted');
+  loadProfileTasks(currentProfileId);
+}
+
+// ── LOG CALL / MEETING ──
+function logCallMeeting(){
+  var modal=document.createElement('div');
+  modal.id='log-call-modal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:500px;width:90%">'+
+    '<div style="font-family:Bebas Neue;font-size:20px;color:var(--text);margin-bottom:16px">Log Call / Meeting</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+      '<select id="log-type" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
+        '<option value="call">Phone Call</option><option value="meeting">Meeting</option><option value="video_call">Video Call</option><option value="text">Text</option>'+
+      '</select>'+
+      '<select id="log-outcome" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
+        '<option value="connected">Connected</option><option value="no_answer">No Answer</option><option value="left_voicemail">Left Voicemail</option><option value="scheduled_follow_up">Scheduled Follow Up</option><option value="not_interested">Not Interested</option>'+
+      '</select>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+      '<input type="date" id="log-date" value="'+new Date().toISOString().split("T")[0]+'" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
+      '<input type="text" id="log-duration" placeholder="Duration (e.g. 15 min)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;flex:1">'+
+    '</div>'+
+    '<textarea id="log-notes" placeholder="Notes from the call/meeting..." style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;resize:vertical;margin-bottom:12px"></textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+      '<button class="btn btn-ghost" onclick="document.getElementById(\'log-call-modal\').remove()">Cancel</button>'+
+      '<button class="btn btn-primary" onclick="saveCallLog()">Save</button>'+
+    '</div></div>';
+  document.body.appendChild(modal);
+}
+
+async function saveCallLog(){
+  if(!currentProfileId)return;
+  var type=document.getElementById('log-type').value;
+  var outcome=document.getElementById('log-outcome').value;
+  var date=document.getElementById('log-date').value;
+  var duration=document.getElementById('log-duration').value;
+  var notes=document.getElementById('log-notes').value;
+
+  var summary=type.replace(/_/g,' ')+' - '+outcome.replace(/_/g,' ')+(duration?' ('+duration+')':'');
+
+  // Log as communication
+  await fetch(API+'/api/contacts/'+currentProfileId+'/communications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    channel:type,
+    direction:'outbound',
+    subject:summary,
+    body:notes||'No notes',
+    created_at:date?date+'T12:00:00Z':undefined
+  })});
+
+  // Log as activity
+  await fetch(API+'/api/leads/'+currentProfileId+'/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    type:type,
+    description:summary+(notes?' - '+notes:'')
+  })}).catch(function(){});
+
+  // Add as note too
+  if(notes){
+    await fetch(API+'/api/leads/'+currentProfileId+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      content:'['+type.toUpperCase()+'] '+outcome.replace(/_/g,' ')+(duration?' ('+duration+')':'')+': '+notes
+    })});
+  }
+
+  // Update last_contacted_at
+  await fetch(API+'/api/leads/'+currentProfileId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    last_contacted_at:new Date().toISOString()
+  })});
+
+  document.getElementById('log-call-modal').remove();
+  showToast(type.replace(/_/g,' ')+' logged');
+  openContactProfile(currentProfileId);
 }
 
 function switchProfileTab(tab,el){
