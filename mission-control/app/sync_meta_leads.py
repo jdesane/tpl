@@ -38,9 +38,20 @@ def main():
 
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    # Get existing Meta lead emails
-    existing = supabase.table("leads").select("email").in_("source", ["Meta Ads", "Meta Ad"]).execute()
+    # Get ALL existing lead emails (not just Meta) to avoid re-importing deleted leads
+    existing = supabase.table("leads").select("email").execute()
     existing_emails = {r["email"].lower() for r in existing.data}
+
+    # Also check suppression list and deleted leads log
+    try:
+        suppressed = supabase.table("email_suppressions").select("email").execute()
+        existing_emails.update({r["email"].lower() for r in suppressed.data})
+    except Exception:
+        pass
+
+    # Check for previously synced-then-deleted leads (stored in settings)
+    deleted_emails = set(settings.get("meta_deleted_emails", []))
+    existing_emails.update(deleted_emails)
 
     # Fetch leads from Meta
     try:

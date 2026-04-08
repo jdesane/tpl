@@ -540,6 +540,22 @@ def update_lead(lead_id: int, update: LeadUpdate):
 
 @app.delete("/api/leads/{lead_id}")
 def delete_lead(lead_id: int):
+    # Get email before deleting so we can suppress re-import from Meta sync
+    try:
+        lead_data = supabase.table("leads").select("email, source").eq("id", lead_id).execute()
+        if lead_data.data:
+            email = lead_data.data[0].get("email", "")
+            source = lead_data.data[0].get("source", "")
+            if email and "Meta" in (source or ""):
+                # Add to deleted emails list in settings so sync won't re-import
+                settings = load_settings()
+                deleted = settings.get("meta_deleted_emails", [])
+                if email.lower() not in [e.lower() for e in deleted]:
+                    deleted.append(email.lower())
+                    settings["meta_deleted_emails"] = deleted
+                    save_settings(settings)
+    except Exception:
+        pass
     # Delete related records first to avoid foreign key constraint errors
     try:
         supabase.table("email_funnel_enrollments").delete().eq("lead_id", lead_id).execute()
@@ -3159,6 +3175,236 @@ async def calendly_webhook(request: Request):
 
     # Unhandled event type — acknowledge receipt
     return {"success": True, "action": "ignored", "event": event_type}
+
+
+# ── APOLLO ENRICHMENT ──
+
+async def enrich_lead_with_apollo(lead_id: int, settings: dict = None):
+    """Enrich a lead with Apollo.io people data. Returns enriched fields dict."""
+    if not settings:
+        settings = load_settings()
+    api_key = settings.get("apollo_api_key", "")
+    if not api_key:
+        return {"error": "No Apollo API key configured"}
+
+    # Get lead data
+    lead = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    if not lead.data:
+        return {"error": "Lead not found"}
+    lead = lead.data[0]
+
+    # Call Apollo People Match API
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.apollo.io/v1/people/match",
+                headers={"Content-Type": "application/json", "X-Api-Key": api_key},
+                json={
+                    "email": lead.get("email", ""),
+                    "first_name": lead.get("first_name", ""),
+                    "last_name": lead.get("last_name", ""),
+                },
+                timeout=15
+            )
+            data = resp.json()
+    except Exception as e:
+        return {"error": f"Apollo API error: {str(e)}"}
+
+    person = data.get("person", {})
+    if not person:
+        return {"error": "No match found in Apollo", "lead_id": lead_id}
+
+    org = person.get("organization", {}) or {}
+
+    # Build update fields - only update if Apollo has data and lead field is empty
+    updates = {}
+    field_map = {
+        "city": person.get("city"),
+        "license_state": person.get("state"),
+        "linkedin": person.get("linkedin_url"),
+        "facebook": person.get("facebook_url"),
+        "instagram": person.get("twitter_url"),  # closest social field
+    }
+
+    # Title/role info
+    title = person.get("title")
+    if title and not lead.get("notes", "").startswith("Apollo"):
+        current_notes = lead.get("notes", "")
+        updates["notes"] = f"Apollo: {title}" + (f"\n{current_notes}" if current_notes else "")
+
+    # Organization data
+    if org:
+        if org.get("name") and not lead.get("current_brokerage"):
+            updates["current_brokerage"] = org["name"]
+
+    # Only update empty fields
+    for field, value in field_map.items():
+        if value and not lead.get(field):
+            updates[field] = value
+
+    # Phone - Apollo may have a better number
+    phone_numbers = person.get("phone_numbers") or []
+    if phone_numbers and not lead.get("phone"):
+        updates["phone"] = phone_numbers[0].get("sanitized_number", "")
+
+    if updates:
+        updates["updated_at"] = datetime.utcnow().isoformat()
+        supabase.table("leads").update(updates).eq("id", lead_id).execute()
+
+    # Log enrichment
+    enriched_fields = list(updates.keys())
+    supabase.table("activity_log").insert({
+        "type": "enrichment",
+        "message": f"Apollo enrichment for {lead.get('name', '')}: {len(enriched_fields)} fields updated",
+        "meta": {"lead_id": lead_id, "fields": enriched_fields, "apollo_title": title, "apollo_org": org.get("name")}
+    }).execute()
+
+    try:
+        supabase.table("lead_activity").insert({
+            "lead_id": lead_id,
+            "type": "enrichment",
+            "description": f"Apollo enrichment: {title or 'No title'} at {org.get('name', 'Unknown')}. Updated {len(enriched_fields)} fields.",
+            "meta": {"source": "apollo", "fields": enriched_fields}
+        }).execute()
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "lead_id": lead_id,
+        "fields_updated": enriched_fields,
+        "apollo_title": title,
+        "apollo_company": org.get("name"),
+        "apollo_city": person.get("city"),
+        "apollo_state": person.get("state"),
+        "apollo_linkedin": person.get("linkedin_url")
+    }
+
+
+@app.post("/api/leads/{lead_id}/enrich")
+async def enrich_lead_preview(lead_id: int):
+    """Fetch Apollo data for preview - does NOT auto-apply. Returns current vs Apollo values."""
+    settings = load_settings()
+    api_key = settings.get("apollo_api_key", "")
+    if not api_key:
+        return {"error": "No Apollo API key configured"}
+
+    lead = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    if not lead.data:
+        return {"error": "Lead not found"}
+    lead = lead.data[0]
+
+    # Build Apollo search payload - use email + name as primary identifiers
+    # Do NOT send organization_name as it can cause false negatives if truncated or slightly different
+    search_payload = {}
+    if lead.get("email"):
+        search_payload["email"] = lead["email"]
+    if lead.get("first_name"):
+        search_payload["first_name"] = lead["first_name"]
+    if lead.get("last_name"):
+        search_payload["last_name"] = lead["last_name"]
+    if lead.get("linkedin"):
+        search_payload["linkedin_url"] = lead["linkedin"]
+
+    if not search_payload:
+        return {"error": "No searchable data on this contact"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.apollo.io/v1/people/match",
+                headers={"Content-Type": "application/json", "X-Api-Key": api_key},
+                json=search_payload,
+                timeout=15
+            )
+            data = resp.json()
+    except Exception as e:
+        return {"error": f"Apollo API error: {str(e)}"}
+
+    person = data.get("person", {})
+    if not person:
+        return {"error": "No match found in Apollo", "lead_id": lead_id}
+
+    org = person.get("organization", {}) or {}
+    phone_numbers = person.get("phone_numbers") or []
+    employment = person.get("employment_history") or []
+
+    # Build preview: show current value vs Apollo value for each field
+    preview = []
+    field_defs = [
+        ("first_name", "First Name", person.get("first_name")),
+        ("last_name", "Last Name", person.get("last_name")),
+        ("email", "Email", person.get("email")),
+        ("phone", "Phone", phone_numbers[0].get("sanitized_number", "") if phone_numbers else None),
+        ("city", "City", person.get("city")),
+        ("license_state", "State", person.get("state")),
+        ("linkedin", "LinkedIn", person.get("linkedin_url")),
+        ("facebook", "Facebook", person.get("facebook_url")),
+        ("current_brokerage", "Company", org.get("name")),
+        ("market", "Market/Metro", person.get("metro_area") or person.get("metro")),
+        ("zip_code", "Zip Code", person.get("postal_code")),
+        ("address", "Address", person.get("street_address")),
+    ]
+
+    for field_key, label, apollo_val in field_defs:
+        if apollo_val:
+            preview.append({
+                "field": field_key,
+                "label": label,
+                "current": lead.get(field_key) or "",
+                "apollo": str(apollo_val),
+                "is_empty": not lead.get(field_key)
+            })
+
+    # Extra info that doesn't map to a direct field
+    title = person.get("title")
+    headline = person.get("headline")
+    seniority = person.get("seniority")
+
+    return {
+        "success": True,
+        "lead_id": lead_id,
+        "preview": preview,
+        "apollo_title": title,
+        "apollo_headline": headline,
+        "apollo_seniority": seniority,
+        "apollo_industry": org.get("industry"),
+        "apollo_company_size": org.get("estimated_num_employees"),
+    }
+
+
+@app.post("/api/leads/{lead_id}/enrich-apply")
+async def enrich_lead_apply(lead_id: int, request: Request):
+    """Apply selected enrichment fields. Body: {"fields": {"city": "Miami", "linkedin": "https://..."}}"""
+    body = await request.json()
+    fields = body.get("fields", {})
+    if not fields:
+        return {"error": "No fields to apply"}
+
+    fields["updated_at"] = datetime.utcnow().isoformat()
+    supabase.table("leads").update(fields).eq("id", lead_id).execute()
+
+    # Log enrichment
+    lead = supabase.table("leads").select("name").eq("id", lead_id).execute()
+    lead_name = lead.data[0]["name"] if lead.data else "Unknown"
+
+    supabase.table("activity_log").insert({
+        "type": "enrichment",
+        "message": f"Apollo enrichment applied for {lead_name}: {list(fields.keys())}",
+        "meta": {"lead_id": lead_id, "fields": list(fields.keys())}
+    }).execute()
+
+    try:
+        supabase.table("lead_activity").insert({
+            "lead_id": lead_id,
+            "type": "enrichment",
+            "description": f"Apollo enrichment applied: {', '.join(fields.keys())}",
+            "meta": {"source": "apollo", "fields": list(fields.keys())}
+        }).execute()
+    except Exception:
+        pass
+
+    return {"success": True, "fields_applied": list(fields.keys())}
 
 
 # ── META LEADS WEBHOOK ──

@@ -311,7 +311,8 @@ th[onclick]:hover{color:var(--accent)}
     <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus()" style="font-size:11px">Apply Status</button>
     <input type="text" id="bulk-tag-input" placeholder="Add tag..." style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:11px;width:120px">
     <button class="btn btn-ghost btn-sm" onclick="bulkAddTag()" style="font-size:11px">Add Tag</button>
-    <button class="btn btn-sm" onclick="bulkDelete()" style="color:var(--red);border:1px solid var(--red);background:transparent;font-size:11px;margin-left:auto">Delete Selected</button>
+    <button class="btn btn-sm" onclick="bulkEnrich()" style="color:var(--gold);border:1px solid var(--gold);background:transparent;font-size:11px;margin-left:auto">Enrich Selected</button>
+    <button class="btn btn-sm" onclick="bulkDelete()" style="color:var(--red);border:1px solid var(--red);background:transparent;font-size:11px">Delete Selected</button>
     <button class="btn btn-ghost btn-sm" onclick="clearSelection()" style="font-size:11px">Clear</button>
   </div>
   <!-- Table -->
@@ -369,6 +370,7 @@ th[onclick]:hover{color:var(--accent)}
           <button class="btn btn-ghost btn-sm" onclick="profileAction('text')">Text</button>
           <button class="btn btn-ghost btn-sm" onclick="profileAddNote()">Add Note</button>
           <button class="btn btn-primary btn-sm" onclick="createOpportunityForContact()">+ Opportunity</button>
+          <button class="btn btn-sm" id="enrich-btn" onclick="enrichContact()" style="margin-left:8px;color:var(--gold);border:1px solid var(--gold);background:transparent">Enrich</button>
           <button class="btn btn-sm" onclick="deleteContact()" style="margin-left:8px;color:var(--red);border:1px solid var(--red);background:transparent">Delete</button>
           <select id="profile-status-select" onchange="updateContactStatus(this.value)" style="margin-left:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;min-width:140px">
             <option value="new">New</option>
@@ -1308,6 +1310,54 @@ async function createOpportunityForContact(){
   showToast('Opportunity created');openContactProfile(currentProfileId);
 }
 
+var enrichPreviewData=null;
+async function enrichContact(){
+  if(!currentProfileId)return;
+  var btn=document.getElementById('enrich-btn');
+  btn.textContent='Searching...';btn.disabled=true;
+  try{
+    var result=await fetch(API+'/api/leads/'+currentProfileId+'/enrich',{method:'POST'}).then(function(r){return r.json()});
+    if(result.success&&result.preview&&result.preview.length>0){
+      enrichPreviewData=result;
+      showEnrichPreview(result);
+    }else{
+      showToast(result.error||'No data found in Apollo',true);
+    }
+  }catch(e){showToast('Enrichment failed',true);}
+  btn.textContent='Enrich';btn.disabled=false;
+}
+function showEnrichPreview(data){
+  var html='<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Review Apollo data below. Check the fields you want to apply.</div>';
+  if(data.apollo_title)html+='<div style="font-size:12px;color:var(--accent);margin-bottom:8px">Title: '+data.apollo_title+'</div>';
+  if(data.apollo_industry)html+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Industry: '+data.apollo_industry+(data.apollo_company_size?' ('+data.apollo_company_size+' employees)':'')+'</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr style="border-bottom:1px solid var(--border)"><th style="padding:6px;text-align:left;color:var(--text-muted)"></th><th style="padding:6px;text-align:left">Field</th><th style="padding:6px;text-align:left">Current</th><th style="padding:6px;text-align:left;color:var(--gold)">Apollo</th></tr>';
+  data.preview.forEach(function(p){
+    var checked=p.is_empty?'checked':'';
+    html+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px"><input type="checkbox" '+checked+' id="enrich-cb-'+p.field+'" data-field="'+p.field+'" data-value="'+p.apollo.replace(/"/g,'&quot;')+'"></td>';
+    html+='<td style="padding:6px;color:var(--text-muted)">'+p.label+'</td>';
+    html+='<td style="padding:6px">'+(p.current||'<span style="color:var(--dim)">empty</span>')+'</td>';
+    html+='<td style="padding:6px;color:var(--gold)">'+p.apollo+'</td></tr>';
+  });
+  html+='</table>';
+  var modal=document.createElement('div');
+  modal.id='enrich-modal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto"><div style="font-family:Bebas Neue;font-size:20px;color:var(--text);margin-bottom:16px">Apollo Enrichment Preview</div>'+html+'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button class="btn btn-ghost" onclick="document.getElementById(\'enrich-modal\').remove()">Cancel</button><button class="btn btn-primary" onclick="applyEnrichment()">Apply Selected</button></div></div>';
+  document.body.appendChild(modal);
+}
+async function applyEnrichment(){
+  var fields={};
+  document.querySelectorAll('#enrich-modal input[type=checkbox]:checked').forEach(function(cb){
+    fields[cb.dataset.field]=cb.dataset.value;
+  });
+  if(!Object.keys(fields).length){showToast('No fields selected',true);return;}
+  await fetch(API+'/api/leads/'+currentProfileId+'/enrich-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:fields})});
+  document.getElementById('enrich-modal').remove();
+  showToast(Object.keys(fields).length+' fields updated from Apollo');
+  openContactProfile(currentProfileId);
+}
+
 async function deleteContact(){
   if(!currentProfileId||!confirm('Delete this contact and all related records? This cannot be undone.'))return;
   await fetch(API+'/api/leads/'+currentProfileId,{method:'DELETE'});
@@ -1363,6 +1413,15 @@ async function bulkSetStatus(){
   }
   showToast(selectedContactIds.length+' contacts updated to '+status);
   document.getElementById('bulk-status-select').value='';
+  loadContacts();
+}
+async function bulkEnrich(){
+  if(!selectedContactIds.length)return;
+  if(!confirm('Enrich '+selectedContactIds.length+' contacts with Apollo? This uses 1 credit per contact.'))return;
+  showToast('Enriching '+selectedContactIds.length+' contacts...');
+  var result=await fetch(API+'/api/leads/enrich-bulk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_ids:selectedContactIds})}).then(function(r){return r.json()});
+  var updated=result.results.filter(function(r){return r.success}).length;
+  showToast(updated+' of '+selectedContactIds.length+' contacts enriched');
   loadContacts();
 }
 async function bulkAddTag(){
