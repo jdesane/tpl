@@ -3407,6 +3407,212 @@ async def enrich_lead_apply(lead_id: int, request: Request):
     return {"success": True, "fields_applied": list(fields.keys())}
 
 
+# ── WEB ENRICHMENT (Real Estate Specific) ──
+
+import re
+import html as html_module
+
+async def _web_search_agent(name: str, location: str = "", extra: str = "") -> list:
+    """Search DuckDuckGo for an agent and return parsed results with URLs and snippets."""
+    query = f"{name} real estate agent {location} {extra}".strip()
+    search_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+    results = []
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(search_url, headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+            }, timeout=10, follow_redirects=True)
+            body = resp.text
+            # Parse DuckDuckGo HTML results
+            # Results are in <a class="result__a" href="...">Title</a> and <a class="result__snippet">...</a>
+            links = re.findall(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.+?)</a>', body)
+            snippets = re.findall(r'class="result__snippet"[^>]*>(.+?)</a>', body, re.DOTALL)
+            for i, (url, title) in enumerate(links[:15]):
+                # DuckDuckGo wraps URLs in a redirect, extract the actual URL
+                actual_url = url
+                if "uddg=" in url:
+                    match = re.search(r'uddg=([^&]+)', url)
+                    if match:
+                        actual_url = urllib.parse.unquote(match.group(1))
+                snippet = html_module.unescape(re.sub(r'<[^>]+>', '', snippets[i])).strip() if i < len(snippets) else ""
+                title_clean = html_module.unescape(re.sub(r'<[^>]+>', '', title)).strip()
+                results.append({"url": actual_url, "title": title_clean, "snippet": snippet})
+    except Exception as e:
+        pass
+    return results
+
+
+def _extract_platform_urls(results: list, name_lower: str) -> dict:
+    """Extract platform-specific URLs from search results."""
+    platforms = {
+        "realtor_com": None,
+        "zillow": None,
+        "facebook": None,
+        "linkedin": None,
+        "trulia": None,
+        "realtracs": None,
+        "website": None,
+        "license_url": None,
+    }
+    snippets_by_platform = {}
+
+    for r in results:
+        url = r.get("url", "").lower()
+        full_url = r.get("url", "")
+        snippet = r.get("snippet", "")
+
+        if "realtor.com/realestateagents" in url and not platforms["realtor_com"]:
+            platforms["realtor_com"] = full_url
+            snippets_by_platform["realtor_com"] = snippet
+        elif "zillow.com/profile" in url and not platforms["zillow"]:
+            platforms["zillow"] = full_url
+            snippets_by_platform["zillow"] = snippet
+        elif ("facebook.com" in url and not platforms["facebook"]
+              and "/marketplace" not in url and "/watch" not in url
+              and "/groups/" not in url and "/login" not in url):
+            platforms["facebook"] = full_url
+            snippets_by_platform["facebook"] = snippet
+        elif "linkedin.com/in/" in url and not platforms["linkedin"]:
+            platforms["linkedin"] = full_url
+            snippets_by_platform["linkedin"] = snippet
+        elif "trulia.com" in url and not platforms["trulia"]:
+            platforms["trulia"] = full_url
+        elif ("myfloridalicense.com" in url or "myflorida.com" in url) and not platforms["license_url"]:
+            platforms["license_url"] = full_url
+            snippets_by_platform["license_url"] = snippet
+        elif "realtracs" in url and not platforms["realtracs"]:
+            platforms["realtracs"] = full_url
+
+    return platforms, snippets_by_platform
+
+
+def _extract_info_from_snippets(snippets_by_platform: dict, all_results: list) -> dict:
+    """Extract phone, address, and other info from search result snippets."""
+    info = {}
+
+    # Combine all snippets for phone/address extraction
+    all_text = " ".join([r.get("snippet", "") + " " + r.get("title", "") for r in all_results])
+
+    # Phone pattern
+    phone_match = re.search(r'\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}', all_text)
+    if phone_match:
+        info["phone_from_web"] = phone_match.group(0)
+
+    # License number pattern (Florida: SL followed by digits)
+    license_match = re.search(r'(?:SL|BK)\s*\.?\s*(\d{5,8})', all_text, re.IGNORECASE)
+    if license_match:
+        info["license_number"] = license_match.group(0).upper().replace(" ", "")
+
+    # Office/brokerage from realtor.com snippet
+    realtor_snippet = snippets_by_platform.get("realtor_com", "")
+    if realtor_snippet:
+        # Try to extract brokerage name
+        brokerage_match = re.search(r'(?:at|with|of)\s+([A-Z][^,.]+(?:Realty|Real Estate|Properties|Group|Associates|Team)[^,.]*)', realtor_snippet, re.IGNORECASE)
+        if brokerage_match:
+            info["brokerage_from_web"] = brokerage_match.group(1).strip()
+
+    return info
+
+
+@app.post("/api/leads/{lead_id}/enrich-web")
+async def enrich_lead_web(lead_id: int):
+    """Search the web for real estate agent profiles on Realtor.com, Zillow, Facebook, etc."""
+    lead = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    if not lead.data:
+        return {"error": "Lead not found"}
+    lead = lead.data[0]
+
+    name = lead.get("name") or f"{lead.get('first_name', '')} {lead.get('last_name', '')}".strip()
+    if not name or name == "Unknown":
+        return {"error": "No name to search for"}
+
+    # Build location context
+    location_parts = []
+    if lead.get("city"):
+        location_parts.append(lead["city"])
+    if lead.get("license_state"):
+        location_parts.append(lead["license_state"])
+    location = ", ".join(location_parts)
+
+    # Search web for agent
+    results = await _web_search_agent(name, location)
+    if not results:
+        # Try without location
+        results = await _web_search_agent(name)
+    if not results:
+        return {"error": "No web results found", "lead_id": lead_id}
+
+    # Extract platform URLs
+    platforms, snippets = _extract_platform_urls(results, name.lower())
+
+    # Extract additional info from snippets
+    extra_info = _extract_info_from_snippets(snippets, results)
+
+    # Build preview fields
+    preview = []
+
+    platform_field_map = [
+        ("realtor_com", "zillow_profile", "Realtor.com"),
+        ("zillow", "website_url", "Zillow"),
+        ("facebook", "facebook", "Facebook"),
+        ("linkedin", "linkedin", "LinkedIn"),
+    ]
+
+    for platform_key, lead_field, label in platform_field_map:
+        url = platforms.get(platform_key)
+        if url:
+            preview.append({
+                "field": lead_field,
+                "label": label,
+                "current": lead.get(lead_field) or "",
+                "apollo": url,
+                "is_empty": not lead.get(lead_field),
+                "source": "web"
+            })
+
+    # License number
+    if extra_info.get("license_number"):
+        preview.append({
+            "field": "license_number",
+            "label": "License #",
+            "current": lead.get("license_number") or "",
+            "apollo": extra_info["license_number"],
+            "is_empty": not lead.get("license_number"),
+            "source": "web"
+        })
+
+    # Phone from web
+    if extra_info.get("phone_from_web") and not lead.get("phone"):
+        preview.append({
+            "field": "phone",
+            "label": "Phone (web)",
+            "current": lead.get("phone") or "",
+            "apollo": extra_info["phone_from_web"],
+            "is_empty": not lead.get("phone"),
+            "source": "web"
+        })
+
+    # License URL
+    if platforms.get("license_url"):
+        preview.append({
+            "field": "website_url",
+            "label": "License Lookup",
+            "current": "",
+            "apollo": platforms["license_url"],
+            "is_empty": True,
+            "source": "web"
+        })
+
+    return {
+        "success": True,
+        "lead_id": lead_id,
+        "preview": preview,
+        "platforms_found": {k: v for k, v in platforms.items() if v},
+        "extra_info": extra_info,
+        "search_results_count": len(results)
+    }
+
+
 # ── META LEADS WEBHOOK ──
 
 @app.get("/api/webhooks/meta-leads")
