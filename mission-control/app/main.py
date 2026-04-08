@@ -3463,9 +3463,17 @@ def _extract_platform_urls(results: list, name_lower: str) -> dict:
         full_url = r.get("url", "")
         snippet = r.get("snippet", "")
 
-        if "realtor.com/realestateagents" in url and not platforms["realtor_com"]:
-            platforms["realtor_com"] = full_url
-            snippets_by_platform["realtor_com"] = snippet
+        if "realtor.com/realestateagents/" in url and not platforms["realtor_com"]:
+            # Only match actual agent profiles (have a hex ID or agent name slug with underscores)
+            # Skip generic search pages like /realestateagents/Boston_MA or /realestateagents/city-state
+            path_after = url.split("realtor.com/realestateagents/")[1].split("?")[0].rstrip("/")
+            # Agent profiles have hex IDs (24+ chars) or name slugs with underscores
+            is_agent_profile = (len(path_after) > 20 or "_" in path_after or "-" in path_after.lower())
+            # Exclude obvious city/state pages (short, no special chars, has uppercase state abbrev pattern)
+            is_city_page = bool(re.match(r'^[A-Za-z]+_[A-Z]{2}$', path_after))
+            if is_agent_profile and not is_city_page:
+                platforms["realtor_com"] = full_url
+                snippets_by_platform["realtor_com"] = snippet
         elif "zillow.com/profile" in url and not platforms["zillow"]:
             platforms["zillow"] = full_url
             snippets_by_platform["zillow"] = snippet
