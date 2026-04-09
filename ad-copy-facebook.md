@@ -1,6 +1,6 @@
 # TPL Collective - Facebook/Instagram Ad Copy
 
-> 15 ad variations across 5 ad sets. Ready to load into Meta Ads Manager.
+> 19 ad variations across 5 ad sets + 1 RE/MAX campaign (2 ad sets, 4 ads). Ready to load into Meta Ads Manager.
 > All character counts verified against Meta limits.
 
 ---
@@ -290,6 +290,172 @@ You checked out TPL Collective and you're still thinking it over. That's smart -
 
 ---
 
+---
+
+# Campaign 2: TPL RE/MAX Agent Recruiting - April 2026
+
+> 4 ad variations across 2 ad sets. Lead generation objective. $40/day campaign budget.
+> Instant form: RE/MAX Commission Comparison (create in Meta Ads Manager).
+> Email funnel: Commission Comparison - RE/MAX (Funnel ID 21, 7 emails over 21 days).
+
+---
+
+## Ad Set 6: "Cold Prospecting" - RE/MAX Agents
+
+**Audience:** Real estate agents, interests in RE/MAX, RE/MAX International, RE/MAX Gold, "Above the Crowd," RE/MAX LLC. Job titles: real estate agent, realtor, broker associate, listing agent. Age 30-60. Income $75K+. Exclude current TPL leads and LPT Realty page followers.
+
+**Placement:** Advantage+ placements (let Meta optimize across Feed, Stories, Reels, Messenger).
+
+**Optimization:** Conversions (instant form submission).
+
+**Budget:** Campaign-level budget at $40/day, distributed by Meta across both ad sets.
+
+---
+
+### Ad 6A - The Desk Fee Drain
+
+**Primary Text:**
+Your RE/MAX desk fee alone costs more than most agents' entire brokerage bill elsewhere. $1,000/month to sit at a desk - whether you close deals or not. Then add the 5% brokerage split, $250+ per transaction, and $410 in annual dues. At TPL Collective, there's no desk fee. $500/deal, $5K cap, then you keep 100%. Run your numbers - the gap is real.
+
+**Headline:** Paying $1,000/Month Just to Sit at a Desk?
+
+**Description:** No desk fee. $500/deal. See your real numbers.
+
+**CTA Button:** Learn More
+
+**Image Concept:** Split-screen. Left side: RE/MAX fees itemized (desk fee $1,000/mo, 5% brokerage split, $250/transaction, $410 annual dues, E&O insurance = ~$27K/year). Right side: LPT ($500/deal, $5K cap, $195 processing, $500/yr annual fee = ~$7,800/year). Clean data comparison.
+
+**Targeting Notes:** Layer RE/MAX interest with "real estate license" and income $75K+. Exclude people who like LPT Realty or TPL Collective pages. Use Advantage+ audience expansion.
+
+---
+
+### Ad 6B - 20% Already Left
+
+**Primary Text:**
+20% of RE/MAX agents left in the last 4 years. 15 straight quarters of decline. They didn't quit real estate - they found better math. Between desk fees ($500-$2,000/mo), the 5% brokerage split, $250+ transaction fees, and annual dues - a mid-producing RE/MAX agent pays $20K-$27K/year. At LPT Realty through TPL Collective: $500/deal. $5K cap. No desk fee. Ever. That's under $8K/year. See what you'd save.
+
+**Headline:** RE/MAX Lost 20% of Its Agents. Here's Why.
+
+**Description:** $20K-$27K/year in fees vs under $8K. Your call.
+
+**CTA Button:** Learn More
+
+**Image Concept:** Simple stat graphic on dark background. Bold text: "48,000" with a downward arrow and "RE/MAX US agents - down 20% since 2021." Below: "21,000+" with upward arrow and "LPT Realty agents." Clean data visualization, scroll-stopping contrast.
+
+**Targeting Notes:** Broad RE/MAX interest targeting. Test both Feed-only and all placements. This is the awareness/curiosity hook - leads will be higher funnel.
+
+---
+
+## Ad Set 7: "Retargeting" - RE/MAX Warm Leads
+
+**Audience:** Custom audience: website visitors (tplcollective.ai, 30-day window) + page engagers (TPL Collective FB/IG page, 30-day) + video viewers (50%+ of any TPL video, 30-day) + people who opened the Ad Set 6 instant form but didn't submit. Exclude existing leads (email list custom audience).
+
+**Placement:** Advantage+ placements.
+
+**Optimization:** Conversions (instant form submission).
+
+**Frequency Cap:** 3 impressions per week to avoid fatigue.
+
+---
+
+### Ad 7A - Joe's Direct Message
+
+**Primary Text:**
+I'm Joe DeSane. I talk to RE/MAX agents every week who are shocked when they see their real cost breakdown. The desk fees, the 5% split, the transaction fees - it adds up to $20K-$27K/year for most mid-producing agents. I built TPL Collective to give agents a smarter path. No desk fees. $500/deal, $5K cap, 100% after cap. Plus revenue share and stock awards RE/MAX will never offer you. Want to see your numbers? I'll walk you through it personally. 15 minutes. No pitch. Just math.
+
+**Headline:** 15 Minutes. Your Numbers. No Pitch.
+
+**Description:** Joe DeSane, TPL Collective founder.
+
+**CTA Button:** Book Now
+
+**Image Concept:** Professional but approachable photo of Joe. Warm tones, casual setting. Text overlay: "Let me show you the math." Personal and trust-building.
+
+**Targeting Notes:** This is the trust-builder for warm leads who visited but didn't convert. Retarget 7-30 day window. CTA links to Calendly booking.
+
+---
+
+### Ad 7B - The Objection Handler
+
+**Primary Text:**
+Still not sure about leaving RE/MAX? Here are the 3 biggest concerns I hear:
+
+"But the brand recognition..." Buyers search Zillow and Google, not brokerage logos. Your reputation wins deals, not a balloon.
+
+"But I use the office..." Most RE/MAX agents I talk to use the office once a week. That's a $1,000/month conference room.
+
+"But what about my listings?" They transfer. Your clients are your clients. Always have been.
+
+The only thing that changes is your take-home. Run the numbers.
+
+**Headline:** 3 Reasons Agents Stay (and Why They Shouldn't)
+
+**Description:** Your listings transfer. Your clients stay. Your income goes up.
+
+**CTA Button:** Get Your Report
+
+**Image Concept:** Clean text-based ad with three myth/reality blocks. Each "concern" crossed out with the truth next to it. Direct, factual, no fluff. Works well as a carousel format too.
+
+**Targeting Notes:** Retarget website visitors who viewed /vs/remax or /commission-calculator but didn't submit a lead form. These are agents who researched but hesitated.
+
+---
+
+## RE/MAX Instant Form Design
+
+**Form Name:** RE/MAX Commission Comparison - 2026
+
+> After creating in Meta Ads Manager, add the Form ID to sync_meta_leads.py FORM_CONFIGS
+
+**Intro:**
+- Headline: See What RE/MAX Really Costs You
+- Description: Most RE/MAX agents don't know their total annual cost. Our free comparison shows exactly what you're paying vs what you'd pay at LPT Realty.
+- Image: TPL Collective branded header (match existing KW form style)
+
+**Questions:**
+1. Full Name (prefilled from Facebook)
+2. Email (prefilled from Facebook)
+3. Phone Number (prefilled from Facebook)
+4. "What's your approximate annual GCI (Gross Commission Income)?" - Multiple choice:
+   - Under $75K
+   - $75K - $150K
+   - $150K - $250K
+   - $250K - $500K
+   - $500K+
+5. "How long have you been at RE/MAX?" - Multiple choice:
+   - Less than 1 year
+   - 1-3 years
+   - 3-5 years
+   - 5-10 years
+   - 10+ years
+
+**Completion:**
+- Headline: Your comparison is on the way!
+- Description: Check your email for a personalized RE/MAX vs LPT cost breakdown. In the meantime, try our instant calculator.
+- CTA Button: Visit Website -> https://tplcollective.ai/commission-calculator
+- Call Button: Call Joe -> (optional)
+
+**Privacy Policy Link:** https://tplcollective.ai/privacy-policy
+
+---
+
+## RE/MAX Campaign Landing Page Mapping
+
+| Ad Set | Primary CTA | Fallback |
+|--------|-------------|----------|
+| 6 - RE/MAX Cold | Instant Form (in-app) | https://tplcollective.ai/vs/remax |
+| 7 - RE/MAX Retarget | https://calendly.com/discovertpl (7A) / Instant Form (7B) | https://tplcollective.ai/commission-calculator |
+
+## RE/MAX Campaign Budget
+
+| Component | Budget | Notes |
+|-----------|--------|-------|
+| Campaign total | $40/day | Advantage Campaign Budget - Meta distributes across ad sets |
+| Expected split | ~$30/day cold, ~$10/day retarget | Meta auto-optimizes based on performance |
+| Monthly spend | ~$1,200/month | |
+| Expected CPL | $8-15/lead | Based on KW campaign performance |
+
+---
+
 ## Landing Page Mapping
 
 | Ad Set | Primary CTA Link | Fallback |
@@ -299,6 +465,8 @@ You checked out TPL Collective and you're still thinking it over. That's smart -
 | 3 - Social Proof | https://tplcollective.ai | https://tplcollective.ai/why-tpl |
 | 4 - Calculator | https://tplcollective.ai/commission-calculator | - |
 | 5 - Joe's Story | https://calendly.com/discovertpl | https://tplcollective.ai/commission-calculator |
+| 6 - RE/MAX Cold | Instant Form (in-app) | https://tplcollective.ai/vs/remax |
+| 7 - RE/MAX Retarget | Calendly (7A) / Instant Form (7B) | https://tplcollective.ai/commission-calculator |
 
 ## Budget Recommendations
 
@@ -309,3 +477,4 @@ You checked out TPL Collective and you're still thinking it over. That's smart -
 | 3 - Social Proof | $20-30/day | Landing page views |
 | 4 - Calculator | $40-50/day | Conversions (calculator submit) |
 | 5 - Joe's Story | $30-40/day | Conversions (call booking) |
+| 6+7 - RE/MAX (campaign) | $40/day (Advantage Budget) | Conversions (instant form) |

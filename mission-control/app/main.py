@@ -3808,7 +3808,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
             funnel_id = 16  # eXp Reality Check
         elif "REMAX" in form_campaign_str or "RE/MAX" in form_campaign_str:
             current_brokerage = "RE/MAX"
-            funnel_id = 17  # RE/MAX Wake Up
+            funnel_id = 21  # Commission Comparison - RE/MAX (Meta ads funnel)
         elif "CENTURY" in form_campaign_str or "C21" in form_campaign_str:
             current_brokerage = "Century 21"
             funnel_id = 19  # The Numbers Don't Lie (general - until C21 funnel built)

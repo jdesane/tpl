@@ -14,7 +14,11 @@ from supabase import create_client
 SETTINGS_PATH = "/data/settings.json"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://zyonidiybzrgklrmalbt.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-FORM_ID = "2446350272487229"  # KW Commission Comparison - 2026
+# Form ID -> (form_name, brokerage, funnel_id) mapping
+FORM_CONFIGS = {
+    "2446350272487229": ("KW Commission Comparison - 2026", "Keller Williams", 20),
+    "956068570135306": ("RE/MAX Commission Comparison - 2026", "RE/MAX", 21),
+}
 
 def load_settings():
     try:
@@ -53,92 +57,92 @@ def main():
     deleted_emails = set(settings.get("meta_deleted_emails", []))
     existing_emails.update(deleted_emails)
 
-    # Fetch leads from Meta
-    try:
-        data = fetch_meta_leads(token, FORM_ID)
-    except Exception as e:
-        print(f"Error fetching Meta leads: {e}")
-        return
-
-    new_count = 0
-    for lead in data.get("data", []):
-        fields = {}
-        for f in lead.get("field_data", []):
-            fname = f.get("name", "").lower()
-            fvals = f.get("values", [])
-            if fvals:
-                fields[fname] = fvals[0]
-
-        email = fields.get("email", "")
-        if not email or email.lower() in existing_emails:
+    # Fetch and process leads from all configured forms
+    total_new = 0
+    for form_id, (form_name, current_brokerage, funnel_id) in FORM_CONFIGS.items():
+        try:
+            data = fetch_meta_leads(token, form_id)
+        except Exception as e:
+            print(f"Error fetching Meta leads for {form_name}: {e}")
             continue
 
-        name = fields.get("full_name", "") or fields.get("name", "Unknown")
-        phone = fields.get("phone_number", "") or fields.get("phone", "")
-        name_parts = name.strip().split(" ", 1)
-        first_name = name_parts[0] if name_parts else "Unknown"
-        last_name = name_parts[1] if len(name_parts) > 1 else ""
+        new_count = 0
+        for lead in data.get("data", []):
+            fields = {}
+            for f in lead.get("field_data", []):
+                fname = f.get("name", "").lower()
+                fvals = f.get("values", [])
+                if fvals:
+                    fields[fname] = fvals[0]
 
-        # Detect brokerage
-        form_name = "KW Commission Comparison - 2026"
-        current_brokerage = "Keller Williams"
-        funnel_id = 20
+            email = fields.get("email", "")
+            if not email or email.lower() in existing_emails:
+                continue
 
-        # Create lead
-        result = supabase.table("leads").insert({
-            "name": name,
-            "first_name": first_name,
-            "last_name": last_name,
-            "email": email,
-            "phone": phone,
-            "source": "Meta Ads",
-            "source_page": f"Ad 1A - The 30% Reality - {form_name}",
-            "stage": "new_fb_lead",
-            "lead_temperature": "warm",
-            "status": "new",
-            "current_brokerage": current_brokerage,
-            "notes": f"Meta Lead Ad submission via {form_name}. Imported by sync job."
-        }).execute()
+            name = fields.get("full_name", "") or fields.get("name", "Unknown")
+            phone = fields.get("phone_number", "") or fields.get("phone", "")
+            name_parts = name.strip().split(" ", 1)
+            first_name = name_parts[0] if name_parts else "Unknown"
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
 
-        lead_id = result.data[0]["id"]
-
-        # Create opportunity
-        try:
-            supabase.table("opportunities").insert({
-                "contact_id": lead_id,
-                "pipeline_id": 1,
+            # Create lead
+            result = supabase.table("leads").insert({
+                "name": name,
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "phone": phone,
+                "source": "Meta Ads",
+                "source_page": form_name,
                 "stage": "new_fb_lead",
-                "source": f"Meta Ads - {form_name}",
-                "status": "open",
-                "notes": "Auto-created by Meta lead sync job."
+                "lead_temperature": "warm",
+                "status": "new",
+                "current_brokerage": current_brokerage,
+                "notes": f"Meta Lead Ad submission via {form_name}. Imported by sync job."
             }).execute()
-        except Exception:
-            pass
 
-        # Enroll in email funnel
-        try:
-            supabase.table("email_funnel_enrollments").insert({
-                "lead_id": lead_id,
-                "funnel_id": funnel_id,
-                "current_step": 1,
-                "status": "active",
-                "enrolled_at": datetime.now(timezone.utc).isoformat()
+            lead_id = result.data[0]["id"]
+
+            # Create opportunity
+            try:
+                supabase.table("opportunities").insert({
+                    "contact_id": lead_id,
+                    "pipeline_id": 1,
+                    "stage": "new_fb_lead",
+                    "source": f"Meta Ads - {form_name}",
+                    "status": "open",
+                    "notes": f"Auto-created by Meta lead sync job ({current_brokerage})."
+                }).execute()
+            except Exception:
+                pass
+
+            # Enroll in email funnel
+            try:
+                supabase.table("email_funnel_enrollments").insert({
+                    "lead_id": lead_id,
+                    "funnel_id": funnel_id,
+                    "current_step": 1,
+                    "status": "active",
+                    "enrolled_at": datetime.now(timezone.utc).isoformat()
+                }).execute()
+            except Exception:
+                pass
+
+            # Log activity
+            supabase.table("activity_log").insert({
+                "type": "meta_lead",
+                "message": f"New lead via Meta sync: {name} ({email}) - {form_name}",
+                "meta": {"lead_id": lead_id, "form": form_name, "funnel_id": funnel_id, "sync": True, "brokerage": current_brokerage}
             }).execute()
-        except Exception:
-            pass
 
-        # Log activity
-        supabase.table("activity_log").insert({
-            "type": "meta_lead",
-            "message": f"New lead via Meta sync: {name} ({email}) - {form_name}",
-            "meta": {"lead_id": lead_id, "form": form_name, "funnel_id": funnel_id, "sync": True}
-        }).execute()
+            existing_emails.add(email.lower())
+            new_count += 1
+            print(f"Imported ({current_brokerage}): {name} ({email})")
 
-        existing_emails.add(email.lower())
-        new_count += 1
-        print(f"Imported: {name} ({email})")
+        print(f"  {form_name}: {new_count} new leads.")
+        total_new += new_count
 
-    print(f"Sync complete. {new_count} new leads imported.")
+    print(f"Sync complete. {total_new} total new leads imported.")
 
 if __name__ == "__main__":
     main()
