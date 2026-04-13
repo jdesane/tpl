@@ -3819,6 +3819,19 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
             current_brokerage = ""
             funnel_id = 19  # The Numbers Don't Lie (general)
 
+        # Build auto-tags based on source and brokerage
+        auto_tags = ["meta-ad"]
+        if current_brokerage == "Keller Williams":
+            auto_tags.append("kw-comparison")
+        elif current_brokerage == "RE/MAX":
+            auto_tags.append("remax-comparison")
+        elif current_brokerage == "eXp Realty":
+            auto_tags.append("exp-comparison")
+        elif current_brokerage == "Century 21":
+            auto_tags.append("c21-comparison")
+        elif current_brokerage == "Coldwell Banker":
+            auto_tags.append("coldwell-comparison")
+
         # Create new lead with pipeline-ready stage
         result = supabase.table("leads").insert({
             "name": name,
@@ -3832,6 +3845,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
             "lead_temperature": "warm",
             "status": "new",
             "current_brokerage": current_brokerage,
+            "tags": auto_tags,
             "notes": f"Meta Lead Ad submission via {form_name}. Platform: {platform}."
         }).execute()
 
