@@ -25,6 +25,7 @@ from analysis import (
 )
 from cma_engine import run_cma
 from report import generate_html_report
+from redfin_data import RedfinAPI, auto_pull_comps, auto_pull_subject
 from config import Config
 
 st.set_page_config(page_title="CMA Builder", page_icon="🏠", layout="wide")
@@ -89,7 +90,27 @@ with st.sidebar:
 # ═══════════════════════════════════════════════════════════════════
 if step.startswith("1"):
     st.header("Subject Property")
-    st.caption("Enter the property you're pricing.")
+
+    # ── Auto-lookup ──
+    st.subheader("Auto-Lookup from Redfin")
+    lookup_address = st.text_input("Enter address to auto-lookup", placeholder="14863 22nd Rd N, Loxahatchee, FL 33470")
+
+    if st.button("Lookup Property", type="primary"):
+        with st.spinner("Searching for property..."):
+            try:
+                subject, source = auto_pull_subject(lookup_address)
+                if subject:
+                    st.session_state.subject = subject
+                    st.success(f"Found via {source}: {subject.address} — {subject.beds}bd/{subject.baths}ba, {subject.sqft:,} sqft, built {subject.year_built}")
+                    st.rerun()
+                else:
+                    st.warning("No results found. Try a more specific address or enter manually below.")
+            except Exception as e:
+                st.error(f"Lookup failed: {e}. Enter manually below.")
+
+    st.divider()
+    st.subheader("Property Details")
+    st.caption("Auto-filled from lookup or enter manually.")
 
     s = st.session_state.subject
 
@@ -138,7 +159,53 @@ if step.startswith("1"):
 # ═══════════════════════════════════════════════════════════════════
 elif step.startswith("2"):
     st.header("Comparable Sales")
-    st.caption("Add sold comps with their full pricing history.")
+
+    # ── Auto-search from Redfin ──
+    st.subheader("Auto-Search Comps from Redfin")
+    subj = st.session_state.subject
+
+    if not subj.address:
+        st.info("Set up the subject property first (Step 1), then come back here to auto-pull comps.")
+    else:
+        st.caption(f"Searching near: **{subj.address}**")
+
+        sc1, sc2, sc3 = st.columns(3)
+        with sc1:
+            search_beds_range = st.number_input("Beds +/-", 0, 5, 1,
+                                                 help="Search for comps within this many bedrooms of subject")
+            search_sqft_pct = st.slider("Sqft tolerance %", 5, 50, 20) / 100
+        with sc2:
+            search_sold_days = st.selectbox("Sold within", [90, 180, 365], index=1)
+            search_limit = st.number_input("Max comps", 5, 30, 15)
+        with sc3:
+            search_price_history = st.checkbox("Pull price change history", value=True,
+                                                help="Fetches full price timeline for each comp (slower but essential for your analysis)")
+
+        if st.button("Search Comps", type="primary"):
+            with st.spinner("Searching for sold comps & pulling price histories..."):
+                try:
+                    found_comps, source = auto_pull_comps(
+                        address=subj.address,
+                        subject=subj,
+                        sold_within_days=search_sold_days,
+                        limit=search_limit,
+                        beds_range=search_beds_range,
+                        sqft_range_pct=search_sqft_pct,
+                    )
+                    if found_comps:
+                        st.session_state.comps = found_comps
+                        with_history = sum(1 for c in found_comps if c.pricing_history and c.pricing_history.price_changes)
+                        st.success(
+                            f"Found {len(found_comps)} sold comps via {source}. "
+                            f"{with_history} have full price change history."
+                        )
+                        st.rerun()
+                    else:
+                        st.warning("No comps found. Try widening the search criteria or add comps manually below.")
+                except Exception as e:
+                    st.error(f"Search failed: {e}. You can still add comps manually below.")
+
+    st.divider()
 
     # Show existing comps
     if st.session_state.comps:
@@ -379,6 +446,30 @@ elif step.startswith("3"):
 elif step.startswith("4"):
     st.header("Active Competition")
     st.caption("Current active listings competing with the subject property.")
+
+    # ── Auto-search active from Redfin ──
+    subj = st.session_state.subject
+    if subj.address:
+        if st.button("Auto-Search Active Listings from Redfin", type="primary"):
+            with st.spinner("Searching Redfin for active listings..."):
+                try:
+                    rf = RedfinAPI(delay=0.5)
+                    min_beds = max(0, subj.beds - 1) if subj.beds else 0
+                    max_beds = (subj.beds + 1) if subj.beds else 99
+                    found = rf.pull_active_listings(
+                        address=subj.address,
+                        min_beds=min_beds, max_beds=max_beds,
+                    )
+                    if found:
+                        st.session_state.active_listings = found
+                        st.success(f"Found {len(found)} active listings.")
+                        st.rerun()
+                    else:
+                        st.warning("No active listings found nearby.")
+                except Exception as e:
+                    st.error(f"Search failed: {e}")
+
+    st.divider()
 
     if st.session_state.active_listings:
         st.subheader(f"Active Listings ({len(st.session_state.active_listings)})")
