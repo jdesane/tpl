@@ -18,6 +18,7 @@ from models import (
     SubjectProperty, Comp, PricingHistory, PriceChange,
     ActiveListing, PendingInsight, PropertyType, CMAReport,
 )
+from csv_import import parse_flexmls_csv, rows_to_comps, rows_to_active_listings
 from analysis import (
     analyze_comp, analyze_market_patterns, build_price_changes,
     generate_pricing_strategy, calculate_adjustments,
@@ -27,6 +28,15 @@ from report import generate_html_report
 from config import Config
 
 st.set_page_config(page_title="CMA Builder", page_icon="🏠", layout="wide")
+
+
+def _parse_safe(val) -> float:
+    """Safely parse a number."""
+    try:
+        s = str(val).replace("$", "").replace(",", "").strip()
+        return float(s)
+    except (ValueError, TypeError):
+        return 0
 
 
 # ── Session state init ──────────────────────────────────────────────
@@ -147,7 +157,49 @@ elif step.startswith("2"):
                     st.rerun()
 
     st.divider()
-    st.subheader("Add New Comp")
+
+    # ── CSV Import from Flexmls ──
+    st.subheader("Import from Flexmls Export")
+    st.caption("In Flexmls: run your comp search → export to CSV/Excel → upload here.")
+
+    uploaded = st.file_uploader(
+        "Upload Flexmls CSV or Excel export",
+        type=["csv", "xlsx", "xls"],
+        key="csv_upload",
+    )
+    if uploaded is not None:
+        raw = uploaded.read()
+        rows = parse_flexmls_csv(raw)
+        if rows:
+            imported = rows_to_comps(rows)
+            st.success(f"Parsed {len(rows)} rows → {len(imported)} sold comps found.")
+
+            if imported:
+                # Preview
+                for ic in imported:
+                    h = ic.pricing_history
+                    price_str = f"${h.sale_price:,.0f}" if h else "N/A"
+                    orig_str = f"${h.original_list_price:,.0f}" if h else "N/A"
+                    st.markdown(
+                        f"- **{ic.address}** — {ic.beds}bd/{ic.baths}ba, "
+                        f"{ic.sqft:,} sqft — Listed {orig_str}, Sold {price_str}"
+                    )
+
+                st.caption(
+                    "Note: CSV imports include property details and list/sale prices. "
+                    "Price change history must be added manually per comp in the form below "
+                    "(Flexmls doesn't export price change history in CSV)."
+                )
+
+                if st.button("Add All Imported Comps", type="primary"):
+                    st.session_state.comps.extend(imported)
+                    st.success(f"Added {len(imported)} comps!")
+                    st.rerun()
+        else:
+            st.error("Could not parse the file. Check that it's a Flexmls export.")
+
+    st.divider()
+    st.subheader("Add Comp Manually")
 
     with st.form("add_comp", clear_on_submit=True):
         st.markdown("**Property Details**")
@@ -337,6 +389,38 @@ elif step.startswith("4"):
                 if st.button(f"Remove", key=f"rm_active_{i}"):
                     st.session_state.active_listings.pop(i)
                     st.rerun()
+
+    st.divider()
+
+    # CSV import for active listings
+    st.subheader("Import Active Listings from Flexmls")
+    active_upload = st.file_uploader(
+        "Upload Flexmls CSV/Excel (active listings search)",
+        type=["csv", "xlsx", "xls"],
+        key="csv_active_upload",
+    )
+    if active_upload is not None:
+        raw = active_upload.read()
+        rows = parse_flexmls_csv(raw)
+        if rows:
+            imported_active = rows_to_active_listings(rows)
+            if not imported_active:
+                imported_active = [
+                    ActiveListing(
+                        mls_number=str(r.get("mls_number", "")),
+                        address=str(r.get("address", "")),
+                        city=str(r.get("city", "")),
+                        beds=int(_parse_safe(r.get("beds", 0))),
+                        baths=float(_parse_safe(r.get("baths", 0))),
+                        sqft=int(_parse_safe(r.get("sqft", 0))),
+                        list_price=float(_parse_safe(r.get("list_price", 0))),
+                        dom=int(_parse_safe(r.get("dom", 0))),
+                    ) for r in rows if _parse_safe(r.get("list_price", 0)) > 0
+                ]
+            st.success(f"Found {len(imported_active)} active listings.")
+            if imported_active and st.button("Add All Active Listings", type="primary"):
+                st.session_state.active_listings.extend(imported_active)
+                st.rerun()
 
     st.divider()
     with st.form("add_active", clear_on_submit=True):
