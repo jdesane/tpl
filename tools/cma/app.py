@@ -21,7 +21,7 @@ from models import (
 from csv_import import parse_flexmls_csv, rows_to_comps, rows_to_active_listings
 from flexmls_parser import (
     parse_flexmls_link, parse_flexmls_html_file,
-    flexmls_to_comps, flexmls_to_active,
+    flexmls_to_comps, flexmls_to_active, cross_reference,
 )
 from analysis import (
     analyze_comp, analyze_market_patterns, build_price_changes,
@@ -134,6 +134,37 @@ if step.startswith("1"):
                         st.warning("No properties found. Check the link and try again.")
                 except Exception as e:
                     st.error(f"Failed to fetch: {e}")
+
+    # Cross-reference with a second link
+    xref_url = st.text_input(
+        "Cross-Reference Link (optional)",
+        placeholder="Paste a second Flexmls public link to fill in missing data...",
+        help="If your primary link is missing sqft, price history, or other fields, "
+             "paste a second public link here. Data from this link will fill in "
+             "blanks without overwriting existing values.",
+    )
+    if xref_url and st.session_state.get("mls_raw"):
+        if st.button("Cross-Reference", key="xref_btn"):
+            with st.spinner("Fetching cross-reference data..."):
+                try:
+                    xref_props = parse_flexmls_link(xref_url)
+                    if xref_props:
+                        primary = st.session_state["mls_raw"]
+                        merged = cross_reference(primary, xref_props)
+                        st.session_state["mls_raw"] = merged
+                        comps = flexmls_to_comps(merged)
+                        active = flexmls_to_active(merged)
+                        st.session_state.comps = comps
+                        st.session_state.active_listings = active
+                        st.success(
+                            f"Cross-referenced {len(xref_props)} properties. "
+                            f"Updated: {len(comps)} comps, {len(active)} active."
+                        )
+                        st.rerun()
+                    else:
+                        st.warning("No properties found in cross-reference link.")
+                except Exception as e:
+                    st.error(f"Cross-reference failed: {e}")
 
     st.divider()
 
