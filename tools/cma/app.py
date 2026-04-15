@@ -19,6 +19,10 @@ from models import (
     ActiveListing, PendingInsight, PropertyType, CMAReport,
 )
 from csv_import import parse_flexmls_csv, rows_to_comps, rows_to_active_listings
+from flexmls_parser import (
+    parse_flexmls_link, parse_flexmls_html_file,
+    flexmls_to_comps, flexmls_to_active,
+)
 from analysis import (
     analyze_comp, analyze_market_patterns, build_price_changes,
     generate_pricing_strategy, calculate_adjustments,
@@ -64,11 +68,12 @@ with st.sidebar:
     st.divider()
 
     step = st.radio("Step", [
-        "1. Subject Property",
-        "2. Add Comps",
-        "3. Pricing Analysis",
-        "4. Active Competition",
-        "5. Report",
+        "1. Import from MLS",
+        "2. Subject Property",
+        "3. Comps",
+        "4. Pricing Analysis",
+        "5. Active Competition",
+        "6. Report",
     ])
 
     st.divider()
@@ -78,17 +83,115 @@ with st.sidebar:
     st.caption(f"MLS API: {api_status}")
 
     st.divider()
+    # Show loaded data counts
+    n_comps = len(st.session_state.comps)
+    n_active = len(st.session_state.active_listings)
+    if n_comps or n_active:
+        st.caption(f"Loaded: {n_comps} comps, {n_active} active")
+
+    st.divider()
     if st.button("Reset CMA", type="secondary"):
-        for k in ["subject", "comps", "active_listings", "pending_insights", "report"]:
-            del st.session_state[k]
+        for k in ["subject", "comps", "active_listings", "pending_insights", "report", "mls_raw"]:
+            if k in st.session_state:
+                del st.session_state[k]
         _init_state()
         st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 1: Subject Property
+# STEP 1: Import from MLS
 # ═══════════════════════════════════════════════════════════════════
 if step.startswith("1"):
+    st.header("Import from Flexmls")
+    st.caption(
+        "Run a wide search in Flexmls (sold properties in the area), "
+        "select all results, generate a public link, and paste it here."
+    )
+
+    # Option A: Paste public link URL
+    st.subheader("Option A: Paste Flexmls Public Link")
+    mls_url = st.text_input(
+        "Flexmls Public Link URL",
+        placeholder="https://www.flexmls.com/cgi-bin/mainmenu.cgi?cmd=url+other/run_public_link.html&public_link_tech_id=...",
+    )
+    if st.button("Fetch & Parse", type="primary"):
+        if mls_url:
+            with st.spinner("Fetching MLS data..."):
+                try:
+                    raw_props = parse_flexmls_link(mls_url)
+                    if raw_props:
+                        st.session_state["mls_raw"] = raw_props
+                        comps = flexmls_to_comps(raw_props)
+                        active = flexmls_to_active(raw_props)
+                        st.session_state.comps = comps
+                        st.session_state.active_listings = active
+                        st.success(
+                            f"Imported {len(raw_props)} properties: "
+                            f"{len(comps)} comps, {len(active)} active listings."
+                        )
+                        st.rerun()
+                    else:
+                        st.warning("No properties found. Check the link and try again.")
+                except Exception as e:
+                    st.error(f"Failed to fetch: {e}")
+
+    st.divider()
+
+    # Option B: Upload saved HTML file
+    st.subheader("Option B: Upload Saved HTML")
+    st.caption("If the link doesn't work, save the page as HTML in your browser (Cmd+S) and upload it here.")
+    html_file = st.file_uploader("Upload Flexmls HTML file", type=["html", "htm"])
+    if html_file is not None:
+        raw = html_file.read()
+        raw_props = parse_flexmls_html_file(raw)
+        if raw_props:
+            st.session_state["mls_raw"] = raw_props
+            comps = flexmls_to_comps(raw_props)
+            active = flexmls_to_active(raw_props)
+            st.session_state.comps = comps
+            st.session_state.active_listings = active
+            st.success(
+                f"Parsed {len(raw_props)} properties: "
+                f"{len(comps)} comps, {len(active)} active listings."
+            )
+        else:
+            st.warning("Could not parse any properties from the file.")
+
+    st.divider()
+
+    # Option C: CSV upload (existing)
+    st.subheader("Option C: Upload Flexmls CSV Export")
+    csv_file = st.file_uploader("Upload CSV/Excel export", type=["csv", "xlsx", "xls"], key="csv_step1")
+    if csv_file is not None:
+        raw = csv_file.read()
+        rows = parse_flexmls_csv(raw)
+        if rows:
+            comps = rows_to_comps(rows)
+            active = rows_to_active_listings(rows)
+            st.session_state.comps = comps
+            st.session_state.active_listings = active
+            st.success(f"Imported {len(comps)} comps, {len(active)} active listings from CSV.")
+        else:
+            st.error("Could not parse the CSV file.")
+
+    # Show what's loaded
+    if st.session_state.comps:
+        st.divider()
+        st.subheader(f"Loaded Properties ({len(st.session_state.comps)} comps)")
+        for i, c in enumerate(st.session_state.comps):
+            h = c.pricing_history
+            price_str = f"${h.sale_price:,.0f}" if h else "N/A"
+            changes = len(h.price_changes) if h else 0
+            st.markdown(
+                f"**{i+1}. {c.address}** — {c.beds}bd/{c.baths}ba, {c.sqft:,} sqft "
+                f"— Sold {price_str} — {changes} price change(s)"
+            )
+
+
+# ═══════════════════════════════════════════════════════════════════
+# STEP 2: Subject Property
+# ═══════════════════════════════════════════════════════════════════
+elif step.startswith("2"):
     st.header("Subject Property")
 
     # ── Auto-lookup ──
@@ -159,9 +262,9 @@ if step.startswith("1"):
 
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 2: Add Comps
+# STEP 3: Add Comps
 # ═══════════════════════════════════════════════════════════════════
-elif step.startswith("2"):
+elif step.startswith("3"):
     st.header("Comparable Sales")
 
     # ── Auto-search from Redfin ──
@@ -351,9 +454,9 @@ elif step.startswith("2"):
 
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 3: Pricing History Analysis
+# STEP 4: Pricing History Analysis
 # ═══════════════════════════════════════════════════════════════════
-elif step.startswith("3"):
+elif step.startswith("4"):
     st.header("Pricing History Analysis")
 
     if not st.session_state.comps:
@@ -445,9 +548,9 @@ elif step.startswith("3"):
 
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 4: Active Competition
+# STEP 5: Active Competition
 # ═══════════════════════════════════════════════════════════════════
-elif step.startswith("4"):
+elif step.startswith("5"):
     st.header("Active Competition")
     st.caption("Current active listings competing with the subject property.")
 
@@ -544,9 +647,9 @@ elif step.startswith("4"):
 
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 5: Report
+# STEP 6: Report
 # ═══════════════════════════════════════════════════════════════════
-elif step.startswith("5"):
+elif step.startswith("6"):
     st.header("CMA Report")
 
     subj = st.session_state.subject
