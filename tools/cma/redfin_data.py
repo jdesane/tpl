@@ -98,10 +98,27 @@ class RedfinAPI:
                     "url": row.get("url", ""),
                     "type": row.get("type", ""),
                     "id": row.get("id", ""),
+                    "propertyId": row.get("propertyId", ""),
                 }
-                # Only include actual property results (not cities/neighborhoods)
-                if row.get("type") in (1, 2, "1", "2"):  # 1=address, 2=property
+                # Accept any result that has a URL (property pages, addresses)
+                # Filter out cities/neighborhoods/zip-only results
+                row_url = row.get("url", "")
+                if row_url and "/home/" in row_url:
                     results.append(result)
+
+        # If strict filtering returned nothing, accept any result with a URL
+        if not results:
+            for section in sections:
+                for row in section.get("rows", []):
+                    if row.get("url"):
+                        results.append({
+                            "name": row.get("name", ""),
+                            "subName": row.get("subName", ""),
+                            "url": row.get("url", ""),
+                            "type": row.get("type", ""),
+                            "id": row.get("id", ""),
+                            "propertyId": row.get("propertyId", ""),
+                        })
 
         return results
 
@@ -799,13 +816,37 @@ def auto_pull_subject(address: str) -> tuple[SubjectProperty | None, str]:
     Try to pull subject property details automatically.
     Returns (subject, source_name) tuple.
     """
+    # Try Redfin
     try:
         rf = RedfinAPI(delay=0.5)
         subject = rf.pull_subject(address)
-        if subject:
+        if subject and subject.beds > 0:
             return subject, "Redfin"
-    except (ConnectionError, requests.exceptions.HTTPError):
+    except Exception:
         pass
 
-    # Fallback: just create from address (user fills in details)
+    # Try homeharvest / Realtor.com
+    if HAS_HOMEHARVEST:
+        try:
+            import pandas as pd
+            df = hh_scrape(location=address, listing_type="sold", past_days=365)
+            if df is not None and not df.empty:
+                row = df.iloc[0]
+                addr = str(row.get("full_street_line", "") or row.get("street", address))
+                subject = SubjectProperty(
+                    address=addr,
+                    city=str(row.get("city", "")),
+                    state=str(row.get("state", "FL")),
+                    zip_code=str(row.get("zip_code", "")),
+                    beds=_safe_int(row.get("beds", 0)),
+                    baths=_safe_float(row.get("full_baths", 0)) or _safe_float(row.get("baths", 0)),
+                    sqft=_safe_int(row.get("sqft", 0)),
+                    lot_sqft=_safe_int(row.get("lot_sqft", 0)),
+                    year_built=_safe_int(row.get("year_built", 0)),
+                )
+                if subject.beds > 0:
+                    return subject, "Realtor.com"
+        except Exception:
+            pass
+
     return None, "none"

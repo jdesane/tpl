@@ -96,15 +96,19 @@ if step.startswith("1"):
     lookup_address = st.text_input("Enter address to auto-lookup", placeholder="14863 22nd Rd N, Loxahatchee, FL 33470")
 
     if st.button("Lookup Property", type="primary"):
-        with st.spinner("Searching for property..."):
+        with st.spinner("Searching Redfin & Realtor.com..."):
             try:
                 subject, source = auto_pull_subject(lookup_address)
-                if subject:
+                if subject and subject.beds > 0:
                     st.session_state.subject = subject
                     st.success(f"Found via {source}: {subject.address} — {subject.beds}bd/{subject.baths}ba, {subject.sqft:,} sqft, built {subject.year_built}")
                     st.rerun()
                 else:
-                    st.warning("No results found. Try a more specific address or enter manually below.")
+                    st.warning(
+                        "Property not found in Redfin or Realtor.com. "
+                        "This can happen with newer listings, rural properties, or unindexed addresses. "
+                        "Enter the details manually below — you can get them from Flexmls."
+                    )
             except Exception as e:
                 st.error(f"Lookup failed: {e}. Enter manually below.")
 
