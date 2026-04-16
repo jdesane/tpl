@@ -1,6 +1,6 @@
 # Region 1 Compliance Pipeline Tracker
 
-Internal tool for Georgette (Region 1 Compliance Lead, LPT Realty). Two static HTML pages backed by Supabase. Replaces the twice-a-day Excel workflow with a dashboard she can glance at.
+Internal tool for Georgette (Region 1 Compliance Lead, LPT Realty). Two static HTML pages backed by the existing TPL Supabase. Replaces the twice-a-day Excel workflow with a dashboard she can glance at.
 
 **Important:** this tool does **not** integrate with Connect / SmarterTrack. Numbers are entered manually (AM + PM), by design, so no IT flags.
 
@@ -20,35 +20,22 @@ compliance-pipeline/
 
 ## One-time setup
 
-### 1. Create a fresh Supabase project
+This tool piggybacks on the existing **TPL Supabase** project (`zyonidiybzrgklrmalbt`). Credentials are already baked into both HTML files — no swap needed.
 
-1. Go to [supabase.com](https://supabase.com) and create a new project (keep it isolated — do not reuse TPL or Thunder credentials).
-2. Note the project URL (e.g. `https://abcdxyz.supabase.co`) and the **anon public** key from **Project Settings → API**.
+### Run the schema (once)
 
-### 2. Run the schema
-
-1. Open the **SQL Editor** in Supabase.
+1. Open the TPL Supabase project → **SQL Editor**.
 2. Paste the contents of `schema.sql`.
-3. Run it. You should see the `compliance_entries` table created with RLS enabled and a permissive anon policy.
+3. Run it. Creates `compliance_entries` with RLS + anon policy. Uses `if not exists`, so safe to re-run.
 
-### 3. Wire credentials into the HTML
+### Deploy
 
-Both `index.html` and `dashboard.html` have two placeholder strings at the top of their `<script type="module">` blocks:
+This folder lives in the marketing repo (`jdesane/tpl`), which Vercel auto-deploys on push to `main`. Once merged, the pages are live at:
 
-```js
-const SUPABASE_URL = 'SUPABASE_URL_PLACEHOLDER';
-const SUPABASE_ANON_KEY = 'SUPABASE_ANON_KEY_PLACEHOLDER';
-```
+- Entry: `https://tplcollective.ai/compliance-pipeline/`
+- Dashboard: `https://tplcollective.ai/compliance-pipeline/dashboard.html`
 
-Find-and-replace both placeholders in **both** files with your real values. No env vars, no build step.
-
-### 4. Deploy to GitHub Pages
-
-1. Push this repo (or just the `compliance-pipeline/` folder) to `jdesane/<repo>`.
-2. In the repo **Settings → Pages**, set the source to the branch (and `/root` or `/docs` as appropriate).
-3. Bookmark:
-   - Entry: `https://jdesane.github.io/<repo>/compliance-pipeline/`
-   - Dashboard: `https://jdesane.github.io/<repo>/compliance-pipeline/dashboard.html`
+(Swap the domain for whatever Vercel domain the repo deploys to — if it's only on the `*.vercel.app` preview, use that.)
 
 ---
 
