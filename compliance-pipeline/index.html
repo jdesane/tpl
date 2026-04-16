@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Region 1 Compliance — Entry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --bg-2: #12152a;
+    --surface: #1a1f38;
+    --surface-2: #232948;
+    --border: #2d3560;
+    --text: #e8ecff;
+    --muted: #8a92b8;
+    --dim: #5a628a;
+
+    --magenta: #ec4899;
+    --teal: #06d6a0;
+    --gold: #fbbf24;
+    --purple: #a78bfa;
+    --blue: #60a5fa;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 800px 600px at 0% 0%, rgba(236, 72, 153, 0.08), transparent 60%),
+      radial-gradient(ellipse 800px 600px at 100% 100%, rgba(6, 214, 160, 0.06), transparent 60%);
+    background-attachment: fixed;
+  }
+  .shell {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+  }
+  header.page {
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--magenta);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 40px);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  h1 em { font-style: italic; color: var(--magenta); font-weight: 600; }
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 540px;
+  }
+
+  nav.pills {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  nav.pills a {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: all 0.2s;
+  }
+  nav.pills a:hover { color: var(--text); }
+  nav.pills a.active {
+    background: linear-gradient(145deg, var(--surface-2), var(--surface));
+    color: var(--text);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .panel {
+    background: linear-gradient(145deg, var(--surface), var(--bg-2));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+  }
+  .panel + .panel { margin-top: 20px; }
+  .panel-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .panel-title::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--magenta);
+    box-shadow: 0 0 8px rgba(236, 72, 153, 0.6);
+  }
+
+  .meta-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: end;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  input[type="date"], input[type="number"] {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type="date"] { color-scheme: dark; }
+  input:focus {
+    outline: none;
+    border-color: var(--magenta);
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+  }
+  input::-webkit-inner-spin-button,
+  input::-webkit-outer-spin-button { opacity: 0.3; }
+
+  .toggle {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .toggle button {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 10px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .toggle button.active {
+    background: linear-gradient(145deg, var(--magenta), #d53f8c);
+    color: white;
+    box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
+  }
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .input-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    transition: border-color 0.15s;
+  }
+  .input-card:focus-within { border-color: var(--magenta); }
+  .input-card label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .input-card label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .input-card input {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .input-card input:focus { box-shadow: none; }
+  .input-card.full { grid-column: 1 / -1; }
+
+  .total-card {
+    margin-top: 20px;
+    padding: 20px 24px;
+    background: linear-gradient(145deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.04));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .total-card .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .total-card .value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .hint .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(6, 214, 160, 0.12);
+    color: var(--teal);
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-right: 6px;
+  }
+  button.save {
+    appearance: none;
+    border: none;
+    background: linear-gradient(145deg, var(--magenta), #d53f8c);
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 14px 28px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px rgba(236, 72, 153, 0.3);
+  }
+  button.save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(236, 72, 153, 0.45);
+  }
+  button.save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translate(-50%, 120%);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+    z-index: 1000;
+  }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .toast .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+  .toast.error .dot { background: var(--red); }
+
+  @media (max-width: 560px) {
+    .shell { padding: 20px 16px 48px; }
+    .panel { padding: 20px; border-radius: 16px; }
+    .meta-row { grid-template-columns: 1fr; align-items: stretch; }
+    .toggle { width: 100%; }
+    .toggle button { flex: 1; }
+    .inputs-grid { grid-template-columns: 1fr; }
+    .total-card .value { font-size: 32px; }
+    .actions { justify-content: stretch; }
+    button.save { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="page">
+    <div class="eyebrow">Region 1 · Compliance</div>
+    <h1>Log today's <em>pipeline numbers</em></h1>
+    <p class="sub">Pull the five counts from Connect, drop them here. Save auto-upserts — re-open this page any time to edit an AM or PM entry.</p>
+  </header>
+
+  <nav class="pills">
+    <a href="./" class="active">Entry</a>
+    <a href="./dashboard.html">Dashboard</a>
+  </nav>
+
+  <section class="panel">
+    <h2 class="panel-title">Snapshot</h2>
+
+    <div class="meta-row">
+      <div class="field">
+        <label for="entry-date">Entry Date</label>
+        <input type="date" id="entry-date" />
+      </div>
+      <div class="field">
+        <label>Time Block</label>
+        <div class="toggle" role="group" aria-label="Time block">
+          <button type="button" data-block="AM" class="active">AM</button>
+          <button type="button" data-block="PM">PM</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="inputs-grid">
+      <div class="input-card full">
+        <label><span class="dot" style="background:var(--magenta)"></span>Rush 3-Day</label>
+        <input type="number" inputmode="numeric" min="0" id="rush_3day" value="0" />
+      </div>
+      <div class="input-card">
+        <label><span class="dot" style="background:var(--gold)"></span>Today</label>
+        <input type="number" inputmode="numeric" min="0" id="rush_today" value="0" />
+      </div>
+      <div class="input-card">
+        <label><span class="dot" style="background:var(--purple)"></span>Tomorrow</label>
+        <input type="number" inputmode="numeric" min="0" id="rush_tomorrow" value="0" />
+      </div>
+      <div class="input-card">
+        <label><span class="dot" style="background:var(--blue)"></span>Next Day</label>
+        <input type="number" inputmode="numeric" min="0" id="rush_next_day" value="0" />
+      </div>
+      <div class="input-card">
+        <label><span class="dot" style="background:var(--teal)"></span>Funds In</label>
+        <input type="number" inputmode="numeric" min="0" id="funds_in" value="0" />
+      </div>
+    </div>
+
+    <div class="total-card">
+      <div>
+        <div class="label">Pipeline Total</div>
+        <div class="hint" style="margin-top:4px">Rush 3-Day + Funds In</div>
+      </div>
+      <div class="value" id="total-display">0</div>
+    </div>
+
+    <div class="actions">
+      <div class="hint" id="status-hint">
+        <span class="badge" id="mode-badge">NEW</span>
+        <span id="mode-text">No entry yet for this date + time block.</span>
+      </div>
+      <button type="button" class="save" id="save-btn">Save Entry</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">
+  <span class="dot"></span>
+  <span id="toast-text">Saved.</span>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  const SUPABASE_URL = 'https://zyonidiybzrgklrmalbt.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b25pZGl5YnpyZ2tscm1hbGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTY5NzUsImV4cCI6MjA4ODI5Mjk3NX0.5See-qjLkXA4CoJi9tNfcLAX_cdvZhPaxw8iViKM8S8';
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const NUMERIC_FIELDS = ['rush_3day', 'rush_today', 'rush_tomorrow', 'rush_next_day', 'funds_in'];
+
+  const dateInput = document.getElementById('entry-date');
+  const toggleBtns = document.querySelectorAll('.toggle button');
+  const totalDisplay = document.getElementById('total-display');
+  const saveBtn = document.getElementById('save-btn');
+  const modeBadge = document.getElementById('mode-badge');
+  const modeText = document.getElementById('mode-text');
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toast-text');
+
+  let timeBlock = 'AM';
+
+  function todayISO() {
+    const d = new Date();
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d - tz).toISOString().slice(0, 10);
+  }
+  function defaultBlock() {
+    return new Date().getHours() < 12 ? 'AM' : 'PM';
+  }
+
+  function getNums() {
+    const out = {};
+    for (const f of NUMERIC_FIELDS) {
+      const v = parseInt(document.getElementById(f).value, 10);
+      out[f] = Number.isFinite(v) && v >= 0 ? v : 0;
+    }
+    return out;
+  }
+  function setNums(row) {
+    for (const f of NUMERIC_FIELDS) {
+      document.getElementById(f).value = row && row[f] != null ? row[f] : 0;
+    }
+    updateTotal();
+  }
+  function updateTotal() {
+    const n = getNums();
+    totalDisplay.textContent = (n.rush_3day + n.funds_in).toLocaleString();
+  }
+
+  function setBlock(block) {
+    timeBlock = block;
+    toggleBtns.forEach(b => b.classList.toggle('active', b.dataset.block === block));
+    loadExisting();
+  }
+
+  function showToast(msg, kind) {
+    toastText.textContent = msg;
+    toast.classList.toggle('error', kind === 'error');
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  async function loadExisting() {
+    const date = dateInput.value;
+    if (!date) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Loading…';
+
+    const { data, error } = await supabase
+      .from('compliance_entries')
+      .select('*')
+      .eq('entry_date', date)
+      .eq('time_block', timeBlock)
+      .maybeSingle();
+
+    saveBtn.disabled = false;
+
+    if (error) {
+      console.error(error);
+      showToast('Could not load existing entry.', 'error');
+      saveBtn.textContent = 'Save Entry';
+      modeBadge.textContent = 'NEW';
+      modeText.textContent = 'Ready when you are.';
+      setNums(null);
+      return;
+    }
+
+    if (data) {
+      setNums(data);
+      saveBtn.textContent = 'Update Entry';
+      modeBadge.textContent = 'EDIT';
+      modeBadge.style.background = 'rgba(251, 191, 36, 0.14)';
+      modeBadge.style.color = 'var(--gold)';
+      const updated = new Date(data.updated_at || data.created_at);
+      modeText.textContent = `Last saved ${updated.toLocaleString()}`;
+    } else {
+      setNums(null);
+      saveBtn.textContent = 'Save Entry';
+      modeBadge.textContent = 'NEW';
+      modeBadge.style.background = 'rgba(6, 214, 160, 0.12)';
+      modeBadge.style.color = 'var(--teal)';
+      modeText.textContent = `No ${timeBlock} entry yet for this date.`;
+    }
+  }
+
+  async function save() {
+    const date = dateInput.value;
+    if (!date) return showToast('Pick a date first.', 'error');
+
+    const payload = { entry_date: date, time_block: timeBlock, ...getNums() };
+    saveBtn.disabled = true;
+    const originalLabel = saveBtn.textContent;
+    saveBtn.textContent = 'Saving…';
+
+    const { error } = await supabase
+      .from('compliance_entries')
+      .upsert(payload, { onConflict: 'entry_date,time_block' });
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
+
+    if (error) {
+      console.error(error);
+      showToast('Save failed. Check console.', 'error');
+      return;
+    }
+    showToast(`${timeBlock} entry saved for ${date}.`);
+    loadExisting();
+  }
+
+  dateInput.value = todayISO();
+  setBlock(defaultBlock());
+  toggleBtns.forEach(b => b.addEventListener('click', () => setBlock(b.dataset.block)));
+  dateInput.addEventListener('change', loadExisting);
+  NUMERIC_FIELDS.forEach(f => document.getElementById(f).addEventListener('input', updateTotal));
+  saveBtn.addEventListener('click', save);
+</script>
+
+</body>
+</html>
