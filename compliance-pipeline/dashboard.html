@@ -435,11 +435,77 @@
   .flag b { color: var(--gold); }
   .flag span.icon { font-size: 14px; line-height: 1; }
 
-  /* Grid for donut + placeholder */
-  .grid-2 {
+  /* Donut panel */
+  .donut-layout {
+    display: flex;
+    gap: 36px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .donut-canvas-wrap {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    flex-shrink: 0;
+  }
+  .donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+  }
+  .donut-center .dc-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .donut-center .dc-value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .donut-center .dc-sub {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .donut-legend {
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 14px 24px;
+    min-width: 200px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-label {
+    color: var(--muted);
+    font-size: 13px;
+    flex: 1;
+  }
+  .legend-value {
+    font-weight: 700;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 17px;
+    letter-spacing: -0.01em;
   }
 
   .empty {
@@ -544,8 +610,16 @@
 
   <section class="panel" data-accent="gold">
     <h2 class="panel-title">Latest snapshot</h2>
-    <div id="donut-wrap">
-      <div class="empty"><div class="big">Phase 4 — coming next.</div>Donut will render here.</div>
+    <div class="donut-layout">
+      <div class="donut-canvas-wrap">
+        <canvas id="donut-canvas" width="220" height="220"></canvas>
+        <div class="donut-center">
+          <div class="dc-label">Pipeline Total</div>
+          <div class="dc-value" id="donut-total">—</div>
+          <div class="dc-sub" id="donut-sub">no snapshot yet</div>
+        </div>
+      </div>
+      <div class="donut-legend" id="donut-legend"></div>
     </div>
   </section>
 </div>
@@ -802,6 +876,7 @@
     return next;
   }
 
+  let donutChart = null;
   const DAY_COLORS = ['gold', 'magenta', 'teal', 'blue', 'purple'];
 
   function renderWeekMatrix() {
@@ -873,10 +948,123 @@
     `;
   }
 
+  function renderKPIs() {
+    const latest = findLatestInWeek();
+
+    if (latest) {
+      const total = pipelineTotal(latest);
+      const when  = `${latest.time_block} · ${fmtDay(new Date(latest.entry_date + 'T12:00'))}`;
+      document.getElementById('kpi-rush').textContent  = (latest.rush_3day || 0).toLocaleString();
+      document.getElementById('kpi-funds').textContent = (latest.funds_in  || 0).toLocaleString();
+      document.getElementById('kpi-total').textContent = total.toLocaleString();
+      document.getElementById('kpi-rush-sub').textContent  = `as of ${when}`;
+      document.getElementById('kpi-funds-sub').textContent = `as of ${when}`;
+      document.getElementById('kpi-total-sub').textContent = 'rush 3-day + funds in';
+    } else {
+      ['kpi-rush','kpi-funds','kpi-total'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      ['kpi-rush-sub','kpi-funds-sub','kpi-total-sub'].forEach(id => {
+        document.getElementById(id).textContent = 'no snapshot this week';
+      });
+    }
+
+    // Cleared this week = sum of (AM pipeline − PM pipeline) per day
+    let totalCleared = 0, daysWithPair = 0;
+    for (let i = 0; i < 5; i++) {
+      const iso = toISO(addDays(weekStart, i));
+      const am  = getRow(iso, 'AM');
+      const pm  = getRow(iso, 'PM');
+      if (am && pm) {
+        totalCleared += pipelineTotal(am) - pipelineTotal(pm);
+        daysWithPair++;
+      }
+    }
+    if (daysWithPair === 0) {
+      document.getElementById('kpi-cleared').textContent     = '—';
+      document.getElementById('kpi-cleared-sub').textContent = 'need AM + PM entries';
+    } else {
+      document.getElementById('kpi-cleared').textContent = totalCleared.toLocaleString();
+      const cls  = totalCleared > 0 ? 'pos' : totalCleared < 0 ? 'neg' : '';
+      const word = totalCleared > 0 ? 'net cleared' : totalCleared < 0 ? 'net added' : 'net zero';
+      document.getElementById('kpi-cleared-sub').innerHTML =
+        `across <span class="${cls}">${daysWithPair} day${daysWithPair === 1 ? '' : 's'}</span> · ${word}`;
+    }
+  }
+
+  function renderDonut() {
+    const latest  = findLatestInWeek();
+    const totalEl = document.getElementById('donut-total');
+    const subEl   = document.getElementById('donut-sub');
+    const legendEl = document.getElementById('donut-legend');
+
+    if (!latest) {
+      totalEl.textContent  = '—';
+      subEl.textContent    = 'no snapshot this week';
+      legendEl.innerHTML   = '';
+      if (donutChart) { donutChart.destroy(); donutChart = null; }
+      return;
+    }
+
+    const total = pipelineTotal(latest);
+    const when  = `${latest.time_block} · ${fmtDay(new Date(latest.entry_date + 'T12:00'))}`;
+    totalEl.textContent = total.toLocaleString();
+    subEl.textContent   = when;
+
+    const segments = [
+      { label: 'Rush Today',    value: latest.rush_today    || 0, color: COLORS.gold },
+      { label: 'Rush Tomorrow', value: latest.rush_tomorrow || 0, color: COLORS.purple },
+      { label: 'Rush Next Day', value: latest.rush_next_day || 0, color: COLORS.blue },
+      { label: 'Funds In',      value: latest.funds_in      || 0, color: COLORS.teal },
+    ];
+
+    legendEl.innerHTML = segments.map(s => `
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:${s.color}"></span>
+        <span class="legend-label">${s.label}</span>
+        <span class="legend-value">${s.value.toLocaleString()}</span>
+      </div>
+    `).join('');
+
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(document.getElementById('donut-canvas'), {
+      type: 'doughnut',
+      data: {
+        labels: segments.map(s => s.label),
+        datasets: [{
+          data: segments.map(s => s.value),
+          backgroundColor: segments.map(s => s.color),
+          borderColor: COLORS.surface,
+          borderWidth: 3,
+          hoverOffset: 6,
+        }],
+      },
+      options: {
+        cutout: '72%',
+        responsive: false,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: COLORS.surface,
+            borderColor: COLORS.border,
+            borderWidth: 1,
+            titleColor: COLORS.text,
+            bodyColor: COLORS.text,
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed}` },
+          },
+        },
+      },
+    });
+  }
+
   function rerenderAll() {
     renderToday();
     renderWeekMatrix();
-    // Phase 4 will add renderKPIs() + renderDonut()
+    renderKPIs();
+    renderDonut();
   }
 
   // --- Event delegation for editable cells ---
