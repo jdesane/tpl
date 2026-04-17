@@ -1172,10 +1172,13 @@
   function fmtDelta(av, pv) {
     if (av == null || pv == null) return '';
     const d = pv - av;
-    return d > 0 ? `+${d}` : String(d);
+    // Prefix + so sign is explicit; quote the cell so Excel keeps it as text
+    return d > 0 ? `"+${d}"` : String(d);
   }
   function csvCell(v) {
     const s = String(v == null ? '' : v);
+    // Already-quoted values (from fmtDelta "+N") pass through as-is
+    if (s.startsWith('"') && s.endsWith('"')) return s;
     return s.includes(',') || s.includes('"') || s.includes('\n')
       ? `"${s.replace(/"/g, '""')}"` : s;
   }
@@ -1189,17 +1192,18 @@
     const weekEnd   = addDays(weekStart, 4);
     const weekday   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
     const dateStr   = `${fmtDay(now)} ${now.getFullYear()}`;
-    const weekRange = `${fmtDay(weekStart)} – ${fmtDay(weekEnd)} ${weekEnd.getFullYear()}`;
+    // Use plain ASCII hyphens so Excel doesn't mangle Unicode em/en dashes
+    const weekRange = `${fmtDay(weekStart)} - ${fmtDay(weekEnd)} ${weekEnd.getFullYear()}`;
 
     const rows = [];
 
     // ── Header ──────────────────────────────────────────────────────────────
-    rows.push([`Region 1 Compliance — Week of ${weekRange}`]);
+    rows.push([`Region 1 Compliance - Week of ${weekRange}`]);
     rows.push([`Downloaded: ${weekday} ${dateStr}`]);
     rows.push([]);
 
     // ── Today section ───────────────────────────────────────────────────────
-    rows.push([`TODAY — ${weekday} ${dateStr}`]);
+    rows.push([`TODAY - ${weekday} ${dateStr}`]);
     rows.push(['Metric', 'AM', 'PM', '+/-']);
 
     const tAM = getRow(today, 'AM');
@@ -1215,7 +1219,7 @@
     rows.push([]);
 
     // ── Week at a glance ────────────────────────────────────────────────────
-    rows.push([`WEEK AT A GLANCE — ${weekRange}`]);
+    rows.push([`WEEK AT A GLANCE - ${weekRange}`]);
     rows.push(['Type', ...METRICS.map(m => m.label), 'Pipeline Total']);
 
     for (let i = 0; i < 5; i++) {
@@ -1244,7 +1248,8 @@
       if (i < 4) rows.push([]);
     }
 
-    const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
+    // \uFEFF = UTF-8 BOM — tells Excel to read as UTF-8 not Windows-1252
+    const blob = new Blob(['\uFEFF' + toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = Object.assign(document.createElement('a'), {
       href: url,
