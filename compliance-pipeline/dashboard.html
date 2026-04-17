@@ -389,6 +389,36 @@
   .delta.zero { background: rgba(138, 146, 184, 0.14); color: var(--muted); }
   .delta.dash { background: transparent; color: var(--dim); font-weight: 400; }
 
+  /* Week matrix */
+  .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .week-matrix td.type-cell {
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    padding-left: 10px;
+    min-width: 110px;
+  }
+  .week-matrix .delta-label {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--red);
+    letter-spacing: 0.05em;
+  }
+  .week-matrix tr.day-gap td {
+    height: 14px;
+    border: none !important;
+    padding: 0;
+  }
+  .week-matrix tr.day-delta td {
+    padding-bottom: 4px;
+  }
+  .week-matrix tr.is-today td.type-cell {
+    box-shadow: inset 3px 0 0 var(--magenta);
+  }
+  .week-matrix tr.is-today {
+    background: rgba(236, 72, 153, 0.04);
+  }
+
   /* Flag banner */
   .flag {
     background: rgba(251, 191, 36, 0.08);
@@ -466,7 +496,7 @@
 
   <div class="flag">
     <span class="icon">◆</span>
-    <div><b>Cleared = AM − PM.</b> Click any AM or PM cell to edit — saves automatically on blur. Cleared and Pipeline Total update live.</div>
+    <div><b>+/− = PM − AM.</b> Negative <span style="color:var(--teal);font-weight:700">green</span> = count dropped = files cleared. Positive <span style="color:var(--red);font-weight:700">red</span> = count grew = backlog added. Click any AM or PM cell to edit — saves automatically.</div>
   </div>
 
   <section class="kpis" id="kpis">
@@ -654,7 +684,8 @@
   // --- Render helpers ---
   function renderDelta(delta) {
     if (delta == null) return '<span class="delta dash">—</span>';
-    const cls = delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'zero';
+    // delta = PM - AM: negative = cleared = good (green), positive = added = bad (red)
+    const cls = delta < 0 ? 'pos' : delta > 0 ? 'neg' : 'zero';
     const sign = delta > 0 ? '+' : '';
     return `<span class="delta ${cls}">${sign}${delta}</span>`;
   }
@@ -666,7 +697,7 @@
       + `tabindex="0" inputmode="numeric">${display}</span>`;
   }
   function renderMetricRow(color, label, date, field, amVal, pmVal) {
-    const delta = (amVal != null && pmVal != null) ? amVal - pmVal : null;
+    const delta = (amVal != null && pmVal != null) ? pmVal - amVal : null;
     return `
       <tr data-color="${color}">
         <td class="metric">${label}</td>
@@ -679,7 +710,7 @@
   function renderTotalRow(amRow, pmRow) {
     const amTotal = amRow ? pipelineTotal(amRow) : null;
     const pmTotal = pmRow ? pipelineTotal(pmRow) : null;
-    const delta = (amTotal != null && pmTotal != null) ? amTotal - pmTotal : null;
+    const delta = (amTotal != null && pmTotal != null) ? pmTotal - amTotal : null;
     return `
       <tr class="total-row">
         <td class="metric">Pipeline Total</td>
@@ -771,9 +802,80 @@
     return next;
   }
 
+  const DAY_COLORS = ['gold', 'magenta', 'teal', 'blue', 'purple'];
+
+  function renderWeekMatrix() {
+    const todayISO = toISO(new Date());
+
+    let rows = '';
+    for (let i = 0; i < 5; i++) {
+      const d   = addDays(weekStart, i);
+      const iso = toISO(d);
+      const dayName  = DAYS[i];
+      const dayColor = DAY_COLORS[i];
+      const isToday  = iso === todayISO;
+      const tc = isToday ? ' is-today' : '';
+
+      const am = getRow(iso, 'AM');
+      const pm = getRow(iso, 'PM');
+
+      const amCells = METRICS.map(m =>
+        `<td class="num">${editCell(iso, 'AM', m.key, am ? am[m.key] : null)}</td>`
+      ).join('');
+
+      const pmCells = METRICS.map(m =>
+        `<td class="num">${editCell(iso, 'PM', m.key, pm ? pm[m.key] : null)}</td>`
+      ).join('');
+
+      const deltaCells = METRICS.map(m => {
+        const av = am ? am[m.key] : null;
+        const pv = pm ? pm[m.key] : null;
+        const d  = (av != null && pv != null) ? pv - av : null;
+        return `<td class="num">${renderDelta(d)}</td>`;
+      }).join('');
+
+      const amTotal   = am ? pipelineTotal(am) : null;
+      const pmTotal   = pm ? pipelineTotal(pm) : null;
+      const totDelta  = (amTotal != null && pmTotal != null) ? pmTotal - amTotal : null;
+
+      rows += `
+        <tr class="day-am${tc}" data-color="${dayColor}">
+          <td class="type-cell" style="color:var(--${dayColor})">${dayName} AM</td>
+          ${amCells}
+          <td class="num"><span class="derived${amTotal == null ? ' dash' : ''}">${amTotal == null ? '—' : amTotal}</span></td>
+        </tr>
+        <tr class="day-pm${tc}" data-color="${dayColor}">
+          <td class="type-cell" style="color:var(--${dayColor})">${dayName} PM</td>
+          ${pmCells}
+          <td class="num"><span class="derived${pmTotal == null ? ' dash' : ''}">${pmTotal == null ? '—' : pmTotal}</span></td>
+        </tr>
+        <tr class="day-delta">
+          <td class="type-cell delta-label">+/−</td>
+          ${deltaCells}
+          <td class="num">${renderDelta(totDelta)}</td>
+        </tr>
+        ${i < 4 ? '<tr class="day-gap"><td colspan="7"></td></tr>' : ''}
+      `;
+    }
+
+    const ths = METRICS.map(m => `<th class="num">${m.label}</th>`).join('');
+    document.getElementById('week-wrap').innerHTML = `
+      <div class="week-scroll">
+        <table class="metric-table week-matrix">
+          <thead>
+            <tr>
+              <th>Type</th>${ths}<th class="num">Pipeline Total</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function rerenderAll() {
     renderToday();
-    // Phase 3 will add renderWeekMatrix()
+    renderWeekMatrix();
     // Phase 4 will add renderKPIs() + renderDonut()
   }
 
