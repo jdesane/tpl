@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Region 1 Compliance — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --bg-2: #12152a;
+    --surface: #1a1f38;
+    --surface-2: #232948;
+    --border: #2d3560;
+    --text: #e8ecff;
+    --muted: #8a92b8;
+    --dim: #5a628a;
+
+    --magenta: #ec4899;
+    --teal: #06d6a0;
+    --gold: #fbbf24;
+    --purple: #a78bfa;
+    --blue: #60a5fa;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 900px 700px at 0% 0%, rgba(236, 72, 153, 0.08), transparent 60%),
+      radial-gradient(ellipse 900px 700px at 100% 100%, rgba(6, 214, 160, 0.06), transparent 60%);
+    background-attachment: fixed;
+  }
+  .shell {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  header.page {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--magenta);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(30px, 4.5vw, 44px);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  h1 em { font-style: italic; color: var(--magenta); font-weight: 600; }
+
+  .top-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  nav.pills {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  nav.pills a {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: all 0.2s;
+  }
+  nav.pills a:hover { color: var(--text); }
+  nav.pills a.active {
+    background: linear-gradient(145deg, var(--surface-2), var(--surface));
+    color: var(--text);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+  .week-nav button {
+    appearance: none;
+    border: none;
+    background: var(--bg);
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    border: 1px solid var(--border);
+  }
+  .week-nav button:hover:not(:disabled) {
+    border-color: var(--magenta);
+    color: var(--magenta);
+  }
+  .week-nav button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .week-nav .week-label {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 17px;
+    padding: 0 12px;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  .csv-btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    height: 44px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .csv-btn:hover:not(:disabled) {
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+  .csv-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .csv-btn .icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  /* Panels */
+  .panel {
+    background: linear-gradient(145deg, var(--surface), var(--bg-2));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .panel-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .panel-title::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--magenta);
+    box-shadow: 0 0 8px rgba(236, 72, 153, 0.6);
+  }
+  .panel[data-accent="teal"] .panel-title::before { background: var(--teal); box-shadow: 0 0 8px rgba(6, 214, 160, 0.6); }
+  .panel[data-accent="gold"] .panel-title::before { background: var(--gold); box-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+  .panel[data-accent="purple"] .panel-title::before { background: var(--purple); box-shadow: 0 0 8px rgba(167, 139, 250, 0.6); }
+
+  .panel-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  /* KPI strip */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi {
+    position: relative;
+    background: linear-gradient(145deg, var(--surface), var(--bg-2));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 22px 22px 26px;
+    overflow: hidden;
+  }
+  .kpi::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 16px; bottom: 16px;
+    width: 4px;
+    border-radius: 2px;
+    background: var(--magenta);
+  }
+  .kpi[data-accent="teal"]::before { background: var(--teal); }
+  .kpi[data-accent="gold"]::before { background: var(--gold); }
+  .kpi[data-accent="purple"]::before { background: var(--purple); }
+
+  .kpi .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .kpi .value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .kpi .sub {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .kpi .sub .pos { color: var(--teal); font-weight: 600; }
+  .kpi .sub .neg { color: var(--red); font-weight: 600; }
+
+  /* Flag banner */
+  .flag {
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--gold);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .flag b { color: var(--gold); }
+  .flag span.icon { font-size: 14px; line-height: 1; }
+
+  /* Grid for donut + placeholder */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--dim);
+    font-size: 14px;
+  }
+  .empty .big {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 960px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .shell { padding: 20px 16px 48px; }
+    .panel { padding: 18px; border-radius: 16px; }
+    .kpis { grid-template-columns: 1fr; gap: 12px; }
+    .kpi .value { font-size: 32px; }
+    .week-nav .week-label { min-width: 150px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="page">
+    <div>
+      <div class="eyebrow">Region 1 · Compliance</div>
+      <h1>This week's <em>pipeline</em></h1>
+    </div>
+    <div class="top-controls">
+      <button type="button" class="csv-btn" id="csv-btn" disabled>
+        <span class="icon">↓</span><span>Download CSV</span>
+      </button>
+      <div class="week-nav">
+        <button type="button" id="prev-week" aria-label="Previous week">‹</button>
+        <div class="week-label" id="week-label">Week of …</div>
+        <button type="button" id="next-week" aria-label="Next week">›</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="pills">
+    <a href="./">Entry</a>
+    <a href="./dashboard.html" class="active">Dashboard</a>
+  </nav>
+
+  <div class="flag">
+    <span class="icon">◆</span>
+    <div><b>Cleared = AM − PM.</b> Click any AM or PM cell to edit — saves automatically on blur. Cleared and Pipeline Total update live.</div>
+  </div>
+
+  <section class="kpis" id="kpis">
+    <div class="kpi" data-accent="magenta">
+      <div class="label">Rush 3-Day</div>
+      <div class="value" id="kpi-rush">—</div>
+      <div class="sub" id="kpi-rush-sub">latest snapshot</div>
+    </div>
+    <div class="kpi" data-accent="teal">
+      <div class="label">Funds In</div>
+      <div class="value" id="kpi-funds">—</div>
+      <div class="sub" id="kpi-funds-sub">latest snapshot</div>
+    </div>
+    <div class="kpi" data-accent="gold">
+      <div class="label">Pipeline Total</div>
+      <div class="value" id="kpi-total">—</div>
+      <div class="sub" id="kpi-total-sub">rush 3-day + funds in</div>
+    </div>
+    <div class="kpi" data-accent="purple">
+      <div class="label">Cleared This Week</div>
+      <div class="value" id="kpi-cleared">—</div>
+      <div class="sub" id="kpi-cleared-sub">sum of AM − PM deltas</div>
+    </div>
+  </section>
+
+  <section class="panel" id="today-panel">
+    <h2 class="panel-title">
+      Today
+      <span class="panel-sub" id="today-sub"></span>
+    </h2>
+    <div id="today-wrap">
+      <div class="empty"><div class="big">Phase 2 — coming next.</div>Today panel will render here.</div>
+    </div>
+  </section>
+
+  <section class="panel" data-accent="teal" id="week-panel">
+    <h2 class="panel-title">
+      Week at a glance
+      <span class="panel-sub" id="week-sub"></span>
+    </h2>
+    <div id="week-wrap">
+      <div class="empty"><div class="big">Phase 3 — coming next.</div>Editable 5 × 5 matrix will render here.</div>
+    </div>
+  </section>
+
+  <section class="panel" data-accent="gold">
+    <h2 class="panel-title">Latest snapshot</h2>
+    <div id="donut-wrap">
+      <div class="empty"><div class="big">Phase 4 — coming next.</div>Donut will render here.</div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  const SUPABASE_URL = 'https://zyonidiybzrgklrmalbt.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b25pZGl5YnpyZ2tscm1hbGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTY5NzUsImV4cCI6MjA4ODI5Mjk3NX0.5See-qjLkXA4CoJi9tNfcLAX_cdvZhPaxw8iViKM8S8';
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const COLORS = {
+    magenta: '#ec4899',
+    teal: '#06d6a0',
+    gold: '#fbbf24',
+    purple: '#a78bfa',
+    blue: '#60a5fa',
+    red: '#f87171',
+    border: '#2d3560',
+    surface: '#1a1f38',
+    text: '#e8ecff',
+    muted: '#8a92b8',
+  };
+
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.color = COLORS.muted;
+
+  const METRICS = [
+    { key: 'rush_3day',     label: 'Rush 3-Day',     color: COLORS.magenta },
+    { key: 'rush_today',    label: 'Rush Today',     color: COLORS.gold },
+    { key: 'rush_tomorrow', label: 'Rush Tomorrow',  color: COLORS.purple },
+    { key: 'rush_next_day', label: 'Rush Next Day',  color: COLORS.blue },
+    { key: 'funds_in',      label: 'Funds In',       color: COLORS.teal },
+  ];
+  const METRIC_KEYS = METRICS.map(m => m.key);
+
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function toISO(d) {
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d - tz).toISOString().slice(0, 10);
+  }
+  function mondayOf(d) {
+    const date = new Date(d);
+    date.setHours(0,0,0,0);
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+    return date;
+  }
+  function addDays(d, n) {
+    const x = new Date(d);
+    x.setDate(x.getDate() + n);
+    return x;
+  }
+  function fmtDay(d) { return `${MONTHS[d.getMonth()]} ${d.getDate()}`; }
+
+  // --- State ---
+  let weekStart = mondayOf(new Date());
+  // weekData: Map keyed by "YYYY-MM-DD:AM" or ":PM" → row object
+  let weekData = new Map();
+
+  function dataKey(date, block) { return `${date}:${block}`; }
+  function getRow(date, block) { return weekData.get(dataKey(date, block)) || null; }
+  function pipelineTotal(row) {
+    if (!row) return null;
+    return (row.rush_3day || 0) + (row.funds_in || 0);
+  }
+  function findLatest() {
+    let best = null;
+    for (const row of weekData.values()) {
+      if (!best) { best = row; continue; }
+      if (row.entry_date > best.entry_date) best = row;
+      else if (row.entry_date === best.entry_date && row.time_block > best.time_block) best = row;
+    }
+    return best;
+  }
+
+  // --- DOM ---
+  const weekLabel = document.getElementById('week-label');
+  const prevBtn = document.getElementById('prev-week');
+  const nextBtn = document.getElementById('next-week');
+  const csvBtn = document.getElementById('csv-btn');
+
+  function renderWeekLabel() {
+    const end = addDays(weekStart, 4);
+    weekLabel.textContent = `Week of ${fmtDay(weekStart)} – ${fmtDay(end)}`;
+  }
+
+  async function fetchWeek() {
+    const start = toISO(weekStart);
+    const end = toISO(addDays(weekStart, 4));
+    const { data, error } = await supabase
+      .from('compliance_entries')
+      .select('*')
+      .gte('entry_date', start)
+      .lte('entry_date', end)
+      .order('entry_date', { ascending: true })
+      .order('time_block', { ascending: true });
+    if (error) {
+      console.error('fetchWeek error:', error);
+      return;
+    }
+    weekData = new Map();
+    for (const row of data || []) {
+      weekData.set(dataKey(row.entry_date, row.time_block), row);
+    }
+  }
+
+  async function refresh() {
+    renderWeekLabel();
+    await fetchWeek();
+    // Phase 2–5 renderers will go here.
+    csvBtn.disabled = false; // will actually wire up in Phase 5
+    console.log('[phase 1] weekData loaded:', weekData.size, 'rows');
+  }
+
+  prevBtn.addEventListener('click', () => {
+    weekStart = addDays(weekStart, -7);
+    refresh();
+  });
+  nextBtn.addEventListener('click', () => {
+    weekStart = addDays(weekStart, 7);
+    refresh();
+  });
+  csvBtn.addEventListener('click', () => {
+    console.log('[phase 1] CSV download — not yet implemented');
+  });
+
+  refresh();
+</script>
+
+</body>
+</html>
