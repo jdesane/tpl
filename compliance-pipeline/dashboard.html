@@ -260,6 +260,135 @@
   .kpi .sub .pos { color: var(--teal); font-weight: 600; }
   .kpi .sub .neg { color: var(--red); font-weight: 600; }
 
+  /* Editable metric table (Today + Week matrix) */
+  .metric-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .metric-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 6px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .metric-table th.num, .metric-table td.num { text-align: right; }
+  .metric-table th.center, .metric-table td.center { text-align: center; }
+  .metric-table td {
+    padding: 10px 6px;
+    border-bottom: 1px solid rgba(45, 53, 96, 0.4);
+    font-size: 15px;
+    vertical-align: middle;
+  }
+  .metric-table tr:last-child td { border-bottom: none; }
+  .metric-table td.metric {
+    font-weight: 600;
+    position: relative;
+    padding-left: 22px;
+    white-space: nowrap;
+  }
+  .metric-table td.metric::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .metric-table tr[data-color="magenta"] td.metric::before { background: var(--magenta); }
+  .metric-table tr[data-color="teal"]    td.metric::before { background: var(--teal); }
+  .metric-table tr[data-color="gold"]    td.metric::before { background: var(--gold); }
+  .metric-table tr[data-color="purple"]  td.metric::before { background: var(--purple); }
+  .metric-table tr[data-color="blue"]    td.metric::before { background: var(--blue); }
+
+  .metric-table tr.total-row td {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .metric-table tr.total-row td.metric {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 17px;
+    padding-left: 6px;
+  }
+  .metric-table tr.total-row td.metric::before { display: none; }
+  .metric-table tr.total-row td.num {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .cell-edit {
+    display: inline-block;
+    min-width: 52px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    background: transparent;
+    border: 1px solid transparent;
+    outline: none;
+    cursor: text;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    text-align: right;
+    line-height: 1.2;
+  }
+  .cell-edit:hover { border-color: var(--border); background: var(--bg); }
+  .cell-edit:focus {
+    border-color: var(--magenta);
+    background: var(--bg);
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+  }
+  .cell-edit.empty { color: var(--dim); font-weight: 400; }
+  .cell-edit.saved {
+    border-color: var(--teal);
+    background: rgba(6, 214, 160, 0.10);
+    box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.12);
+  }
+  .cell-edit.error {
+    border-color: var(--red);
+    background: rgba(248, 113, 113, 0.10);
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+  }
+
+  .derived {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 6px 10px;
+    display: inline-block;
+  }
+  .derived.dash { color: var(--dim); font-weight: 400; }
+
+  .delta {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    min-width: 44px;
+    text-align: center;
+  }
+  .delta.pos  { background: rgba(6, 214, 160, 0.14);   color: var(--teal); }
+  .delta.neg  { background: rgba(248, 113, 113, 0.14); color: var(--red); }
+  .delta.zero { background: rgba(138, 146, 184, 0.14); color: var(--muted); }
+  .delta.dash { background: transparent; color: var(--dim); font-weight: 400; }
+
   /* Flag banner */
   .flag {
     background: rgba(251, 191, 36, 0.08);
@@ -416,11 +545,11 @@
   Chart.defaults.color = COLORS.muted;
 
   const METRICS = [
-    { key: 'rush_3day',     label: 'Rush 3-Day',     color: COLORS.magenta },
-    { key: 'rush_today',    label: 'Rush Today',     color: COLORS.gold },
-    { key: 'rush_tomorrow', label: 'Rush Tomorrow',  color: COLORS.purple },
-    { key: 'rush_next_day', label: 'Rush Next Day',  color: COLORS.blue },
-    { key: 'funds_in',      label: 'Funds In',       color: COLORS.teal },
+    { key: 'rush_3day',     label: 'Rush 3-Day',    color: 'magenta' },
+    { key: 'rush_today',    label: 'Rush Today',    color: 'gold' },
+    { key: 'rush_tomorrow', label: 'Rush Tomorrow', color: 'purple' },
+    { key: 'rush_next_day', label: 'Rush Next Day', color: 'blue' },
+    { key: 'funds_in',      label: 'Funds In',      color: 'teal' },
   ];
   const METRIC_KEYS = METRICS.map(m => m.key);
 
@@ -448,18 +577,28 @@
 
   // --- State ---
   let weekStart = mondayOf(new Date());
-  // weekData: Map keyed by "YYYY-MM-DD:AM" or ":PM" → row object
-  let weekData = new Map();
+  // dataCache: Map keyed by "YYYY-MM-DD:AM" or ":PM" → row object
+  // Holds rows for the currently-viewed week AND today (even if outside the week).
+  let dataCache = new Map();
 
   function dataKey(date, block) { return `${date}:${block}`; }
-  function getRow(date, block) { return weekData.get(dataKey(date, block)) || null; }
+  function getRow(date, block) { return dataCache.get(dataKey(date, block)) || null; }
   function pipelineTotal(row) {
     if (!row) return null;
     return (row.rush_3day || 0) + (row.funds_in || 0);
   }
-  function findLatest() {
+  function weekRows() {
+    const start = toISO(weekStart);
+    const end   = toISO(addDays(weekStart, 4));
+    const out = [];
+    for (const row of dataCache.values()) {
+      if (row.entry_date >= start && row.entry_date <= end) out.push(row);
+    }
+    return out;
+  }
+  function findLatestInWeek() {
     let best = null;
-    for (const row of weekData.values()) {
+    for (const row of weekRows()) {
       if (!best) { best = row; continue; }
       if (row.entry_date > best.entry_date) best = row;
       else if (row.entry_date === best.entry_date && row.time_block > best.time_block) best = row;
@@ -480,7 +619,9 @@
 
   async function fetchWeek() {
     const start = toISO(weekStart);
-    const end = toISO(addDays(weekStart, 4));
+    const end   = toISO(addDays(weekStart, 4));
+    const today = toISO(new Date());
+
     const { data, error } = await supabase
       .from('compliance_entries')
       .select('*')
@@ -492,18 +633,212 @@
       console.error('fetchWeek error:', error);
       return;
     }
-    weekData = new Map();
+    dataCache = new Map();
     for (const row of data || []) {
-      weekData.set(dataKey(row.entry_date, row.time_block), row);
+      dataCache.set(dataKey(row.entry_date, row.time_block), row);
+    }
+
+    // Ensure today's rows are cached, even if today is outside the selected week.
+    if (today < start || today > end) {
+      const { data: todayRows, error: todayErr } = await supabase
+        .from('compliance_entries')
+        .select('*')
+        .eq('entry_date', today);
+      if (todayErr) { console.error('fetchWeek(today) error:', todayErr); return; }
+      for (const row of todayRows || []) {
+        dataCache.set(dataKey(row.entry_date, row.time_block), row);
+      }
     }
   }
+
+  // --- Render helpers ---
+  function renderDelta(delta) {
+    if (delta == null) return '<span class="delta dash">—</span>';
+    const cls = delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'zero';
+    const sign = delta > 0 ? '+' : '';
+    return `<span class="delta ${cls}">${sign}${delta}</span>`;
+  }
+  function editCell(date, block, field, value) {
+    const isEmpty = value == null;
+    const display = isEmpty ? '—' : value;
+    return `<span class="cell-edit${isEmpty ? ' empty' : ''}" contenteditable="true" `
+      + `data-date="${date}" data-block="${block}" data-field="${field}" `
+      + `tabindex="0" inputmode="numeric">${display}</span>`;
+  }
+  function renderMetricRow(color, label, date, field, amVal, pmVal) {
+    const delta = (amVal != null && pmVal != null) ? amVal - pmVal : null;
+    return `
+      <tr data-color="${color}">
+        <td class="metric">${label}</td>
+        <td class="num">${editCell(date, 'AM', field, amVal)}</td>
+        <td class="num">${editCell(date, 'PM', field, pmVal)}</td>
+        <td class="num">${renderDelta(delta)}</td>
+      </tr>
+    `;
+  }
+  function renderTotalRow(amRow, pmRow) {
+    const amTotal = amRow ? pipelineTotal(amRow) : null;
+    const pmTotal = pmRow ? pipelineTotal(pmRow) : null;
+    const delta = (amTotal != null && pmTotal != null) ? amTotal - pmTotal : null;
+    return `
+      <tr class="total-row">
+        <td class="metric">Pipeline Total</td>
+        <td class="num"><span class="derived${amTotal == null ? ' dash' : ''}">${amTotal == null ? '—' : amTotal}</span></td>
+        <td class="num"><span class="derived${pmTotal == null ? ' dash' : ''}">${pmTotal == null ? '—' : pmTotal}</span></td>
+        <td class="num">${renderDelta(delta)}</td>
+      </tr>
+    `;
+  }
+
+  function renderToday() {
+    const now = new Date();
+    const today = toISO(now);
+    const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
+    document.getElementById('today-sub').textContent =
+      `${weekday}, ${fmtDay(now)}, ${now.getFullYear()}`;
+
+    const am = getRow(today, 'AM');
+    const pm = getRow(today, 'PM');
+
+    const rows = METRICS.map(m =>
+      renderMetricRow(m.color, m.label, today, m.key,
+        am ? am[m.key] : null,
+        pm ? pm[m.key] : null)
+    ).join('');
+
+    document.getElementById('today-wrap').innerHTML = `
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th class="num">AM</th>
+            <th class="num">PM</th>
+            <th class="num">+ / −</th>
+          </tr>
+        </thead>
+        <tbody>${rows}${renderTotalRow(am, pm)}</tbody>
+      </table>
+    `;
+  }
+
+  // --- Save infrastructure (shared by Today + Week matrix) ---
+  const saveQueues = new Map(); // per-(date:block) serialization
+
+  function flashCells(date, block, field, cls) {
+    const sel = `.cell-edit[data-date="${date}"][data-block="${block}"][data-field="${field}"]`;
+    document.querySelectorAll(sel).forEach(el => {
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 900);
+    });
+  }
+
+  async function saveCell(date, block, field, value) {
+    const existing = getRow(date, block);
+    const payload = {
+      entry_date: date,
+      time_block: block,
+      rush_3day:     existing?.rush_3day     ?? 0,
+      rush_today:    existing?.rush_today    ?? 0,
+      rush_tomorrow: existing?.rush_tomorrow ?? 0,
+      rush_next_day: existing?.rush_next_day ?? 0,
+      funds_in:      existing?.funds_in      ?? 0,
+    };
+    payload[field] = value;
+
+    const { data, error } = await supabase
+      .from('compliance_entries')
+      .upsert(payload, { onConflict: 'entry_date,time_block' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('saveCell error:', error);
+      flashCells(date, block, field, 'error');
+      return false;
+    }
+    dataCache.set(dataKey(date, block), data);
+    rerenderAll();
+    flashCells(date, block, field, 'saved');
+    return true;
+  }
+
+  function queueSave(date, block, field, value) {
+    const key = dataKey(date, block);
+    const prev = saveQueues.get(key) || Promise.resolve();
+    const next = prev.then(() => saveCell(date, block, field, value))
+                     .catch(e => console.error(e));
+    saveQueues.set(key, next);
+    return next;
+  }
+
+  function rerenderAll() {
+    renderToday();
+    // Phase 3 will add renderWeekMatrix()
+    // Phase 4 will add renderKPIs() + renderDonut()
+  }
+
+  // --- Event delegation for editable cells ---
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('cell-edit')) return;
+    if (el.classList.contains('empty')) {
+      el.classList.remove('empty');
+      el.textContent = '';
+    }
+    requestAnimationFrame(() => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('cell-edit')) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      el.blur();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      rerenderAll();
+    }
+  });
+
+  document.addEventListener('focusout', (e) => {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('cell-edit')) return;
+    const { date, block, field } = el.dataset;
+    const raw = (el.textContent || '').trim();
+
+    let parsed;
+    if (raw === '' || raw === '—') {
+      parsed = 0;
+    } else {
+      const n = parseInt(raw, 10);
+      if (!Number.isFinite(n) || n < 0 || String(n) !== raw.replace(/^0+(?=\d)/, '')) {
+        flashCells(date, block, field, 'error');
+        rerenderAll();
+        return;
+      }
+      parsed = n;
+    }
+
+    const current = getRow(date, block);
+    const currentVal = current ? (current[field] ?? 0) : 0;
+    if (parsed === currentVal) {
+      rerenderAll();
+      return;
+    }
+    queueSave(date, block, field, parsed);
+  });
 
   async function refresh() {
     renderWeekLabel();
     await fetchWeek();
-    // Phase 2–5 renderers will go here.
-    csvBtn.disabled = false; // will actually wire up in Phase 5
-    console.log('[phase 1] weekData loaded:', weekData.size, 'rows');
+    rerenderAll();
+    csvBtn.disabled = false;
   }
 
   prevBtn.addEventListener('click', () => {
