@@ -216,6 +216,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 24px;
+    align-items: stretch;
   }
   .kpi {
     position: relative;
@@ -224,6 +225,9 @@
     border-radius: 18px;
     padding: 22px 22px 22px 26px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 120px;
   }
   .kpi::before {
     content: '';
@@ -252,6 +256,7 @@
     letter-spacing: -0.02em;
     line-height: 1;
   }
+  .kpi .value { margin-top: auto; }
   .kpi .sub {
     margin-top: 8px;
     font-size: 12px;
@@ -391,9 +396,14 @@
 
   /* Week matrix */
   .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #week-wrap .cell-edit { font-size: 19px; min-width: 52px; padding: 5px 10px; }
+  #week-wrap .derived { font-size: 19px; padding: 5px 10px; }
+  #week-wrap .metric-table td { padding: 13px 6px; }
+  #week-wrap .metric-table th { padding-bottom: 14px; font-size: 11px; }
+  #week-wrap .delta { font-size: 13px; padding: 3px 11px; min-width: 50px; }
   .week-matrix td.type-cell {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 15px;
     white-space: nowrap;
     padding-left: 10px;
     min-width: 110px;
@@ -441,7 +451,7 @@
     grid-template-columns: 1fr 1.5fr;
     gap: 20px;
     margin-bottom: 20px;
-    align-items: start;
+    align-items: stretch;
   }
   .today-donut-grid > .panel { margin-bottom: 0; }
 
