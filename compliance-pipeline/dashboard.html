@@ -1139,9 +1139,94 @@
     weekStart = addDays(weekStart, 7);
     refresh();
   });
-  csvBtn.addEventListener('click', () => {
-    console.log('[phase 1] CSV download — not yet implemented');
-  });
+  function fmtDelta(av, pv) {
+    if (av == null || pv == null) return '';
+    const d = pv - av;
+    return d > 0 ? `+${d}` : String(d);
+  }
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  function toCSV(rows) {
+    return rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  }
+
+  function downloadCSV() {
+    const now       = new Date();
+    const today     = toISO(now);
+    const weekEnd   = addDays(weekStart, 4);
+    const weekday   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
+    const dateStr   = `${fmtDay(now)} ${now.getFullYear()}`;
+    const weekRange = `${fmtDay(weekStart)} – ${fmtDay(weekEnd)} ${weekEnd.getFullYear()}`;
+
+    const rows = [];
+
+    // ── Header ──────────────────────────────────────────────────────────────
+    rows.push([`Region 1 Compliance — Week of ${weekRange}`]);
+    rows.push([`Downloaded: ${weekday} ${dateStr}`]);
+    rows.push([]);
+
+    // ── Today section ───────────────────────────────────────────────────────
+    rows.push([`TODAY — ${weekday} ${dateStr}`]);
+    rows.push(['Metric', 'AM', 'PM', '+/-']);
+
+    const tAM = getRow(today, 'AM');
+    const tPM = getRow(today, 'PM');
+    for (const m of METRICS) {
+      const av = tAM ? tAM[m.key] : null;
+      const pv = tPM ? tPM[m.key] : null;
+      rows.push([m.label, av ?? '', pv ?? '', fmtDelta(av, pv)]);
+    }
+    const tAmTot = tAM ? pipelineTotal(tAM) : null;
+    const tPmTot = tPM ? pipelineTotal(tPM) : null;
+    rows.push(['Pipeline Total', tAmTot ?? '', tPmTot ?? '', fmtDelta(tAmTot, tPmTot)]);
+    rows.push([]);
+
+    // ── Week at a glance ────────────────────────────────────────────────────
+    rows.push([`WEEK AT A GLANCE — ${weekRange}`]);
+    rows.push(['Type', ...METRICS.map(m => m.label), 'Pipeline Total']);
+
+    for (let i = 0; i < 5; i++) {
+      const d   = addDays(weekStart, i);
+      const iso = toISO(d);
+      const day = DAYS[i];
+      const am  = getRow(iso, 'AM');
+      const pm  = getRow(iso, 'PM');
+
+      rows.push([`${day} AM`,
+        ...METRICS.map(m => am ? (am[m.key] ?? '') : ''),
+        am ? pipelineTotal(am) : '',
+      ]);
+      rows.push([`${day} PM`,
+        ...METRICS.map(m => pm ? (pm[m.key] ?? '') : ''),
+        pm ? pipelineTotal(pm) : '',
+      ]);
+
+      const amPT = am ? pipelineTotal(am) : null;
+      const pmPT = pm ? pipelineTotal(pm) : null;
+      rows.push(['+/-',
+        ...METRICS.map(m => fmtDelta(am ? am[m.key] : null, pm ? pm[m.key] : null)),
+        fmtDelta(amPT, pmPT),
+      ]);
+
+      if (i < 4) rows.push([]);
+    }
+
+    const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `compliance-${today}.csv`,
+    });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  csvBtn.addEventListener('click', downloadCSV);
 
   refresh();
 </script>
