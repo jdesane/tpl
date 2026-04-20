@@ -429,6 +429,80 @@
     background: rgba(236, 72, 153, 0.04);
   }
 
+  /* Cleared by category bars */
+  .cat-bars { display: flex; flex-direction: column; gap: 14px; padding: 6px 0; }
+  .cat-bar-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 180px) 1fr 72px;
+    align-items: center;
+    gap: 16px;
+  }
+  .cat-bar-label {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+  }
+  .cat-bar-label .cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cat-bar-track {
+    position: relative;
+    height: 26px;
+    background: rgba(45, 53, 96, 0.25);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .cat-bar-center {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 50%;
+    width: 1px;
+    background: var(--border);
+  }
+  .cat-bar-fill {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .cat-bar-fill.pos { background: var(--teal); }
+  .cat-bar-fill.neg { background: var(--red); }
+  .cat-bar-value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 17px;
+    font-weight: 600;
+    text-align: right;
+    letter-spacing: -0.01em;
+  }
+  .cat-bar-value.pos { color: var(--teal); }
+  .cat-bar-value.neg { color: var(--red); }
+  .cat-bar-value.zero { color: var(--dim); }
+  .cat-empty {
+    padding: 24px 12px;
+    text-align: center;
+    color: var(--dim);
+    font-size: 13px;
+  }
+  @media (max-width: 560px) {
+    .cat-bar-row {
+      grid-template-columns: 1fr 64px;
+      grid-template-rows: auto auto;
+      row-gap: 6px;
+    }
+    .cat-bar-label { grid-column: 1 / -1; }
+    .cat-bar-value { grid-column: 2; grid-row: 2; }
+    .cat-bar-track { grid-column: 1; grid-row: 2; }
+  }
+
   /* Flag banner */
   .flag {
     background: rgba(251, 191, 36, 0.08);
@@ -651,6 +725,14 @@
       <span class="panel-sub" id="week-sub"></span>
     </h2>
     <div id="week-wrap"></div>
+  </section>
+
+  <section class="panel" data-accent="purple" id="category-panel">
+    <h2 class="panel-title">
+      Cleared this week by category
+      <span class="panel-sub">net AM − PM across paired days</span>
+    </h2>
+    <div id="cat-bars-wrap"></div>
   </section>
 </div>
 
@@ -1090,11 +1172,64 @@
     });
   }
 
+  function renderCategoryBars() {
+    const wrap = document.getElementById('cat-bars-wrap');
+
+    const totals = METRICS.map(m => {
+      let sum = 0, days = 0;
+      for (let i = 0; i < 5; i++) {
+        const iso = toISO(addDays(weekStart, i));
+        const am = getRow(iso, 'AM');
+        const pm = getRow(iso, 'PM');
+        if (am && pm) {
+          sum += (am[m.key] || 0) - (pm[m.key] || 0);
+          days++;
+        }
+      }
+      return { metric: m, value: sum, days };
+    });
+
+    if (!totals.some(t => t.days > 0)) {
+      wrap.innerHTML = '<div class="cat-empty">Need at least one day with both AM and PM entries logged to show category totals.</div>';
+      return;
+    }
+
+    const max = Math.max(1, ...totals.map(t => Math.abs(t.value)));
+
+    const rows = totals.map(t => {
+      const pct  = Math.abs(t.value) / max * 48; // up to 48% of the track
+      const cls  = t.value > 0 ? 'pos' : t.value < 0 ? 'neg' : 'zero';
+      const sign = t.value > 0 ? '+' : '';
+      let fill = '';
+      if (t.value > 0) {
+        fill = `<div class="cat-bar-fill pos" style="left:50%;width:${pct}%"></div>`;
+      } else if (t.value < 0) {
+        fill = `<div class="cat-bar-fill neg" style="right:50%;width:${pct}%"></div>`;
+      }
+      return `
+        <div class="cat-bar-row">
+          <div class="cat-bar-label">
+            <span class="cat-dot" style="background:var(--${t.metric.color})"></span>
+            ${t.metric.label}
+          </div>
+          <div class="cat-bar-track">
+            <div class="cat-bar-center"></div>
+            ${fill}
+          </div>
+          <div class="cat-bar-value ${cls}">${sign}${t.value}</div>
+        </div>
+      `;
+    }).join('');
+
+    wrap.innerHTML = `<div class="cat-bars">${rows}</div>`;
+  }
+
   function rerenderAll() {
     renderToday();
     renderWeekMatrix();
     renderKPIs();
     renderDonut();
+    renderCategoryBars();
   }
 
   // --- Event delegation for editable cells ---
