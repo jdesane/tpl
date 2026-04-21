@@ -401,6 +401,30 @@
   #week-wrap .metric-table td { padding: 7px 6px; }
   #week-wrap .metric-table th { padding-bottom: 10px; font-size: 11px; }
   #week-wrap .delta { font-size: 12px; padding: 2px 9px; min-width: 46px; }
+
+  /* Week totals row group */
+  .week-matrix tr.week-total-sep td {
+    height: 0;
+    padding: 0;
+    border-bottom: none !important;
+    border-top: 2px solid var(--border) !important;
+  }
+  .week-matrix tr.week-total-am td,
+  .week-matrix tr.week-total-pm td,
+  .week-matrix tr.week-total-delta td {
+    background: rgba(167, 139, 250, 0.05);
+  }
+  .week-matrix tr.week-total-delta td {
+    background: rgba(167, 139, 250, 0.09);
+    border-bottom: none;
+  }
+  .week-matrix td.week-total-label {
+    color: var(--purple);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
   .week-matrix td.type-cell {
     font-weight: 600;
     font-size: 15px;
@@ -1045,6 +1069,62 @@
       `;
     }
 
+    // ── Week totals (sums across all 5 days) ───────────────────────────────
+    const amSum = {}, pmSum = {}, deltaSum = {};
+    let amHas = false, pmHas = false, pairHas = false;
+    let amTotalSum = 0, pmTotalSum = 0, deltaTotalSum = 0;
+    METRICS.forEach(m => { amSum[m.key] = 0; pmSum[m.key] = 0; deltaSum[m.key] = 0; });
+
+    for (let i = 0; i < 5; i++) {
+      const iso = toISO(addDays(weekStart, i));
+      const am  = getRow(iso, 'AM');
+      const pm  = getRow(iso, 'PM');
+      if (am) {
+        amHas = true;
+        METRICS.forEach(m => { amSum[m.key] += (am[m.key] || 0); });
+        amTotalSum += pipelineTotal(am);
+      }
+      if (pm) {
+        pmHas = true;
+        METRICS.forEach(m => { pmSum[m.key] += (pm[m.key] || 0); });
+        pmTotalSum += pipelineTotal(pm);
+      }
+      if (am && pm) {
+        pairHas = true;
+        METRICS.forEach(m => { deltaSum[m.key] += (pm[m.key] || 0) - (am[m.key] || 0); });
+        deltaTotalSum += pipelineTotal(pm) - pipelineTotal(am);
+      }
+    }
+
+    const amSumCells = METRICS.map(m =>
+      `<td class="num"><span class="derived${!amHas ? ' dash' : ''}">${!amHas ? '—' : amSum[m.key]}</span></td>`
+    ).join('');
+    const pmSumCells = METRICS.map(m =>
+      `<td class="num"><span class="derived${!pmHas ? ' dash' : ''}">${!pmHas ? '—' : pmSum[m.key]}</span></td>`
+    ).join('');
+    const deltaSumCells = METRICS.map(m =>
+      `<td class="num">${renderDelta(pairHas ? deltaSum[m.key] : null)}</td>`
+    ).join('');
+
+    rows += `
+      <tr class="week-total-sep"><td colspan="7"></td></tr>
+      <tr class="week-total-am">
+        <td class="type-cell week-total-label">Week AM</td>
+        ${amSumCells}
+        <td class="num"><span class="derived${!amHas ? ' dash' : ''}">${!amHas ? '—' : amTotalSum}</span></td>
+      </tr>
+      <tr class="week-total-pm">
+        <td class="type-cell week-total-label">Week PM</td>
+        ${pmSumCells}
+        <td class="num"><span class="derived${!pmHas ? ' dash' : ''}">${!pmHas ? '—' : pmTotalSum}</span></td>
+      </tr>
+      <tr class="week-total-delta">
+        <td class="type-cell week-total-label">Week +/−</td>
+        ${deltaSumCells}
+        <td class="num">${renderDelta(pairHas ? deltaTotalSum : null)}</td>
+      </tr>
+    `;
+
     const ths = METRICS.map(m => `<th class="num">${m.label}</th>`).join('');
     document.getElementById('week-wrap').innerHTML = `
       <div class="week-scroll">
@@ -1383,7 +1463,40 @@
       if (i < 4) rows.push([]);
     }
 
-    // \uFEFF = UTF-8 BOM — tells Excel to read as UTF-8 not Windows-1252
+    // Week totals (sums across all 5 days)
+    const amSumC = {}, pmSumC = {}, deltaSumC = {};
+    let amHasC = false, pmHasC = false, pairHasC = false;
+    let amTotC = 0, pmTotC = 0, deltaTotC = 0;
+    METRICS.forEach(m => { amSumC[m.key] = 0; pmSumC[m.key] = 0; deltaSumC[m.key] = 0; });
+
+    for (let i = 0; i < 5; i++) {
+      const iso = toISO(addDays(weekStart, i));
+      const am  = getRow(iso, 'AM');
+      const pm  = getRow(iso, 'PM');
+      if (am) { amHasC = true; METRICS.forEach(m => amSumC[m.key] += (am[m.key] || 0)); amTotC += pipelineTotal(am); }
+      if (pm) { pmHasC = true; METRICS.forEach(m => pmSumC[m.key] += (pm[m.key] || 0)); pmTotC += pipelineTotal(pm); }
+      if (am && pm) { pairHasC = true; METRICS.forEach(m => deltaSumC[m.key] += (pm[m.key] || 0) - (am[m.key] || 0)); deltaTotC += pipelineTotal(pm) - pipelineTotal(am); }
+    }
+
+    rows.push([]);
+    rows.push(['Week AM',
+      ...METRICS.map(m => amHasC ? amSumC[m.key] : ''),
+      amHasC ? amTotC : '',
+    ]);
+    rows.push(['Week PM',
+      ...METRICS.map(m => pmHasC ? pmSumC[m.key] : ''),
+      pmHasC ? pmTotC : '',
+    ]);
+    rows.push(['Week +/-',
+      ...METRICS.map(m => {
+        if (!pairHasC) return '';
+        const d = deltaSumC[m.key];
+        return d > 0 ? `"+${d}"` : String(d);
+      }),
+      pairHasC ? (deltaTotC > 0 ? `"+${deltaTotC}"` : String(deltaTotC)) : '',
+    ]);
+
+    //\uFEFF = UTF-8 BOM — tells Excel to read as UTF-8 not Windows-1252
     const blob = new Blob(['\uFEFF' + toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = Object.assign(document.createElement('a'), {
