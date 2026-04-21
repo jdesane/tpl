@@ -1,13 +1,19 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/download.js": {
+      "includeFiles": "private-assets/**"
+    }
+  },
   "redirects": [
     { "source": "/free-resources", "destination": "/resources", "permanent": true },
     { "source": "/vs-keller-williams", "destination": "/vs/keller-williams", "permanent": true },
     { "source": "/vs-exp-realty", "destination": "/vs/exp-realty", "permanent": true },
     { "source": "/vs-coldwell-banker", "destination": "/vs/coldwell-banker", "permanent": true },
     { "source": "/vs-century-21", "destination": "/vs/century-21", "permanent": true },
-    { "source": "/vs-real-brokerage", "destination": "/vs/real-brokerage", "permanent": true }
+    { "source": "/vs-real-brokerage", "destination": "/vs/real-brokerage", "permanent": true },
+    { "source": "/private-assets/:path*", "destination": "/joining-lpt-realty", "permanent": false }
   ],
   "rewrites": [
     { "source": "/free-resources", "destination": "/resources.html" }

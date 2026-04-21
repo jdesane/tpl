@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;500;700;900&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:1200px; height:630px;
+    background:#0a0a0f;
+    font-family:'Montserrat', sans-serif;
+    color:#e8e8f0;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* Grid glow */
+  body::before {
+    content:'';
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(108,99,255,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,0.07) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, black 30%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, black 30%, transparent 100%);
+  }
+
+  /* Accent glow */
+  body::after {
+    content:'';
+    position:absolute;
+    top:-150px; left:-100px;
+    width:700px; height:500px;
+    background: radial-gradient(ellipse, rgba(108,99,255,0.22) 0%, transparent 70%);
+    pointer-events:none;
+  }
+
+  /* Accent border */
+  .border-top    { position:absolute; top:0; left:0; right:0; height:3px; background:#6c63ff; }
+  .border-left   { position:absolute; top:0; left:0; bottom:0; width:3px; background:linear-gradient(#6c63ff, transparent); }
+
+  .content {
+    position:relative; z-index:2;
+    padding:90px 90px 80px;
+    display:flex; flex-direction:column;
+    justify-content:space-between;
+    height:100%;
+  }
+
+  .eyebrow {
+    font-family:'Montserrat', sans-serif;
+    font-size:18px; font-weight:500;
+    letter-spacing:0.24em;
+    color:#6c63ff;
+    text-transform:uppercase;
+  }
+
+  .headline {
+    font-family:'Montserrat', sans-serif;
+    font-weight:900;
+    font-size:110px; line-height:0.94;
+    color:#ffffff;
+    letter-spacing:-0.015em;
+    margin-top:36px;
+  }
+  .headline .dot { color:#6c63ff; }
+
+  .underline-accent {
+    width:120px; height:6px;
+    background:#6c63ff;
+    margin-top:34px;
+  }
+
+  .subhead {
+    font-family:'Open Sans', sans-serif;
+    font-weight:400;
+    font-size:28px;
+    color:#8888aa;
+    margin-top:22px;
+    max-width:900px;
+    letter-spacing:0.01em;
+  }
+
+  .bottom-row {
+    display:flex; align-items:flex-end;
+    justify-content:space-between;
+  }
+  .bottom-left {
+    font-family:'Open Sans', sans-serif;
+    font-size:17px;
+    color:#55556a;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+  }
+  .logo {
+    font-family:'Bebas Neue', sans-serif;
+    font-size:42px; letter-spacing:0.08em;
+    color:#ffffff;
+  }
+  .logo .accent { color:#6c63ff; }
+  .logo-sub {
+    font-family:'Open Sans', sans-serif;
+    font-size:13px; letter-spacing:0.18em;
+    color:#55556a; text-transform:uppercase;
+    margin-top:4px; text-align:right;
+  }
+</style>
+</head>
+<body>
+  <div class="border-top"></div>
+  <div class="border-left"></div>
+
+  <div class="content">
+    <div>
+      <div class="eyebrow">TPL COLLECTIVE  //  AGENT GUIDE</div>
+      <div class="headline">Joining<br>LPT Realty<span class="dot">.</span></div>
+      <div class="underline-accent"></div>
+      <div class="subhead">The complete 2026 guide to commission plans, revenue share, and picking the right sponsor.</div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="bottom-left">tplcollective.ai / joining-lpt-realty</div>
+      <div>
+        <div class="logo">TPL <span class="accent">COLLECTIVE</span></div>
+        <div class="logo-sub">A team inside LPT Realty</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
