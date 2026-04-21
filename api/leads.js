@@ -151,12 +151,28 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, error: 'Failed to save lead' });
     }
 
-    // Log activity
+    // Log activity (global feed)
     await supabase.from('activity_log').insert({
       type: 'lead',
       message: `New lead: ${fullName} from ${magnet || brokerage || source || 'Web'}`,
       meta: { lead_id: lead.id, source: source || 'Web', magnet: magnet || null, stage: derivedStage, tags: tags || [] }
     });
+
+    // Log lead-level activity (contact timeline)
+    const sourceLabel = magnet ? `magnet form (${magnet})` : (source || 'Web');
+    await supabase.from('lead_activity').insert({
+      lead_id: lead.id,
+      activity_type: 'form_submission',
+      description: `Submitted form on ${sourceLabel}`
+    }).then(() => {}, () => {});
+
+    if (magnet) {
+      await supabase.from('lead_activity').insert({
+        lead_id: lead.id,
+        activity_type: 'magnet_requested',
+        description: `Requested lead magnet: ${magnetConfig ? magnetConfig.title : magnet}`
+      }).then(() => {}, () => {});
+    }
 
     // Magnet flow
     let downloadUrl = null;
@@ -208,7 +224,15 @@ export default async function handler(req, res) {
           status: 'active',
           last_sent_at: new Date().toISOString(),
         });
-      if (eError) console.error('Funnel enrollment error:', eError);
+      if (eError) {
+        console.error('Funnel enrollment error:', eError);
+      } else {
+        await supabase.from('lead_activity').insert({
+          lead_id: lead.id,
+          activity_type: 'funnel_enrolled',
+          description: `Enrolled in email sequence: ${magnetConfig.title}`
+        }).then(() => {}, () => {});
+      }
     }
 
     // Internal notification

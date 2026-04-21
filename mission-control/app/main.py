@@ -12,7 +12,7 @@ import hashlib
 import urllib.request
 import urllib.parse
 import httpx
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = FastAPI(title="TPL Mission Control")
 
@@ -1089,6 +1089,89 @@ async def add_lead_note(lead_id: int, request: Request):
 def get_lead_activity(lead_id: int):
     result = supabase.table("lead_activity").select("*").eq("lead_id", lead_id).order("created_at", desc=True).limit(50).execute()
     return result.data
+
+
+@app.get("/api/leads/{lead_id}/enrollments")
+def get_lead_enrollments(lead_id: int):
+    """Return all funnel enrollments for a lead, with funnel name + step info."""
+    enrollments = supabase.table("email_funnel_enrollments").select(
+        "id, funnel_id, current_step, status, last_sent_at, completed_at, enrolled_at, email_funnels(id, name, trigger_stage)"
+    ).eq("lead_id", lead_id).order("enrolled_at", desc=True).execute().data or []
+
+    # Enrich each enrollment with step count + next-send info
+    for e in enrollments:
+        fid = e.get("funnel_id")
+        if fid:
+            steps = supabase.table("email_funnel_steps").select("id, step_order, delay_days, subject").eq("funnel_id", fid).order("step_order").execute().data or []
+            e["total_steps"] = len(steps)
+            current = e.get("current_step") or 0
+            # Next pending step is at index = current_step (0-indexed in current_step field)
+            next_step = next((s for s in steps if s.get("step_order", 0) >= current), None)
+            if next_step and e.get("status") == "active":
+                last = e.get("last_sent_at") or e.get("enrolled_at")
+                try:
+                    last_dt = datetime.fromisoformat(last.replace("Z", "+00:00")) if last else datetime.utcnow()
+                    next_due = last_dt + timedelta(days=next_step.get("delay_days", 0))
+                    e["next_step_subject"] = next_step.get("subject")
+                    e["next_step_due"] = next_due.isoformat()
+                except Exception:
+                    e["next_step_subject"] = next_step.get("subject")
+                    e["next_step_due"] = None
+    return enrollments
+
+
+@app.post("/api/leads/{lead_id}/stop-drips")
+def stop_lead_drips(lead_id: int):
+    """Pause all active funnel enrollments for a lead. Used when manual contact is made."""
+    active = supabase.table("email_funnel_enrollments").select("id, funnel_id").eq("lead_id", lead_id).eq("status", "active").execute().data or []
+    if not active:
+        return {"success": True, "paused": 0}
+
+    supabase.table("email_funnel_enrollments").update({
+        "status": "paused"
+    }).eq("lead_id", lead_id).eq("status", "active").execute()
+
+    supabase.table("lead_activity").insert({
+        "lead_id": lead_id,
+        "activity_type": "drips_paused",
+        "description": f"All active drip sequences paused ({len(active)} funnel{'s' if len(active) != 1 else ''})"
+    }).execute()
+
+    return {"success": True, "paused": len(active)}
+
+
+@app.post("/api/enrollments/{enrollment_id}/pause")
+def pause_enrollment(enrollment_id: int):
+    """Pause a single enrollment."""
+    existing = supabase.table("email_funnel_enrollments").select("id, lead_id, funnel_id").eq("id", enrollment_id).execute().data
+    if not existing:
+        return {"success": False, "error": "not_found"}
+    supabase.table("email_funnel_enrollments").update({"status": "paused"}).eq("id", enrollment_id).execute()
+    funnel = supabase.table("email_funnels").select("name").eq("id", existing[0]["funnel_id"]).execute().data
+    fname = funnel[0]["name"] if funnel else "drip"
+    supabase.table("lead_activity").insert({
+        "lead_id": existing[0]["lead_id"],
+        "activity_type": "drips_paused",
+        "description": f"Paused drip: {fname}"
+    }).execute()
+    return {"success": True}
+
+
+@app.post("/api/enrollments/{enrollment_id}/resume")
+def resume_enrollment(enrollment_id: int):
+    """Resume a paused enrollment."""
+    existing = supabase.table("email_funnel_enrollments").select("id, lead_id, funnel_id").eq("id", enrollment_id).execute().data
+    if not existing:
+        return {"success": False, "error": "not_found"}
+    supabase.table("email_funnel_enrollments").update({"status": "active"}).eq("id", enrollment_id).execute()
+    funnel = supabase.table("email_funnels").select("name").eq("id", existing[0]["funnel_id"]).execute().data
+    fname = funnel[0]["name"] if funnel else "drip"
+    supabase.table("lead_activity").insert({
+        "lead_id": existing[0]["lead_id"],
+        "activity_type": "drips_resumed",
+        "description": f"Resumed drip: {fname}"
+    }).execute()
+    return {"success": True}
 
 
 # ── TASKS ──
@@ -3118,8 +3201,14 @@ async def calendly_webhook(request: Request):
 
             supabase.table("activity_log").insert({
                 "type": "calendly",
-                "message": f"Discovery call booked: {lead['name']} ({invitee_email}) — {event_name} at {start_time}",
+                "message": f"Discovery call booked: {lead['name']} ({invitee_email}) - {event_name} at {start_time}",
                 "meta": {"lead_id": lead_id, "event": event_name, "start_time": start_time}
+            }).execute()
+
+            supabase.table("lead_activity").insert({
+                "lead_id": lead_id,
+                "activity_type": "meeting_booked",
+                "description": f"Booked discovery call: {event_name} at {start_time}"
             }).execute()
         else:
             # Create new lead from Calendly booking
@@ -3143,8 +3232,14 @@ async def calendly_webhook(request: Request):
 
             supabase.table("activity_log").insert({
                 "type": "calendly",
-                "message": f"New lead via Calendly: {invitee_name} ({invitee_email}) — {event_name} at {start_time}",
+                "message": f"New lead via Calendly: {invitee_name} ({invitee_email}) - {event_name} at {start_time}",
                 "meta": {"lead_id": lead_id, "event": event_name, "start_time": start_time}
+            }).execute()
+
+            supabase.table("lead_activity").insert({
+                "lead_id": lead_id,
+                "activity_type": "meeting_booked",
+                "description": f"Booked discovery call via Calendly: {event_name} at {start_time}"
             }).execute()
 
         # Send notification email
@@ -3171,6 +3266,12 @@ async def calendly_webhook(request: Request):
                 "type": "calendly",
                 "message": f"Call canceled: {lead['name']} ({invitee_email})",
                 "meta": {"lead_id": lead["id"], "event": event_name}
+            }).execute()
+
+            supabase.table("lead_activity").insert({
+                "lead_id": lead["id"],
+                "activity_type": "meeting_canceled",
+                "description": f"Canceled Calendly booking: {event_name or 'discovery call'}"
             }).execute()
 
         return {"success": True, "action": "cancellation_logged"}

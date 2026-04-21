@@ -482,6 +482,10 @@ th[onclick]:hover{color:var(--accent)}
         </div>
         <!-- Sequences Tab -->
         <div class="profile-tab-content" id="ptab-sequences" style="padding:16px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Email Sequences</div>
+            <button class="btn btn-ghost btn-sm" id="stop-drips-btn" onclick="stopAllDripsForProfile()" style="display:none">Stop All Drips</button>
+          </div>
           <div id="profile-sequences-list"></div>
         </div>
       </div>
@@ -1261,6 +1265,7 @@ async function openContactProfile(id){
     loadProfileActivity(id);
     loadProfileComms(id);
     loadProfileTasks(id);
+    loadProfileSequences(id);
 
   }catch(e){console.error('Profile load error:',e)}
 }
@@ -1287,7 +1292,7 @@ async function loadProfileNotes(id){
 
 async function loadProfileActivity(id){
   var acts=await fetch(API+'/api/leads/'+id+'/activity').then(function(r){return r.json()});
-  var icons={created:'\uD83C\uDD95',stage_change:'\uD83D\uDCCB',score_change:'\uD83C\uDFAF',note:'\uD83D\uDCDD',communication:'\uD83D\uDCE7',opportunity_created:'\uD83D\uDE80',call:'\uD83D\uDCDE',meeting:'\uD83E\uDD1D',video_call:'\uD83D\uDCF9',text:'\uD83D\uDCAC',form_submission:'\uD83D\uDCCB',enrichment:'\uD83D\uDD0D'};
+  var icons={created:'\uD83C\uDD95',stage_change:'\uD83D\uDCCB',score_change:'\uD83C\uDFAF',note:'\uD83D\uDCDD',communication:'\uD83D\uDCE7',opportunity_created:'\uD83D\uDE80',call:'\uD83D\uDCDE',meeting:'\uD83E\uDD1D',meeting_booked:'\uD83D\uDCC5',meeting_canceled:'\u274C',video_call:'\uD83D\uDCF9',text:'\uD83D\uDCAC',form_submission:'\uD83D\uDCCB',enrichment:'\uD83D\uDD0D',magnet_requested:'\uD83D\uDCE5',magnet_downloaded:'\uD83D\uDCC4',funnel_enrolled:'\u2709\uFE0F',email_sent:'\uD83D\uDCE7',email_opened:'\uD83D\uDC40',email_delivered:'\u2709\uFE0F',drips_paused:'\u23F8\uFE0F',drips_resumed:'\u25B6\uFE0F',unsubscribed:'\uD83D\uDEAB'};
   document.getElementById('profile-activity-list').innerHTML=acts.map(function(a){
     var desc=a.description||'';
     // Check if this is a call/meeting log with outline
@@ -1314,6 +1319,89 @@ async function loadProfileComms(id){
   document.getElementById('profile-comms-list').innerHTML=comms.map(function(c){
     return'<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;color:var(--text-muted)">'+c.direction+' '+c.channel+' &middot; '+new Date(c.created_at).toLocaleString()+'</div><div style="font-size:12px;font-weight:600;margin-top:2px">'+c.subject+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+c.body+'</div></div>';
   }).join('')||'<div style="font-size:12px;color:var(--text-muted);padding:12px 0">No communications yet</div>';
+}
+
+async function loadProfileSequences(id){
+  var list=document.getElementById('profile-sequences-list');
+  var stopBtn=document.getElementById('stop-drips-btn');
+  if(!list)return;
+  try{
+    var enrollments=await fetch(API+'/api/leads/'+id+'/enrollments').then(function(r){return r.json()});
+    if(!Array.isArray(enrollments)||enrollments.length===0){
+      list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:12px 0">Not enrolled in any sequences</div>';
+      if(stopBtn)stopBtn.style.display='none';
+      return;
+    }
+    var hasActive=enrollments.some(function(e){return e.status==='active'});
+    if(stopBtn)stopBtn.style.display=hasActive?'':'none';
+    list.innerHTML=enrollments.map(function(e){
+      var f=e.email_funnels||{};
+      var fname=f.name||'Unknown funnel';
+      var trigger=f.trigger_stage||'';
+      var status=e.status||'active';
+      var statusColor=status==='active'?'#34d399':status==='paused'?'#fbbf24':status==='completed'?'#6c63ff':'#8888aa';
+      var step=(e.current_step||0);
+      var total=e.total_steps||'?';
+      var progress=total&&total!=='?'?Math.min(100,Math.round((step/total)*100)):0;
+      var nextInfo='';
+      if(status==='active'&&e.next_step_subject){
+        var dueStr='';
+        if(e.next_step_due){
+          var d=new Date(e.next_step_due);
+          var now=new Date();
+          var diff=Math.round((d-now)/(1000*60*60*24));
+          dueStr=diff<=0?'due now':'in '+diff+' day'+(diff!==1?'s':'');
+        }
+        nextInfo='<div style="font-size:11px;color:var(--text-dim);margin-top:6px">Next: <strong>'+e.next_step_subject+'</strong>'+(dueStr?' &middot; '+dueStr:'')+'</div>';
+      }
+      var actionBtn='';
+      if(status==='active'){
+        actionBtn='<button class="btn btn-ghost btn-sm" onclick="pauseEnrollment('+e.id+')" style="font-size:10px;padding:4px 10px">Pause</button>';
+      }else if(status==='paused'){
+        actionBtn='<button class="btn btn-ghost btn-sm" onclick="resumeEnrollment('+e.id+')" style="font-size:10px;padding:4px 10px">Resume</button>';
+      }
+      return'<div style="padding:12px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg)">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'+
+          '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+fname+'</div>'+
+          (trigger?'<div style="font-size:10px;color:var(--text-muted);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">Trigger: '+trigger+'</div>':'')+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
+            '<span style="font-size:10px;padding:3px 8px;border-radius:10px;background:'+statusColor+'22;color:'+statusColor+';text-transform:uppercase;letter-spacing:0.5px;font-weight:600">'+status+'</span>'+
+            actionBtn+
+          '</div>'+
+        '</div>'+
+        '<div style="margin-top:10px;font-size:11px;color:var(--text-muted)">Step '+step+' of '+total+'</div>'+
+        '<div style="margin-top:4px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+progress+'%;background:'+statusColor+'"></div></div>'+
+        nextInfo+
+      '</div>';
+    }).join('');
+  }catch(e){
+    console.error('Sequences load error:',e);
+    list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:12px 0">Error loading sequences</div>';
+  }
+}
+
+async function pauseEnrollment(id){
+  await fetch(API+'/api/enrollments/'+id+'/pause',{method:'POST'});
+  showToast('Drip paused');
+  loadProfileSequences(currentProfileId);
+  loadProfileActivity(currentProfileId);
+}
+
+async function resumeEnrollment(id){
+  await fetch(API+'/api/enrollments/'+id+'/resume',{method:'POST'});
+  showToast('Drip resumed');
+  loadProfileSequences(currentProfileId);
+  loadProfileActivity(currentProfileId);
+}
+
+async function stopAllDripsForProfile(){
+  if(!currentProfileId)return;
+  if(!confirm('Pause all active drip sequences for this contact?'))return;
+  var res=await fetch(API+'/api/leads/'+currentProfileId+'/stop-drips',{method:'POST'}).then(function(r){return r.json()});
+  showToast('Paused '+(res.paused||0)+' drip sequence'+(res.paused===1?'':'s'));
+  loadProfileSequences(currentProfileId);
+  loadProfileActivity(currentProfileId);
 }
 
 async function addProfileNote(){

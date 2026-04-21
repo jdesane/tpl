@@ -72,6 +72,15 @@ export default async function handler(req, res) {
           meta: { lead_id: delivery.lead_id, magnet: delivery.magnet }
         })
         .then(() => {}, () => {});
+
+      supabase
+        .from('lead_activity')
+        .insert({
+          lead_id: delivery.lead_id,
+          activity_type: 'magnet_downloaded',
+          description: `Downloaded lead magnet: ${delivery.magnet}`
+        })
+        .then(() => {}, () => {});
     }
 
     res.setHeader('Content-Type', 'application/pdf');
