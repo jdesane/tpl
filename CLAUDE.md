@@ -161,6 +161,28 @@
 - Date Added column (sortable, default visible)
 - Delete function fixed: clears FK-constrained records before deleting lead
 
+## Phase 9 — Unsponsored Agent Capture Funnel ✅
+- New `/joining-lpt-realty` long-form landing page (complete LPT joining guide)
+- Social-proof strip, author bio block (Joe DeSane), verdict banner, TOC
+- Inline comparison table: LPT vs KW/eXp/REMAX (structural, per-deal numbers marked [VERIFY])
+- Mid + bottom lead magnet forms (Sponsor Checklist PDF)
+- Expanded FAQ with objection-handling entries ("I already have a sponsor", "Not ready yet", "Only KW/eXp?", "What happens after download?")
+- Sticky mobile CTA bar (shows after 25% scroll, hides near forms)
+- Exit-intent modal (desktop: mouseleave top; mobile: 45s dwell + 70% scroll)
+- Token-gated PDF delivery: api/leads.js generates UUID token, stores in magnet_deliveries, sends download email via Resend, enrolls in Research Stage funnel
+- api/download.js validates token, serves PDF from private-assets via Vercel includeFiles, stamps downloaded_at
+- vercel.json redirects /private-assets/* to /joining-lpt-realty to block direct access
+- `/thanks` thank-you page with inline Calendly embed, ?n=&e= personalization, 3-step next-steps grid
+- GA4 events: form_start, generate_lead, magnet_requested, scroll_depth, sticky_cta_click, exit_intent_shown, calendly_click (with cta_location), magnet_thank_you_viewed + AW conversion
+- 8-page branded Sponsor Checklist PDF (reportlab, Montserrat Black/Bold headings, Dark Luxe palette) at /downloads/lpt-sponsor-checklist.pdf + /private-assets/lpt-sponsor-checklist.pdf
+- OG image 1200x630 (Puppeteer render) at /og/joining-lpt-realty.jpg
+- JSON-LD: Article + FAQPage schema
+- Inbound linkbacks added to: index.html, why-tpl.html, fee-plans.html, lpt-explained.html, vs/index.html, and 11 /vs/*.html pages
+- Supabase migration: leads.stage/magnet/magnet_downloaded_at columns, magnet_deliveries table
+- Research Stage email funnel (id 22) with 6 steps (days 2,4,6,9,12,14), trigger_stage='research'
+- 7 drip email drafts in content/drips/research-stage/ (day-0 delivered direct from Vercel, days 2-14 via funnel)
+- sitemap.xml updated with /joining-lpt-realty (thanks page is noindex)
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
