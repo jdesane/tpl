@@ -183,6 +183,17 @@
 - 7 drip email drafts in content/drips/research-stage/ (day-0 delivered direct from Vercel, days 2-14 via funnel)
 - sitemap.xml updated with /joining-lpt-realty (thanks page is noindex)
 
+## Phase 10 — Contact Sequences Tab + Lead Activity Timeline ✅
+- GET /api/leads/{id}/enrollments returns funnel name, step progress, status, next-send ETA
+- POST /api/leads/{id}/stop-drips pauses all active enrollments in one call
+- POST /api/enrollments/{id}/pause and /resume for per-funnel control
+- Contact profile SEQUENCES tab (was empty) now renders enrollment cards with status badge, progress bar, next-step ETA, and Pause/Resume buttons
+- "Stop All Drips" button appears above enrollments list when any are active
+- api/leads.js logs form_submission + magnet_requested + funnel_enrolled to lead_activity on every submission
+- api/download.js logs magnet_downloaded when PDF is pulled
+- Calendly webhook logs meeting_booked / meeting_canceled to lead_activity
+- New activity icons in profile timeline: 📅 meeting_booked, ❌ meeting_canceled, 📥 magnet_requested, 📄 magnet_downloaded, ✉️ funnel_enrolled, ⏸️ drips_paused, ▶️ drips_resumed
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
