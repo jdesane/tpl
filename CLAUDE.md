@@ -194,6 +194,23 @@
 - Calendly webhook logs meeting_booked / meeting_canceled to lead_activity
 - New activity icons in profile timeline: 📅 meeting_booked, ❌ meeting_canceled, 📥 magnet_requested, 📄 magnet_downloaded, ✉️ funnel_enrolled, ⏸️ drips_paused, ▶️ drips_resumed
 
+## Phase 11 — Newly Licensed PBC Campaign ✅
+- Imported 124 recently licensed Palm Beach County agents (April 2026 subscription list) from `New agent list.xlsx`
+- Names normalized: "LAST, FIRST MIDDLE" → "First Last" (title case, middle names dropped, Mc/hyphen/apostrophe preserved)
+- Leads stored with: stage="NEWLY LICENSED", source="PBC New License List - April 2026", market="Palm Beach County", license_state="FL", licensed_since="2026-04", license_type="Sales Associate"
+- Tags: `newly-licensed`, `palm-beach-county`, `april-2026-list`, `no-brokerage-yet`, `purchased-list`
+- Deduped against existing 400+ leads before import; 1 intra-list duplicate removed (125 → 124)
+- Email funnel id 23 "Newly Licensed FL - First Sponsor", trigger_stage="NEWLY LICENSED", 6 steps over 20 days
+  - Day 1: Congrats + Sponsor Checklist magnet ({{magnet_url}})
+  - Day 4: "The first mistake I see new agents make" (split-optimization trap)
+  - Day 8: "What a sponsor should actually do for you" (7 must-haves)
+  - Day 12: "The monthly-fee trap" ($99 vs $1,800-$14k year-one math)
+  - Day 16: "How LPT works in year one (no hype version)" (structural)
+  - Day 20: "Want me to review your top 2 sponsor options?" (Calendly soft invite)
+- Drafts in `content/drips/newly-licensed/` (day-1, day-4, day-8, day-12, day-16, day-20)
+- Enrollments staggered over 19 days (2026-04-22 → 2026-05-10) at 6-7 leads/day to protect sender reputation
+- 124 enrollments inserted directly (current_step=0, status='active', enrolled_at = 10am ET + day_offset)
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
