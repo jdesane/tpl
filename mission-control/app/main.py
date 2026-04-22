@@ -2504,10 +2504,10 @@ async def process_drip_queue():
     if not check_daily_limit(domain):
         return {"success": True, "sent": 0, "reason": "Daily limit reached"}
 
-    # Get active enrollments that need sending
+    # Get active enrollments that need sending (respect scheduled enrolled_at)
     enrollments = supabase.table("email_funnel_enrollments").select(
         "*, leads(id, email, first_name, name), email_funnels(name)"
-    ).eq("status", "active").execute().data
+    ).eq("status", "active").lte("enrolled_at", datetime.utcnow().isoformat()).execute().data
 
     sent = 0
     skipped = 0
