@@ -1,0 +1,95 @@
+{
+  "_description": "TEMPLATE: Copy this object, fill in fields, append to brokerages.json > brokerages[]. Set status to 'draft' while populating, flip to 'published' when verified.",
+  "_required_for_published": [
+    "slug", "name", "short_name", "logo", "color", "tier", "category",
+    "source_url", "data_asof",
+    "at least one plan with non-null split/fee data"
+  ],
+
+  "slug": "brokerage-slug-kebab-case",
+  "name": "Full Legal Name",
+  "short_name": "Short Name",
+  "aliases": ["Alt Name 1", "Alt Name 2"],
+  "logo": "/assets/logos/slug.svg",
+  "color": "#6c63ff",
+  "status": "draft",
+  "tier": 2,
+  "category": "cloud",
+  "_category_options": "cloud | franchise | luxury | discount | independent | hybrid",
+
+  "model_type": "Cloud",
+  "founded": 2020,
+  "public_ticker": null,
+  "agent_count_note": "Description of size / footprint",
+  "source_url": "https://official-source-url.com",
+  "data_asof": "2026-04-23",
+
+  "plans": [
+    {
+      "plan_name": "Standard",
+      "split_structure": "80/20",
+      "_split_structure_note": "Format: 'X/Y' where X is agent's percentage. For flat-fee-only plans, use 'Flat $X per transaction'.",
+      "annual_cap": 15000,
+      "post_cap_per_txn_fee": null,
+      "post_cap_per_txn_fee_threshold_gci": null,
+      "per_txn_fee_applies_to": "post_cap_only",
+      "_per_txn_fee_options": "post_cap_only | all_txns_above_threshold | post_cap_only_first_20",
+      "flat_fee_per_txn": null,
+      "monthly_fee": null,
+      "annual_fee": null,
+      "eo_insurance_annual": null,
+      "eo_note": null,
+      "franchise_fee_pct": 0,
+      "franchise_fee_cap_annual": null,
+      "marketing_fee_pct": null,
+      "notes": "Anything else worth noting about this plan."
+    }
+  ],
+
+  "revshare": {
+    "offered": false,
+    "tiers": null,
+    "pool_pct_of_company_dollar": null,
+    "willable": null,
+    "vesting_years": null,
+    "vesting_schedule": null,
+    "total_paid_out_usd": null,
+    "tier_breakdown": null,
+    "notes": null
+  },
+
+  "equity": {
+    "offered": false,
+    "publicly_traded": false,
+    "ticker": null,
+    "stock_type": null,
+    "tiers": [],
+    "liquidity": null,
+    "notes": null
+  },
+
+  "technology": {
+    "included_tools": [],
+    "optional_package": null,
+    "crm_included": false,
+    "crm_note": null,
+    "tpl_advantage": null
+  },
+
+  "training": {
+    "live_hours_per_week": null,
+    "on_demand_library": null,
+    "mentorship_program": null,
+    "support_hours": null
+  },
+
+  "culture": {
+    "office_based": null,
+    "community_style": null,
+    "glassdoor_overall": null,
+    "glassdoor_agent_role": null,
+    "glassdoor_review_count": null
+  },
+
+  "tpl_callout": null
+}
