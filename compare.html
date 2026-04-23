@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<meta charset="UTF-8"/>
+<link rel="canonical" href="https://tplcollective.ai/compare" />
+<script src="/tpl-tracking.js" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Compare Brokerages | Real Numbers, Not Pitches | TPL Collective</title>
+<meta name="description" content="Compare up to 5 real estate brokerages side by side. Splits, caps, fees, revshare, equity, and total annual cost at your actual production. LPT Realty verified from the official flyer."/>
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Compare Brokerages - Real Numbers, Not Pitches" />
+<meta property="og:description" content="Side-by-side brokerage comparison with total-cost math at your GCI. Built by TPL Collective." />
+<meta property="og:url" content="https://tplcollective.ai/compare" />
+<meta property="og:image" content="https://tplcollective.ai/og/joining-lpt-realty.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Compare Brokerages - Real Numbers, Not Pitches" />
+<meta name="twitter:description" content="Side-by-side brokerage comparison with total-cost math at your GCI." />
+<meta name="twitter:image" content="https://tplcollective.ai/og/joining-lpt-realty.jpg" />
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/compare/compare.css" />
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/why-tpl">Why TPL</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/compare" class="active">Compare</a>
+    <a href="/resources">Free Resources</a>
+    <a href="/blog">Blog</a>
+    <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/lpt-explained">LPT Explained</a>
+  <a href="/why-tpl">Why TPL</a>
+  <a href="/fee-plans">Fee Plans</a>
+  <a href="/compare">Compare</a>
+  <a href="/resources">Free Resources</a>
+  <a href="/blog">Blog</a>
+  <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta">Book a Call</a>
+</div>
+
+<!-- HERO -->
+<header class="cmp-hero">
+  <div class="cmp-hero-inner">
+    <div class="cmp-eyebrow">Brokerage Comparator</div>
+    <h1>Compare Brokerages.<br><em>Real Numbers, Not Pitches.</em></h1>
+    <p class="cmp-sub">Pick up to 5. See splits, caps, fees, revenue share, equity, and total annual cost at your actual production. The LPT Realty numbers below are verified against the official flyer, valid through 4/30/26.</p>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="cmp-main">
+
+  <!-- SELECTOR -->
+  <section class="cmp-panel" id="selector-panel">
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">Step 1</div>
+      <h2 class="cmp-panel-title">Choose Brokerages</h2>
+      <div class="cmp-panel-hint"><span id="selected-count">0</span> of 5 selected</div>
+    </div>
+
+    <div class="selected-chips" id="selected-chips" aria-live="polite"></div>
+
+    <div class="selector-controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="brokerage-search" placeholder="Search by name..." autocomplete="off" />
+      </div>
+      <div class="filter-row" id="filter-row" role="tablist" aria-label="Category filter">
+        <button class="filter-btn active" data-category="all" role="tab">All</button>
+        <button class="filter-btn" data-category="cloud" role="tab">Cloud</button>
+        <button class="filter-btn" data-category="franchise" role="tab">Franchise</button>
+        <button class="filter-btn" data-category="luxury" role="tab">Luxury</button>
+        <button class="filter-btn" data-category="hybrid" role="tab">Hybrid</button>
+      </div>
+    </div>
+
+    <div class="selector-list" id="selector-list" role="listbox" aria-label="Available brokerages"></div>
+    <p class="selector-empty" id="selector-empty" hidden>No brokerages match that search.</p>
+    <p class="selector-note">Only verified, published entries appear here. Competitor data is being populated. Unverified entries are hidden until confirmed.</p>
+  </section>
+
+  <!-- INPUTS -->
+  <section class="cmp-panel inputs-panel">
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">Step 2</div>
+      <h2 class="cmp-panel-title">Your Numbers</h2>
+    </div>
+
+    <div class="inputs-grid">
+      <div class="input-block">
+        <label for="gci-slider">Annual GCI</label>
+        <div class="input-value" id="gci-value">$250,000</div>
+        <input type="range" id="gci-slider" min="50000" max="1000000" step="5000" value="250000" />
+        <div class="input-range-meta"><span>$50K</span><span>$1M</span></div>
+      </div>
+
+      <div class="input-block">
+        <label for="txns-slider">Transactions / year</label>
+        <div class="input-value" id="txns-value">20</div>
+        <input type="range" id="txns-slider" min="1" max="60" step="1" value="20" />
+        <div class="input-range-meta"><span>1</span><span>60</span></div>
+      </div>
+
+      <div class="input-block">
+        <label for="avg-gci">Avg GCI per txn</label>
+        <div class="input-value">
+          <span class="input-prefix">$</span>
+          <input type="number" id="avg-gci" value="12500" min="0" step="100" />
+        </div>
+        <div class="input-range-meta"><span>Auto-calculated. Editable.</span></div>
+      </div>
+
+      <div class="input-block">
+        <label class="checkbox-label" for="lpt-plus-toggle">
+          <input type="checkbox" id="lpt-plus-toggle" />
+          <span>Include LPT Plus upgrade</span>
+        </label>
+        <p class="checkbox-hint">Optional tech add-on: $89/mo BP, $149/mo BB. Off by default.</p>
+      </div>
+    </div>
+
+    <div class="lpt-plan-toggle" id="lpt-plan-toggle" hidden>
+      <div class="plan-toggle-label">LPT Plan View</div>
+      <div class="plan-toggle-btns" role="radiogroup" aria-label="LPT plan view">
+        <button class="plan-toggle-btn active" data-plan="both" role="radio" aria-checked="true">Show Both</button>
+        <button class="plan-toggle-btn" data-plan="bp" role="radio" aria-checked="false">Brokerage Partner</button>
+        <button class="plan-toggle-btn" data-plan="bb" role="radio" aria-checked="false">Business Builder</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EMPTY STATE -->
+  <section class="cmp-empty" id="cmp-empty">
+    <div class="cmp-empty-inner">
+      <div class="cmp-empty-icon">📊</div>
+      <h3>Select a brokerage to begin</h3>
+      <p>LPT Realty is preloaded. Add up to 4 more to see a full side-by-side comparison.</p>
+    </div>
+  </section>
+
+  <!-- MATRIX -->
+  <section class="cmp-panel matrix-panel" id="matrix-panel" hidden>
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">Step 3</div>
+      <h2 class="cmp-panel-title">Side by Side</h2>
+      <div class="cmp-panel-hint" id="matrix-hint"></div>
+    </div>
+    <div class="matrix-scroll">
+      <table class="matrix-table" id="matrix-table" aria-label="Brokerage comparison matrix"></table>
+    </div>
+    <p class="matrix-legend">All numbers in USD. Per-txn brokerage fees (like LPT's $195) are always counted as a brokerage cost for apples-to-apples comparison, even when the default mechanic is pass-through to the client. See breakdown cards below for the split.</p>
+  </section>
+
+  <!-- COST BREAKDOWN CARDS -->
+  <section class="cmp-section breakdown-section" id="breakdown-section" hidden>
+    <div class="cmp-section-head">
+      <div class="cmp-panel-label">Cost Breakdown</div>
+      <h2 class="cmp-panel-title">Where Every Dollar Goes</h2>
+    </div>
+    <div class="breakdown-grid" id="breakdown-grid"></div>
+  </section>
+
+  <!-- HYBRIDSHARE PANEL -->
+  <section class="cmp-panel hybridshare-panel" id="hybridshare-panel" hidden>
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">LPT HybridShare</div>
+      <h2 class="cmp-panel-title">The 7-Tier Revenue Share</h2>
+    </div>
+    <p class="hybridshare-intro">Each LPT agent's capped company dollar funds the HybridShare Pool for their transactions. A Brokerage Partner agent who caps contributes $7,500 to the pool (50% of $15K). A Business Builder agent who caps contributes $2,500 to the pool (50% of $5K). An upline sponsor earns their tier percentage of that pool contribution.</p>
+    <div class="matrix-scroll">
+      <table class="hybridshare-table" id="hybridshare-table" aria-label="LPT HybridShare tier breakdown"></table>
+    </div>
+    <p class="hybridshare-note">Business Builder agents can recruit and build a downline. HybridShare earnings activate once the BB agent upgrades to Brokerage Partner; the downline tree carries over on upgrade, so recruiting activity is never lost.</p>
+  </section>
+
+  <!-- TPL CALLOUT -->
+  <section class="cmp-panel tpl-callout-panel" id="tpl-callout-panel" hidden>
+    <div class="tpl-callout-inner">
+      <div class="tpl-callout-eyebrow">TPL Collective</div>
+      <h2 class="tpl-callout-title">LPT is the Brokerage.<br><em>TPL is the Leverage.</em></h2>
+      <p class="tpl-callout-body" id="tpl-callout-body"></p>
+      <div class="tpl-callout-actions">
+        <a href="https://calendly.com/discovertpl" target="_blank" class="btn-gold" onclick="gtag('event','calendly_click',{page_location:'/compare',cta_location:'compare_tpl_callout'});fbq('track','Schedule',{content_name:'Compare CTA'})">Book a Strategy Call</a>
+        <a href="/why-tpl" class="btn-secondary">Why TPL</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHARE ROW -->
+  <section class="cmp-share" id="cmp-share" hidden>
+    <button class="btn-secondary" id="copy-link-btn">Copy Shareable Link</button>
+    <span class="share-feedback" id="share-feedback" hidden>Link copied</span>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/lpt-explained">LPT Explained</a>
+    <a href="/fee-plans">Fee Plans</a>
+    <a href="/compare">Compare</a>
+    <a href="/resources">Free Downloads</a>
+    <a href="/blog">Blog</a>
+  </div>
+  <div class="footer-copy">© 2026 TPL Collective · Powered by LPT Realty</div>
+</footer>
+
+<script>
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  });
+});
+</script>
+<script src="/assets/compare/compare.js" defer></script>
+</body>
+</html>

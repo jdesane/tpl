@@ -1,0 +1,555 @@
+{
+  "_meta": {
+    "schema_version": "1.1",
+    "last_updated": "2026-04-23",
+    "data_sources_policy": "LPT figures are verified against the official lpt.com flyer (valid until 4/30/26) provided by Joe. Competitor figures may use publicly documented sources; cite source_url per brokerage. Unknown numeric fields must be null (renders as '—' in UI). Never fabricate.",
+    "per_txn_fee_model_note": "The $195 LPT per-txn fee is a brokerage fee charged on every transaction, regardless of whether the agent passes it through to the client at closing. For cost-comparison purposes against other brokerages, it must be counted as a real per-transaction brokerage cost. The pass-through mechanic is a cash-flow convenience between agent and client (default behavior), but does not change the fact that the brokerage charges $195 per deal. Calc: always include 195 × txns in the agent cost total.",
+    "note_to_claude_code": "This file is the single source of truth. LPT entry is fully verified. Populate remaining brokerages using publicly documented sources. Each published entry must have data_asof, source_url, and status='published'. Draft entries stay hidden from the UI."
+  },
+
+  "brokerages": [
+    {
+      "slug": "lpt-realty",
+      "name": "LPT Realty",
+      "short_name": "LPT",
+      "aliases": ["LPT"],
+      "logo": "/assets/logos/lpt.svg",
+      "color": "#f0c040",
+      "status": "published",
+      "tier": 1,
+      "category": "cloud",
+      "model_type": "Cloud",
+      "founded": 2018,
+      "public_ticker": null,
+      "agent_count_note": "2025 RealTrends Top 10 Ranked Brokerage; 2025 Deloitte Fast 500 #2 in USA; 2026 Training Magazine MVP Award",
+      "ceo": "Robert Palmer",
+      "source_url": "https://lpt.com",
+      "data_asof": "2026-04-23",
+      "data_valid_until": "2026-04-30",
+
+      "plans": [
+        {
+          "plan_name": "Brokerage Partner (80/20)",
+          "split_structure": "80/20",
+          "annual_cap": 15000,
+          "per_txn_brokerage_fee": 195,
+          "per_txn_fee_applies_to": "every_transaction",
+          "per_txn_fee_default_mechanic": "pass_through_to_client",
+          "per_txn_fee_if_absorbed_by_agent": 195,
+          "flat_fee_per_txn": null,
+          "monthly_fee": 0,
+          "annual_fee": 500,
+          "annual_fee_note": "Withheld from first deal each year. Covers technology and E&O.",
+          "eo_insurance_annual": 0,
+          "eo_note": "Included in $500 annual fee",
+          "franchise_fee_pct": 0,
+          "franchise_fee_cap_annual": null,
+          "marketing_fee_pct": null,
+          "signup_fee": 0,
+          "notes": "80/20 split until $15K cap, then 100% for rest of anniversary year. $195 per-txn fee is a brokerage fee on every transaction. Default mechanic: passed through to client at closing. Agent can choose to absorb it. Eligible for full HybridShare revenue share."
+        },
+        {
+          "plan_name": "Business Builder (Flat Fee)",
+          "split_structure": "Flat $500 per transaction",
+          "annual_cap": 5000,
+          "per_txn_brokerage_fee": 195,
+          "per_txn_fee_applies_to": "every_transaction",
+          "per_txn_fee_default_mechanic": "pass_through_to_client",
+          "per_txn_fee_if_absorbed_by_agent": 195,
+          "flat_fee_per_txn": 500,
+          "monthly_fee": 0,
+          "annual_fee": 500,
+          "annual_fee_note": "Withheld from first deal each year. Covers technology and E&O.",
+          "eo_insurance_annual": 0,
+          "eo_note": "Included in $500 annual fee",
+          "franchise_fee_pct": 0,
+          "franchise_fee_cap_annual": null,
+          "marketing_fee_pct": null,
+          "signup_fee": 0,
+          "notes": "$500/txn until $5K cap (10 transactions). $195 per-txn brokerage fee applies to every transaction; default mechanic is pass-through to client. Business Builders CAN recruit and build a downline, but HybridShare earnings only activate after upgrading to Brokerage Partner. Downline built as BB carries over on upgrade."
+        }
+      ],
+
+      "revshare": {
+        "offered": true,
+        "program_name": "HybridShare",
+        "tiers": 7,
+        "pool_pct_of_company_dollar": 50,
+        "willable": true,
+        "total_paid_out_usd": null,
+        "mechanics_explained": "Each agent's capped company dollar funds the HybridShare Pool for their transactions. BP agents cap at $15K (so $7,500 goes to the pool over the year). BB agents cap at $5K (so $2,500 goes to the pool over the year). An upline sponsor's annual HybridShare earnings from a given downline agent = (downline's pool contribution) × (sponsor's tier percentage). Max per-txn figures in the tier_breakdown show per-txn earnings from that downline's activity.",
+        "tier_breakdown": [
+          { "tier": 1, "pct_of_pool": 31, "max_annual_from_bp_downline_usd": 2325, "max_annual_from_bb_downline_usd": 775, "min_active_direct_sponsored_to_unlock": 1 },
+          { "tier": 2, "pct_of_pool": 18, "max_annual_from_bp_downline_usd": 1350, "max_annual_from_bb_downline_usd": 450, "min_active_direct_sponsored_to_unlock": 4 },
+          { "tier": 3, "pct_of_pool": 7,  "max_annual_from_bp_downline_usd": 525,  "max_annual_from_bb_downline_usd": 175, "min_active_direct_sponsored_to_unlock": 8 },
+          { "tier": 4, "pct_of_pool": 7,  "max_annual_from_bp_downline_usd": 525,  "max_annual_from_bb_downline_usd": 175, "min_active_direct_sponsored_to_unlock": 12 },
+          { "tier": 5, "pct_of_pool": 7,  "max_annual_from_bp_downline_usd": 525,  "max_annual_from_bb_downline_usd": 175, "min_active_direct_sponsored_to_unlock": 16 },
+          { "tier": 6, "pct_of_pool": 10, "max_annual_from_bp_downline_usd": 750,  "max_annual_from_bb_downline_usd": 250, "min_active_direct_sponsored_to_unlock": 19 },
+          { "tier": 7, "pct_of_pool": 20, "max_annual_from_bp_downline_usd": 1500, "max_annual_from_bb_downline_usd": 500, "min_active_direct_sponsored_to_unlock": 20 }
+        ],
+        "tier_breakdown_note": "The BP and BB columns show max annual HybridShare earnings for an upline sponsor, based on which plan the downline agent is on. A BP-plan downline who caps contributes more to the pool, so sponsors earn more from BP downline than from BB downline.",
+        "earner_eligibility": {
+          "brokerage_partner": "Earns HybridShare per the tier schedule, subject to restrictions below.",
+          "business_builder": "CAN recruit and build a sponsored downline while on the BB plan. However, HybridShare earnings do NOT activate until the BB agent upgrades to Brokerage Partner. The downline tree carries over on upgrade - recruiting activity is not lost. Strategy: agents can stay on BB to minimize brokerage costs while they build their tree, then flip to BP when HybridShare earning potential outweighs the incremental cost."
+        },
+        "restrictions": [
+          "Must complete one full Core Transaction before HybridShare earnings apply",
+          "HybridShare earnings apply to cap first (not cash)",
+          "No HybridShare earnings during first 90 days at LPT",
+          "Prohibited from offering any 'thing of value' to be named a sponsor",
+          "BB plan: can build downline, but earnings activate only upon BP upgrade"
+        ],
+        "dual_sponsorship_note": "For Dual Sponsorship all dollars are allocated 45% to each sponsor and their respective upline.",
+        "notes": "7-tier structure. 50% of company dollar allocated to the HybridShare Pool per transaction."
+      },
+
+      "equity": {
+        "offered": true,
+        "publicly_traded": false,
+        "ticker": null,
+        "stock_type": "RSU awards via Performance Awards program",
+        "vesting_years": 3,
+        "vesting_note": "Three year vesting on each RSU award. Agents must remain Active to maintain multipliers, earn, and vest awards.",
+        "achievement_awards": [
+          { "badge": "White", "annual_core_transactions": 1,  "shares_bp": 50,   "shares_bb": 25 },
+          { "badge": "Silver", "annual_core_transactions": 3,  "shares_bp": 50,   "shares_bb": 25 },
+          { "badge": "Gold",  "annual_core_transactions": 15, "shares_bp": 600,  "shares_bb": 300 },
+          { "badge": "Black", "annual_core_transactions": 35, "shares_bp": 1800, "shares_bb": null, "shares_bb_note": "Not available to Business Builders" }
+        ],
+        "sponsorship_award_per_direct_sponsored": { "trigger": "Direct sponsored agent's first Core Transaction (one-time)", "shares_bp": 100, "shares_bb": 50 },
+        "conditions": [
+          "All Agents have a multiplier determined by join date, comp plan, and benefits plan.",
+          "Black Badge requires Brokerage Partner plan for the entire period.",
+          "Gold and Black Badge require leadership and community engagement (waived until full launch of lptConnect 2.0).",
+          "Black Badge Core Transaction requirements may be adjusted annually to represent approximately the top 1% of eligible agents.",
+          "For Sponsorship Performance Awards, sponsored agent must remain Active during your vesting period.",
+          "Each agent receives 45% credit for the dual sponsored agent.",
+          "Baseline Shares Awarded will change from time to time."
+        ],
+        "effective_date": "2026-04-01",
+        "liquidity": "Private - no open market",
+        "notes": "Non-publicly traded. Liquidity event depends on future IPO, acquisition, or internal buyback."
+      },
+
+      "technology": {
+        "included_tools": [
+          "lptConnect 2.0 (proprietary business operations tool)",
+          "Listing Power Tools X (proprietary marketing system)",
+          "Dotloop or Skyslope (contract management, document storage, e-sign, lptConnect integration)",
+          "Lofty, Follow Up Boss, or KV Core (CRM and lead management)"
+        ],
+        "optional_package": "Combination of free software and optional upgrades",
+        "crm_included": true,
+        "crm_note": "Agent chooses from Lofty, Follow Up Boss, or KV Core as included CRM.",
+        "tpl_advantage": "TPL Collective agents receive Mission Control CRM, SOPs, AI tools, training, and community inside LPT - on top of the standard LPT tech stack."
+      },
+
+      "training": {
+        "live_hours_per_week": null,
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "support_hours": null,
+        "notable_programs": [
+          "Motivational Mondays with CEO Robert Palmer (Mondays 11:00 AM EST on Zoom)"
+        ]
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "Cloud-first, growing, founder-led",
+        "glassdoor_overall": null,
+        "glassdoor_agent_role": null,
+        "glassdoor_review_count": null
+      },
+
+      "tpl_callout": "LPT Realty is the brokerage. TPL Collective is the team/community leverage layer operating inside LPT. The numbers above are LPT's. TPL adds Mission Control CRM, SOPs, AI tools, training infrastructure, and a structured residual community on top."
+    },
+
+    {
+      "slug": "exp-realty",
+      "name": "eXp Realty",
+      "short_name": "eXp",
+      "aliases": ["eXp"],
+      "logo": "/assets/logos/exp.png",
+      "color": "#6c63ff",
+      "status": "draft",
+      "tier": 1,
+      "category": "cloud",
+      "model_type": "Cloud",
+      "founded": 2009,
+      "public_ticker": "EXPI",
+      "agent_count_note": "90,000+ agents worldwide (per SAA)",
+      "source_url": "https://expworldholdings.com",
+      "data_asof": "2026-04-23",
+
+      "_placeholder": "Verify all figures from expworldholdings.com or official eXp agent ICA before flipping to status=published. Figures below sourced from SAA editorial as starting point.",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "80/20",
+          "annual_cap": 16000,
+          "post_cap_per_txn_fee": 250,
+          "post_cap_per_txn_fee_threshold_gci": null,
+          "per_txn_fee_applies_to": "post_cap_only_first_20",
+          "flat_fee_per_txn": null,
+          "monthly_fee": 85,
+          "annual_fee": 0,
+          "eo_insurance_annual": 750,
+          "eo_note": "~$60/txn capped at $750/yr",
+          "franchise_fee_pct": 0,
+          "notes": "After $16K cap: $250/txn for up to 20 post-cap txns, then $75 sponsor fee. New agents pay $175/mo tech fee for first 6 months."
+        }
+      ],
+
+      "revshare": {
+        "offered": true,
+        "tiers": 7,
+        "pool_pct_of_company_dollar": 50,
+        "willable": true,
+        "vesting_years": 0,
+        "vesting_schedule": "Immediate willability from day one",
+        "total_paid_out_usd": 889000000,
+        "notes": "Verify per-tier breakdown before publishing."
+      },
+
+      "equity": {
+        "offered": true,
+        "publicly_traded": true,
+        "ticker": "EXPI",
+        "stock_type": "Publicly traded common stock (Nasdaq)",
+        "tiers": [
+          "ICON Agent: $16K cap rebated as stock",
+          "Agent Equity Program: purchase at 10% discount",
+          "Sustainable Equity Plan: grants at milestones"
+        ],
+        "liquidity": "Public market - sellable any trading day"
+      },
+
+      "technology": {
+        "included_tools": ["kvCORE CRM", "IDX website", "eXp Collaborate", "Skyslope"],
+        "crm_included": true,
+        "crm_note": "kvCORE included in $85 tech fee."
+      },
+
+      "training": {
+        "live_hours_per_week": 50,
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "support_hours": "Business hours + platform-based"
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "Cloud-first, large-scale global"
+      }
+    },
+
+    {
+      "slug": "real-brokerage",
+      "name": "The Real Brokerage",
+      "short_name": "Real",
+      "aliases": ["Real", "REAX"],
+      "logo": "/assets/logos/real.png",
+      "color": "#34d399",
+      "status": "draft",
+      "tier": 1,
+      "category": "cloud",
+      "founded": 2014,
+      "public_ticker": "REAX",
+      "source_url": "https://onereal.com",
+      "_placeholder": "VERIFY all figures from onereal.com before publishing."
+    },
+
+    {
+      "slug": "keller-williams",
+      "name": "Keller Williams",
+      "short_name": "KW",
+      "aliases": ["KW", "Keller"],
+      "logo": "/assets/logos/kw.png",
+      "color": "#f87171",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "founded": 1983,
+      "public_ticker": null,
+      "agent_count_note": "~180,000 agents",
+      "source_url": "https://kw.com",
+      "_placeholder": "VERIFY market-center-specific figures. 70/30 base, 6% royalty capped at $3,000/yr, cap varies $18K-$23K by market.",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "70/30",
+          "annual_cap": null,
+          "cap_note": "Varies by market center, typically $18K-$23K",
+          "franchise_fee_pct": 6,
+          "franchise_fee_cap_annual": 3000,
+          "notes": "6% franchise royalty on GCI capped at $3,000/yr."
+        }
+      ],
+
+      "revshare": {
+        "offered": true,
+        "program_name": "Profit Share",
+        "tiers": 7,
+        "willable": true,
+        "notes": "Profit share from market center profits, not company dollar."
+      },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["Command CRM", "KW App"],
+        "crm_included": true
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Market center, in-office"
+      }
+    },
+
+    {
+      "slug": "compass",
+      "name": "Compass",
+      "short_name": "Compass",
+      "aliases": ["Compass"],
+      "logo": "/assets/logos/compass.png",
+      "color": "#60a5fa",
+      "status": "draft",
+      "tier": 1,
+      "category": "luxury",
+      "founded": 2012,
+      "public_ticker": "COMP",
+      "agent_count_note": "~30,000 agents",
+      "source_url": "https://compass.com",
+      "_placeholder": "VERIFY - splits are individually negotiated 60/40 to 90/10.",
+
+      "plans": [
+        {
+          "plan_name": "Negotiated",
+          "split_structure": "75/25",
+          "split_range": { "min": 60, "max": 90, "typical": 75 },
+          "annual_cap": null,
+          "cap_note": "Sometimes negotiable",
+          "monthly_fee": 145,
+          "eo_insurance_annual": 2000,
+          "marketing_fee_pct": 2,
+          "marketing_fee_pct_max": 4,
+          "notes": "Splits individually negotiated."
+        }
+      ],
+
+      "revshare": { "offered": false },
+      "equity": { "offered": false, "publicly_traded": true, "ticker": "COMP" },
+
+      "technology": {
+        "included_tools": ["Compass platform", "Compass Collections"],
+        "crm_included": true
+      }
+    },
+
+    {
+      "slug": "fathom-realty",
+      "name": "Fathom Realty",
+      "short_name": "Fathom",
+      "logo": "/assets/logos/fathom.svg",
+      "color": "#22d3ee",
+      "status": "draft",
+      "tier": 1,
+      "category": "cloud",
+      "founded": 2010,
+      "public_ticker": "FTHM",
+      "_placeholder": "VERIFY from fathomrealty.com. ~$465/txn flat fee model."
+    },
+
+    {
+      "slug": "epique-realty",
+      "name": "Epique Realty",
+      "short_name": "Epique",
+      "aliases": ["Epique"],
+      "logo": "/assets/logos/epique.png",
+      "color": "#a78bfa",
+      "status": "draft",
+      "tier": 2,
+      "category": "cloud",
+      "founded": 2019,
+      "public_ticker": null,
+      "source_url": "https://epiquerealty.com",
+      "_placeholder": "VERIFY from epiquerealty.com. Cloud model, flat-fee + monthly structure. See /vs/epique-realty.html for existing comparison page."
+    },
+
+    {
+      "slug": "remax",
+      "name": "RE/MAX",
+      "short_name": "RE/MAX",
+      "logo": "/assets/logos/remax.png",
+      "color": "#f87171",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "founded": 1973,
+      "public_ticker": "RMAX",
+      "_placeholder": "Traditional 95/5 with high desk fees ($1,000-$2,500/mo varies by market). VERIFY."
+    },
+
+    {
+      "slug": "coldwell-banker",
+      "name": "Coldwell Banker",
+      "short_name": "CB",
+      "logo": "/assets/logos/cb.svg",
+      "color": "#60a5fa",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "_placeholder": "Anywhere Real Estate owned. VERIFY splits, fees, caps."
+    },
+
+    {
+      "slug": "century-21",
+      "name": "Century 21",
+      "short_name": "C21",
+      "logo": "/assets/logos/c21.png",
+      "color": "#fbbf24",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "_placeholder": "Anywhere Real Estate owned. VERIFY."
+    },
+
+    {
+      "slug": "berkshire-hathaway",
+      "name": "Berkshire Hathaway HomeServices",
+      "short_name": "BHHS",
+      "logo": "/assets/logos/bhhs.webp",
+      "color": "#6c63ff",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "_placeholder": "HomeServices of America owned. VERIFY."
+    },
+
+    {
+      "slug": "sothebys",
+      "name": "Sotheby's International Realty",
+      "short_name": "Sotheby's",
+      "logo": "/assets/logos/sothebys.svg",
+      "color": "#f0c040",
+      "status": "draft",
+      "tier": 1,
+      "category": "luxury",
+      "_placeholder": "Luxury franchise. Anywhere Real Estate owned. ~6-8% royalty. VERIFY."
+    },
+
+    {
+      "slug": "corcoran",
+      "name": "Corcoran",
+      "short_name": "Corcoran",
+      "logo": "/assets/logos/corcoran.svg",
+      "color": "#f87171",
+      "status": "draft",
+      "tier": 1,
+      "category": "luxury",
+      "_placeholder": "Luxury franchise. Anywhere Real Estate owned. VERIFY."
+    },
+
+    {
+      "slug": "douglas-elliman",
+      "name": "Douglas Elliman",
+      "short_name": "Elliman",
+      "logo": "/assets/logos/elliman.svg",
+      "color": "#34d399",
+      "status": "draft",
+      "tier": 1,
+      "category": "luxury",
+      "public_ticker": "DOUG",
+      "_placeholder": "Primarily NY/FL/CA. VERIFY."
+    },
+
+    {
+      "slug": "the-agency",
+      "name": "The Agency",
+      "short_name": "Agency",
+      "logo": "/assets/logos/agency.svg",
+      "color": "#e8e8f0",
+      "status": "draft",
+      "tier": 1,
+      "category": "luxury",
+      "_placeholder": "Luxury boutique. VERIFY."
+    },
+
+    {
+      "slug": "redfin",
+      "name": "Redfin",
+      "short_name": "Redfin",
+      "logo": "/assets/logos/redfin.svg",
+      "color": "#f87171",
+      "status": "draft",
+      "tier": 1,
+      "category": "hybrid",
+      "public_ticker": "RDFN",
+      "_placeholder": "Salaried + bonus model (unique). Has restructured. VERIFY current structure."
+    },
+
+    {
+      "slug": "better-homes-gardens",
+      "name": "Better Homes & Gardens Real Estate",
+      "short_name": "BHGRE",
+      "logo": "/assets/logos/bhg.svg",
+      "color": "#34d399",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "_placeholder": "Anywhere Real Estate owned. VERIFY."
+    },
+
+    {
+      "slug": "realty-one-group",
+      "name": "Realty ONE Group",
+      "short_name": "ROG",
+      "logo": "/assets/logos/rog.svg",
+      "color": "#fbbf24",
+      "status": "draft",
+      "tier": 1,
+      "category": "hybrid",
+      "_placeholder": "100% commission model with fees. VERIFY."
+    },
+
+    {
+      "slug": "united-real-estate",
+      "name": "United Real Estate",
+      "short_name": "United",
+      "logo": "/assets/logos/united.svg",
+      "color": "#60a5fa",
+      "status": "draft",
+      "tier": 1,
+      "category": "hybrid",
+      "_placeholder": "100% commission / flat fee model. VERIFY."
+    },
+
+    {
+      "slug": "homesmart",
+      "name": "HomeSmart",
+      "short_name": "HomeSmart",
+      "logo": "/assets/logos/homesmart.svg",
+      "color": "#22d3ee",
+      "status": "draft",
+      "tier": 1,
+      "category": "hybrid",
+      "_placeholder": "100% commission model with monthly fee. VERIFY."
+    },
+
+    {
+      "slug": "weichert",
+      "name": "Weichert Realtors",
+      "short_name": "Weichert",
+      "logo": "/assets/logos/weichert.svg",
+      "color": "#f87171",
+      "status": "draft",
+      "tier": 1,
+      "category": "franchise",
+      "_placeholder": "Traditional franchise. VERIFY."
+    }
+  ]
+}
