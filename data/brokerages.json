@@ -365,6 +365,22 @@
     },
 
     {
+      "slug": "epique-realty",
+      "name": "Epique Realty",
+      "short_name": "Epique",
+      "aliases": ["Epique"],
+      "logo": "/assets/logos/epique.svg",
+      "color": "#a78bfa",
+      "status": "draft",
+      "tier": 2,
+      "category": "cloud",
+      "founded": 2019,
+      "public_ticker": null,
+      "source_url": "https://epiquerealty.com",
+      "_placeholder": "VERIFY from epiquerealty.com. Cloud model, flat-fee + monthly structure. See /vs/epique-realty.html for existing comparison page."
+    },
+
+    {
       "slug": "remax",
       "name": "RE/MAX",
       "short_name": "RE/MAX",
