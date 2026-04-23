@@ -99,17 +99,17 @@
 
   /* ────────── FORMATTERS ────────── */
   const fmtMoney = (n) => {
-    if (n == null || isNaN(n)) return '—';
+    if (n == null || isNaN(n)) return '-';
     const rounded = Math.round(n);
     return '$' + rounded.toLocaleString('en-US');
   };
   const fmtMoneyShort = (n) => {
-    if (n == null || isNaN(n)) return '—';
+    if (n == null || isNaN(n)) return '-';
     if (n >= 1000000) return '$' + (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
     if (n >= 1000) return '$' + Math.round(n / 1000) + 'K';
     return '$' + Math.round(n);
   };
-  const fmtPct = (n) => (n == null || isNaN(n)) ? '—' : n.toFixed(1) + '%';
+  const fmtPct = (n) => (n == null || isNaN(n)) ? '-' : n.toFixed(1) + '%';
 
   /* ────────── URL STATE ────────── */
   function readUrlState() {
@@ -298,64 +298,64 @@
         { label: 'Data as of', fn: (c) => safe(c.brokerage.data_asof) }
       ]},
       { label: 'Cost Structure', rows: [
-        { label: 'Plan', fn: (c) => c.plan ? safe(c.plan.plan_name) : '—' },
-        { label: 'Split', fn: (c) => c.plan ? safe(c.plan.split_structure) : '—' },
-        { label: 'Annual Cap', fn: (c) => c.plan ? (c.plan.annual_cap ? fmtMoney(c.plan.annual_cap) : (c.plan.cap_note || 'No cap')) : '—' },
-        { label: 'Monthly Fee', fn: (c) => c.plan ? (c.plan.monthly_fee != null ? fmtMoney(c.plan.monthly_fee) + '/mo' : '—') : '—' },
-        { label: 'Annual Fee', fn: (c) => c.plan ? (c.plan.annual_fee != null ? fmtMoney(c.plan.annual_fee) : '—') + (c.plan.annual_fee_note ? '<span class="val-sub">' + escapeHtml(c.plan.annual_fee_note) + '</span>' : '') : '—' },
-        { label: 'E&O', fn: (c) => c.plan ? (c.plan.eo_insurance_annual != null ? fmtMoney(c.plan.eo_insurance_annual) + '/yr' : '—') + (c.plan.eo_note ? '<span class="val-sub">' + escapeHtml(c.plan.eo_note) + '</span>' : '') : '—' },
+        { label: 'Plan', fn: (c) => c.plan ? safe(c.plan.plan_name) : '-' },
+        { label: 'Split', fn: (c) => c.plan ? safe(c.plan.split_structure) : '-' },
+        { label: 'Annual Cap', fn: (c) => c.plan ? (c.plan.annual_cap ? fmtMoney(c.plan.annual_cap) : (c.plan.cap_note || 'No cap')) : '-' },
+        { label: 'Monthly Fee', fn: (c) => c.plan ? (c.plan.monthly_fee != null ? fmtMoney(c.plan.monthly_fee) + '/mo' : '-') : '-' },
+        { label: 'Annual Fee', fn: (c) => c.plan ? (c.plan.annual_fee != null ? fmtMoney(c.plan.annual_fee) : '-') + (c.plan.annual_fee_note ? '<span class="val-sub">' + escapeHtml(c.plan.annual_fee_note) + '</span>' : '') : '-' },
+        { label: 'E&O', fn: (c) => c.plan ? (c.plan.eo_insurance_annual != null ? fmtMoney(c.plan.eo_insurance_annual) + '/yr' : '-') + (c.plan.eo_note ? '<span class="val-sub">' + escapeHtml(c.plan.eo_note) + '</span>' : '') : '-' },
         { label: 'Franchise Royalty', fn: (c) => c.plan && c.plan.franchise_fee_pct ? c.plan.franchise_fee_pct + '%' + (c.plan.franchise_fee_cap_annual ? '<span class="val-sub">cap ' + fmtMoney(c.plan.franchise_fee_cap_annual) + '/yr</span>' : '') : 'None' },
-        { label: 'Per-Txn Brokerage Fee', fn: (c) => c.plan ? (c.plan.per_txn_brokerage_fee ? fmtMoney(c.plan.per_txn_brokerage_fee) + '/txn' : (c.plan.flat_fee_per_txn ? fmtMoney(c.plan.flat_fee_per_txn) + '/txn (flat)' : '—')) : '—' }
+        { label: 'Per-Txn Brokerage Fee', fn: (c) => c.plan ? (c.plan.per_txn_brokerage_fee ? fmtMoney(c.plan.per_txn_brokerage_fee) + '/txn' : (c.plan.flat_fee_per_txn ? fmtMoney(c.plan.flat_fee_per_txn) + '/txn (flat)' : '-')) : '-' }
       ]},
       { label: 'Calculated Total Annual Cost', rows: [
         { label: 'Total Brokerage Cost', kind: 'cost', fn: (c) => {
             const r = calcTotalCost(c.brokerage, c.plan, state.gci, state.txns, state.avgGci, state.lptPlus);
-            return r ? '<span class="val-sub">at ' + fmtMoneyShort(state.gci) + ' GCI</span>' + fmtMoney(r.total) : '—';
+            return r ? '<span class="val-sub">at ' + fmtMoneyShort(state.gci) + ' GCI</span>' + fmtMoney(r.total) : '-';
           } },
         { label: 'Net to Agent', kind: 'net', fn: (c) => {
             const r = calcTotalCost(c.brokerage, c.plan, state.gci, state.txns, state.avgGci, state.lptPlus);
-            return r ? fmtMoney(r.net) : '—';
+            return r ? fmtMoney(r.net) : '-';
           } },
         { label: 'Retained %', kind: 'pct', fn: (c) => {
             const r = calcTotalCost(c.brokerage, c.plan, state.gci, state.txns, state.avgGci, state.lptPlus);
-            return r ? fmtPct(r.retainedPct) : '—';
+            return r ? fmtPct(r.retainedPct) : '-';
           } }
       ]},
       { label: 'Revenue Share', rows: [
         { label: 'Offered', fn: (c) => c.brokerage.revshare && c.brokerage.revshare.offered ? 'Yes' : 'No' },
-        { label: 'Program Name', fn: (c) => c.brokerage.revshare ? safe(c.brokerage.revshare.program_name) : '—' },
-        { label: 'Tiers', fn: (c) => c.brokerage.revshare ? safe(c.brokerage.revshare.tiers) : '—' },
-        { label: 'Pool % of Company Dollar', fn: (c) => c.brokerage.revshare && c.brokerage.revshare.pool_pct_of_company_dollar ? c.brokerage.revshare.pool_pct_of_company_dollar + '%' : '—' },
-        { label: 'Willable', fn: (c) => c.brokerage.revshare ? (c.brokerage.revshare.willable === true ? 'Yes' : c.brokerage.revshare.willable === false ? 'No' : '—') : '—' },
+        { label: 'Program Name', fn: (c) => c.brokerage.revshare ? safe(c.brokerage.revshare.program_name) : '-' },
+        { label: 'Tiers', fn: (c) => c.brokerage.revshare ? safe(c.brokerage.revshare.tiers) : '-' },
+        { label: 'Pool % of Company Dollar', fn: (c) => c.brokerage.revshare && c.brokerage.revshare.pool_pct_of_company_dollar ? c.brokerage.revshare.pool_pct_of_company_dollar + '%' : '-' },
+        { label: 'Willable', fn: (c) => c.brokerage.revshare ? (c.brokerage.revshare.willable === true ? 'Yes' : c.brokerage.revshare.willable === false ? 'No' : '-') : '-' },
         { label: 'Vesting', fn: (c) => {
             const rs = c.brokerage.revshare;
-            if (!rs) return '—';
+            if (!rs) return '-';
             if (rs.vesting_schedule) return escapeHtml(rs.vesting_schedule);
             if (rs.vesting_years != null) return rs.vesting_years === 0 ? 'Immediate' : rs.vesting_years + ' yrs';
-            return '—';
+            return '-';
           } }
       ]},
       { label: 'Equity / Stock', rows: [
         { label: 'Offered', fn: (c) => c.brokerage.equity && c.brokerage.equity.offered ? 'Yes' : 'No' },
-        { label: 'Publicly Traded', fn: (c) => c.brokerage.equity && c.brokerage.equity.publicly_traded ? 'Yes (' + (c.brokerage.equity.ticker || '—') + ')' : 'No' },
-        { label: 'Stock Type', fn: (c) => c.brokerage.equity ? safe(c.brokerage.equity.stock_type) : '—' },
-        { label: 'Vesting', fn: (c) => c.brokerage.equity && c.brokerage.equity.vesting_years != null ? c.brokerage.equity.vesting_years + ' yrs' : '—' },
-        { label: 'Liquidity', fn: (c) => c.brokerage.equity ? safe(c.brokerage.equity.liquidity) : '—' }
+        { label: 'Publicly Traded', fn: (c) => c.brokerage.equity && c.brokerage.equity.publicly_traded ? 'Yes (' + (c.brokerage.equity.ticker || '-') + ')' : 'No' },
+        { label: 'Stock Type', fn: (c) => c.brokerage.equity ? safe(c.brokerage.equity.stock_type) : '-' },
+        { label: 'Vesting', fn: (c) => c.brokerage.equity && c.brokerage.equity.vesting_years != null ? c.brokerage.equity.vesting_years + ' yrs' : '-' },
+        { label: 'Liquidity', fn: (c) => c.brokerage.equity ? safe(c.brokerage.equity.liquidity) : '-' }
       ]},
       { label: 'Technology', rows: [
         { label: 'CRM Included', fn: (c) => c.brokerage.technology && c.brokerage.technology.crm_included ? 'Yes' : 'No' },
         { label: 'Included Tools', fn: (c) => c.brokerage.technology && c.brokerage.technology.included_tools && c.brokerage.technology.included_tools.length
             ? c.brokerage.technology.included_tools.map(t => escapeHtml(t)).join('<span class="val-sub" style="display:inline;color:var(--dim);">, </span>')
-            : '—' }
+            : '-' }
       ]},
       { label: 'Training & Support', rows: [
-        { label: 'Live Hours / Week', fn: (c) => c.brokerage.training && c.brokerage.training.live_hours_per_week != null ? c.brokerage.training.live_hours_per_week + ' hrs' : '—' },
-        { label: 'On-Demand Library', fn: (c) => c.brokerage.training ? (c.brokerage.training.on_demand_library ? 'Yes' : '—') : '—' },
-        { label: 'Mentorship', fn: (c) => c.brokerage.training ? (c.brokerage.training.mentorship_program ? 'Yes' : '—') : '—' }
+        { label: 'Live Hours / Week', fn: (c) => c.brokerage.training && c.brokerage.training.live_hours_per_week != null ? c.brokerage.training.live_hours_per_week + ' hrs' : '-' },
+        { label: 'On-Demand Library', fn: (c) => c.brokerage.training ? (c.brokerage.training.on_demand_library ? 'Yes' : '-') : '-' },
+        { label: 'Mentorship', fn: (c) => c.brokerage.training ? (c.brokerage.training.mentorship_program ? 'Yes' : '-') : '-' }
       ]},
       { label: 'Culture', rows: [
-        { label: 'Office-Based', fn: (c) => c.brokerage.culture ? (c.brokerage.culture.office_based === true ? 'Yes' : c.brokerage.culture.office_based === false ? 'No (remote/cloud)' : '—') : '—' },
-        { label: 'Community Style', fn: (c) => c.brokerage.culture ? safe(c.brokerage.culture.community_style) : '—' }
+        { label: 'Office-Based', fn: (c) => c.brokerage.culture ? (c.brokerage.culture.office_based === true ? 'Yes' : c.brokerage.culture.office_based === false ? 'No (remote/cloud)' : '-') : '-' },
+        { label: 'Community Style', fn: (c) => c.brokerage.culture ? safe(c.brokerage.culture.community_style) : '-' }
       ]}
     ];
 
@@ -386,8 +386,8 @@
               r.kind === 'pct'  ? 'val-pct' : ''
             ].filter(Boolean).join(' ');
             let content;
-            try { content = r.fn(c); } catch (_) { content = '—'; }
-            if (content == null || content === '' || content === 'null') content = '—';
+            try { content = r.fn(c); } catch (_) { content = '-'; }
+            if (content == null || content === '' || content === 'null') content = '-';
             return '<td class="' + cellClass + '">' + content + '</td>';
           }).join('') +
           '</tr>';
@@ -545,7 +545,7 @@
   }
 
   /* ────────── UTIL ────────── */
-  function safe(v) { return (v == null || v === '') ? '—' : escapeHtml(String(v)); }
+  function safe(v) { return (v == null || v === '') ? '-' : escapeHtml(String(v)); }
   function escapeHtml(s) {
     if (s == null) return '';
     return String(s)
