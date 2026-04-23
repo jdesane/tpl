@@ -150,6 +150,15 @@
     }
   }
 
+  /* ────────── LOGO HELPER ────────── */
+  function logoHtml(brokerage, variant) {
+    // variant: 'chip' | 'selector' | 'matrix' | 'breakdown'
+    if (!brokerage || !brokerage.logo) return '';
+    const cls = 'brk-logo brk-logo-' + variant;
+    const alt = escapeHtml((brokerage.short_name || brokerage.name) + ' logo');
+    return '<img class="' + cls + '" src="' + escapeHtml(brokerage.logo) + '" alt="' + alt + '" loading="lazy" onerror="this.style.display=\'none\'">';
+  }
+
   /* ────────── SELECTION ────────── */
   function addBrokerage(slug) {
     if (state.selected.length >= MAX_SELECT) return;
@@ -208,7 +217,7 @@
       state.selected.forEach(b => {
         const chip = document.createElement('span');
         chip.className = 'chip' + (b.slug === LPT_SLUG ? ' lpt' : '');
-        chip.innerHTML = '<span>' + escapeHtml(b.short_name || b.name) + '</span>';
+        chip.innerHTML = logoHtml(b, 'chip') + '<span>' + escapeHtml(b.short_name || b.name) + '</span>';
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('aria-label', 'Remove ' + b.name);
@@ -254,6 +263,7 @@
       row.setAttribute('role', 'option');
       if (alreadySelected) row.setAttribute('aria-disabled', 'true');
       row.innerHTML =
+        '<div class="selector-row-logo">' + logoHtml(b, 'selector') + '</div>' +
         '<div class="selector-row-name">' + escapeHtml(b.name) + '</div>' +
         '<div class="selector-row-cat">' + escapeHtml(b.category || '') + '</div>' +
         '<button type="button" class="selector-row-add">' + (alreadySelected ? 'Added' : 'Add') + '</button>';
@@ -367,7 +377,8 @@
         const planLabel = isLpt && c.plan ? c.plan.plan_name.replace(/\s*\([^)]*\)\s*/, '').trim() : (c.brokerage.category || '');
         const subLabel = isLpt ? planLabel : (c.brokerage.category || '');
         return '<th class="' + (isLpt ? 'col-lpt' : '') + '">' +
-          escapeHtml(c.brokerage.short_name || c.brokerage.name) +
+          '<div class="col-logo-wrap">' + logoHtml(c.brokerage, 'matrix') + '</div>' +
+          '<div class="col-name">' + escapeHtml(c.brokerage.short_name || c.brokerage.name) + '</div>' +
           '<span class="col-cat">' + escapeHtml(subLabel) + '</span>' +
           '</th>';
       }).join('') +
@@ -456,6 +467,7 @@
 
       card.innerHTML =
         '<div class="breakdown-header">' +
+          logoHtml(b, 'breakdown') +
           '<div class="breakdown-name">' + escapeHtml(b.short_name || b.name) + '</div>' +
           '<div class="breakdown-plan">' + escapeHtml(planLabel) + '</div>' +
         '</div>' +

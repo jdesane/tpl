@@ -234,12 +234,15 @@ nav {
 }
 .selector-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 40px 1fr auto auto;
   gap: 12px; align-items: center;
   padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.15s;
+}
+.selector-row-logo {
+  height: 24px; display: flex; align-items: center; justify-content: center;
 }
 .selector-row:last-child { border-bottom: none; }
 .selector-row:hover { background: var(--surface2); }
@@ -520,9 +523,12 @@ nav {
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
 .breakdown-header {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 12px; margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: flex-start;
+  gap: 14px; margin-bottom: 6px;
 }
+.breakdown-header .brk-logo-breakdown { flex-shrink: 0; }
+.breakdown-header .breakdown-name { flex: 1; }
+.breakdown-header .breakdown-plan { flex-shrink: 0; }
 .breakdown-name {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 24px; letter-spacing: 0.03em; color: var(--white);
@@ -762,4 +768,46 @@ footer {
 @media (max-width: 520px) {
   .inputs-grid { grid-template-columns: 1fr; }
   .cmp-hero h1 { font-size: 44px; }
+}
+
+/* ── BROKERAGE LOGOS ── */
+.brk-logo {
+  display: block;
+  object-fit: contain;
+  object-position: left center;
+  max-width: 100%;
+  width: auto;
+}
+.brk-logo-chip {
+  height: 18px;
+  max-width: 90px;
+  object-position: center;
+}
+.brk-logo-selector {
+  height: 22px;
+  max-width: 38px;
+  object-position: center;
+}
+.brk-logo-matrix {
+  height: 28px;
+  max-height: 28px;
+  max-width: 140px;
+  margin-bottom: 8px;
+}
+.matrix-table thead th .col-logo-wrap {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+.matrix-table thead th:first-child .col-logo-wrap { display: none; }
+.matrix-table thead th .col-name {
+  display: block;
+}
+.brk-logo-breakdown {
+  height: 30px;
+  max-width: 150px;
+}
+@media (max-width: 520px) {
+  .brk-logo-matrix { height: 22px; max-width: 100px; }
+  .brk-logo-breakdown { height: 24px; max-width: 120px; }
 }
