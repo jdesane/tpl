@@ -172,7 +172,7 @@
       "aliases": ["eXp"],
       "logo": "/assets/logos/exp.png",
       "color": "#6c63ff",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "cloud",
       "model_type": "Cloud",
@@ -182,15 +182,13 @@
       "source_url": "https://expworldholdings.com",
       "data_asof": "2026-04-23",
 
-      "_placeholder": "Verify all figures from expworldholdings.com or official eXp agent ICA before flipping to status=published. Figures below sourced from SAA editorial as starting point.",
-
       "plans": [
         {
           "plan_name": "Standard",
           "split_structure": "80/20",
           "annual_cap": 16000,
+          "per_txn_brokerage_fee": 85,
           "post_cap_per_txn_fee": 250,
-          "post_cap_per_txn_fee_threshold_gci": null,
           "per_txn_fee_applies_to": "post_cap_only_first_20",
           "flat_fee_per_txn": null,
           "monthly_fee": 85,
@@ -198,7 +196,7 @@
           "eo_insurance_annual": 750,
           "eo_note": "~$60/txn capped at $750/yr",
           "franchise_fee_pct": 0,
-          "notes": "After $16K cap: $250/txn for up to 20 post-cap txns, then $75 sponsor fee. New agents pay $175/mo tech fee for first 6 months."
+          "notes": "80/20 split capped at $16K. $85/mo cloud fee. $85/deal pre-cap ($25 broker review + $60 risk mgmt). Post-cap: $250/deal for up to 20 txns, then $75 sponsor fee. $149 startup fee not included."
         }
       ],
 
@@ -252,13 +250,33 @@
       "aliases": ["Real", "REAX"],
       "logo": "/assets/logos/real.png",
       "color": "#34d399",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "cloud",
       "founded": 2014,
       "public_ticker": "REAX",
       "source_url": "https://onereal.com",
-      "_placeholder": "VERIFY all figures from onereal.com before publishing."
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "85/15",
+          "annual_cap": 12000,
+          "per_txn_brokerage_fee": 265,
+          "post_cap_per_txn_fee": 200,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 0,
+          "annual_fee": 750,
+          "annual_fee_note": "Billed across first 3 closings of the year",
+          "eo_insurance_annual": 0,
+          "eo_note": "Included in $40/deal E&O bundled into $265 pre-cap fee",
+          "franchise_fee_pct": 0,
+          "notes": "85/15 capped at $12K, no monthly fee. $265/deal pre-cap ($225 tx + $40 E&O). Post-cap: $200/deal. $750 annual fee billed across first 3 closings."
+        }
+      ],
+
+      "equity": { "offered": true, "publicly_traded": true, "ticker": "REAX", "stock_type": "Publicly traded common stock (Nasdaq)", "liquidity": "Public market" }
     },
 
     {
@@ -268,24 +286,28 @@
       "aliases": ["KW", "Keller"],
       "logo": "/assets/logos/kw.png",
       "color": "#f87171",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "franchise",
       "founded": 1983,
       "public_ticker": null,
       "agent_count_note": "~180,000 agents",
       "source_url": "https://kw.com",
-      "_placeholder": "VERIFY market-center-specific figures. 70/30 base, 6% royalty capped at $3,000/yr, cap varies $18K-$23K by market.",
+      "data_asof": "2026-04-23",
 
       "plans": [
         {
           "plan_name": "Standard",
           "split_structure": "70/30",
-          "annual_cap": null,
-          "cap_note": "Varies by market center, typically $18K-$23K",
+          "annual_cap": 21000,
+          "cap_note": "Varies by market center, typically $15K-$42K; $21K common midpoint",
+          "per_txn_brokerage_fee": 175,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 85,
+          "annual_fee": 0,
           "franchise_fee_pct": 6,
           "franchise_fee_cap_annual": 3000,
-          "notes": "6% franchise royalty on GCI capped at $3,000/yr."
+          "notes": "70/30 split with 6% franchise royalty capped at $3K/yr. Market center caps typically $15K-$42K - $21K is a common midpoint. Edit for your specific office."
         }
       ],
 
@@ -317,27 +339,27 @@
       "aliases": ["Compass"],
       "logo": "/assets/logos/compass.png",
       "color": "#60a5fa",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "luxury",
       "founded": 2012,
       "public_ticker": "COMP",
       "agent_count_note": "~30,000 agents",
       "source_url": "https://compass.com",
-      "_placeholder": "VERIFY - splits are individually negotiated 60/40 to 90/10.",
+      "data_asof": "2026-04-23",
 
       "plans": [
         {
           "plan_name": "Negotiated",
-          "split_structure": "75/25",
-          "split_range": { "min": 60, "max": 90, "typical": 75 },
+          "split_structure": "80/20",
+          "split_range": { "min": 60, "max": 90, "typical": 80 },
           "annual_cap": null,
-          "cap_note": "Sometimes negotiable",
+          "cap_note": "No standard cap - highly variable by market and production",
           "monthly_fee": 145,
+          "annual_fee": 0,
           "eo_insurance_annual": 2000,
-          "marketing_fee_pct": 2,
-          "marketing_fee_pct_max": 4,
-          "notes": "Splits individually negotiated."
+          "marketing_fee_pct": 4,
+          "notes": "Splits negotiated individually, typically 70/30-85/15. 4% marketing fee is common. No standard cap."
         }
       ],
 
@@ -356,12 +378,29 @@
       "short_name": "Fathom",
       "logo": "/assets/logos/fathom.svg",
       "color": "#22d3ee",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "cloud",
       "founded": 2010,
       "public_ticker": "FTHM",
-      "_placeholder": "VERIFY from fathomrealty.com. ~$465/txn flat fee model."
+      "source_url": "https://fathomrealty.com",
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "Fathom Max",
+          "split_structure": "100/0",
+          "annual_cap": 9000,
+          "flat_fee_per_txn": 465,
+          "post_cap_per_txn_fee": 165,
+          "monthly_fee": 0,
+          "annual_fee": 700,
+          "eo_insurance_annual": 0,
+          "eo_note": "Included in $465 pre-cap fee",
+          "franchise_fee_pct": 0,
+          "notes": "100% commission. $465 flat per deal capped at $9K/yr (~20 deals). Post-cap: $165/deal. $700 annual fee + $35 E&O/deal. No monthly fees."
+        }
+      ]
     },
 
     {
@@ -371,13 +410,31 @@
       "aliases": ["Epique"],
       "logo": "/assets/logos/epique.png",
       "color": "#a78bfa",
-      "status": "draft",
+      "status": "published",
       "tier": 2,
       "category": "cloud",
       "founded": 2019,
       "public_ticker": null,
       "source_url": "https://epiquerealty.com",
-      "_placeholder": "VERIFY from epiquerealty.com. Cloud model, flat-fee + monthly structure. See /vs/epique-realty.html for existing comparison page."
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "85/15",
+          "annual_cap": 15000,
+          "cap_note": "Declining cap - $15K year 1, drops $1K/yr for 5 years to $10K at 5+ years",
+          "monthly_fee": 149,
+          "monthly_fee_note": "$99/mo if paid annually",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "per_txn_pct_of_sale": 0.1,
+          "per_txn_pct_cap_per_deal": 500,
+          "per_txn_pct_cap_reduced": 250,
+          "notes": "85/15 split with declining cap. $149/mo tech fee ($99/mo if annual). Per-deal fee is 0.1% of gross sale price, capped at $500/deal; drops to $250/deal after $5K paid in tx fees."
+        }
+      ]
     },
 
     {
@@ -386,12 +443,30 @@
       "short_name": "RE/MAX",
       "logo": "/assets/logos/remax.png",
       "color": "#f87171",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "franchise",
       "founded": 1973,
       "public_ticker": "RMAX",
-      "_placeholder": "Traditional 95/5 with high desk fees ($1,000-$2,500/mo varies by market). VERIFY."
+      "source_url": "https://remax.com",
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "95/5",
+          "split_structure": "95/5",
+          "annual_cap": 23000,
+          "cap_note": "Cap applies on 80/20 plans; 95/5 plans have higher desk fees",
+          "per_txn_brokerage_fee": 200,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 1000,
+          "monthly_fee_note": "Typical range $500-$2,000/mo varies by office; $1,000/mo used as midpoint",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "notes": "95/5 split with monthly desk fees typically $500-$2,000/mo. $23K cap applies on 80/20 plans. Edit desk fee to your actual office."
+        }
+      ]
     },
 
     {
@@ -400,10 +475,28 @@
       "short_name": "CB",
       "logo": "/assets/logos/cb.svg",
       "color": "#60a5fa",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "franchise",
-      "_placeholder": "Anywhere Real Estate owned. VERIFY splits, fees, caps."
+      "founded": 1906,
+      "source_url": "https://coldwellbanker.com",
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "60/40",
+          "annual_cap": null,
+          "cap_note": "No universal cap - varies 50/50 to 90/10 by office",
+          "per_txn_brokerage_fee": 200,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 110,
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 6,
+          "notes": "Anywhere Real Estate-owned. Splits range 50/50-90/10 with no universal cap. 6% franchise fee on GCI. ~$110/mo desk fee. Edit to your actual agreement."
+        }
+      ]
     },
 
     {
@@ -412,10 +505,29 @@
       "short_name": "C21",
       "logo": "/assets/logos/c21.png",
       "color": "#fbbf24",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "franchise",
-      "_placeholder": "Anywhere Real Estate owned. VERIFY."
+      "founded": 1971,
+      "source_url": "https://century21.com",
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "70/30",
+          "annual_cap": 15000,
+          "cap_note": "Typically $15K-$20K depending on office",
+          "per_txn_brokerage_fee": 250,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 200,
+          "monthly_fee_note": "Range $100-$350/mo varies by office",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 8,
+          "notes": "Anywhere Real Estate-owned. Splits range 70/30-90/10 with caps typically $15K-$20K. 8% franchise/royalty fee applies on most transactions. Edit to your office terms."
+        }
+      ]
     },
 
     {
@@ -510,10 +622,27 @@
       "short_name": "ROG",
       "logo": "/assets/logos/rog.svg",
       "color": "#fbbf24",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "hybrid",
-      "_placeholder": "100% commission model with fees. VERIFY."
+      "source_url": "https://realtyonegroup.com",
+      "data_asof": "2026-04-23",
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "100/0",
+          "annual_cap": null,
+          "cap_note": "100% commission model - no split cap",
+          "per_txn_brokerage_fee": 700,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 150,
+          "annual_fee": 650,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "notes": "100% commission model with $700/deal transaction fee, $150/mo desk fee, and $650 annual fee. No split to the brokerage."
+        }
+      ]
     },
 
     {
