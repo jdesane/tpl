@@ -688,7 +688,10 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
       state.all = json.brokerages || [];
-      state.published = state.all.filter(b => b.status === 'published');
+      const previewMode = /[?&]preview=1\b/.test(window.location.search);
+      state.published = previewMode
+        ? state.all.slice()
+        : state.all.filter(b => b.status === 'published');
     } catch (err) {
       console.error('Failed to load brokerages.json', err);
       $('selector-list').innerHTML =
