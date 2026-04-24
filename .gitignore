@@ -1,0 +1,21 @@
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Claude local state
+.claude/worktrees/
+.claude/settings.local.json
+
+# Local-only editor / OS
+.vscode/
+.idea/
+*.swp
