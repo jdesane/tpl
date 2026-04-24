@@ -26,6 +26,7 @@
       "source_url": "https://lpt.com",
       "data_asof": "2026-04-23",
       "data_valid_until": "2026-04-30",
+      "citations": ["Official lpt.com flyer (valid 4/30/26)", "2025 RealTrends Top 10 Brokerage", "2025 Deloitte Fast 500"],
 
       "plans": [
         {
@@ -181,6 +182,7 @@
       "agent_count_note": "90,000+ agents worldwide (per SAA)",
       "source_url": "https://expworldholdings.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "EXPI SEC 10-K 2025", "eXp official agent compensation plan"],
 
       "plans": [
         {
@@ -257,6 +259,7 @@
       "public_ticker": "REAX",
       "source_url": "https://onereal.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "REAX SEC filings 2025", "Real Brokerage official plan docs"],
 
       "plans": [
         {
@@ -328,6 +331,7 @@
       "agent_count_note": "~180,000 agents",
       "source_url": "https://kw.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "RealTrends Verified 2025", "KW market center disclosures"],
 
       "plans": [
         {
@@ -388,6 +392,7 @@
       "agent_count_note": "~30,000 agents",
       "source_url": "https://compass.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "COMP SEC 10-K 2025", "RealTrends Verified 2025"],
 
       "plans": [
         {
@@ -444,6 +449,7 @@
       "public_ticker": "FTHM",
       "source_url": "https://fathomrealty.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "FTHM SEC filings 2025", "Fathom official agent plan"],
 
       "plans": [
         {
@@ -507,6 +513,7 @@
       "public_ticker": null,
       "source_url": "https://epiquerealty.com",
       "data_asof": "2026-04-23",
+      "citations": ["Epique official plan pages 2026", "AgentAdvice Epique reviews 2026"],
 
       "plans": [
         {
@@ -571,6 +578,7 @@
       "public_ticker": "RMAX",
       "source_url": "https://remax.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "RMAX SEC 10-K 2025", "RealTrends Verified 2025"],
 
       "plans": [
         {
@@ -627,6 +635,7 @@
       "founded": 1906,
       "source_url": "https://coldwellbanker.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "HOUS SEC 10-K 2025 (Anywhere Real Estate)", "RealTrends Verified 2025"],
 
       "plans": [
         {
@@ -682,6 +691,7 @@
       "founded": 1971,
       "source_url": "https://century21.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "HOUS SEC 10-K 2025 (Anywhere Real Estate)", "RealTrends Verified 2025"],
 
       "plans": [
         {
@@ -1076,6 +1086,7 @@
       "category": "hybrid",
       "source_url": "https://realtyonegroup.com",
       "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "Realty ONE Group franchise disclosure"],
 
       "plans": [
         {
