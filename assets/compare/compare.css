@@ -591,6 +591,37 @@ nav {
 .breakdown-note.gold {
   background: var(--gold-bg); border-left-color: var(--gold); color: var(--text);
 }
+.breakdown-footnote {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255,255,255,0.08);
+  font-family: 'DM Mono', 'SF Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.6;
+}
+.breakdown-footnote a {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.breakdown-footnote a:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.data-stale-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: 3px;
+}
 .breakdown-card.pending .breakdown-body {
   padding: 28px 0; color: var(--amber); font-size: 13px; line-height: 1.6;
 }

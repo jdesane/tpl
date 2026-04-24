@@ -159,6 +159,28 @@
     return '<img class="' + cls + '" src="' + escapeHtml(brokerage.logo) + '" alt="' + alt + '" loading="lazy" onerror="this.style.display=\'none\'">';
   }
 
+  function sourceFootnoteHtml(b) {
+    if (!b) return '';
+    const parts = [];
+    if (b.source_url) {
+      let host = b.source_url;
+      try { host = new URL(b.source_url).hostname.replace(/^www\./, ''); } catch (e) {}
+      parts.push('Source: <a href="' + escapeHtml(b.source_url) + '" target="_blank" rel="noopener">' + escapeHtml(host) + '</a>');
+    }
+    if (b.data_asof) {
+      const asof = new Date(b.data_asof);
+      const ageDays = (Date.now() - asof.getTime()) / 86400000;
+      const asofStr = asof.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      let stale = '';
+      if (ageDays > 90) {
+        stale = '<span class="data-stale-badge" title="Data is over 90 days old - may be out of date">Data &gt;90d old</span>';
+      }
+      parts.push('Verified ' + escapeHtml(asofStr) + stale);
+    }
+    if (!parts.length) return '';
+    return '<div class="breakdown-footnote">' + parts.join(' &middot; ') + '</div>';
+  }
+
   /* ────────── SELECTION ────────── */
   function addBrokerage(slug) {
     if (state.selected.length >= MAX_SELECT) return;
@@ -492,7 +514,8 @@
           : '') +
         (isLpt && plan.plan_name.toLowerCase().includes('business builder')
           ? '<div class="breakdown-note">BB agents can recruit and build a downline. HybridShare earnings activate on upgrade to Brokerage Partner; the downline tree carries over.</div>'
-          : '');
+          : '') +
+        sourceFootnoteHtml(b);
 
       grid.appendChild(card);
     });

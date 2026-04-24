@@ -276,7 +276,41 @@
         }
       ],
 
-      "equity": { "offered": true, "publicly_traded": true, "ticker": "REAX", "stock_type": "Publicly traded common stock (Nasdaq)", "liquidity": "Public market" }
+      "revshare": {
+        "offered": true,
+        "program_name": "Revenue Share",
+        "tiers": 5,
+        "willable": true,
+        "notes": "5-tier structure. Pays on capped company dollar of downline agents."
+      },
+
+      "equity": {
+        "offered": true,
+        "publicly_traded": true,
+        "ticker": "REAX",
+        "stock_type": "Publicly traded common stock (Nasdaq)",
+        "tiers": [
+          "Elite Agent Stock Purchase Program: purchase REAX at discount",
+          "Cap Stock Award: rebate of cap as REAX stock for qualifying agents"
+        ],
+        "liquidity": "Public market - sellable any trading day"
+      },
+
+      "technology": {
+        "included_tools": ["Real CRM", "Real App (mobile)", "Real Wallet", "reZEN transaction platform"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Revshare University", "Real Academy"]
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "Cloud-first, mobile-app-centric"
+      }
     },
 
     {
@@ -315,20 +349,27 @@
         "offered": true,
         "program_name": "Profit Share",
         "tiers": 7,
+        "pool_pct_of_company_dollar": null,
         "willable": true,
-        "notes": "Profit share from market center profits, not company dollar."
+        "notes": "Profit Share pays from market center profit distribution, not company dollar. Structure varies by market center performance."
       },
 
       "equity": { "offered": false, "publicly_traded": false },
 
       "technology": {
-        "included_tools": ["Command CRM", "KW App"],
+        "included_tools": ["Command CRM", "KW App", "kwConnect", "Designs"],
         "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Ignite (new agents)", "BOLD", "KW MAPS Coaching", "KW University"]
       },
 
       "culture": {
         "office_based": true,
-        "community_style": "Market center, in-office"
+        "community_style": "Market center, in-office, weekly team meetings"
       }
     },
 
@@ -364,11 +405,29 @@
       ],
 
       "revshare": { "offered": false },
-      "equity": { "offered": false, "publicly_traded": true, "ticker": "COMP" },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "COMP",
+        "notes": "COMP trades on NYSE but no agent equity program."
+      },
 
       "technology": {
-        "included_tools": ["Compass platform", "Compass Collections"],
-        "crm_included": true
+        "included_tools": ["Compass platform", "Compass Collections", "Compass CRM", "Compass Concierge"],
+        "crm_included": true,
+        "crm_note": "Proprietary end-to-end tech stack - a core Compass differentiator."
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Compass University"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Urban/luxury offices, design-forward, agent recruiting-heavy"
       }
     },
 
@@ -400,7 +459,38 @@
           "franchise_fee_pct": 0,
           "notes": "100% commission. $465 flat per deal capped at $9K/yr (~20 deals). Post-cap: $165/deal. $700 annual fee + $35 E&O/deal. No monthly fees."
         }
-      ]
+      ],
+
+      "revshare": {
+        "offered": true,
+        "program_name": "Revenue Share",
+        "tiers": 5,
+        "notes": "5-tier revshare. Program restructured in 2024."
+      },
+
+      "equity": {
+        "offered": true,
+        "publicly_traded": true,
+        "ticker": "FTHM",
+        "stock_type": "Publicly traded common stock (Nasdaq)",
+        "liquidity": "Public market"
+      },
+
+      "technology": {
+        "included_tools": ["IntelliAgent CRM", "Fathom University LMS"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Fathom University"]
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "Cloud-first, faith-based roots"
+      }
     },
 
     {
@@ -434,7 +524,38 @@
           "per_txn_pct_cap_reduced": 250,
           "notes": "85/15 split with declining cap. $149/mo tech fee ($99/mo if annual). Per-deal fee is 0.1% of gross sale price, capped at $500/deal; drops to $250/deal after $5K paid in tx fees."
         }
-      ]
+      ],
+
+      "revshare": {
+        "offered": true,
+        "program_name": "Revenue Share",
+        "tiers": 10,
+        "willable": true,
+        "notes": "10-tier revshare structure."
+      },
+
+      "equity": {
+        "offered": true,
+        "publicly_traded": false,
+        "stock_type": "Private equity / stock awards",
+        "liquidity": "Private - no open market"
+      },
+
+      "technology": {
+        "included_tools": ["AI Listing Description", "AI Headshots", "AI Logos", "AI Open House Sign", "ChatGPT Access", "Epique CRM"],
+        "crm_included": true,
+        "crm_note": "AI-first tech stack is Epique's primary differentiator."
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "Cloud, AI-forward, growth-stage"
+      }
     },
 
     {
@@ -466,7 +587,32 @@
           "franchise_fee_pct": 0,
           "notes": "95/5 split with monthly desk fees typically $500-$2,000/mo. $23K cap applies on 80/20 plans. Edit desk fee to your actual office."
         }
-      ]
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "RMAX",
+        "notes": "RMAX trades on NYSE but no agent equity program."
+      },
+
+      "technology": {
+        "included_tools": ["MAX/Center", "LeadStreet", "RE/MAX Hustle"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": false,
+        "notable_programs": ["MAXTech", "Momentum", "Balanced Growth"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Independent-contractor franchise, office-based, experienced-agent focused"
+      }
     },
 
     {
@@ -496,7 +642,32 @@
           "franchise_fee_pct": 6,
           "notes": "Anywhere Real Estate-owned. Splits range 50/50-90/10 with no universal cap. 6% franchise fee on GCI. ~$110/mo desk fee. Edit to your actual agreement."
         }
-      ]
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "HOUS",
+        "notes": "Parent Anywhere Real Estate (HOUS) trades on NYSE but no agent equity program."
+      },
+
+      "technology": {
+        "included_tools": ["CBx marketing platform", "Moxi Works suite", "Listing Concierge"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Coldwell Banker University", "Concierge"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Traditional franchise, office-based, luxury-tier positioning"
+      }
     },
 
     {
@@ -527,7 +698,32 @@
           "franchise_fee_pct": 8,
           "notes": "Anywhere Real Estate-owned. Splits range 70/30-90/10 with caps typically $15K-$20K. 8% franchise/royalty fee applies on most transactions. Edit to your office terms."
         }
-      ]
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "HOUS",
+        "notes": "Parent Anywhere Real Estate (HOUS) trades on NYSE but no agent equity program."
+      },
+
+      "technology": {
+        "included_tools": ["Moxi Works suite", "C21 branded marketing", "21Online"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": false,
+        "notable_programs": ["Century 21 University"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Traditional franchise, office-based, global brand positioning"
+      }
     },
 
     {
@@ -642,7 +838,31 @@
           "franchise_fee_pct": 0,
           "notes": "100% commission model with $700/deal transaction fee, $150/mo desk fee, and $650 annual fee. No split to the brokerage."
         }
-      ]
+      ],
+
+      "revshare": {
+        "offered": true,
+        "program_name": "UNLIMITED",
+        "notes": "Revshare paid from per-transaction fees paid by downline agents."
+      },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["ONE Platform", "zipForm", "ONE App"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": false,
+        "notable_programs": ["ONE University"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Franchise, 'BE the difference' brand ethos, office-based"
+      }
     },
 
     {
