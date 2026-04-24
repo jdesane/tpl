@@ -622,6 +622,25 @@ nav {
   border: 1px solid rgba(251,191,36,0.3);
   border-radius: 3px;
 }
+.breakdown-citations {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.citation-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: 'DM Mono', 'SF Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  background: rgba(108,99,255,0.08);
+  border: 1px solid rgba(108,99,255,0.25);
+  border-radius: 3px;
+  white-space: nowrap;
+}
 .breakdown-card.pending .breakdown-body {
   padding: 28px 0; color: var(--amber); font-size: 13px; line-height: 1.6;
 }

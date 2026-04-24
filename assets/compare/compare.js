@@ -177,8 +177,15 @@
       }
       parts.push('Verified ' + escapeHtml(asofStr) + stale);
     }
-    if (!parts.length) return '';
-    return '<div class="breakdown-footnote">' + parts.join(' &middot; ') + '</div>';
+    let citationsHtml = '';
+    if (Array.isArray(b.citations) && b.citations.length) {
+      citationsHtml = '<div class="breakdown-citations">' +
+        b.citations.map(c => '<span class="citation-badge">' + escapeHtml(c) + '</span>').join('') +
+        '</div>';
+    }
+    if (!parts.length && !citationsHtml) return '';
+    const line = parts.length ? '<div>' + parts.join(' &middot; ') + '</div>' : '';
+    return '<div class="breakdown-footnote">' + line + citationsHtml + '</div>';
   }
 
   /* ────────── SELECTION ────────── */

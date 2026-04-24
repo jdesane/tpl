@@ -732,10 +732,60 @@
       "short_name": "BHHS",
       "logo": "/assets/logos/bhhs.webp",
       "color": "#6c63ff",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "franchise",
-      "_placeholder": "HomeServices of America owned. VERIFY."
+      "founded": 2013,
+      "public_ticker": "BRK.A",
+      "agent_count_note": "~50,000 agents; owned by HomeServices of America (a Berkshire Hathaway subsidiary)",
+      "source_url": "https://bhhsrealestate.com",
+      "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "Clever commission report 2026"],
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "60/40",
+          "split_range": { "min": 60, "max": 90, "typical": 70 },
+          "annual_cap": null,
+          "cap_note": "No universal cap - splits improve with production (60/40 start, up to 80/20 or 90/10 for top producers)",
+          "per_txn_brokerage_fee": 450,
+          "per_txn_fee_note": "Typical range $295-$625/deal; $450 used as midpoint",
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 100,
+          "monthly_fee_note": "Desk/tech fees vary by office",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 6,
+          "marketing_fee_pct": 1.5,
+          "notes": "Franchise model. 6-7% royalty on GCI + 1.5% marketing fee deducted before agent split. Transaction fees $295-$625/deal vary by office. Starting split typically 60/40, improves with production. Edit to your specific BHHS office terms."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "BRK.A",
+        "notes": "Parent Berkshire Hathaway trades on NYSE but no agent equity program."
+      },
+
+      "technology": {
+        "included_tools": ["REsource CRM", "BHHSRE Connect", "Listing Concierge", "Moxi Works suite"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["BHHS REsource University", "BHHS Learning Center"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Traditional franchise, office-based, experienced-agent and luxury positioning"
+      }
     },
 
     {
@@ -744,10 +794,58 @@
       "short_name": "Sotheby's",
       "logo": "/assets/logos/sothebys.svg",
       "color": "#f0c040",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "luxury",
-      "_placeholder": "Luxury franchise. Anywhere Real Estate owned. ~6-8% royalty. VERIFY."
+      "founded": 1976,
+      "public_ticker": "HOUS",
+      "agent_count_note": "~26,000 agents in 85+ countries; owned by Anywhere Real Estate",
+      "source_url": "https://sothebysrealty.com",
+      "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "Pass and Earn commission data 2026"],
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "70/30",
+          "split_range": { "min": 60, "max": 90, "typical": 70 },
+          "annual_cap": null,
+          "cap_note": "No universal cap; combined 8% royalty/advertising fee has no cap either",
+          "per_txn_brokerage_fee": null,
+          "monthly_fee": 200,
+          "monthly_fee_note": "Varies widely by office/market; $200/mo typical midpoint",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 6,
+          "marketing_fee_pct": 2,
+          "notes": "Luxury franchise. 8% combined fee (6% royalty + 2% advertising) applied on every transaction with no cap. Splits negotiated individually, typically 70/30-90/10 based on production. High producers absorb significant franchise cost due to no-cap structure."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "HOUS",
+        "notes": "Parent Anywhere Real Estate (HOUS) trades on NYSE but no agent equity program."
+      },
+
+      "technology": {
+        "included_tools": ["SothebysRealty.com global platform", "Moxi Works suite", "Luxury Portfolio marketing"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Sotheby's International Realty University"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Luxury-only positioning, global brand, office-based"
+      }
     },
 
     {
@@ -768,11 +866,65 @@
       "short_name": "Elliman",
       "logo": "/assets/logos/elliman.svg",
       "color": "#34d399",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "luxury",
+      "founded": 1911,
       "public_ticker": "DOUG",
-      "_placeholder": "Primarily NY/FL/CA. VERIFY."
+      "agent_count_note": "~5,800 agents; concentrated in NY, FL, CA, CO, TX",
+      "source_url": "https://elliman.com",
+      "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "The Real Deal industry reporting"],
+
+      "plans": [
+        {
+          "plan_name": "Graduated",
+          "split_structure": "55/45",
+          "split_range": { "min": 55, "max": 100, "typical": 70 },
+          "annual_cap": null,
+          "cap_note": "Production-tiered splits. Reaches 100% after capping at top tier. No dollar cap - thresholds are GCI-based.",
+          "per_txn_brokerage_fee": null,
+          "monthly_fee": 150,
+          "monthly_fee_note": "Varies by office/market",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 6,
+          "marketing_fee_pct": null,
+          "split_tiers": [
+            { "min_gci": 0, "split_pct": 55 },
+            { "min_gci": 135000, "split_pct": 60 },
+            { "min_gci": 155000, "split_pct": 65 },
+            { "min_gci": 210000, "split_pct": 70 },
+            { "min_gci": 340000, "split_pct": 80 }
+          ],
+          "notes": "Graduated split model: 55% at $0, 60% at $135K GCI, 65% at $155K, 70% at $210K, 80% at $340K, reaching 100% at top tier. 6% franchise/royalty fee. Concentrated in NY/FL/CA luxury markets."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": false,
+        "publicly_traded": true,
+        "ticker": "DOUG",
+        "notes": "Douglas Elliman (DOUG) trades on NYSE but no standard agent equity program."
+      },
+
+      "technology": {
+        "included_tools": ["Elliman CRM", "MyElliman platform", "Knight Frank global network integration"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "notable_programs": ["Elliman Education"]
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Luxury urban boutique, office-based, NYC-headquartered"
+      }
     },
 
     {
@@ -781,10 +933,52 @@
       "short_name": "Agency",
       "logo": "/assets/logos/agency.svg",
       "color": "#e8e8f0",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "luxury",
-      "_placeholder": "Luxury boutique. VERIFY."
+      "founded": 2011,
+      "public_ticker": null,
+      "agent_count_note": "~3,000 agents; founded by Mauricio Umansky; luxury boutique franchise",
+      "source_url": "https://theagencyre.com",
+      "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "Smart Agent Alliance 2026"],
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "70/30",
+          "split_range": { "min": 70, "max": 90, "typical": 80 },
+          "annual_cap": null,
+          "cap_note": "No universal cap; 6% franchise fee applies on every transaction",
+          "per_txn_brokerage_fee": null,
+          "monthly_fee": 200,
+          "monthly_fee_note": "Varies by office",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 6,
+          "marketing_fee_pct": null,
+          "notes": "Luxury boutique franchise. Splits range 70/30-90/10 based on production. 6% franchise fee on every transaction with no cap. Concentrated in LA, Beverly Hills, Miami, NYC. Concerns reported regarding marketing charges deducted from agent share - get detailed fee breakdown in writing."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["The Agency CRM", "MyAgency platform", "Proprietary marketing tools"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Luxury boutique, office-based, celebrity-adjacent (Buying Beverly Hills)"
+      }
     },
 
     {
@@ -793,11 +987,70 @@
       "short_name": "Redfin",
       "logo": "/assets/logos/redfin.svg",
       "color": "#f87171",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "hybrid",
+      "founded": 2004,
       "public_ticker": "RDFN",
-      "_placeholder": "Salaried + bonus model (unique). Has restructured. VERIFY current structure."
+      "agent_count_note": "~2,200 W-2 agents (Traditional + Redfin Next)",
+      "source_url": "https://redfin.com/careers/real-estate-agent",
+      "data_asof": "2026-04-23",
+      "citations": ["Redfin investor disclosures", "Redfin careers site 2026"],
+
+      "plans": [
+        {
+          "plan_name": "Traditional (W-2 Employee)",
+          "split_structure": "Salary + bonus",
+          "annual_cap": null,
+          "cap_note": "Not applicable - Redfin agents are W-2 employees, not independent contractors",
+          "monthly_fee": 0,
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "per_txn_brokerage_fee": 0,
+          "w2_employee": true,
+          "base_salary_note": "Avg agent total comp ~$102,389 including bonuses. Year 1: base salary covers ~30% of comp, transaction bonuses ~70%.",
+          "notes": "Redfin is a W-2 employer, not a traditional commission brokerage. Agents receive base salary + transaction bonuses. Redfin provides leads, admin support, benefits (health/401k/equity). No agent-paid splits, desk fees, or transaction fees."
+        },
+        {
+          "plan_name": "Redfin Next",
+          "split_structure": "70/30 own leads, 40/60 Redfin leads",
+          "annual_cap": null,
+          "cap_note": "Contractor model - percentage split, no cap",
+          "monthly_fee": 0,
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "w2_employee": false,
+          "notes": "Redfin Next is a 1099 contractor program. Agents keep 70% of commission on self-generated business and 40% on Redfin-referred leads. Redfin covers ~$25K/yr in agent expenses (MLS, E&O, marketing, transaction coordinator)."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": {
+        "offered": true,
+        "publicly_traded": true,
+        "ticker": "RDFN",
+        "stock_type": "RSUs + ESPP for W-2 employees",
+        "liquidity": "Public market - sellable after vest/purchase"
+      },
+
+      "technology": {
+        "included_tools": ["Redfin proprietary CRM", "Redfin.com lead platform", "Tour scheduling system"],
+        "crm_included": true,
+        "crm_note": "Redfin.com consumer traffic is the primary lead source - a structural differentiator."
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true,
+        "support_hours": "Business hours + dedicated support team"
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "W-2 employee model, tech-company culture, employee benefits"
+      }
     },
 
     {
@@ -871,10 +1124,55 @@
       "short_name": "United",
       "logo": "/assets/logos/united.svg",
       "color": "#60a5fa",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "hybrid",
-      "_placeholder": "100% commission / flat fee model. VERIFY."
+      "founded": 2011,
+      "public_ticker": null,
+      "agent_count_note": "~19,000 agents; ranked a Top-5 residential brokerage by transaction sides",
+      "source_url": "https://unitedrealestate.com",
+      "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "RealTrends Verified 2025"],
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "100/0",
+          "annual_cap": null,
+          "cap_note": "100% commission model - flat transaction fee, no split cap",
+          "per_txn_brokerage_fee": 495,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 75,
+          "monthly_fee_note": "Fees vary by office; $75/mo typical midpoint",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "notes": "United advertises 96% GCI retention on average. 100% commission model with flat transaction fee and monthly tech/desk fee that varies by office. Verify with your specific United office."
+        }
+      ],
+
+      "revshare": {
+        "offered": true,
+        "program_name": "Bucks",
+        "notes": "United Real Estate 'Bucks' revenue share program pays recruiters a share of transaction fees from sponsored agents."
+      },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["Bullseye CRM", "United platform", "Lead generation tools"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "100% commission, hybrid office model, production-focused"
+      }
     },
 
     {
@@ -883,10 +1181,51 @@
       "short_name": "HomeSmart",
       "logo": "/assets/logos/homesmart.svg",
       "color": "#22d3ee",
-      "status": "draft",
+      "status": "published",
       "tier": 1,
       "category": "hybrid",
-      "_placeholder": "100% commission model with monthly fee. VERIFY."
+      "founded": 2000,
+      "public_ticker": null,
+      "agent_count_note": "~23,000 agents across 180+ offices",
+      "source_url": "https://homesmart.com",
+      "data_asof": "2026-04-23",
+      "citations": ["Real Estate Almanac 2026", "HomeSmart franchise disclosure"],
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "100/0",
+          "annual_cap": null,
+          "cap_note": "100% commission model - no split cap",
+          "per_txn_brokerage_fee": 399,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 39,
+          "monthly_fee_note": "Varies by branch: $39-$149/mo depending on office",
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "notes": "100% commission model. $399-$495/deal transaction fee (varies by branch). $39-$149/mo desk fee (varies by branch). Branch-dependent fee structure - Chicago office publicly discloses $39/mo + $495/txn. Verify with your specific office."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["RealSmart Agent", "HomeSmart CRM", "Transaction management platform"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": false
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "100% commission franchise, office-based, volume-focused"
+      }
     },
 
     {
@@ -899,6 +1238,130 @@
       "tier": 1,
       "category": "franchise",
       "_placeholder": "Traditional franchise. VERIFY."
+    },
+
+    {
+      "slug": "samson-properties",
+      "name": "Samson Properties",
+      "short_name": "Samson",
+      "logo": "/assets/logos/samson.svg",
+      "color": "#f0c040",
+      "status": "published",
+      "tier": 2,
+      "category": "independent",
+      "founded": 2002,
+      "public_ticker": null,
+      "agent_count_note": "~5,000 agents; largest independent brokerage in the DMV region (DC/MD/VA)",
+      "source_url": "https://samsonproperties.net",
+      "data_asof": "2026-04-23",
+      "citations": ["Samson Properties public career pages 2026"],
+
+      "plans": [
+        {
+          "plan_name": "Standard",
+          "split_structure": "100/0",
+          "annual_cap": 3960,
+          "cap_note": "Cap structured as 8 sales or $3M volume - reach Cardinal Club and go to $0/txn",
+          "per_txn_brokerage_fee": 495,
+          "per_txn_fee_applies_to": "first_8_sales_or_3m_volume",
+          "post_cap_per_txn_fee": 0,
+          "monthly_fee": 0,
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "notes": "100% commission model. $495/transaction until Cardinal Club qualification (8 closed sales OR $3M in volume annually). Post-Cardinal Club: $0/transaction. No monthly fees, no desk fees. DMV-regional (DC/MD/VA/WV)."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["Samson CRM", "BrokerMint transaction management", "Listing tools"],
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": true
+      },
+
+      "culture": {
+        "office_based": true,
+        "community_style": "Independent regional brokerage, office-based, production-focused"
+      }
+    },
+
+    {
+      "slug": "lokation",
+      "name": "LoKation Real Estate",
+      "short_name": "LoKation",
+      "logo": "/assets/logos/lokation.svg",
+      "color": "#34d399",
+      "status": "published",
+      "tier": 2,
+      "category": "independent",
+      "founded": 2007,
+      "public_ticker": null,
+      "agent_count_note": "~4,000 agents; FL-headquartered, now multi-state (FL/CO/GA/TN and more)",
+      "source_url": "https://lokationre.com",
+      "data_asof": "2026-04-23",
+      "citations": ["LoKation public plan pages 2026"],
+
+      "plans": [
+        {
+          "plan_name": "Silver (Flat Fee)",
+          "split_structure": "100/0",
+          "annual_cap": null,
+          "cap_note": "100% commission - no cap, flat per-txn structure",
+          "per_txn_brokerage_fee": 499,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 0,
+          "annual_fee": 99,
+          "annual_fee_note": "$99/yr platform fee",
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "referral_fee_pct": 20,
+          "referral_fee_cap": 499,
+          "compliance_fee_quarterly": 50,
+          "compliance_fee_note": "$50/qtr FL compliance fee (FL agents only)",
+          "notes": "Silver plan: 100% commission, $499/deal, $99/yr platform fee. 20% referral fee to company capped at $499 per referred deal. FL agents also pay $50/qtr compliance fee."
+        },
+        {
+          "plan_name": "Blue (Monthly)",
+          "split_structure": "100/0",
+          "annual_cap": null,
+          "cap_note": "100% commission - monthly fee model",
+          "per_txn_brokerage_fee": 99,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 99,
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "franchise_fee_pct": 0,
+          "notes": "Blue plan: 100% commission, $99/mo + $99/deal. Lower per-transaction cost for higher-volume agents. Break-even vs Silver at ~5-6 deals/yr."
+        }
+      ],
+
+      "revshare": { "offered": false },
+
+      "equity": { "offered": false, "publicly_traded": false },
+
+      "technology": {
+        "included_tools": ["LoKation CRM", "Transaction management", "LoKation Luxury add-on available"],
+        "optional_package": "Luxury Add-On: $125/mo for premium luxury marketing tools",
+        "crm_included": true
+      },
+
+      "training": {
+        "on_demand_library": true,
+        "mentorship_program": false
+      },
+
+      "culture": {
+        "office_based": false,
+        "community_style": "Flat-fee independent, multi-state, cost-conscious agent focus"
+      }
     }
   ]
 }
