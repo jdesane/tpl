@@ -788,10 +788,19 @@ nav {
   padding: 0 36px;
 }
 .matrix-table {
-  width: 100%; min-width: 640px;
+  width: 100%;
+  min-width: calc(220px + var(--col-count, 2) * 180px);
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
 }
+.matrix-table thead th:first-child,
+.matrix-table tbody td:first-child { width: 220px; }
+.matrix-table thead th:not(:first-child),
+.matrix-table tbody td:not(:first-child) {
+  width: calc((100% - 220px) / var(--col-count, 2));
+}
+.matrix-table thead th, .matrix-table tbody td { word-wrap: break-word; overflow-wrap: break-word; }
 .matrix-table thead th {
   background: var(--bg);
   color: var(--white);

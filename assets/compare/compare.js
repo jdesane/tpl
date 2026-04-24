@@ -640,6 +640,7 @@
     }).join('') + '</tbody>';
 
     table.innerHTML = headerHtml + bodyHtml;
+    table.style.setProperty('--col-count', cols.length);
   }
 
   /* ────────── RENDER: BREAKDOWN CARDS ────────── */
