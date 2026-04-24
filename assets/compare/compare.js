@@ -1191,6 +1191,34 @@
 
       writeUrlState();
       const shareUrl = window.location.origin + window.location.pathname + window.location.search;
+      const nameParts = name.split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      const selectionSlugs = state.selected.map(b => b.slug);
+      const leadTags = ['compare-tool', 'comparison-requested'].concat(
+        selectionSlugs.map(s => 'compared-' + s)
+      );
+      const leadPayload = {
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone,
+        source: 'compare_email_share',
+        stage: 'research',
+        tags: leadTags,
+        notes: 'Brokerage comparison: ' + selectionSlugs.join(', ') +
+               ' | GCI $' + state.gci + ' | Txns ' + state.txns +
+               ' | LPT plan ' + state.lptPlan + (state.lptPlus ? ' + Plus' : '') +
+               ' | Share URL: ' + shareUrl
+      };
+      try {
+        await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadPayload)
+        });
+      } catch (err) { /* non-blocking */ }
+
       const payload = {
         name, email, phone,
         source: 'compare_email_share',
@@ -1198,7 +1226,7 @@
         gci: state.gci,
         txns: state.txns,
         avg_gci_per_txn: state.avgGci,
-        selection: state.selected.map(b => b.slug),
+        selection: selectionSlugs,
         lpt_plan: state.lptPlan,
         lpt_plus: state.lptPlus,
         ts: new Date().toISOString()
