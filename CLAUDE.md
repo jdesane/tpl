@@ -211,6 +211,37 @@
 - Enrollments staggered over 19 days (2026-04-22 → 2026-05-10) at 6-7 leads/day to protect sender reputation
 - 124 enrollments inserted directly (current_step=0, status='active', enrolled_at = 10am ET + day_offset)
 
+## Phase 12 — Brokerage Comparator /compare ✅
+- **Phase A/B**: New unified comparator at `/compare` (compare.html + assets/compare/*) replacing the gated commission-calculator.html flow
+  - Source data in `data/brokerages.json` (20 published brokerages + LPT BP + LPT BB)
+  - Client-side calcTotalCost handles splits, caps, per-txn fees, franchise royalty, marketing fee, flat-fee-per-txn, post-cap-only-first-20 (eXp), LPT Plus optional addon
+  - URL-persisted state (brokerages, gci, txns, plan, plus, cat, growth) for shareable comparisons
+  - Optional price/rate/deals accordion derives GCI from sale price × rate × deals
+  - Opt-in "Email me this comparison" modal (name/email/phone) posts to Supabase via /api/leads
+  - Mission Control tracking POST to `https://mission.tplcollective.ai/api/tracking/calculator` via navigator.sendBeacon
+  - Soft-launch banner on old commission-calculator.html points to /compare
+  - Cross-promo sweep: fee-plans.html, join.html, vs/index.html CTAs all point to /compare
+- **Phase C**: Two wedge panels
+  - Cap Break-Even: per-brokerage cards showing cap, break-even point (GCI or deals), color-coded progress bar
+  - 3-Year Projection: growth slider (0-30%), year-by-year table with Δ vs LPT BP baseline
+- **Phase D**: State filter + persona quiz
+  - State dropdown in selector controls (FL, CA, TX, NY, AZ, VA, MD, DC, NC, SC); nationwide brokerages always show
+  - `markets` field added to every brokerages.json entry (most: ["nationwide"], samson: VA/MD/DC/WV, lokation: FL/NC/SC)
+  - 5-step persona quiz modal with progress bar; bump-based scoring across brokerage slugs; top 5 matches auto-selected on Apply
+- **Phase E**: Matchup generator → 9 new /vs/ pages
+  - `tools/matchup-generator/generate.py` reads brokerages.json, skips 10 hand-crafted pages, emits templated pages with nav, hero, verdict, structural comparison table (LPT BP | LPT BB | competitor), who-wins cards, 6-question FAQ, citations, CTA, JSON-LD Article + FAQPage schemas
+  - 9 new pages: fathom-realty, sothebys, douglas-elliman, the-agency, redfin, realty-one-group, united-real-estate, samson-properties, lokation
+  - vs/index.html updated with 9 new cards (20 total comparisons)
+  - sitemap.xml updated with 9 new /vs/ URLs + 4 new blog URLs
+- **Content**: 4 new SEO blog articles
+  - `/blog/cap-break-even-explained` — explains split-cap vs flat-fee break-even math, worked examples, per-brokerage break-even table
+  - `/blog/switching-brokerages-risk-checklist` — 12-item operational checklist (pending deals, referrals, MLS, sponsor vetting, tech stack)
+  - `/blog/fl-top-5-brokerages` — LPT/eXp/KW/Compass/LoKation structural comparison for Florida agents
+  - `/blog/cloud-brokerages-compared-2026` — LPT vs eXp vs REAL vs Fathom side-by-side economics + revenue share
+  - Generator: `tools/blog-generator/generate.py` uses shared template (nav, hero, verdict banner, TOC, article body, CTA block, footer, JSON-LD Article)
+  - blog.html index updated with 4 new Guide cards
+  - All blog content em-dash-free per Joe's rule
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)

@@ -2,17 +2,18 @@
   "_meta": {
     "schema_version": "1.1",
     "last_updated": "2026-04-23",
-    "data_sources_policy": "LPT figures are verified against the official lpt.com flyer (valid until 4/30/26) provided by Joe. Competitor figures may use publicly documented sources; cite source_url per brokerage. Unknown numeric fields must be null (renders as '—' in UI). Never fabricate.",
-    "per_txn_fee_model_note": "The $195 LPT per-txn fee is a brokerage fee charged on every transaction, regardless of whether the agent passes it through to the client at closing. For cost-comparison purposes against other brokerages, it must be counted as a real per-transaction brokerage cost. The pass-through mechanic is a cash-flow convenience between agent and client (default behavior), but does not change the fact that the brokerage charges $195 per deal. Calc: always include 195 × txns in the agent cost total.",
+    "data_sources_policy": "LPT figures are verified against the official lpt.com flyer (valid until 4/30/26) provided by Joe. Competitor figures may use publicly documented sources; cite source_url per brokerage. Unknown numeric fields must be null (renders as '\u2014' in UI). Never fabricate.",
+    "per_txn_fee_model_note": "The $195 LPT per-txn fee is a brokerage fee charged on every transaction, regardless of whether the agent passes it through to the client at closing. For cost-comparison purposes against other brokerages, it must be counted as a real per-transaction brokerage cost. The pass-through mechanic is a cash-flow convenience between agent and client (default behavior), but does not change the fact that the brokerage charges $195 per deal. Calc: always include 195 \u00d7 txns in the agent cost total.",
     "note_to_claude_code": "This file is the single source of truth. LPT entry is fully verified. Populate remaining brokerages using publicly documented sources. Each published entry must have data_asof, source_url, and status='published'. Draft entries stay hidden from the UI."
   },
-
   "brokerages": [
     {
       "slug": "lpt-realty",
       "name": "LPT Realty",
       "short_name": "LPT",
-      "aliases": ["LPT"],
+      "aliases": [
+        "LPT"
+      ],
       "logo": "/assets/logos/lpt.svg",
       "color": "#f0c040",
       "status": "published",
@@ -25,9 +26,15 @@
       "ceo": "Robert Palmer",
       "source_url": "https://lpt.com",
       "data_asof": "2026-04-23",
+      "markets": [
+        "nationwide"
+      ],
       "data_valid_until": "2026-04-30",
-      "citations": ["Official lpt.com flyer (valid 4/30/26)", "2025 RealTrends Top 10 Brokerage", "2025 Deloitte Fast 500"],
-
+      "citations": [
+        "Official lpt.com flyer (valid 4/30/26)",
+        "2025 RealTrends Top 10 Brokerage",
+        "2025 Deloitte Fast 500"
+      ],
       "plans": [
         {
           "plan_name": "Brokerage Partner (80/20)",
@@ -70,7 +77,6 @@
           "notes": "$500/txn until $5K cap (10 transactions). $195 per-txn brokerage fee applies to every transaction; default mechanic is pass-through to client. Business Builders CAN recruit and build a downline, but HybridShare earnings only activate after upgrading to Brokerage Partner. Downline built as BB carries over on upgrade."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "HybridShare",
@@ -78,15 +84,57 @@
         "pool_pct_of_company_dollar": 50,
         "willable": true,
         "total_paid_out_usd": null,
-        "mechanics_explained": "Each agent's capped company dollar funds the HybridShare Pool for their transactions. BP agents cap at $15K (so $7,500 goes to the pool over the year). BB agents cap at $5K (so $2,500 goes to the pool over the year). An upline sponsor's annual HybridShare earnings from a given downline agent = (downline's pool contribution) × (sponsor's tier percentage). Max per-txn figures in the tier_breakdown show per-txn earnings from that downline's activity.",
+        "mechanics_explained": "Each agent's capped company dollar funds the HybridShare Pool for their transactions. BP agents cap at $15K (so $7,500 goes to the pool over the year). BB agents cap at $5K (so $2,500 goes to the pool over the year). An upline sponsor's annual HybridShare earnings from a given downline agent = (downline's pool contribution) \u00d7 (sponsor's tier percentage). Max per-txn figures in the tier_breakdown show per-txn earnings from that downline's activity.",
         "tier_breakdown": [
-          { "tier": 1, "pct_of_pool": 31, "max_annual_from_bp_downline_usd": 2325, "max_annual_from_bb_downline_usd": 775, "min_active_direct_sponsored_to_unlock": 1 },
-          { "tier": 2, "pct_of_pool": 18, "max_annual_from_bp_downline_usd": 1350, "max_annual_from_bb_downline_usd": 450, "min_active_direct_sponsored_to_unlock": 4 },
-          { "tier": 3, "pct_of_pool": 7,  "max_annual_from_bp_downline_usd": 525,  "max_annual_from_bb_downline_usd": 175, "min_active_direct_sponsored_to_unlock": 8 },
-          { "tier": 4, "pct_of_pool": 7,  "max_annual_from_bp_downline_usd": 525,  "max_annual_from_bb_downline_usd": 175, "min_active_direct_sponsored_to_unlock": 12 },
-          { "tier": 5, "pct_of_pool": 7,  "max_annual_from_bp_downline_usd": 525,  "max_annual_from_bb_downline_usd": 175, "min_active_direct_sponsored_to_unlock": 16 },
-          { "tier": 6, "pct_of_pool": 10, "max_annual_from_bp_downline_usd": 750,  "max_annual_from_bb_downline_usd": 250, "min_active_direct_sponsored_to_unlock": 19 },
-          { "tier": 7, "pct_of_pool": 20, "max_annual_from_bp_downline_usd": 1500, "max_annual_from_bb_downline_usd": 500, "min_active_direct_sponsored_to_unlock": 20 }
+          {
+            "tier": 1,
+            "pct_of_pool": 31,
+            "max_annual_from_bp_downline_usd": 2325,
+            "max_annual_from_bb_downline_usd": 775,
+            "min_active_direct_sponsored_to_unlock": 1
+          },
+          {
+            "tier": 2,
+            "pct_of_pool": 18,
+            "max_annual_from_bp_downline_usd": 1350,
+            "max_annual_from_bb_downline_usd": 450,
+            "min_active_direct_sponsored_to_unlock": 4
+          },
+          {
+            "tier": 3,
+            "pct_of_pool": 7,
+            "max_annual_from_bp_downline_usd": 525,
+            "max_annual_from_bb_downline_usd": 175,
+            "min_active_direct_sponsored_to_unlock": 8
+          },
+          {
+            "tier": 4,
+            "pct_of_pool": 7,
+            "max_annual_from_bp_downline_usd": 525,
+            "max_annual_from_bb_downline_usd": 175,
+            "min_active_direct_sponsored_to_unlock": 12
+          },
+          {
+            "tier": 5,
+            "pct_of_pool": 7,
+            "max_annual_from_bp_downline_usd": 525,
+            "max_annual_from_bb_downline_usd": 175,
+            "min_active_direct_sponsored_to_unlock": 16
+          },
+          {
+            "tier": 6,
+            "pct_of_pool": 10,
+            "max_annual_from_bp_downline_usd": 750,
+            "max_annual_from_bb_downline_usd": 250,
+            "min_active_direct_sponsored_to_unlock": 19
+          },
+          {
+            "tier": 7,
+            "pct_of_pool": 20,
+            "max_annual_from_bp_downline_usd": 1500,
+            "max_annual_from_bb_downline_usd": 500,
+            "min_active_direct_sponsored_to_unlock": 20
+          }
         ],
         "tier_breakdown_note": "The BP and BB columns show max annual HybridShare earnings for an upline sponsor, based on which plan the downline agent is on. A BP-plan downline who caps contributes more to the pool, so sponsors earn more from BP downline than from BB downline.",
         "earner_eligibility": {
@@ -103,7 +151,6 @@
         "dual_sponsorship_note": "For Dual Sponsorship all dollars are allocated 45% to each sponsor and their respective upline.",
         "notes": "7-tier structure. 50% of company dollar allocated to the HybridShare Pool per transaction."
       },
-
       "equity": {
         "offered": true,
         "publicly_traded": false,
@@ -112,12 +159,37 @@
         "vesting_years": 3,
         "vesting_note": "Three year vesting on each RSU award. Agents must remain Active to maintain multipliers, earn, and vest awards.",
         "achievement_awards": [
-          { "badge": "White", "annual_core_transactions": 1,  "shares_bp": 50,   "shares_bb": 25 },
-          { "badge": "Silver", "annual_core_transactions": 3,  "shares_bp": 50,   "shares_bb": 25 },
-          { "badge": "Gold",  "annual_core_transactions": 15, "shares_bp": 600,  "shares_bb": 300 },
-          { "badge": "Black", "annual_core_transactions": 35, "shares_bp": 1800, "shares_bb": null, "shares_bb_note": "Not available to Business Builders" }
+          {
+            "badge": "White",
+            "annual_core_transactions": 1,
+            "shares_bp": 50,
+            "shares_bb": 25
+          },
+          {
+            "badge": "Silver",
+            "annual_core_transactions": 3,
+            "shares_bp": 50,
+            "shares_bb": 25
+          },
+          {
+            "badge": "Gold",
+            "annual_core_transactions": 15,
+            "shares_bp": 600,
+            "shares_bb": 300
+          },
+          {
+            "badge": "Black",
+            "annual_core_transactions": 35,
+            "shares_bp": 1800,
+            "shares_bb": null,
+            "shares_bb_note": "Not available to Business Builders"
+          }
         ],
-        "sponsorship_award_per_direct_sponsored": { "trigger": "Direct sponsored agent's first Core Transaction (one-time)", "shares_bp": 100, "shares_bb": 50 },
+        "sponsorship_award_per_direct_sponsored": {
+          "trigger": "Direct sponsored agent's first Core Transaction (one-time)",
+          "shares_bp": 100,
+          "shares_bb": 50
+        },
         "conditions": [
           "All Agents have a multiplier determined by join date, comp plan, and benefits plan.",
           "Black Badge requires Brokerage Partner plan for the entire period.",
@@ -131,7 +203,6 @@
         "liquidity": "Private - no open market",
         "notes": "Non-publicly traded. Liquidity event depends on future IPO, acquisition, or internal buyback."
       },
-
       "technology": {
         "included_tools": [
           "lptConnect 2.0 (proprietary business operations tool)",
@@ -144,7 +215,6 @@
         "crm_note": "Agent chooses from Lofty, Follow Up Boss, or KV Core as included CRM.",
         "tpl_advantage": "TPL Collective agents receive Mission Control CRM, SOPs, AI tools, training, and community inside LPT - on top of the standard LPT tech stack."
       },
-
       "training": {
         "live_hours_per_week": null,
         "on_demand_library": true,
@@ -154,7 +224,6 @@
           "Motivational Mondays with CEO Robert Palmer (Mondays 11:00 AM EST on Zoom)"
         ]
       },
-
       "culture": {
         "office_based": false,
         "community_style": "Cloud-first, growing, founder-led",
@@ -162,15 +231,15 @@
         "glassdoor_agent_role": null,
         "glassdoor_review_count": null
       },
-
       "tpl_callout": "LPT Realty is the brokerage. TPL Collective is the team/community leverage layer operating inside LPT. The numbers above are LPT's. TPL adds Mission Control CRM, SOPs, AI tools, training infrastructure, and a structured residual community on top."
     },
-
     {
       "slug": "exp-realty",
       "name": "eXp Realty",
       "short_name": "eXp",
-      "aliases": ["eXp"],
+      "aliases": [
+        "eXp"
+      ],
       "logo": "/assets/logos/exp.png",
       "color": "#6c63ff",
       "status": "published",
@@ -182,8 +251,14 @@
       "agent_count_note": "90,000+ agents worldwide (per SAA)",
       "source_url": "https://expworldholdings.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "EXPI SEC 10-K 2025", "eXp official agent compensation plan"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "EXPI SEC 10-K 2025",
+        "eXp official agent compensation plan"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -201,7 +276,6 @@
           "notes": "80/20 split capped at $16K. $85/mo cloud fee. $85/deal pre-cap ($25 broker review + $60 risk mgmt). Post-cap: $250/deal for up to 20 txns, then $75 sponsor fee. $149 startup fee not included."
         }
       ],
-
       "revshare": {
         "offered": true,
         "tiers": 7,
@@ -212,7 +286,6 @@
         "total_paid_out_usd": 889000000,
         "notes": "Verify per-tier breakdown before publishing."
       },
-
       "equity": {
         "offered": true,
         "publicly_traded": true,
@@ -225,31 +298,35 @@
         ],
         "liquidity": "Public market - sellable any trading day"
       },
-
       "technology": {
-        "included_tools": ["kvCORE CRM", "IDX website", "eXp Collaborate", "Skyslope"],
+        "included_tools": [
+          "kvCORE CRM",
+          "IDX website",
+          "eXp Collaborate",
+          "Skyslope"
+        ],
         "crm_included": true,
         "crm_note": "kvCORE included in $85 tech fee."
       },
-
       "training": {
         "live_hours_per_week": 50,
         "on_demand_library": true,
         "mentorship_program": true,
         "support_hours": "Business hours + platform-based"
       },
-
       "culture": {
         "office_based": false,
         "community_style": "Cloud-first, large-scale global"
       }
     },
-
     {
       "slug": "real-brokerage",
       "name": "The Real Brokerage",
       "short_name": "Real",
-      "aliases": ["Real", "REAX"],
+      "aliases": [
+        "Real",
+        "REAX"
+      ],
       "logo": "/assets/logos/real.png",
       "color": "#34d399",
       "status": "published",
@@ -259,8 +336,14 @@
       "public_ticker": "REAX",
       "source_url": "https://onereal.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "REAX SEC filings 2025", "Real Brokerage official plan docs"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "REAX SEC filings 2025",
+        "Real Brokerage official plan docs"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -278,7 +361,6 @@
           "notes": "85/15 capped at $12K, no monthly fee. $265/deal pre-cap ($225 tx + $40 E&O). Post-cap: $200/deal. $750 annual fee billed across first 3 closings."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "Revenue Share",
@@ -286,7 +368,6 @@
         "willable": true,
         "notes": "5-tier structure. Pays on capped company dollar of downline agents."
       },
-
       "equity": {
         "offered": true,
         "publicly_traded": true,
@@ -298,29 +379,36 @@
         ],
         "liquidity": "Public market - sellable any trading day"
       },
-
       "technology": {
-        "included_tools": ["Real CRM", "Real App (mobile)", "Real Wallet", "reZEN transaction platform"],
+        "included_tools": [
+          "Real CRM",
+          "Real App (mobile)",
+          "Real Wallet",
+          "reZEN transaction platform"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Revshare University", "Real Academy"]
+        "notable_programs": [
+          "Revshare University",
+          "Real Academy"
+        ]
       },
-
       "culture": {
         "office_based": false,
         "community_style": "Cloud-first, mobile-app-centric"
       }
     },
-
     {
       "slug": "keller-williams",
       "name": "Keller Williams",
       "short_name": "KW",
-      "aliases": ["KW", "Keller"],
+      "aliases": [
+        "KW",
+        "Keller"
+      ],
       "logo": "/assets/logos/kw.png",
       "color": "#f87171",
       "status": "published",
@@ -331,8 +419,14 @@
       "agent_count_note": "~180,000 agents",
       "source_url": "https://kw.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "RealTrends Verified 2025", "KW market center disclosures"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "RealTrends Verified 2025",
+        "KW market center disclosures"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -348,7 +442,6 @@
           "notes": "70/30 split with 6% franchise royalty capped at $3K/yr. Market center caps typically $15K-$42K - $21K is a common midpoint. Edit for your specific office."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "Profit Share",
@@ -357,31 +450,41 @@
         "willable": true,
         "notes": "Profit Share pays from market center profit distribution, not company dollar. Structure varies by market center performance."
       },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["Command CRM", "KW App", "kwConnect", "Designs"],
+        "included_tools": [
+          "Command CRM",
+          "KW App",
+          "kwConnect",
+          "Designs"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Ignite (new agents)", "BOLD", "KW MAPS Coaching", "KW University"]
+        "notable_programs": [
+          "Ignite (new agents)",
+          "BOLD",
+          "KW MAPS Coaching",
+          "KW University"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Market center, in-office, weekly team meetings"
       }
     },
-
     {
       "slug": "compass",
       "name": "Compass",
       "short_name": "Compass",
-      "aliases": ["Compass"],
+      "aliases": [
+        "Compass"
+      ],
       "logo": "/assets/logos/compass.png",
       "color": "#60a5fa",
       "status": "published",
@@ -392,13 +495,23 @@
       "agent_count_note": "~30,000 agents",
       "source_url": "https://compass.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "COMP SEC 10-K 2025", "RealTrends Verified 2025"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "COMP SEC 10-K 2025",
+        "RealTrends Verified 2025"
+      ],
       "plans": [
         {
           "plan_name": "Negotiated",
           "split_structure": "80/20",
-          "split_range": { "min": 60, "max": 90, "typical": 80 },
+          "split_range": {
+            "min": 60,
+            "max": 90,
+            "typical": 80
+          },
           "annual_cap": null,
           "cap_note": "No standard cap - highly variable by market and production",
           "monthly_fee": 145,
@@ -408,34 +521,37 @@
           "notes": "Splits negotiated individually, typically 70/30-85/15. 4% marketing fee is common. No standard cap."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "COMP",
         "notes": "COMP trades on NYSE but no agent equity program."
       },
-
       "technology": {
-        "included_tools": ["Compass platform", "Compass Collections", "Compass CRM", "Compass Concierge"],
+        "included_tools": [
+          "Compass platform",
+          "Compass Collections",
+          "Compass CRM",
+          "Compass Concierge"
+        ],
         "crm_included": true,
         "crm_note": "Proprietary end-to-end tech stack - a core Compass differentiator."
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Compass University"]
+        "notable_programs": [
+          "Compass University"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Urban/luxury offices, design-forward, agent recruiting-heavy"
       }
     },
-
     {
       "slug": "fathom-realty",
       "name": "Fathom Realty",
@@ -449,8 +565,14 @@
       "public_ticker": "FTHM",
       "source_url": "https://fathomrealty.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "FTHM SEC filings 2025", "Fathom official agent plan"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "FTHM SEC filings 2025",
+        "Fathom official agent plan"
+      ],
       "plans": [
         {
           "plan_name": "Fathom Max",
@@ -466,14 +588,12 @@
           "notes": "100% commission. $465 flat per deal capped at $9K/yr (~20 deals). Post-cap: $165/deal. $700 annual fee + $35 E&O/deal. No monthly fees."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "Revenue Share",
         "tiers": 5,
         "notes": "5-tier revshare. Program restructured in 2024."
       },
-
       "equity": {
         "offered": true,
         "publicly_traded": true,
@@ -481,29 +601,32 @@
         "stock_type": "Publicly traded common stock (Nasdaq)",
         "liquidity": "Public market"
       },
-
       "technology": {
-        "included_tools": ["IntelliAgent CRM", "Fathom University LMS"],
+        "included_tools": [
+          "IntelliAgent CRM",
+          "Fathom University LMS"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Fathom University"]
+        "notable_programs": [
+          "Fathom University"
+        ]
       },
-
       "culture": {
         "office_based": false,
         "community_style": "Cloud-first, faith-based roots"
       }
     },
-
     {
       "slug": "epique-realty",
       "name": "Epique Realty",
       "short_name": "Epique",
-      "aliases": ["Epique"],
+      "aliases": [
+        "Epique"
+      ],
       "logo": "/assets/logos/epique.png",
       "color": "#a78bfa",
       "status": "published",
@@ -513,8 +636,13 @@
       "public_ticker": null,
       "source_url": "https://epiquerealty.com",
       "data_asof": "2026-04-23",
-      "citations": ["Epique official plan pages 2026", "AgentAdvice Epique reviews 2026"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Epique official plan pages 2026",
+        "AgentAdvice Epique reviews 2026"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -532,7 +660,6 @@
           "notes": "85/15 split with declining cap. $149/mo tech fee ($99/mo if annual). Per-deal fee is 0.1% of gross sale price, capped at $500/deal; drops to $250/deal after $5K paid in tx fees."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "Revenue Share",
@@ -540,31 +667,33 @@
         "willable": true,
         "notes": "10-tier revshare structure."
       },
-
       "equity": {
         "offered": true,
         "publicly_traded": false,
         "stock_type": "Private equity / stock awards",
         "liquidity": "Private - no open market"
       },
-
       "technology": {
-        "included_tools": ["AI Listing Description", "AI Headshots", "AI Logos", "AI Open House Sign", "ChatGPT Access", "Epique CRM"],
+        "included_tools": [
+          "AI Listing Description",
+          "AI Headshots",
+          "AI Logos",
+          "AI Open House Sign",
+          "ChatGPT Access",
+          "Epique CRM"
+        ],
         "crm_included": true,
         "crm_note": "AI-first tech stack is Epique's primary differentiator."
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true
       },
-
       "culture": {
         "office_based": false,
         "community_style": "Cloud, AI-forward, growth-stage"
       }
     },
-
     {
       "slug": "remax",
       "name": "RE/MAX",
@@ -578,8 +707,14 @@
       "public_ticker": "RMAX",
       "source_url": "https://remax.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "RMAX SEC 10-K 2025", "RealTrends Verified 2025"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "RMAX SEC 10-K 2025",
+        "RealTrends Verified 2025"
+      ],
       "plans": [
         {
           "plan_name": "95/5",
@@ -596,33 +731,37 @@
           "notes": "95/5 split with monthly desk fees typically $500-$2,000/mo. $23K cap applies on 80/20 plans. Edit desk fee to your actual office."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "RMAX",
         "notes": "RMAX trades on NYSE but no agent equity program."
       },
-
       "technology": {
-        "included_tools": ["MAX/Center", "LeadStreet", "RE/MAX Hustle"],
+        "included_tools": [
+          "MAX/Center",
+          "LeadStreet",
+          "RE/MAX Hustle"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": false,
-        "notable_programs": ["MAXTech", "Momentum", "Balanced Growth"]
+        "notable_programs": [
+          "MAXTech",
+          "Momentum",
+          "Balanced Growth"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Independent-contractor franchise, office-based, experienced-agent focused"
       }
     },
-
     {
       "slug": "coldwell-banker",
       "name": "Coldwell Banker",
@@ -635,8 +774,14 @@
       "founded": 1906,
       "source_url": "https://coldwellbanker.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "HOUS SEC 10-K 2025 (Anywhere Real Estate)", "RealTrends Verified 2025"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "HOUS SEC 10-K 2025 (Anywhere Real Estate)",
+        "RealTrends Verified 2025"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -652,33 +797,36 @@
           "notes": "Anywhere Real Estate-owned. Splits range 50/50-90/10 with no universal cap. 6% franchise fee on GCI. ~$110/mo desk fee. Edit to your actual agreement."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "HOUS",
         "notes": "Parent Anywhere Real Estate (HOUS) trades on NYSE but no agent equity program."
       },
-
       "technology": {
-        "included_tools": ["CBx marketing platform", "Moxi Works suite", "Listing Concierge"],
+        "included_tools": [
+          "CBx marketing platform",
+          "Moxi Works suite",
+          "Listing Concierge"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Coldwell Banker University", "Concierge"]
+        "notable_programs": [
+          "Coldwell Banker University",
+          "Concierge"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Traditional franchise, office-based, luxury-tier positioning"
       }
     },
-
     {
       "slug": "century-21",
       "name": "Century 21",
@@ -691,8 +839,14 @@
       "founded": 1971,
       "source_url": "https://century21.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "HOUS SEC 10-K 2025 (Anywhere Real Estate)", "RealTrends Verified 2025"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "HOUS SEC 10-K 2025 (Anywhere Real Estate)",
+        "RealTrends Verified 2025"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -709,33 +863,35 @@
           "notes": "Anywhere Real Estate-owned. Splits range 70/30-90/10 with caps typically $15K-$20K. 8% franchise/royalty fee applies on most transactions. Edit to your office terms."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "HOUS",
         "notes": "Parent Anywhere Real Estate (HOUS) trades on NYSE but no agent equity program."
       },
-
       "technology": {
-        "included_tools": ["Moxi Works suite", "C21 branded marketing", "21Online"],
+        "included_tools": [
+          "Moxi Works suite",
+          "C21 branded marketing",
+          "21Online"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": false,
-        "notable_programs": ["Century 21 University"]
+        "notable_programs": [
+          "Century 21 University"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Traditional franchise, office-based, global brand positioning"
       }
     },
-
     {
       "slug": "berkshire-hathaway",
       "name": "Berkshire Hathaway HomeServices",
@@ -750,13 +906,22 @@
       "agent_count_note": "~50,000 agents; owned by HomeServices of America (a Berkshire Hathaway subsidiary)",
       "source_url": "https://bhhsrealestate.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "Clever commission report 2026"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "Clever commission report 2026"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
           "split_structure": "60/40",
-          "split_range": { "min": 60, "max": 90, "typical": 70 },
+          "split_range": {
+            "min": 60,
+            "max": 90,
+            "typical": 70
+          },
           "annual_cap": null,
           "cap_note": "No universal cap - splits improve with production (60/40 start, up to 80/20 or 90/10 for top producers)",
           "per_txn_brokerage_fee": 450,
@@ -771,33 +936,37 @@
           "notes": "Franchise model. 6-7% royalty on GCI + 1.5% marketing fee deducted before agent split. Transaction fees $295-$625/deal vary by office. Starting split typically 60/40, improves with production. Edit to your specific BHHS office terms."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "BRK.A",
         "notes": "Parent Berkshire Hathaway trades on NYSE but no agent equity program."
       },
-
       "technology": {
-        "included_tools": ["REsource CRM", "BHHSRE Connect", "Listing Concierge", "Moxi Works suite"],
+        "included_tools": [
+          "REsource CRM",
+          "BHHSRE Connect",
+          "Listing Concierge",
+          "Moxi Works suite"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["BHHS REsource University", "BHHS Learning Center"]
+        "notable_programs": [
+          "BHHS REsource University",
+          "BHHS Learning Center"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Traditional franchise, office-based, experienced-agent and luxury positioning"
       }
     },
-
     {
       "slug": "sothebys",
       "name": "Sotheby's International Realty",
@@ -812,13 +981,22 @@
       "agent_count_note": "~26,000 agents in 85+ countries; owned by Anywhere Real Estate",
       "source_url": "https://sothebysrealty.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "Pass and Earn commission data 2026"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "Pass and Earn commission data 2026"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
           "split_structure": "70/30",
-          "split_range": { "min": 60, "max": 90, "typical": 70 },
+          "split_range": {
+            "min": 60,
+            "max": 90,
+            "typical": 70
+          },
           "annual_cap": null,
           "cap_note": "No universal cap; combined 8% royalty/advertising fee has no cap either",
           "per_txn_brokerage_fee": null,
@@ -831,33 +1009,35 @@
           "notes": "Luxury franchise. 8% combined fee (6% royalty + 2% advertising) applied on every transaction with no cap. Splits negotiated individually, typically 70/30-90/10 based on production. High producers absorb significant franchise cost due to no-cap structure."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "HOUS",
         "notes": "Parent Anywhere Real Estate (HOUS) trades on NYSE but no agent equity program."
       },
-
       "technology": {
-        "included_tools": ["SothebysRealty.com global platform", "Moxi Works suite", "Luxury Portfolio marketing"],
+        "included_tools": [
+          "SothebysRealty.com global platform",
+          "Moxi Works suite",
+          "Luxury Portfolio marketing"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Sotheby's International Realty University"]
+        "notable_programs": [
+          "Sotheby's International Realty University"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Luxury-only positioning, global brand, office-based"
       }
     },
-
     {
       "slug": "corcoran",
       "name": "Corcoran",
@@ -869,7 +1049,6 @@
       "category": "luxury",
       "_placeholder": "Luxury franchise. Anywhere Real Estate owned. VERIFY."
     },
-
     {
       "slug": "douglas-elliman",
       "name": "Douglas Elliman",
@@ -884,13 +1063,22 @@
       "agent_count_note": "~5,800 agents; concentrated in NY, FL, CA, CO, TX",
       "source_url": "https://elliman.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "The Real Deal industry reporting"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "The Real Deal industry reporting"
+      ],
       "plans": [
         {
           "plan_name": "Graduated",
           "split_structure": "55/45",
-          "split_range": { "min": 55, "max": 100, "typical": 70 },
+          "split_range": {
+            "min": 55,
+            "max": 100,
+            "typical": 70
+          },
           "annual_cap": null,
           "cap_note": "Production-tiered splits. Reaches 100% after capping at top tier. No dollar cap - thresholds are GCI-based.",
           "per_txn_brokerage_fee": null,
@@ -901,42 +1089,59 @@
           "franchise_fee_pct": 6,
           "marketing_fee_pct": null,
           "split_tiers": [
-            { "min_gci": 0, "split_pct": 55 },
-            { "min_gci": 135000, "split_pct": 60 },
-            { "min_gci": 155000, "split_pct": 65 },
-            { "min_gci": 210000, "split_pct": 70 },
-            { "min_gci": 340000, "split_pct": 80 }
+            {
+              "min_gci": 0,
+              "split_pct": 55
+            },
+            {
+              "min_gci": 135000,
+              "split_pct": 60
+            },
+            {
+              "min_gci": 155000,
+              "split_pct": 65
+            },
+            {
+              "min_gci": 210000,
+              "split_pct": 70
+            },
+            {
+              "min_gci": 340000,
+              "split_pct": 80
+            }
           ],
           "notes": "Graduated split model: 55% at $0, 60% at $135K GCI, 65% at $155K, 70% at $210K, 80% at $340K, reaching 100% at top tier. 6% franchise/royalty fee. Concentrated in NY/FL/CA luxury markets."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": false,
         "publicly_traded": true,
         "ticker": "DOUG",
         "notes": "Douglas Elliman (DOUG) trades on NYSE but no standard agent equity program."
       },
-
       "technology": {
-        "included_tools": ["Elliman CRM", "MyElliman platform", "Knight Frank global network integration"],
+        "included_tools": [
+          "Elliman CRM",
+          "MyElliman platform",
+          "Knight Frank global network integration"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
-        "notable_programs": ["Elliman Education"]
+        "notable_programs": [
+          "Elliman Education"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Luxury urban boutique, office-based, NYC-headquartered"
       }
     },
-
     {
       "slug": "the-agency",
       "name": "The Agency",
@@ -951,13 +1156,22 @@
       "agent_count_note": "~3,000 agents; founded by Mauricio Umansky; luxury boutique franchise",
       "source_url": "https://theagencyre.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "Smart Agent Alliance 2026"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "Smart Agent Alliance 2026"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
           "split_structure": "70/30",
-          "split_range": { "min": 70, "max": 90, "typical": 80 },
+          "split_range": {
+            "min": 70,
+            "max": 90,
+            "typical": 80
+          },
           "annual_cap": null,
           "cap_note": "No universal cap; 6% franchise fee applies on every transaction",
           "per_txn_brokerage_fee": null,
@@ -970,27 +1184,30 @@
           "notes": "Luxury boutique franchise. Splits range 70/30-90/10 based on production. 6% franchise fee on every transaction with no cap. Concentrated in LA, Beverly Hills, Miami, NYC. Concerns reported regarding marketing charges deducted from agent share - get detailed fee breakdown in writing."
         }
       ],
-
-      "revshare": { "offered": false },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "revshare": {
+        "offered": false
+      },
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["The Agency CRM", "MyAgency platform", "Proprietary marketing tools"],
+        "included_tools": [
+          "The Agency CRM",
+          "MyAgency platform",
+          "Proprietary marketing tools"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Luxury boutique, office-based, celebrity-adjacent (Buying Beverly Hills)"
       }
     },
-
     {
       "slug": "redfin",
       "name": "Redfin",
@@ -1005,8 +1222,13 @@
       "agent_count_note": "~2,200 W-2 agents (Traditional + Redfin Next)",
       "source_url": "https://redfin.com/careers/real-estate-agent",
       "data_asof": "2026-04-23",
-      "citations": ["Redfin investor disclosures", "Redfin careers site 2026"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Redfin investor disclosures",
+        "Redfin careers site 2026"
+      ],
       "plans": [
         {
           "plan_name": "Traditional (W-2 Employee)",
@@ -1034,9 +1256,9 @@
           "notes": "Redfin Next is a 1099 contractor program. Agents keep 70% of commission on self-generated business and 40% on Redfin-referred leads. Redfin covers ~$25K/yr in agent expenses (MLS, E&O, marketing, transaction coordinator)."
         }
       ],
-
-      "revshare": { "offered": false },
-
+      "revshare": {
+        "offered": false
+      },
       "equity": {
         "offered": true,
         "publicly_traded": true,
@@ -1044,25 +1266,25 @@
         "stock_type": "RSUs + ESPP for W-2 employees",
         "liquidity": "Public market - sellable after vest/purchase"
       },
-
       "technology": {
-        "included_tools": ["Redfin proprietary CRM", "Redfin.com lead platform", "Tour scheduling system"],
+        "included_tools": [
+          "Redfin proprietary CRM",
+          "Redfin.com lead platform",
+          "Tour scheduling system"
+        ],
         "crm_included": true,
         "crm_note": "Redfin.com consumer traffic is the primary lead source - a structural differentiator."
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true,
         "support_hours": "Business hours + dedicated support team"
       },
-
       "culture": {
         "office_based": false,
         "community_style": "W-2 employee model, tech-company culture, employee benefits"
       }
     },
-
     {
       "slug": "better-homes-gardens",
       "name": "Better Homes & Gardens Real Estate",
@@ -1074,7 +1296,6 @@
       "category": "franchise",
       "_placeholder": "Anywhere Real Estate owned. VERIFY."
     },
-
     {
       "slug": "realty-one-group",
       "name": "Realty ONE Group",
@@ -1086,8 +1307,13 @@
       "category": "hybrid",
       "source_url": "https://realtyonegroup.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "Realty ONE Group franchise disclosure"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "Realty ONE Group franchise disclosure"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -1103,32 +1329,35 @@
           "notes": "100% commission model with $700/deal transaction fee, $150/mo desk fee, and $650 annual fee. No split to the brokerage."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "UNLIMITED",
         "notes": "Revshare paid from per-transaction fees paid by downline agents."
       },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["ONE Platform", "zipForm", "ONE App"],
+        "included_tools": [
+          "ONE Platform",
+          "zipForm",
+          "ONE App"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": false,
-        "notable_programs": ["ONE University"]
+        "notable_programs": [
+          "ONE University"
+        ]
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Franchise, 'BE the difference' brand ethos, office-based"
       }
     },
-
     {
       "slug": "united-real-estate",
       "name": "United Real Estate",
@@ -1143,8 +1372,13 @@
       "agent_count_note": "~19,000 agents; ranked a Top-5 residential brokerage by transaction sides",
       "source_url": "https://unitedrealestate.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "RealTrends Verified 2025"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "RealTrends Verified 2025"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -1161,31 +1395,32 @@
           "notes": "United advertises 96% GCI retention on average. 100% commission model with flat transaction fee and monthly tech/desk fee that varies by office. Verify with your specific United office."
         }
       ],
-
       "revshare": {
         "offered": true,
         "program_name": "Bucks",
         "notes": "United Real Estate 'Bucks' revenue share program pays recruiters a share of transaction fees from sponsored agents."
       },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["Bullseye CRM", "United platform", "Lead generation tools"],
+        "included_tools": [
+          "Bullseye CRM",
+          "United platform",
+          "Lead generation tools"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true
       },
-
       "culture": {
         "office_based": true,
         "community_style": "100% commission, hybrid office model, production-focused"
       }
     },
-
     {
       "slug": "homesmart",
       "name": "HomeSmart",
@@ -1200,8 +1435,13 @@
       "agent_count_note": "~23,000 agents across 180+ offices",
       "source_url": "https://homesmart.com",
       "data_asof": "2026-04-23",
-      "citations": ["Real Estate Almanac 2026", "HomeSmart franchise disclosure"],
-
+      "markets": [
+        "nationwide"
+      ],
+      "citations": [
+        "Real Estate Almanac 2026",
+        "HomeSmart franchise disclosure"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -1218,27 +1458,30 @@
           "notes": "100% commission model. $399-$495/deal transaction fee (varies by branch). $39-$149/mo desk fee (varies by branch). Branch-dependent fee structure - Chicago office publicly discloses $39/mo + $495/txn. Verify with your specific office."
         }
       ],
-
-      "revshare": { "offered": false },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "revshare": {
+        "offered": false
+      },
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["RealSmart Agent", "HomeSmart CRM", "Transaction management platform"],
+        "included_tools": [
+          "RealSmart Agent",
+          "HomeSmart CRM",
+          "Transaction management platform"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": false
       },
-
       "culture": {
         "office_based": true,
         "community_style": "100% commission franchise, office-based, volume-focused"
       }
     },
-
     {
       "slug": "weichert",
       "name": "Weichert Realtors",
@@ -1250,7 +1493,6 @@
       "category": "franchise",
       "_placeholder": "Traditional franchise. VERIFY."
     },
-
     {
       "slug": "samson-properties",
       "name": "Samson Properties",
@@ -1265,8 +1507,15 @@
       "agent_count_note": "~5,000 agents; largest independent brokerage in the DMV region (DC/MD/VA)",
       "source_url": "https://samsonproperties.net",
       "data_asof": "2026-04-23",
-      "citations": ["Samson Properties public career pages 2026"],
-
+      "markets": [
+        "VA",
+        "MD",
+        "DC",
+        "WV"
+      ],
+      "citations": [
+        "Samson Properties public career pages 2026"
+      ],
       "plans": [
         {
           "plan_name": "Standard",
@@ -1283,27 +1532,30 @@
           "notes": "100% commission model. $495/transaction until Cardinal Club qualification (8 closed sales OR $3M in volume annually). Post-Cardinal Club: $0/transaction. No monthly fees, no desk fees. DMV-regional (DC/MD/VA/WV)."
         }
       ],
-
-      "revshare": { "offered": false },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "revshare": {
+        "offered": false
+      },
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["Samson CRM", "BrokerMint transaction management", "Listing tools"],
+        "included_tools": [
+          "Samson CRM",
+          "BrokerMint transaction management",
+          "Listing tools"
+        ],
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": true
       },
-
       "culture": {
         "office_based": true,
         "community_style": "Independent regional brokerage, office-based, production-focused"
       }
     },
-
     {
       "slug": "lokation",
       "name": "LoKation Real Estate",
@@ -1318,8 +1570,14 @@
       "agent_count_note": "~4,000 agents; FL-headquartered, now multi-state (FL/CO/GA/TN and more)",
       "source_url": "https://lokationre.com",
       "data_asof": "2026-04-23",
-      "citations": ["LoKation public plan pages 2026"],
-
+      "markets": [
+        "FL",
+        "NC",
+        "SC"
+      ],
+      "citations": [
+        "LoKation public plan pages 2026"
+      ],
       "plans": [
         {
           "plan_name": "Silver (Flat Fee)",
@@ -1353,22 +1611,26 @@
           "notes": "Blue plan: 100% commission, $99/mo + $99/deal. Lower per-transaction cost for higher-volume agents. Break-even vs Silver at ~5-6 deals/yr."
         }
       ],
-
-      "revshare": { "offered": false },
-
-      "equity": { "offered": false, "publicly_traded": false },
-
+      "revshare": {
+        "offered": false
+      },
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
       "technology": {
-        "included_tools": ["LoKation CRM", "Transaction management", "LoKation Luxury add-on available"],
+        "included_tools": [
+          "LoKation CRM",
+          "Transaction management",
+          "LoKation Luxury add-on available"
+        ],
         "optional_package": "Luxury Add-On: $125/mo for premium luxury marketing tools",
         "crm_included": true
       },
-
       "training": {
         "on_demand_library": true,
         "mentorship_program": false
       },
-
       "culture": {
         "office_based": false,
         "community_style": "Flat-fee independent, multi-state, cost-conscious agent focus"

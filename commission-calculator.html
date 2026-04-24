@@ -220,9 +220,60 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
       .cta-buttons { flex-direction:column; }
       .btn-primary,.btn-secondary { text-align:center; }
     }
+
+    .soft-launch-banner {
+      position: relative;
+      z-index: 50;
+      background: linear-gradient(90deg, rgba(108,99,255,0.22), rgba(240,192,64,0.18));
+      border-bottom: 1px solid rgba(108,99,255,0.35);
+      padding: 14px 5%;
+    }
+    .soft-launch-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      justify-content: center;
+    }
+    .soft-launch-eyebrow {
+      font-family: 'DM Mono', 'SF Mono', monospace;
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #f0c040;
+      padding: 4px 8px;
+      background: rgba(240,192,64,0.12);
+      border: 1px solid rgba(240,192,64,0.35);
+      border-radius: 3px;
+    }
+    .soft-launch-text {
+      font-size: 13px; color: rgba(255,255,255,0.88);
+      line-height: 1.4;
+    }
+    .soft-launch-text strong { color: #fff; }
+    .soft-launch-cta {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #0a0a0f;
+      background: #f0c040;
+      padding: 8px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .soft-launch-cta:hover { background: #ffd76a; transform: translateY(-1px); }
+    @media (max-width: 640px) {
+      .soft-launch-inner { flex-direction: column; text-align: center; gap: 10px; }
+    }
   </style>
 </head>
 <body>
+
+<div class="soft-launch-banner">
+  <div class="soft-launch-inner">
+    <span class="soft-launch-eyebrow">UPGRADED</span>
+    <span class="soft-launch-text">This calculator has been rebuilt into our full side-by-side <strong>Brokerage Comparator</strong>. Same math, more brokerages, shareable link.</span>
+    <a href="/compare" class="soft-launch-cta" onclick="gtag('event','soft_launch_click',{source:'commission_calculator'})">Try the new /compare &rarr;</a>
+  </div>
+</div>
 
 <nav>
   <a href="/" class="nav-logo">TPL<span>.</span></a>

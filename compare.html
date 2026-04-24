@@ -81,8 +81,30 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
     <div class="cmp-eyebrow">Brokerage Comparator</div>
     <h1>Compare Brokerages.<br><em>Real Numbers, Not Pitches.</em></h1>
     <p class="cmp-sub">Pick up to 5. See splits, caps, fees, revenue share, equity, and total annual cost at your actual production. The LPT Realty numbers below are verified against the official flyer, valid through 4/30/26.</p>
+    <div class="cmp-hero-actions">
+      <button type="button" class="cmp-hero-btn" id="open-quiz-btn">Not sure where to start? Take the 30-second quiz &rarr;</button>
+    </div>
   </div>
 </header>
+
+<!-- PERSONA QUIZ MODAL -->
+<div class="quiz-modal" id="quiz-modal" hidden>
+  <div class="quiz-modal-backdrop" id="quiz-modal-backdrop"></div>
+  <div class="quiz-modal-card" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
+    <button type="button" class="quiz-modal-close" id="quiz-modal-close" aria-label="Close">&times;</button>
+    <div class="quiz-progress">
+      <div class="quiz-progress-bar" id="quiz-progress-bar" style="width:0%"></div>
+    </div>
+    <div class="quiz-step-meta">
+      <span class="quiz-eyebrow">30-Second Quiz</span>
+      <span class="quiz-step-num"><span id="quiz-step-current">1</span>/<span id="quiz-step-total">5</span></span>
+    </div>
+    <div class="quiz-body" id="quiz-body"></div>
+    <div class="quiz-actions">
+      <button type="button" class="btn-secondary quiz-back-btn" id="quiz-back-btn" hidden>&larr; Back</button>
+    </div>
+  </div>
+</div>
 
 <!-- MAIN -->
 <main class="cmp-main">
@@ -108,6 +130,22 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
         <button class="filter-btn" data-category="franchise" role="tab">Franchise</button>
         <button class="filter-btn" data-category="luxury" role="tab">Luxury</button>
         <button class="filter-btn" data-category="hybrid" role="tab">Hybrid</button>
+      </div>
+      <div class="state-filter-wrap">
+        <label for="state-filter" class="state-filter-label">State</label>
+        <select id="state-filter" class="state-filter">
+          <option value="all">All states</option>
+          <option value="FL">Florida</option>
+          <option value="CA">California</option>
+          <option value="TX">Texas</option>
+          <option value="NY">New York</option>
+          <option value="AZ">Arizona</option>
+          <option value="VA">Virginia</option>
+          <option value="MD">Maryland</option>
+          <option value="DC">D.C.</option>
+          <option value="NC">North Carolina</option>
+          <option value="SC">South Carolina</option>
+        </select>
       </div>
     </div>
 
@@ -156,6 +194,43 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
       </div>
     </div>
 
+    <details class="calc-accordion" id="calc-accordion">
+      <summary class="calc-accordion-summary">
+        <span class="calc-accordion-icon" aria-hidden="true">+</span>
+        <span class="calc-accordion-label">Not sure what your GCI is? Calculate from price + deals</span>
+      </summary>
+      <div class="calc-accordion-body">
+        <div class="calc-grid">
+          <div class="input-block">
+            <label for="calc-price">Avg sale price</label>
+            <div class="input-value">
+              <span class="input-prefix">$</span>
+              <input type="number" id="calc-price" value="450000" min="0" step="5000" />
+            </div>
+          </div>
+          <div class="input-block">
+            <label for="calc-rate">Commission rate (%)</label>
+            <div class="input-value">
+              <input type="number" id="calc-rate" value="2.5" min="0" max="10" step="0.1" />
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+          <div class="input-block">
+            <label for="calc-deals">Deals per year</label>
+            <div class="input-value">
+              <input type="number" id="calc-deals" value="20" min="1" max="60" step="1" />
+            </div>
+          </div>
+        </div>
+        <div class="calc-derived" id="calc-derived">
+          <span class="calc-derived-label">Derived</span>
+          <span class="calc-derived-gci">GCI: <strong id="calc-derived-gci">$225,000</strong></span>
+          <span class="calc-derived-avg">Avg GCI/txn: <strong id="calc-derived-avg">$11,250</strong></span>
+          <button type="button" class="calc-apply-btn" id="calc-apply-btn">Apply to sliders</button>
+        </div>
+      </div>
+    </details>
+
     <div class="lpt-plan-toggle" id="lpt-plan-toggle" hidden>
       <div class="plan-toggle-label">LPT Plan View</div>
       <div class="plan-toggle-btns" role="radiogroup" aria-label="LPT plan view">
@@ -197,6 +272,35 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
     <div class="breakdown-grid" id="breakdown-grid"></div>
   </section>
 
+  <!-- CAP BREAK-EVEN PANEL -->
+  <section class="cmp-panel breakeven-panel" id="breakeven-panel" hidden>
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">Cap Break-Even</div>
+      <h2 class="cmp-panel-title">Where You Stop Paying</h2>
+    </div>
+    <p class="breakeven-intro">The point at which you've paid your brokerage's full annual cap. After this, traditional splits become 100% for the rest of your anniversary year. LPT's flat-fee plans hit the cap at a specific number of transactions.</p>
+    <div class="breakeven-grid" id="breakeven-grid"></div>
+    <p class="breakeven-note">Progress bars show your current production relative to each cap. Green = already capped. Gold = within 20%. Gray = still climbing.</p>
+  </section>
+
+  <!-- 3-YEAR PROJECTION PANEL -->
+  <section class="cmp-panel projection-panel" id="projection-panel" hidden>
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">3-Year Projection</div>
+      <h2 class="cmp-panel-title">What The Gap Costs You Over Time</h2>
+    </div>
+    <div class="projection-controls">
+      <label for="growth-slider" class="projection-label">Annual production growth</label>
+      <div class="projection-value"><span id="growth-value">10</span><span>%</span></div>
+      <input type="range" id="growth-slider" min="0" max="25" step="1" value="10" />
+      <div class="input-range-meta"><span>0%</span><span>25%</span></div>
+    </div>
+    <div class="matrix-scroll">
+      <table class="projection-table" id="projection-table" aria-label="3-year retained income projection"></table>
+    </div>
+    <p class="projection-note">Projection holds avg GCI/txn constant and scales transactions by the growth rate. Caps, franchise royalties, and all fees re-calculated each year. Δ vs LPT compares against LPT Brokerage Partner.</p>
+  </section>
+
   <!-- HYBRIDSHARE PANEL -->
   <section class="cmp-panel hybridshare-panel" id="hybridshare-panel" hidden>
     <div class="cmp-panel-head">
@@ -226,8 +330,41 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
   <!-- SHARE ROW -->
   <section class="cmp-share" id="cmp-share" hidden>
     <button class="btn-secondary" id="copy-link-btn">Copy Shareable Link</button>
+    <button class="btn-secondary" id="email-comparison-btn">Email Me This Comparison</button>
     <span class="share-feedback" id="share-feedback" hidden>Link copied</span>
   </section>
+
+  <!-- EMAIL COMPARISON MODAL -->
+  <div class="email-modal" id="email-modal" hidden>
+    <div class="email-modal-backdrop" id="email-modal-backdrop"></div>
+    <div class="email-modal-card" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">
+      <button type="button" class="email-modal-close" id="email-modal-close" aria-label="Close">&times;</button>
+      <div class="email-modal-eyebrow">No gate. No spam.</div>
+      <h3 class="email-modal-title" id="email-modal-title">Email this comparison to yourself</h3>
+      <p class="email-modal-sub">We'll send the shareable link plus a PDF recap. You can unsubscribe anytime.</p>
+      <form id="email-modal-form" class="email-modal-form" novalidate>
+        <div class="email-modal-field">
+          <label for="email-modal-name">First name</label>
+          <input type="text" id="email-modal-name" autocomplete="given-name" required />
+        </div>
+        <div class="email-modal-field">
+          <label for="email-modal-email">Email</label>
+          <input type="email" id="email-modal-email" autocomplete="email" required />
+        </div>
+        <div class="email-modal-field">
+          <label for="email-modal-phone">Phone (optional)</label>
+          <input type="tel" id="email-modal-phone" autocomplete="tel" />
+        </div>
+        <button type="submit" class="btn-gold email-modal-submit" id="email-modal-submit">Send My Comparison</button>
+        <div class="email-modal-error" id="email-modal-error" hidden></div>
+      </form>
+      <div class="email-modal-success" id="email-modal-success" hidden>
+        <div class="email-modal-success-icon" aria-hidden="true">&#10003;</div>
+        <div class="email-modal-success-title">On its way.</div>
+        <p class="email-modal-success-body">Check your inbox in the next few minutes.</p>
+      </div>
+    </div>
+  </div>
 
 </main>
 

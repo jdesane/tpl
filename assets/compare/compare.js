@@ -20,8 +20,187 @@
     avgGci: 12500,
     avgGciEdited: false,
     lptPlus: false,
-    lptPlan: 'both'
+    lptPlan: 'both',
+    growth: 10,
+    stateFilter: 'all'
   };
+
+  /* ────────── PERSONA QUIZ ────────── */
+  const QUIZ = {
+    steps: [
+      {
+        key: 'production',
+        q: 'How many deals do you close per year?',
+        options: [
+          { label: '1-5 (new or part-time)', val: 'new' },
+          { label: '6-15 (building)', val: 'building' },
+          { label: '16-30 (established)', val: 'established' },
+          { label: '30+ (top producer)', val: 'top' }
+        ]
+      },
+      {
+        key: 'recruit',
+        q: 'Do you want to recruit agents and earn from their production?',
+        options: [
+          { label: 'Yes — building a team is the goal', val: 'yes' },
+          { label: 'Maybe someday', val: 'maybe' },
+          { label: 'No — I just want to sell', val: 'no' }
+        ]
+      },
+      {
+        key: 'brand',
+        q: 'How much does the brand name on your sign matter?',
+        options: [
+          { label: 'Critical — I want a household name', val: 'critical' },
+          { label: 'Helpful, but not required', val: 'helpful' },
+          { label: 'Irrelevant — clients hire me, not a logo', val: 'irrelevant' }
+        ]
+      },
+      {
+        key: 'fees',
+        q: 'What type of fee structure do you prefer?',
+        options: [
+          { label: 'Low/no monthly fees, pay per transaction', val: 'pertxn' },
+          { label: 'Fixed cap, then 100% for the year', val: 'cap' },
+          { label: 'Flat monthly fee, keep 100% of commissions', val: 'flat' }
+        ]
+      },
+      {
+        key: 'office',
+        q: 'Do you want in-person office space and staff support?',
+        options: [
+          { label: 'Yes — I rely on a physical office', val: 'yes' },
+          { label: 'Occasional — training or meetings only', val: 'sometimes' },
+          { label: 'No — I work from home/remote', val: 'no' }
+        ]
+      }
+    ],
+    // Scoring: map answer combos → brokerage slug weights
+    score(answers) {
+      const s = {};
+      const bump = (slug, n) => { s[slug] = (s[slug] || 0) + n; };
+
+      // LPT always has a baseline (page bias, earned by math elsewhere)
+      bump('lpt-realty', 5);
+
+      // Production level
+      if (answers.production === 'new') { bump('lpt-realty', 3); bump('keller-williams', 2); bump('real-brokerage', 1); }
+      if (answers.production === 'building') { bump('lpt-realty', 3); bump('exp-realty', 2); bump('real-brokerage', 2); }
+      if (answers.production === 'established') { bump('lpt-realty', 4); bump('exp-realty', 3); bump('real-brokerage', 2); bump('compass', 1); }
+      if (answers.production === 'top') { bump('lpt-realty', 3); bump('compass', 3); bump('exp-realty', 2); bump('sothebys', 2); }
+
+      // Recruiting
+      if (answers.recruit === 'yes') { bump('lpt-realty', 5); bump('exp-realty', 5); bump('real-brokerage', 3); bump('epique-realty', 2); }
+      if (answers.recruit === 'maybe') { bump('lpt-realty', 3); bump('exp-realty', 2); bump('real-brokerage', 2); }
+      if (answers.recruit === 'no') { bump('redfin', 2); bump('compass', 1); bump('homesmart', 1); }
+
+      // Brand
+      if (answers.brand === 'critical') { bump('keller-williams', 3); bump('coldwell-banker', 3); bump('berkshire-hathaway', 3); bump('century-21', 2); bump('remax', 3); bump('compass', 2); bump('sothebys', 3); bump('douglas-elliman', 3); }
+      if (answers.brand === 'helpful') { bump('exp-realty', 2); bump('keller-williams', 2); bump('compass', 2); bump('real-brokerage', 1); }
+      if (answers.brand === 'irrelevant') { bump('lpt-realty', 4); bump('real-brokerage', 2); bump('epique-realty', 2); bump('fathom-realty', 2); bump('homesmart', 2); bump('lokation', 1); bump('samson-properties', 1); }
+
+      // Fee structure
+      if (answers.fees === 'pertxn') { bump('lpt-realty', 5); bump('homesmart', 3); bump('united-real-estate', 3); bump('fathom-realty', 3); }
+      if (answers.fees === 'cap') { bump('keller-williams', 3); bump('exp-realty', 3); bump('real-brokerage', 3); bump('remax', 2); bump('coldwell-banker', 2); bump('compass', 2); }
+      if (answers.fees === 'flat') { bump('homesmart', 3); bump('realty-one-group', 3); bump('epique-realty', 3); bump('united-real-estate', 2); }
+
+      // Office support
+      if (answers.office === 'yes') { bump('keller-williams', 3); bump('coldwell-banker', 3); bump('remax', 2); bump('century-21', 2); bump('berkshire-hathaway', 2); }
+      if (answers.office === 'sometimes') { bump('lpt-realty', 1); bump('exp-realty', 1); bump('compass', 1); }
+      if (answers.office === 'no') { bump('lpt-realty', 4); bump('exp-realty', 3); bump('real-brokerage', 3); bump('epique-realty', 2); bump('fathom-realty', 2); }
+
+      return s;
+    }
+  };
+
+  const quizState = { idx: 0, answers: {} };
+
+  function renderQuizStep() {
+    const step = QUIZ.steps[quizState.idx];
+    const body = $('quiz-body');
+    const isLast = quizState.idx === QUIZ.steps.length - 1;
+    body.innerHTML =
+      '<h3 class="quiz-q">' + escapeHtml(step.q) + '</h3>' +
+      '<div class="quiz-options">' +
+      step.options.map((opt, i) =>
+        '<button type="button" class="quiz-option' + (quizState.answers[step.key] === opt.val ? ' selected' : '') + '" data-val="' + escapeHtml(opt.val) + '">' +
+          escapeHtml(opt.label) +
+        '</button>'
+      ).join('') +
+      '</div>';
+    $('quiz-step-current').textContent = String(quizState.idx + 1);
+    $('quiz-step-total').textContent = String(QUIZ.steps.length);
+    $('quiz-progress-bar').style.width = ((quizState.idx + 1) / QUIZ.steps.length * 100) + '%';
+    $('quiz-back-btn').hidden = quizState.idx === 0;
+
+    body.querySelectorAll('.quiz-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        quizState.answers[step.key] = btn.dataset.val;
+        if (isLast) finishQuiz();
+        else { quizState.idx++; renderQuizStep(); }
+      });
+    });
+  }
+
+  function finishQuiz() {
+    const scores = QUIZ.score(quizState.answers);
+    const ranked = Object.entries(scores)
+      .sort((a, b) => b[1] - a[1])
+      .map(([slug]) => slug)
+      .filter(slug => state.published.some(b => b.slug === slug));
+    const top = ranked.slice(0, 5);
+
+    const body = $('quiz-body');
+    const topBrokerages = top.map(slug => state.published.find(b => b.slug === slug)).filter(Boolean);
+    body.innerHTML =
+      '<h3 class="quiz-q">Your top matches</h3>' +
+      '<p class="quiz-result-sub">Based on your answers, these brokerages best fit your profile. We\'ve preloaded them into /compare so you can see the total-cost math side-by-side.</p>' +
+      '<div class="quiz-results-list">' +
+      topBrokerages.map((b, i) =>
+        '<div class="quiz-result-card' + (i === 0 ? ' top' : '') + '">' +
+          (i === 0 ? '<div class="quiz-result-badge">Best Match</div>' : '') +
+          logoHtml(b, 'selector') +
+          '<div class="quiz-result-name">' + escapeHtml(b.name) + '</div>' +
+          '<div class="quiz-result-cat">' + escapeHtml(b.category || '') + '</div>' +
+        '</div>'
+      ).join('') +
+      '</div>' +
+      '<button type="button" class="btn-gold quiz-apply-btn" id="quiz-apply-btn">Load These Into /compare &rarr;</button>';
+
+    $('quiz-apply-btn').addEventListener('click', () => {
+      state.selected = [];
+      topBrokerages.slice(0, MAX_SELECT).forEach(b => state.selected.push(b));
+      render();
+      closeQuiz();
+      document.getElementById('selector-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      track('compare_quiz_complete', {
+        production: quizState.answers.production,
+        recruit: quizState.answers.recruit,
+        brand: quizState.answers.brand,
+        fees: quizState.answers.fees,
+        office: quizState.answers.office,
+        top_match: top[0],
+        top_matches: top.join(',')
+      });
+    });
+
+    $('quiz-back-btn').hidden = false;
+    $('quiz-progress-bar').style.width = '100%';
+    $('quiz-step-current').textContent = String(QUIZ.steps.length);
+  }
+
+  function openQuiz() {
+    quizState.idx = 0;
+    quizState.answers = {};
+    $('quiz-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+    renderQuizStep();
+    track('compare_quiz_open', {});
+  }
+  function closeQuiz() {
+    $('quiz-modal').hidden = true;
+    document.body.style.overflow = '';
+  }
 
   const $ = (id) => document.getElementById(id);
 
@@ -120,13 +299,15 @@
     const plan = params.get('plan');
     const plus = params.get('plus') === '1';
     const cat = params.get('cat');
+    const growth = parseInt(params.get('growth'), 10);
     return {
       slugs,
       gci: !isNaN(gci) ? gci : null,
       txns: !isNaN(txns) ? txns : null,
       plan: ['bp','bb','both'].includes(plan) ? plan : null,
       plus,
-      cat: ['all','cloud','franchise','luxury','hybrid'].includes(cat) ? cat : null
+      cat: ['all','cloud','franchise','luxury','hybrid'].includes(cat) ? cat : null,
+      growth: !isNaN(growth) ? growth : null
     };
   }
 
@@ -138,16 +319,34 @@
     if (state.lptPlan !== 'both') params.set('plan', state.lptPlan);
     if (state.lptPlus) params.set('plus', '1');
     if (state.category !== 'all') params.set('cat', state.category);
+    if (state.growth !== 10) params.set('growth', String(state.growth));
     const qs = params.toString();
     const url = '/compare' + (qs ? '?' + qs : '');
     window.history.replaceState(null, '', url);
   }
 
-  /* ────────── GA4 ────────── */
+  /* ────────── GA4 + MC TRACKING ────────── */
   function track(eventName, payload) {
     if (typeof gtag === 'function') {
       try { gtag('event', eventName, payload || {}); } catch (_) {}
     }
+  }
+
+  const MC_TRACKING_URL = 'https://mission.tplcollective.ai/api/tracking/calculator';
+  function postMcTracking(payload) {
+    try {
+      const body = JSON.stringify(payload || {});
+      if (navigator.sendBeacon) {
+        const blob = new Blob([body], { type: 'application/json' });
+        navigator.sendBeacon(MC_TRACKING_URL, blob);
+        return;
+      }
+      fetch(MC_TRACKING_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body, keepalive: true, mode: 'cors'
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   /* ────────── LOGO HELPER ────────── */
@@ -267,6 +466,11 @@
 
     const filtered = state.published.filter(b => {
       if (state.category !== 'all' && b.category !== state.category) return false;
+      if (state.stateFilter !== 'all') {
+        const mk = b.markets || [];
+        const isNationwide = mk.includes('nationwide');
+        if (!isNationwide && !mk.includes(state.stateFilter)) return false;
+      }
       if (!q) return true;
       const hay = [b.name, b.short_name, ...(b.aliases || [])].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
@@ -535,6 +739,204 @@
       '</div>';
   }
 
+  /* ────────── CALC: CAP BREAK-EVEN ────────── */
+  function calcCapBreakeven(plan, avgGciPerTxn) {
+    if (!plan) return { type: 'none', label: 'N/A' };
+    const cap = plan.annual_cap || 0;
+    const splitPct = parseSplitPct(plan.split_structure);
+
+    if (!cap && !plan.flat_fee_per_txn) return { type: 'none', label: 'No cap' };
+
+    if (plan.flat_fee_per_txn && cap) {
+      const txns = Math.ceil(cap / plan.flat_fee_per_txn);
+      const gci = txns * (avgGciPerTxn || 0);
+      return {
+        type: 'txns', cap, valueTxns: txns, valueGci: gci,
+        label: txns + ' txns',
+        sub: avgGciPerTxn ? '~' + fmtMoneyShort(gci) + ' GCI' : null
+      };
+    }
+
+    if (splitPct !== null && cap) {
+      const brokerageShare = 1 - splitPct / 100;
+      if (brokerageShare <= 0) return { type: 'none', label: 'No cap' };
+      let gci = cap / brokerageShare;
+      if (plan.franchise_fee_pct && plan.franchise_fee_pct > 0) {
+        const effectiveShare = brokerageShare + (plan.franchise_fee_pct / 100);
+        gci = cap / effectiveShare;
+      }
+      const txns = avgGciPerTxn ? Math.ceil(gci / avgGciPerTxn) : null;
+      return {
+        type: 'gci', cap, valueGci: gci, valueTxns: txns,
+        label: fmtMoneyShort(gci) + ' GCI',
+        sub: txns ? '~' + txns + ' txns' : null
+      };
+    }
+
+    return { type: 'none', label: 'N/A' };
+  }
+
+  function progressToCap(plan, gci, txns) {
+    if (!plan || !plan.annual_cap) return null;
+    const splitPct = parseSplitPct(plan.split_structure);
+    let paidToBrokerage = 0;
+    if (plan.flat_fee_per_txn) {
+      paidToBrokerage = Math.min(txns * plan.flat_fee_per_txn, plan.annual_cap);
+    } else if (splitPct !== null) {
+      const share = 1 - splitPct / 100;
+      paidToBrokerage = Math.min(gci * share, plan.annual_cap);
+      if (plan.franchise_fee_pct) {
+        paidToBrokerage += Math.min(
+          gci * (plan.franchise_fee_pct / 100),
+          plan.franchise_fee_cap_annual || Infinity
+        );
+      }
+    }
+    const pct = plan.annual_cap > 0 ? (paidToBrokerage / plan.annual_cap) * 100 : 0;
+    return Math.min(100, Math.max(0, pct));
+  }
+
+  /* ────────── RENDER: CAP BREAK-EVEN ────────── */
+  function renderCapBreakeven() {
+    const panel = $('breakeven-panel');
+    const grid = $('breakeven-grid');
+    const cols = getColumnsForMatrix();
+    if (!cols.length) { panel.hidden = true; return; }
+    panel.hidden = false;
+    grid.innerHTML = '';
+
+    cols.forEach(col => {
+      const b = col.brokerage;
+      const plan = col.plan;
+      const be = calcCapBreakeven(plan, state.avgGci);
+      const pct = progressToCap(plan, state.gci, state.txns);
+      const isLpt = b.slug === LPT_SLUG;
+      const planLabel = isLpt ? (plan.plan_name || '').replace(/\s*\(.+\)/, '') : '';
+
+      let barClass = 'breakeven-bar-fill';
+      if (pct != null) {
+        if (pct >= 100) barClass += ' capped';
+        else if (pct >= 80) barClass += ' near';
+      }
+
+      const card = document.createElement('div');
+      card.className = 'breakeven-card' + (isLpt ? ' lpt' : '');
+      card.innerHTML =
+        '<div class="breakeven-card-head">' +
+          logoHtml(b, 'breakdown') +
+          '<div class="breakeven-card-name">' +
+            escapeHtml(b.short_name || b.name) +
+            (planLabel ? '<span class="breakeven-plan-sub">' + escapeHtml(planLabel) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="breakeven-stat">' +
+          '<div class="breakeven-stat-label">Cap</div>' +
+          '<div class="breakeven-stat-val">' + (plan && plan.annual_cap ? fmtMoney(plan.annual_cap) : '—') + '</div>' +
+        '</div>' +
+        '<div class="breakeven-stat">' +
+          '<div class="breakeven-stat-label">Break-Even</div>' +
+          '<div class="breakeven-stat-val">' + escapeHtml(be.label) +
+            (be.sub ? '<span class="breakeven-stat-sub">' + escapeHtml(be.sub) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        (pct != null ?
+          '<div class="breakeven-progress">' +
+            '<div class="breakeven-progress-head">' +
+              '<span>Your progress</span>' +
+              '<span class="breakeven-progress-pct">' + pct.toFixed(0) + '%</span>' +
+            '</div>' +
+            '<div class="breakeven-bar">' +
+              '<div class="' + barClass + '" style="width:' + pct + '%"></div>' +
+            '</div>' +
+          '</div>' : ''
+        );
+      grid.appendChild(card);
+    });
+  }
+
+  /* ────────── CALC: 3-YEAR PROJECTION ────────── */
+  function calcProjection(brokerage, plan, baseGci, baseTxns, avgGciPerTxn, growthPct, includeLptPlus) {
+    const rows = [];
+    let cumulative = 0;
+    for (let y = 1; y <= 3; y++) {
+      const mult = Math.pow(1 + growthPct / 100, y - 1);
+      const gciY = baseGci * mult;
+      const txnsY = Math.max(1, Math.round(baseTxns * mult));
+      const avgY = avgGciPerTxn;
+      const res = calcTotalCost(brokerage, plan, gciY, txnsY, avgY, includeLptPlus);
+      const net = res ? res.net : gciY;
+      cumulative += net;
+      rows.push({ year: y, gci: gciY, txns: txnsY, net, cumulative });
+    }
+    return { rows, total: cumulative };
+  }
+
+  /* ────────── RENDER: 3-YEAR PROJECTION ────────── */
+  function renderProjection() {
+    const panel = $('projection-panel');
+    const table = $('projection-table');
+    const cols = getColumnsForMatrix();
+    if (!cols.length) { panel.hidden = true; return; }
+    panel.hidden = false;
+
+    const growth = state.growth != null ? state.growth : 10;
+    const projections = cols.map(col => ({
+      col,
+      proj: calcProjection(col.brokerage, col.plan, state.gci, state.txns, state.avgGci, growth, state.lptPlus)
+    }));
+
+    const lptProj = projections.find(p => p.col.brokerage.slug === LPT_SLUG &&
+      (p.col.plan.plan_name || '').toLowerCase().includes('brokerage partner'));
+    const lptTotal = lptProj ? lptProj.proj.total : null;
+
+    const headCells = projections.map(p => {
+      const b = p.col.brokerage;
+      const isLpt = b.slug === LPT_SLUG;
+      const planLabel = isLpt ? (p.col.plan.plan_name || '').replace(/\s*\(.+\)/, '') : '';
+      return '<th' + (isLpt ? ' class="lpt-col"' : '') + '>' +
+        '<div class="projection-col-name">' + escapeHtml(b.short_name || b.name) + '</div>' +
+        (planLabel ? '<div class="projection-col-plan">' + escapeHtml(planLabel) + '</div>' : '') +
+        '</th>';
+    }).join('');
+
+    const yearRows = [1, 2, 3].map(y => {
+      const cells = projections.map(p => {
+        const row = p.proj.rows[y - 1];
+        const isLpt = p.col.brokerage.slug === LPT_SLUG;
+        return '<td' + (isLpt ? ' class="lpt-col"' : '') + '>' +
+          '<div class="projection-net">' + fmtMoney(row.net) + '</div>' +
+          '<div class="projection-sub">' + fmtMoneyShort(row.gci) + ' GCI / ' + row.txns + ' txns</div>' +
+          '</td>';
+      }).join('');
+      return '<tr><td class="projection-row-label">Year ' + y + '</td>' + cells + '</tr>';
+    }).join('');
+
+    const totalCells = projections.map(p => {
+      const isLpt = p.col.brokerage.slug === LPT_SLUG;
+      const delta = lptTotal != null ? (p.proj.total - lptTotal) : null;
+      let deltaHtml = '';
+      if (delta != null && !isLpt) {
+        const sign = delta >= 0 ? '+' : '−';
+        const deltaClass = delta >= 0 ? 'projection-delta-pos' : 'projection-delta-neg';
+        deltaHtml = '<div class="projection-delta ' + deltaClass + '">' +
+          sign + fmtMoney(Math.abs(delta)) + ' vs LPT BP</div>';
+      }
+      return '<td' + (isLpt ? ' class="lpt-col"' : '') + '>' +
+        '<div class="projection-total">' + fmtMoney(p.proj.total) + '</div>' +
+        deltaHtml +
+        '</td>';
+    }).join('');
+
+    table.innerHTML =
+      '<thead><tr>' +
+        '<th class="projection-row-header">&nbsp;</th>' + headCells +
+      '</tr></thead>' +
+      '<tbody>' +
+        yearRows +
+        '<tr class="projection-total-row"><td class="projection-row-label">3-Year Total Retained</td>' + totalCells + '</tr>' +
+      '</tbody>';
+  }
+
   /* ────────── RENDER: HYBRIDSHARE + TPL CALLOUT ────────── */
   function renderHybridshare() {
     const panel = $('hybridshare-panel');
@@ -579,6 +981,8 @@
     renderSelectorList();
     renderMatrix();
     renderBreakdown();
+    renderCapBreakeven();
+    renderProjection();
     renderHybridshare();
     renderTplCallout();
     const hasLpt = state.selected.some(b => b.slug === LPT_SLUG);
@@ -619,7 +1023,7 @@
         state.avgGci = Math.round(state.gci / state.txns);
         $('avg-gci').value = state.avgGci;
       }
-      renderMatrix(); renderBreakdown(); writeUrlState();
+      renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
     });
     $('txns-slider').addEventListener('input', (e) => {
       state.txns = parseInt(e.target.value, 10);
@@ -628,20 +1032,47 @@
         state.avgGci = Math.round(state.gci / state.txns);
         $('avg-gci').value = state.avgGci;
       }
-      renderMatrix(); renderBreakdown(); writeUrlState();
+      renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
     });
     $('avg-gci').addEventListener('input', (e) => {
       const v = parseInt(e.target.value, 10);
       if (!isNaN(v) && v > 0) {
         state.avgGci = v;
         state.avgGciEdited = true;
-        renderMatrix(); renderBreakdown();
+        renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection();
       }
     });
 
     $('lpt-plus-toggle').addEventListener('change', (e) => {
       state.lptPlus = e.target.checked;
-      renderMatrix(); renderBreakdown(); writeUrlState();
+      renderMatrix(); renderBreakdown(); renderProjection(); writeUrlState();
+    });
+
+    $('growth-slider').addEventListener('input', (e) => {
+      state.growth = parseInt(e.target.value, 10);
+      $('growth-value').textContent = String(state.growth);
+      renderProjection(); writeUrlState();
+    });
+
+    const stateSel = $('state-filter');
+    if (stateSel) {
+      stateSel.addEventListener('change', (e) => {
+        state.stateFilter = e.target.value;
+        renderSelectorList();
+        writeUrlState();
+        track('compare_state_filter', { state: state.stateFilter });
+      });
+    }
+
+    /* ── QUIZ ── */
+    $('open-quiz-btn').addEventListener('click', openQuiz);
+    $('quiz-modal-close').addEventListener('click', closeQuiz);
+    $('quiz-modal-backdrop').addEventListener('click', closeQuiz);
+    $('quiz-back-btn').addEventListener('click', () => {
+      if (quizState.idx > 0) { quizState.idx--; renderQuizStep(); }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('quiz-modal').hidden) closeQuiz();
     });
 
     document.querySelectorAll('.plan-toggle-btn').forEach(btn => {
@@ -653,8 +1084,145 @@
         btn.classList.add('active');
         btn.setAttribute('aria-checked', 'true');
         state.lptPlan = btn.dataset.plan;
-        renderMatrix(); renderBreakdown(); writeUrlState();
+        renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
       });
+    });
+
+    /* ── CALC ACCORDION ── */
+    const calcPrice = $('calc-price');
+    const calcRate = $('calc-rate');
+    const calcDeals = $('calc-deals');
+    const calcApply = $('calc-apply-btn');
+
+    function recomputeCalcDerived() {
+      const price = Math.max(0, parseFloat(calcPrice.value) || 0);
+      const rate = Math.max(0, parseFloat(calcRate.value) || 0);
+      const deals = Math.max(1, parseInt(calcDeals.value, 10) || 1);
+      const perDealGci = price * (rate / 100);
+      const totalGci = Math.round(perDealGci * deals);
+      $('calc-derived-gci').textContent = fmtMoney(totalGci);
+      $('calc-derived-avg').textContent = fmtMoney(Math.round(perDealGci));
+      return { totalGci, perDealGci: Math.round(perDealGci), deals };
+    }
+    [calcPrice, calcRate, calcDeals].forEach(el => {
+      el.addEventListener('input', recomputeCalcDerived);
+    });
+    calcApply.addEventListener('click', () => {
+      const { totalGci, perDealGci, deals } = recomputeCalcDerived();
+      const clampedGci = Math.max(50000, Math.min(1000000, totalGci));
+      const clampedTxns = Math.max(1, Math.min(60, deals));
+      state.gci = clampedGci;
+      state.txns = clampedTxns;
+      state.avgGci = perDealGci > 0 ? perDealGci : Math.round(clampedGci / clampedTxns);
+      state.avgGciEdited = true;
+      $('gci-slider').value = clampedGci;
+      $('gci-value').textContent = fmtMoney(clampedGci);
+      $('txns-slider').value = clampedTxns;
+      $('txns-value').textContent = String(clampedTxns);
+      $('avg-gci').value = state.avgGci;
+      renderMatrix(); renderBreakdown(); writeUrlState();
+      track('compare_calc_applied', {
+        gci: clampedGci, txns: clampedTxns, avg_gci: state.avgGci,
+        selection: state.selected.map(b => b.slug).join(',')
+      });
+      postMcTracking({
+        source: 'compare_accordion',
+        gci: clampedGci,
+        txns: clampedTxns,
+        avg_gci_per_txn: state.avgGci,
+        selection: state.selected.map(b => b.slug),
+        lpt_plan: state.lptPlan,
+        lpt_plus: state.lptPlus,
+        page_url: window.location.origin + window.location.pathname + window.location.search,
+        ts: new Date().toISOString()
+      });
+      $('calc-accordion').open = false;
+    });
+
+    /* ── EMAIL MODAL ── */
+    const emailModal = $('email-modal');
+    const emailForm = $('email-modal-form');
+    const emailErr = $('email-modal-error');
+    const emailSuccess = $('email-modal-success');
+
+    function openEmailModal() {
+      emailModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => { $('email-modal-name').focus(); }, 50);
+      track('compare_email_modal_open', { selection: state.selected.map(b => b.slug).join(',') });
+    }
+    function closeEmailModal() {
+      emailModal.hidden = true;
+      document.body.style.overflow = '';
+      emailErr.hidden = true;
+      emailErr.textContent = '';
+      emailForm.hidden = false;
+      emailSuccess.hidden = true;
+      emailForm.reset();
+    }
+
+    $('email-comparison-btn').addEventListener('click', openEmailModal);
+    $('email-modal-close').addEventListener('click', closeEmailModal);
+    $('email-modal-backdrop').addEventListener('click', closeEmailModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !emailModal.hidden) closeEmailModal();
+    });
+
+    emailForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = $('email-modal-name').value.trim();
+      const email = $('email-modal-email').value.trim();
+      const phone = $('email-modal-phone').value.trim();
+      emailErr.hidden = true;
+      if (!name || !email) {
+        emailErr.hidden = false;
+        emailErr.textContent = 'Name and email are required.';
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        emailErr.hidden = false;
+        emailErr.textContent = 'Please enter a valid email.';
+        return;
+      }
+      const submitBtn = $('email-modal-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+
+      writeUrlState();
+      const shareUrl = window.location.origin + window.location.pathname + window.location.search;
+      const payload = {
+        name, email, phone,
+        source: 'compare_email_share',
+        share_url: shareUrl,
+        gci: state.gci,
+        txns: state.txns,
+        avg_gci_per_txn: state.avgGci,
+        selection: state.selected.map(b => b.slug),
+        lpt_plan: state.lptPlan,
+        lpt_plus: state.lptPlus,
+        ts: new Date().toISOString()
+      };
+      try {
+        const res = await fetch(MC_TRACKING_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok && res.status !== 404) throw new Error('HTTP ' + res.status);
+      } catch (err) {
+        postMcTracking(payload);
+      }
+      track('compare_email_share_submit', {
+        selection: state.selected.map(b => b.slug).join(','),
+        gci: state.gci, txns: state.txns
+      });
+      if (typeof fbq === 'function') {
+        try { fbq('track', 'Lead', { content_name: 'Compare Email Share' }); } catch (_) {}
+      }
+      emailForm.hidden = true;
+      emailSuccess.hidden = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send My Comparison';
     });
 
     $('copy-link-btn').addEventListener('click', async () => {
@@ -685,6 +1253,7 @@
     if (u.plan) state.lptPlan = u.plan;
     if (u.plus) state.lptPlus = true;
     if (u.cat) state.category = u.cat;
+    if (u.growth != null) state.growth = Math.max(0, Math.min(25, u.growth));
 
     const hasUrlSelection = u.slugs.length > 0;
     const initialSlugs = hasUrlSelection ? u.slugs : [LPT_SLUG];
@@ -701,6 +1270,8 @@
     $('txns-value').textContent = String(state.txns);
     $('avg-gci').value = state.avgGci;
     $('lpt-plus-toggle').checked = state.lptPlus;
+    $('growth-slider').value = state.growth;
+    $('growth-value').textContent = String(state.growth);
 
     document.querySelectorAll('.filter-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.category === state.category);
