@@ -6,10 +6,18 @@ This ensures leads are never lost even if the webhook fails.
 """
 import json
 import os
+import re
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 from supabase import create_client
+
+EMAIL_REGEX = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
+
+def is_valid_email(value):
+    if not value or not isinstance(value, str):
+        return False
+    return bool(EMAIL_REGEX.match(value.strip()))
 
 SETTINGS_PATH = "/data/settings.json"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://zyonidiybzrgklrmalbt.supabase.co")
@@ -75,8 +83,18 @@ def main():
                 if fvals:
                     fields[fname] = fvals[0]
 
-            email = fields.get("email", "")
+            email = (fields.get("email", "") or "").strip()
             if not email or email.lower() in existing_emails:
+                continue
+            if not is_valid_email(email):
+                try:
+                    supabase.table("activity_log").insert({
+                        "type": "sync_validation_error",
+                        "message": f"sync_meta_leads rejected malformed email: {email!r} (form={form_name!r})",
+                        "meta": {"email": email, "form": form_name, "fields": fields}
+                    }).execute()
+                except Exception:
+                    pass
                 continue
 
             name = fields.get("full_name", "") or fields.get("name", "Unknown")

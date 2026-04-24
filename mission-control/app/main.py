@@ -12,7 +12,16 @@ import hashlib
 import urllib.request
 import urllib.parse
 import httpx
+import re as _re_top
 from datetime import datetime, timedelta
+
+EMAIL_REGEX = _re_top.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
+
+def is_valid_email(value: str) -> bool:
+    """Strict regex check — matches the Postgres constraint used to backfill-audit leads."""
+    if not value or not isinstance(value, str):
+        return False
+    return bool(EMAIL_REGEX.match(value.strip()))
 
 app = FastAPI(title="TPL Mission Control")
 
@@ -3773,7 +3782,7 @@ async def meta_leads_webhook(request: Request):
                 platform=data.get("platform", "meta"),
                 settings=settings
             )
-            return {"success": True, "action": "lead_created", "leads": [lead_result]}
+            return {"success": True, "action": "lead_created" if lead_result.get("action") != "invalid_email" else "invalid_email", "leads": [lead_result]}
         return {"success": True, "action": "no_entries"}
 
     for entry in entries:
@@ -3828,8 +3837,18 @@ async def meta_leads_webhook(request: Request):
                 if field_values:
                     fields[field_name] = field_values[0]
 
-            email = fields.get("email", "")
+            email = (fields.get("email", "") or "").strip()
             if not email:
+                continue
+            if not is_valid_email(email):
+                try:
+                    supabase.table("activity_log").insert({
+                        "type": "webhook_validation_error",
+                        "message": f"Meta webhook rejected malformed email from leadgen {leadgen_id}: {email!r}",
+                        "meta": {"leadgen_id": leadgen_id, "form_id": form_id, "email": email, "fields": fields}
+                    }).execute()
+                except Exception:
+                    pass
                 continue
 
             name = fields.get("full_name", "") or fields.get("name", "Unknown")
@@ -3856,6 +3875,18 @@ async def meta_leads_webhook(request: Request):
 async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
                              campaign_name: str, ad_name: str, platform: str, settings: dict) -> dict:
     """Create or update a lead from Meta Lead Ads."""
+    email = (email or "").strip()
+    if not is_valid_email(email):
+        try:
+            supabase.table("activity_log").insert({
+                "type": "webhook_validation_error",
+                "message": f"Meta webhook rejected malformed email: {email!r} (name={name!r}, phone={phone!r}, form={form_name!r})",
+                "meta": {"email": email, "name": name, "phone": phone, "form": form_name, "platform": platform}
+            }).execute()
+        except Exception:
+            pass
+        return {"lead_id": None, "action": "invalid_email", "email": email, "name": name}
+
     # Parse first/last name
     name_parts = name.strip().split(" ", 1)
     first_name = name_parts[0] if name_parts else "Unknown"
