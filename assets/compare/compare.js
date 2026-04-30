@@ -1550,8 +1550,30 @@
       } catch (err) { /* non-blocking */ }
 
       // Actually send the comparison email + PDF to the user.
-      // Build a richer selection payload that handles custom brokerages by name.
+      // Two parallel selection payloads:
+      //  - emailSelection: light list of slugs / {name,isCustom} for the email body labels
+      //  - selectionFull: complete brokerage objects (with plans, isCustom, _customForm)
+      //    so the saved snapshot can rehydrate report-mode INCLUDING custom brokerages.
       const emailSelection = state.selected.map(b => b.isCustom ? { name: b.name, isCustom: true } : b.slug);
+      const selectionFull = state.selected.map(b => {
+        if (b.isCustom) {
+          // Strip nothing — keep plans + _customForm so editing/recomputation works on report-mode load
+          return {
+            slug: b.slug,
+            name: b.name,
+            short_name: b.short_name,
+            isCustom: true,
+            status: 'custom',
+            category: b.category || 'custom',
+            model_type: b.model_type || null,
+            plans: b.plans || [],
+            _customForm: b._customForm || null
+          };
+        }
+        // Published brokerage: just send slug + name; report-mode re-resolves from
+        // current published list to get fresh logos/citations.
+        return { slug: b.slug, name: b.name, isCustom: false };
+      });
 
       // Compute per-brokerage costs server-side input (frontend has the data already).
       const comparisonResults = [];
@@ -1610,6 +1632,7 @@
             name, email,
             share_url: shareUrl,
             selection: emailSelection,
+            selection_full: selectionFull,    // saved to recruit_comparisons for full rehydration
             gci: state.gci,
             txns: state.txns,
             lpt_plan: state.lptPlan,

@@ -1,7 +1,15 @@
 // Vercel serverless function — sends the "email this comparison to me" email
 // triggered from the public /compare email modal. Public endpoint, no auth.
+// Saves the full comparison snapshot (including custom brokerages) server-side
+// so the email link can restore the exact comparison via /compare?report=<token>.
 // Generates a branded PDF recap and attaches it to the Resend send.
 import { generateComparisonPdf } from './_lib/comparison-pdf.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 async function sendResend({ to, from, replyTo, subject, html, attachments }) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -111,10 +119,57 @@ export default async function handler(req, res) {
   }).filter(Boolean);
 
   const firstName = (name || '').toString().trim().split(/\s+/)[0] || '';
+
+  // ── Save full comparison snapshot to Supabase so the email link can restore it ──
+  // The recipient lands on /compare?report=<token> which fetches this row and
+  // hydrates state — including custom brokerages, which can't fit in URL params.
+  let tokenUrl = share_url;        // fallback to URL-state version if save fails
+  let savedToken = null;
+  let saveError = null;
+  try {
+    // The frontend may send `selection` as a mix of slug strings (published) and
+    // {slug, name, isCustom, plans, _customForm, ...} objects (custom). For the
+    // saved row we need full brokerage objects so report-mode can render them.
+    // The richer `comparison_results` array has display rows but not source plans;
+    // we keep BOTH so the loader has everything it needs.
+    const saved = await supabase
+      .from('recruit_comparisons')
+      .insert({
+        recruit_first_name: firstName || null,
+        recruit_last_name: null,
+        recruit_email: email,
+        current_brokerage_name: null,
+        selection: body.selection_full || selection,
+        gci: gci || 0,
+        txns: txns || 0,
+        avg_gci_per_txn: (gci && txns) ? gci / txns : null,
+        lpt_plan: lpt_plan || 'both',
+        lpt_plus: !!lpt_plus,
+        comparison_result: {
+          rows: comparison_results || [],
+          lpt_equity: lpt_equity || null,
+          avg_sale_price: avg_sale_price || null,
+          commission_pct: commission_pct || null
+        },
+        notes: 'Self-share from public /compare email modal'
+      })
+      .select('share_token')
+      .single();
+    if (saved.data && saved.data.share_token) {
+      savedToken = saved.data.share_token;
+      tokenUrl = `https://tplcollective.ai/compare?report=${savedToken}`;
+    } else if (saved.error) {
+      saveError = saved.error.message;
+    }
+  } catch (err) {
+    saveError = err && err.message ? err.message : 'snapshot save failed';
+    console.error('Comparison save error:', err);
+  }
+
   const subject = 'Your brokerage comparison from TPL Collective';
   const html = buildEmailHtml({
     firstName,
-    shareUrl: share_url,
+    shareUrl: tokenUrl,
     selectionLabels,
     gci: gci || 0,
     txns: txns || 0,
@@ -135,7 +190,7 @@ export default async function handler(req, res) {
       txns: txns || 0,
       lptPlan: lpt_plan || 'both',
       lptPlus: !!lpt_plus,
-      shareUrl: share_url,
+      shareUrl: tokenUrl,                    // token URL preserves full state
       lptEquity: lpt_equity || null
     });
     const today = new Date().toISOString().slice(0, 10);
@@ -171,6 +226,9 @@ export default async function handler(req, res) {
     success: true,
     resend_id: result.body?.id || null,
     pdf_attached: attachments.length > 0,
-    pdf_error: pdfError
+    pdf_error: pdfError,
+    share_token: savedToken,
+    token_url: savedToken ? tokenUrl : null,
+    save_error: saveError
   });
 }
