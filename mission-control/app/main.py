@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, PlainTextResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -14,6 +14,15 @@ import urllib.parse
 import httpx
 import re as _re_top
 from datetime import datetime, timedelta
+
+from auth import (
+    hash_password,
+    verify_password,
+    create_token,
+    decode_token,
+)
+import contextvars
+import secrets
 
 EMAIL_REGEX = _re_top.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
 
@@ -32,6 +41,104 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── AUTH MIDDLEWARE ──
+# Gates every /api/* route with JWT bearer-token validation.
+# Whitelist below covers public routes (lead capture, webhooks, tracking pixels, unsubscribe links).
+
+PUBLIC_API_EXACT = {
+    "/health",
+    "/api/auth/login",
+    "/api/auth/signup",
+    "/api/email/unsubscribe",
+}
+
+PUBLIC_API_PREFIXES = (
+    "/api/webhooks/",
+    "/api/tracking/",
+    "/api/email/open/",
+    "/api/auth/invite/",  # Phase 13.5: public invite-token validation
+    "/api/recruit-comparisons/by-token/",  # Phase 14: public report viewer
+)
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+    method = request.method
+
+    # Non-API paths (HTML, static files) bypass auth entirely
+    if not path.startswith("/api/"):
+        return await call_next(request)
+
+    # Whitelisted public API routes
+    if path in PUBLIC_API_EXACT:
+        return await call_next(request)
+    if any(path.startswith(p) for p in PUBLIC_API_PREFIXES):
+        return await call_next(request)
+    # POST /api/leads is public (marketing site lead capture); other methods on /api/leads require auth
+    if path == "/api/leads" and method == "POST":
+        return await call_next(request)
+
+    # Everything else under /api/ requires a valid JWT.
+    # EXCEPTION: requests from loopback (cron jobs running on the same VPS — automations.py
+    # calls http://127.0.0.1:8000/api/...) bypass auth and run as platform admin in workspace 1.
+    # Safe because the VPS is single-tenant infrastructure that only Joe controls.
+    auth_header = request.headers.get("authorization", "")
+    client_host = (request.client.host if request.client else "")
+    if not auth_header.lower().startswith("bearer "):
+        if client_host in ("127.0.0.1", "::1", "localhost"):
+            request.state.user = {
+                "sub": 1, "email": "system@tplcollective.ai", "role": "admin",
+                "workspace_id": PLATFORM_WORKSPACE_ID, "plan": "elite",
+            }
+            request.state.workspace_id = PLATFORM_WORKSPACE_ID
+            request.state.plan = "elite"
+            token_ctx = current_workspace_ctx.set(PLATFORM_WORKSPACE_ID)
+            try:
+                return await call_next(request)
+            finally:
+                current_workspace_ctx.reset(token_ctx)
+        return JSONResponse({"detail": "Authentication required"}, status_code=401)
+    try:
+        request.state.user = decode_token(auth_header[7:].strip())
+    except HTTPException as e:
+        return JSONResponse({"detail": e.detail}, status_code=e.status_code)
+
+    # Resolve effective workspace_id for this request.
+    # Impersonation tokens (Phase 13.6) already carry the TARGET user's workspace_id and plan,
+    # so we just trust the signed token here. The `impersonating` claim is preserved for audit
+    # trails and UI banners; query scoping happens automatically via workspace_id.
+    user = request.state.user
+    ws_id = user.get("workspace_id")
+    plan = user.get("plan", "basic")
+    request.state.workspace_id = ws_id
+    request.state.plan = plan
+
+    # Platform-only gating: TPL Collective features are restricted to workspace_id=1.
+    # Exception: an impersonating admin must be able to exit impersonation even though their
+    # *effective* workspace during impersonation is the target's, not the platform workspace.
+    if any(_path_matches_prefix(path, p) for p in PLATFORM_ONLY_PREFIXES):
+        is_impersonate_stop = (path == "/api/admin/impersonate/stop" and user.get("impersonating"))
+        if not is_impersonate_stop and ws_id != PLATFORM_WORKSPACE_ID:
+            return JSONResponse({"detail": "This feature is not available on your workspace"}, status_code=403)
+
+    # Plan-tier gating: features unlocked by mid/elite plan.
+    for prefix, required_plan in PLAN_GATED_PREFIXES.items():
+        if _path_matches_prefix(path, prefix):
+            if not plan_meets(plan, required_plan):
+                return JSONResponse(
+                    {"detail": f"This feature requires the {required_plan} plan", "required_plan": required_plan, "current_plan": plan},
+                    status_code=403,
+                )
+            break
+
+    token_ctx = current_workspace_ctx.set(ws_id)
+    try:
+        return await call_next(request)
+    finally:
+        current_workspace_ctx.reset(token_ctx)
+
+
 SETTINGS_PATH = "/data/settings.json"
 
 # ── SUPABASE CLIENT ──
@@ -40,6 +147,129 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://zyonidiybzrgklrmalbt.supa
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+# ── TENANT SCOPING (Phase 13.3) ──
+# Drop-in wrapper for supabase.table() that auto-scopes tenant tables by workspace_id.
+# - Authenticated routes: middleware sets `current_workspace_ctx`; SELECT/UPDATE/DELETE
+#   are filtered by workspace_id and INSERT/UPSERT auto-stamp it.
+# - Public routes (webhooks, marketing-site lead capture) and background tasks: contextvar
+#   stays None, so the wrapper behaves identically to raw supabase.table() and the schema
+#   default of 1 (Joe's workspace) handles new rows.
+# - Global tables (users, agents, workspaces, email_suppressions, etc.) bypass scoping.
+
+TENANT_TABLES = frozenset({
+    "leads", "opportunities", "pipelines", "tasks",
+    "email_funnels", "email_funnel_steps", "email_funnel_enrollments",
+    "smart_lists", "lead_notes", "lead_activity", "lead_stage_history",
+    "content_posts", "ideas", "drip_queue",
+    "email_send_log", "email_queue", "emails_sent", "email_daily_limits",
+    "automation_runs", "automation_settings", "goals",
+    "contact_communications", "magnet_deliveries",
+    "activity_log",  # added in 13.7 audit — was wrongly left global
+})
+
+current_workspace_ctx: "contextvars.ContextVar[Optional[int]]" = contextvars.ContextVar(
+    "current_workspace", default=None
+)
+
+
+class _ScopedQB:
+    """Workspace-scoped query builder. See `db()` below."""
+
+    def __init__(self, name: str):
+        self._name = name
+        self._ws = current_workspace_ctx.get() if name in TENANT_TABLES else None
+
+    def _stamp(self, row):
+        if self._ws is None:
+            return row
+        if isinstance(row, list):
+            for r in row:
+                if isinstance(r, dict):
+                    r.setdefault("workspace_id", self._ws)
+        elif isinstance(row, dict):
+            row.setdefault("workspace_id", self._ws)
+        return row
+
+    def _scope(self, q):
+        return q.eq("workspace_id", self._ws) if self._ws is not None else q
+
+    def select(self, *a, **k):
+        return self._scope(supabase.table(self._name).select(*a, **k))
+
+    def insert(self, row, *a, **k):
+        return supabase.table(self._name).insert(self._stamp(row), *a, **k)
+
+    def upsert(self, row, *a, **k):
+        return supabase.table(self._name).upsert(self._stamp(row), *a, **k)
+
+    def update(self, data, *a, **k):
+        return self._scope(supabase.table(self._name).update(data, *a, **k))
+
+    def delete(self, *a, **k):
+        return self._scope(supabase.table(self._name).delete(*a, **k))
+
+
+def db(name: str) -> _ScopedQB:
+    """Workspace-scoped replacement for supabase.table().
+    Use for every tenant table; behaves identically to supabase.table() for global tables."""
+    return _ScopedQB(name)
+
+
+# ── PLAN TIERS & PLATFORM GATING (Phase 13.4) ──
+# - Plan tiers (basic/mid/elite) gate features by URL path prefix.
+# - "Platform-only" routes (TPL Collective recruiting features) are restricted to workspace_id=1.
+# - Tier limits (contact counts, monthly emails, max funnels) are read by callers as needed.
+
+PLATFORM_WORKSPACE_ID = 1  # TPL Collective; gets recruiting_links, agents roster, newsletter, referrals, revshare
+
+PLAN_RANK = {"basic": 1, "mid": 2, "elite": 3}
+
+PLAN_LIMITS = {
+    "basic": {"contacts": 100, "emails_per_month": 100, "email_funnels": 0, "smart_lists": 0},
+    "mid":   {"contacts": 2500, "emails_per_month": 5000, "email_funnels": 5, "smart_lists": 10},
+    "elite": {"contacts": -1,  "emails_per_month": -1,   "email_funnels": -1, "smart_lists": -1},  # -1 = unlimited
+}
+
+# Path prefixes that require workspace_id == PLATFORM_WORKSPACE_ID
+PLATFORM_ONLY_PREFIXES = (
+    "/api/agents",
+    "/api/recruiting-links",
+    "/api/referrals",
+    "/api/revshare",
+    "/api/newsletter",
+    "/api/prospects",
+    "/api/buyer-intake",
+    "/api/admin",  # Phase 13.5: invitations, user management, impersonation
+)
+
+# Path prefixes that require a minimum plan tier
+PLAN_GATED_PREFIXES = {
+    # Mid+ features
+    "/api/funnels":      "mid",
+    "/api/email-funnels": "mid",
+    "/api/smart-lists":  "mid",
+    "/api/content":      "mid",
+    "/api/drip":         "mid",
+    # Elite-only features
+    "/api/ai":           "elite",
+    "/api/automations":  "elite",
+    "/api/goals":        "elite",
+}
+
+
+def _path_matches_prefix(path: str, prefix: str) -> bool:
+    """Match /api/foo and /api/foo/* but not /api/foobar."""
+    return path == prefix or path.startswith(prefix + "/")
+
+
+def plan_meets(user_plan: str, required_plan: str) -> bool:
+    return PLAN_RANK.get(user_plan or "basic", 0) >= PLAN_RANK.get(required_plan, 99)
+
+
+def get_plan_limit(plan: str, key: str) -> int:
+    return PLAN_LIMITS.get(plan or "basic", PLAN_LIMITS["basic"]).get(key, 0)
 
 
 # ── SETTINGS HELPERS ──
@@ -75,12 +305,12 @@ def check_daily_limit(domain: str, limit: int = 200) -> bool:
     """Check if daily send limit has been reached. Returns True if OK to send."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     try:
-        result = supabase.table("email_daily_limits").select("sent_count, limit_count").eq("send_date", today).eq("domain", domain).execute()
+        result = db("email_daily_limits").select("sent_count, limit_count").eq("send_date", today).eq("domain", domain).execute()
         if result.data:
             row = result.data[0]
             return row["sent_count"] < row.get("limit_count", limit)
         # No row yet — create one
-        supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 0, "limit_count": limit}).execute()
+        db("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 0, "limit_count": limit}).execute()
         return True
     except Exception:
         return True  # Don't block sends on tracking errors
@@ -90,11 +320,11 @@ def increment_daily_count(domain: str):
     """Increment the daily send count for a domain."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     try:
-        result = supabase.table("email_daily_limits").select("id, sent_count").eq("send_date", today).eq("domain", domain).execute()
+        result = db("email_daily_limits").select("id, sent_count").eq("send_date", today).eq("domain", domain).execute()
         if result.data:
-            supabase.table("email_daily_limits").update({"sent_count": result.data[0]["sent_count"] + 1}).eq("id", result.data[0]["id"]).execute()
+            db("email_daily_limits").update({"sent_count": result.data[0]["sent_count"] + 1}).eq("id", result.data[0]["id"]).execute()
         else:
-            supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 1, "limit_count": 200}).execute()
+            db("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 1, "limit_count": 200}).execute()
     except Exception:
         pass
 
@@ -114,7 +344,7 @@ def log_email_send(contact_id, from_addr: str, to_addr: str, subject: str, statu
         }
         if tracking_id:
             row["tracking_id"] = tracking_id
-        supabase.table("email_send_log").insert(row).execute()
+        db("email_send_log").insert(row).execute()
     except Exception:
         pass
 
@@ -130,7 +360,7 @@ UNSUBSCRIBE_FOOTER = """
 """
 
 
-def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, from_address: str = "", contact_id: int = None, campaign: str = "") -> tuple[bool, str]:
+def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, from_address: str = "", contact_id: int = None, campaign: str = "", reply_to: str = "") -> tuple[bool, str]:
     """Send email via Resend API with rails: suppression check, rate limit, unsubscribe footer, tracking pixel, logging."""
     try:
         api_key = smtp_config.get("pass", "")
@@ -168,22 +398,25 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, f
         if not from_address:
             from_address = "Joe DeSane <joe@tplcollective.co>"
 
+        resend_payload = {
+            "from": from_address,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_body,
+            "headers": {
+                "List-Unsubscribe": f"<https://mission.tplcollective.ai/api/email/unsubscribe?email={urllib.parse.quote(to_email)}>",
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+            }
+        }
+        if reply_to:
+            resend_payload["reply_to"] = reply_to
         resp = httpx.post(
             "https://api.resend.com/emails",
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
-            json={
-                "from": from_address,
-                "to": [to_email],
-                "subject": subject,
-                "html": html_body,
-                "headers": {
-                    "List-Unsubscribe": f"<https://mission.tplcollective.ai/api/email/unsubscribe?email={urllib.parse.quote(to_email)}>",
-                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
-                }
-            },
+            json=resend_payload,
             timeout=30
         )
 
@@ -295,13 +528,13 @@ def maybe_notify_new_lead(lead_data: dict):
         success, error = send_email(smtp, to_email, subject, html, from_address="TPL Mission Control <notifications@tplcollective.ai>")
 
         if success:
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "smtp",
                 "message": f"Email notification sent to {to_email} for lead: {lead_data.get('name')}",
                 "meta": {}
             }).execute()
         else:
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "error",
                 "message": f"Email notification failed: {error}",
                 "meta": {}
@@ -355,12 +588,907 @@ def health():
     return {"status": "ok", "time": datetime.utcnow().isoformat()}
 
 
+# ── AUTH ──
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+def _user_payload(user: dict) -> dict:
+    """Build the user object returned to the frontend after login / on /me."""
+    name = (user.get("name") or "").strip()
+    initials = user.get("avatar_initials") or "".join(w[0].upper() for w in name.split()[:2]) or "U"
+    agent_id = None
+    try:
+        ag = supabase.table("agents").select("id").eq("user_id", user["id"]).limit(1).execute()
+        if ag.data:
+            agent_id = ag.data[0]["id"]
+    except Exception:
+        pass
+    workspace = None
+    try:
+        ws = supabase.table("workspaces").select("id, name, plan").eq("id", user.get("workspace_id") or 1).limit(1).execute()
+        if ws.data:
+            workspace = ws.data[0]
+    except Exception:
+        pass
+    return {
+        "id": user["id"],
+        "email": user["email"],
+        "name": name,
+        "role": user.get("role", "agent"),
+        "avatar_initials": initials,
+        "agent_id": agent_id,
+        "workspace_id": user.get("workspace_id") or 1,
+        "workspace": workspace,
+    }
+
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest):
+    email = (req.email or "").lower().strip()
+    if not email or not req.password:
+        raise HTTPException(status_code=400, detail="Email and password required")
+
+    res = supabase.table("users").select("*").eq("email", email).execute()
+    if not res.data:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    user = res.data[0]
+    if not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    try:
+        supabase.table("users").update({"last_login": datetime.utcnow().isoformat()}).eq("id", user["id"]).execute()
+    except Exception:
+        pass
+
+    workspace_id = user.get("workspace_id") or 1
+    plan = "basic"
+    try:
+        ws = supabase.table("workspaces").select("plan").eq("id", workspace_id).limit(1).execute()
+        if ws.data:
+            plan = ws.data[0].get("plan", "basic")
+    except Exception:
+        pass
+    token = create_token(user["id"], user["email"], user.get("role", "agent"), workspace_id, plan)
+    return {"token": token, "user": _user_payload(user)}
+
+
+@app.get("/api/auth/me")
+async def get_me(request: Request):
+    payload = request.state.user
+    # During impersonation: payload.sub is the admin (audit trail), payload.impersonating is the target.
+    # Return the TARGET's user info so the UI renders as the impersonated user, plus actor metadata
+    # for the impersonation banner.
+    target_id = payload.get("impersonating") or payload["sub"]
+    res = supabase.table("users").select("*").eq("id", target_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_payload = _user_payload(res.data[0])
+    if payload.get("impersonating"):
+        actor = supabase.table("users").select("id, email, name").eq("id", payload["sub"]).execute()
+        if actor.data:
+            user_payload["impersonating"] = True
+            user_payload["actor"] = {"id": actor.data[0]["id"], "email": actor.data[0]["email"], "name": actor.data[0]["name"]}
+    return {"user": user_payload}
+
+
+@app.post("/api/auth/logout")
+async def logout():
+    """Stateless JWT — client clears its own token. This endpoint exists for symmetry."""
+    return {"ok": True}
+
+
+# ── INVITATIONS & SIGNUP (Phase 13.5) ──
+
+class InviteCreate(BaseModel):
+    email: str
+    name: Optional[str] = ""
+    plan: str = "basic"
+
+
+class SignupRequest(BaseModel):
+    token: str
+    name: str
+    password: str
+
+
+def _is_platform_admin(request: Request) -> bool:
+    """True only for admins inside the TPL Collective platform workspace (Joe today)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return False
+    return user.get("role") == "admin" and (user.get("workspace_id") or 0) == PLATFORM_WORKSPACE_ID
+
+
+def _seed_default_workspace(workspace_id: int):
+    """Insert default pipeline + funnel templates + smart lists for a brand-new workspace.
+    Called once during signup. Failures are swallowed individually so a partial seed doesn't
+    block account creation — the agent can re-create anything missing themselves."""
+    try:
+        supabase.table("pipelines").insert({
+            "workspace_id": workspace_id,
+            "name": "Sales Pipeline",
+            "is_default": True,
+            "stages": ["Lead", "Contacted", "Qualified", "Pending", "Closed Won", "Closed Lost"],
+        }).execute()
+    except Exception:
+        pass
+
+    for funnel_name, desc in [
+        ("Buyer Welcome", "Default buyer welcome sequence — paused, ready to customize."),
+        ("Seller Welcome", "Default seller welcome sequence — paused, ready to customize."),
+    ]:
+        try:
+            supabase.table("email_funnels").insert({
+                "workspace_id": workspace_id,
+                "name": funnel_name,
+                "description": desc,
+                "active": False,
+            }).execute()
+        except Exception:
+            pass
+
+    smart_lists = [
+        ("Hot Leads", "🔥", {"lead_temperature": "hot"}, 1),
+        ("Stale 30+ Days", "⏰", {"last_contacted_days_ago_gte": 30}, 2),
+        ("Tasks Due This Week", "📅", {"due_within_days": 7}, 3),
+    ]
+    for name, icon, filters, order in smart_lists:
+        try:
+            supabase.table("smart_lists").insert({
+                "workspace_id": workspace_id,
+                "name": name,
+                "icon": icon,
+                "filters": filters,
+                "sort_order": order,
+            }).execute()
+        except Exception:
+            pass
+
+
+def _send_invitation_email(email: str, name: str, signup_url: str, plan: str, inviter_name: str = "Joe DeSane") -> tuple[bool, str]:
+    """Send the invitation email via Resend. Returns (success, message)."""
+    settings = load_settings()
+    smtp = settings.get("smtp", {})
+    if not smtp.get("pass"):
+        return False, "Resend API key not configured in settings"
+
+    display_name = (name or email.split("@")[0]).strip()
+    plan_label = {"basic": "Basic (Free)", "mid": "Pro", "elite": "Elite"}.get(plan, plan.title())
+    subject = f"You're invited to TPL Mission Control"
+    html = f"""<!DOCTYPE html>
+<html><body style="font-family:'DM Sans',Helvetica,Arial,sans-serif;background:#0a0a0f;color:#fff;margin:0;padding:40px 20px">
+  <div style="max-width:520px;margin:0 auto;background:#13131a;border:1px solid #26262e;border-radius:12px;padding:40px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;text-align:center;margin-bottom:8px">MISSION<span style="color:#ff5800"> CONTROL</span></div>
+    <div style="font-family:monospace;font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:32px">TPL Collective</div>
+    <p style="font-size:16px;line-height:1.6;margin:0 0 16px">Hey {display_name},</p>
+    <p style="font-size:14px;line-height:1.6;color:#bbb;margin:0 0 24px">{inviter_name} invited you to your own Mission Control workspace — a CRM, pipeline, email funnels, and smart lists, all built around your business.</p>
+    <p style="font-size:14px;line-height:1.6;color:#bbb;margin:0 0 24px">You're set up on the <strong style="color:#fff">{plan_label}</strong> plan. Click below to set your password and get started.</p>
+    <div style="text-align:center;margin:32px 0">
+      <a href="{signup_url}" style="display:inline-block;background:#ff5800;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:14px">Activate My Workspace</a>
+    </div>
+    <p style="font-size:12px;line-height:1.6;color:#666;margin:24px 0 0">This invitation expires in 7 days. If the button doesn't work, copy this URL: <br><span style="color:#888;word-break:break-all">{signup_url}</span></p>
+  </div>
+</body></html>"""
+
+    return send_email(smtp, email, subject, html, from_address="TPL Collective <joe@tplcollective.co>", campaign="invitation")
+
+
+@app.post("/api/admin/invitations")
+async def create_invitation(req: Request, body: InviteCreate):
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    email = (body.email or "").strip().lower()
+    name = (body.name or "").strip()
+    plan = (body.plan or "basic").lower()
+
+    if plan not in ("basic", "mid", "elite"):
+        raise HTTPException(status_code=400, detail="Plan must be basic, mid, or elite")
+    if not is_valid_email(email):
+        raise HTTPException(status_code=400, detail="Valid email required")
+
+    existing_user = supabase.table("users").select("id").eq("email", email).execute()
+    if existing_user.data:
+        raise HTTPException(status_code=400, detail="A user with this email already exists")
+
+    now_iso = datetime.utcnow().isoformat()
+    active = supabase.table("invitations").select("id").eq("email", email).is_("used_at", "null").gt("expires_at", now_iso).execute()
+    if active.data:
+        raise HTTPException(status_code=400, detail="An active invitation for this email already exists")
+
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat()
+    inviter_id = req.state.user["sub"]
+
+    inv = supabase.table("invitations").insert({
+        "email": email,
+        "name": name,
+        "plan": plan,
+        "invited_by_user_id": inviter_id,
+        "token": token,
+        "expires_at": expires_at,
+    }).execute()
+
+    signup_url = f"https://mission.tplcollective.ai/signup?token={token}"
+    sent, msg = _send_invitation_email(email, name, signup_url, plan)
+
+    return {
+        "id": inv.data[0]["id"],
+        "email": email,
+        "name": name,
+        "plan": plan,
+        "signup_url": signup_url,
+        "expires_at": expires_at,
+        "email_sent": sent,
+        "email_status": msg if not sent else "delivered",
+    }
+
+
+@app.get("/api/admin/invitations")
+async def list_invitations(req: Request):
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    res = supabase.table("invitations").select("*").order("created_at", desc=True).execute()
+    return res.data
+
+
+@app.delete("/api/admin/invitations/{invitation_id}")
+async def revoke_invitation(invitation_id: int, req: Request):
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    supabase.table("invitations").delete().eq("id", invitation_id).execute()
+    _log_admin_action(req.state.user["sub"], "invitation_revoked", meta={"invitation_id": invitation_id})
+    return {"ok": True}
+
+
+# ── ADMIN PAGES & IMPERSONATION (Phase 13.6) ──
+
+def _log_admin_action(actor_user_id: int, action: str, target_user_id: int = None, target_workspace_id: int = None, meta: dict = None):
+    """Append a row to admin_audit_log. Failures are swallowed — auditing must never break the action."""
+    try:
+        supabase.table("admin_audit_log").insert({
+            "actor_user_id": actor_user_id,
+            "action": action,
+            "target_user_id": target_user_id,
+            "target_workspace_id": target_workspace_id,
+            "meta": meta or {},
+        }).execute()
+    except Exception:
+        pass
+
+
+@app.get("/api/admin/users")
+async def admin_list_users(req: Request):
+    """Joe-only: list every user across the platform with their workspace + plan."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    users = supabase.table("users").select(
+        "id, email, name, role, avatar_initials, workspace_id, last_login, created_at"
+    ).order("created_at", desc=True).execute().data
+    workspaces = supabase.table("workspaces").select("id, name, plan, owner_user_id, created_at").execute().data
+    ws_by_id = {w["id"]: w for w in workspaces}
+    for u in users:
+        u["workspace"] = ws_by_id.get(u.get("workspace_id"))
+    return users
+
+
+@app.patch("/api/admin/users/{user_id}/plan")
+async def admin_change_plan(user_id: int, req: Request):
+    """Update the plan of a user's workspace. Audit-logged."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    body = await req.json()
+    new_plan = (body.get("plan") or "").lower()
+    if new_plan not in ("basic", "mid", "elite"):
+        raise HTTPException(status_code=400, detail="Plan must be basic, mid, or elite")
+
+    user_row = supabase.table("users").select("workspace_id").eq("id", user_id).limit(1).execute()
+    if not user_row.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    ws_id = user_row.data[0].get("workspace_id")
+    if not ws_id:
+        raise HTTPException(status_code=400, detail="User has no workspace")
+
+    ws_row = supabase.table("workspaces").select("plan").eq("id", ws_id).limit(1).execute()
+    old_plan = ws_row.data[0].get("plan") if ws_row.data else "unknown"
+
+    supabase.table("workspaces").update({
+        "plan": new_plan,
+        "updated_at": datetime.utcnow().isoformat(),
+    }).eq("id", ws_id).execute()
+
+    _log_admin_action(
+        req.state.user["sub"], "plan_changed",
+        target_user_id=user_id, target_workspace_id=ws_id,
+        meta={"from": old_plan, "to": new_plan},
+    )
+    return {"ok": True, "workspace_id": ws_id, "plan": new_plan, "previous_plan": old_plan}
+
+
+@app.delete("/api/admin/users/{user_id}")
+async def admin_delete_user(user_id: int, req: Request):
+    """Delete a user and their workspace. Audit-logged. Cannot self-delete.
+    Order matters: tenant data → workspace → user. Otherwise the user-delete cascade
+    tries to drop the workspace and fails because seeded pipelines/smart-lists FK back."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    if user_id == req.state.user["sub"]:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+    user_row = supabase.table("users").select("email, workspace_id").eq("id", user_id).limit(1).execute()
+    if not user_row.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    ws_id = user_row.data[0].get("workspace_id")
+    email = user_row.data[0].get("email")
+
+    # Determine if the workspace should be wiped: only if the target user is its sole member
+    # AND it isn't the platform workspace.
+    wipe_workspace = False
+    if ws_id and ws_id != PLATFORM_WORKSPACE_ID:
+        remaining = supabase.table("users").select("id").eq("workspace_id", ws_id).neq("id", user_id).execute()
+        wipe_workspace = not remaining.data
+
+    if wipe_workspace:
+        # Delete every tenant row in this workspace before deleting workspaces row itself
+        for tbl in TENANT_TABLES:
+            try:
+                supabase.table(tbl).delete().eq("workspace_id", ws_id).execute()
+            except Exception:
+                pass
+        try:
+            supabase.table("workspaces").delete().eq("id", ws_id).execute()
+        except Exception:
+            pass
+
+    # Now safe to delete the user
+    try:
+        supabase.table("users").delete().eq("id", user_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"User delete failed: {e}")
+
+    _log_admin_action(
+        req.state.user["sub"], "user_deleted",
+        target_user_id=user_id, target_workspace_id=ws_id,
+        meta={"email": email, "workspace_wiped": wipe_workspace},
+    )
+    return {"ok": True}
+
+
+@app.post("/api/admin/impersonate/stop")
+async def admin_impersonate_stop(req: Request):
+    """Issue a fresh non-impersonation token for the actual admin.
+    Defined BEFORE /api/admin/impersonate/{user_id} so FastAPI matches the literal path first."""
+    user = req.state.user
+    if not user.get("impersonating"):
+        raise HTTPException(status_code=400, detail="Not currently impersonating")
+
+    actor_id = user["sub"]
+    target_user_id = user["impersonating"]
+
+    actor_row = supabase.table("users").select("*").eq("id", actor_id).limit(1).execute()
+    if not actor_row.data:
+        raise HTTPException(status_code=404, detail="Actor user not found")
+    actor = actor_row.data[0]
+
+    actor_ws_id = actor.get("workspace_id") or 1
+    actor_ws = supabase.table("workspaces").select("plan").eq("id", actor_ws_id).limit(1).execute()
+    actor_plan = actor_ws.data[0].get("plan", "basic") if actor_ws.data else "basic"
+
+    fresh_token = create_token(actor_id, actor["email"], actor.get("role", "admin"), actor_ws_id, actor_plan)
+
+    _log_admin_action(
+        actor_id, "impersonate_stop",
+        target_user_id=target_user_id, target_workspace_id=user.get("workspace_id"),
+    )
+    return {"token": fresh_token, "user": _user_payload(actor)}
+
+
+@app.post("/api/admin/impersonate/{user_id}")
+async def admin_impersonate(user_id: int, req: Request):
+    """Issue an impersonation JWT. `sub` stays as the admin (audit), but workspace/plan/email reflect the target."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    if user_id == req.state.user["sub"]:
+        raise HTTPException(status_code=400, detail="Cannot impersonate yourself")
+
+    target = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+    if not target.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    target_user = target.data[0]
+    target_ws_id = target_user.get("workspace_id") or 1
+
+    target_ws = supabase.table("workspaces").select("plan").eq("id", target_ws_id).limit(1).execute()
+    target_plan = target_ws.data[0].get("plan", "basic") if target_ws.data else "basic"
+
+    token = create_token(
+        user_id=req.state.user["sub"],
+        email=target_user["email"],
+        role=target_user.get("role", "agent"),
+        workspace_id=target_ws_id,
+        plan=target_plan,
+        impersonating_user_id=user_id,
+    )
+
+    _log_admin_action(
+        req.state.user["sub"], "impersonate_start",
+        target_user_id=user_id, target_workspace_id=target_ws_id,
+    )
+
+    user_payload = _user_payload(target_user)
+    actor = supabase.table("users").select("id, email, name").eq("id", req.state.user["sub"]).execute()
+    if actor.data:
+        user_payload["impersonating"] = True
+        user_payload["actor"] = {"id": actor.data[0]["id"], "email": actor.data[0]["email"], "name": actor.data[0]["name"]}
+
+    return {"token": token, "user": user_payload}
+
+
+@app.get("/api/admin/audit-log")
+async def admin_audit_log(req: Request, limit: int = 100):
+    """Joe-only: chronological audit log of admin actions."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    res = supabase.table("admin_audit_log").select("*").order("created_at", desc=True).limit(limit).execute()
+    rows = res.data or []
+    user_ids = set()
+    for r in rows:
+        if r.get("actor_user_id"):
+            user_ids.add(r["actor_user_id"])
+        if r.get("target_user_id"):
+            user_ids.add(r["target_user_id"])
+    if user_ids:
+        users = supabase.table("users").select("id, email, name").in_("id", list(user_ids)).execute().data
+        u_by_id = {u["id"]: u for u in users}
+        for r in rows:
+            r["actor"] = u_by_id.get(r.get("actor_user_id"))
+            r["target_user"] = u_by_id.get(r.get("target_user_id"))
+    return rows
+
+
+# ── USAGE EVENTS (Phase 13.8) ──
+# Logs every billable API call (AI, image, enrichment) with workspace_id and cost.
+# Replaces the "estimated by plan tier" heuristic in the cost report with real measured data.
+
+# Per-call costs in US cents — keep in sync with Anthropic / OpenAI / Apollo pricing
+USAGE_COSTS_CENTS = {
+    "ai_score_leads":      300,  # batched scoring (~100 leads, ~6K tokens) ≈ $0.030 → 3 cents/lead avg, batched 100 ≈ $3
+    "ai_draft_dm":           2,  # 5K in + 1K out ≈ $0.02
+    "ai_who_to_call":        3,  # similar
+    "ai_weekly_plan":        5,  # longer context ≈ $0.05
+    "ai_generate_tasks":     5,  # batched task gen ≈ $0.05
+    "ai_generate_content":   3,  # ~$0.03 per content piece
+    "image_generate":        4,  # DALL-E 3 standard $0.04
+    "image_generate_hd":     8,  # DALL-E 3 HD $0.08
+    "apollo_enrich":        10,  # ~$0.10 per credit
+}
+
+
+def _log_usage(event_type: str, request: Request = None, units: int = 1, cost_cents: int = None, meta: dict = None):
+    """Log a billable event to usage_events. Failure-tolerant — never breaks the calling endpoint.
+    Reads workspace_id and user_id from the current request context."""
+    try:
+        ws_id = current_workspace_ctx.get()
+        if ws_id is None and request is not None:
+            ws_id = getattr(request.state, "workspace_id", None)
+        if ws_id is None:
+            ws_id = PLATFORM_WORKSPACE_ID  # background tasks default to Joe's
+        user_id = None
+        if request is not None:
+            user_id = (getattr(request.state, "user", {}) or {}).get("sub")
+        cents = cost_cents if cost_cents is not None else USAGE_COSTS_CENTS.get(event_type, 0)
+        supabase.table("usage_events").insert({
+            "workspace_id": ws_id,
+            "user_id": user_id,
+            "event_type": event_type,
+            "cost_cents": cents * max(units, 1) if cost_cents is None else cents,
+            "units": units,
+            "meta": meta or {},
+        }).execute()
+    except Exception:
+        pass
+
+
+# ── COST ESTIMATOR (Phase 13.8) ──
+# Per-workspace monthly cost. Mix of MEASURED (emails sent, row counts) and ESTIMATED
+# (AI calls, image gen — we don't track per-workspace usage yet, just plan-tier heuristics).
+# When you want accurate AI costs, add a `usage_events` table and log each AI/image call.
+
+_COST_RATES = {
+    "email_per_send":      0.00040,  # Resend marginal $/email above free tier
+    "ai_call_avg":         0.05,     # avg Anthropic call (sonnet 4.5: ~5K in + 1K out tokens)
+    "image_per_gen":       0.06,     # DALL-E 3 standard quality
+    "storage_per_row":     0.00010,  # Supabase storage marginal per active row
+    "vps_amortized":       1.00,     # ~$40/mo VPS / ~40 active workspaces
+    "supabase_amortized":  0.30,     # ~$25/mo Pro tier / ~80 active workspaces
+}
+
+
+def _estimate_workspace_cost(ws_id: int, plan: str, leads: int, opps: int, tasks: int,
+                              emails_this_month: int, measured_ai_cents: int = 0,
+                              measured_ai_calls: int = 0, measured_image_calls: int = 0,
+                              measured_apollo_calls: int = 0) -> dict:
+    """Returns: {total_usd, breakdown, usage, source}.
+    Uses MEASURED data (from usage_events) when available; falls back to estimate by plan tier."""
+    has_measured = (measured_ai_cents > 0) or (measured_ai_calls > 0) or (measured_image_calls > 0)
+    source = "measured" if has_measured else "estimated"
+
+    if has_measured:
+        ai_image_cost = measured_ai_cents / 100.0
+        ai_calls_count = measured_ai_calls
+        images_count = measured_image_calls
+    else:
+        # Fallback: estimate by plan tier × activity (only Elite has AI access)
+        if plan == "elite":
+            if leads > 50:
+                ai_calls_count, images_count = 50, 5
+            elif leads > 5:
+                ai_calls_count, images_count = 15, 2
+            else:
+                ai_calls_count, images_count = 3, 0
+        else:
+            ai_calls_count, images_count = 0, 0
+        ai_image_cost = (ai_calls_count * _COST_RATES["ai_call_avg"]) + (images_count * _COST_RATES["image_per_gen"])
+
+    email_cost   = emails_this_month * _COST_RATES["email_per_send"]
+    storage_cost = (leads + opps + tasks) * _COST_RATES["storage_per_row"]
+    fixed        = _COST_RATES["vps_amortized"] + _COST_RATES["supabase_amortized"]
+    total        = email_cost + ai_image_cost + storage_cost + fixed
+
+    return {
+        "total_usd": round(total, 2),
+        "source": source,
+        "breakdown": {
+            "email":      round(email_cost, 2),
+            "ai_image":   round(ai_image_cost, 2),
+            "storage":    round(storage_cost, 2),
+            "fixed":      round(fixed, 2),
+        },
+        "usage": {
+            "leads": leads,
+            "opportunities": opps,
+            "tasks": tasks,
+            "emails_this_month": emails_this_month,
+            "ai_calls": ai_calls_count,
+            "images": images_count,
+            "apollo_enrichments": measured_apollo_calls,
+        },
+    }
+
+
+@app.get("/api/admin/workspace-costs")
+async def admin_workspace_costs(req: Request):
+    """Joe-only: estimated monthly cost per workspace."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    workspaces = supabase.table("workspaces").select("id, name, plan, owner_user_id, settings, created_at").execute().data or []
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+    # Fetch all owners in one query
+    owner_ids = list({w["owner_user_id"] for w in workspaces if w.get("owner_user_id")})
+    owners = supabase.table("users").select("id, email, name").in_("id", owner_ids).execute().data if owner_ids else []
+    owner_by_id = {u["id"]: u for u in owners}
+
+    results = []
+    for ws in workspaces:
+        ws_id = ws["id"]
+        try:
+            leads_count  = supabase.table("leads").select("id", count="exact").eq("workspace_id", ws_id).execute().count or 0
+            opps_count   = supabase.table("opportunities").select("id", count="exact").eq("workspace_id", ws_id).execute().count or 0
+            tasks_count  = supabase.table("tasks").select("id", count="exact").eq("workspace_id", ws_id).execute().count or 0
+            emails_count = supabase.table("email_send_log").select("id", count="exact").eq("workspace_id", ws_id).gte("created_at", month_start).execute().count or 0
+            # Measured usage from usage_events this month
+            usage_rows = supabase.table("usage_events").select("event_type, cost_cents").eq("workspace_id", ws_id).gte("created_at", month_start).execute().data or []
+            ai_cents = sum(u["cost_cents"] for u in usage_rows if u["event_type"].startswith("ai_") or u["event_type"].startswith("image_"))
+            ai_calls = sum(1 for u in usage_rows if u["event_type"].startswith("ai_"))
+            image_calls = sum(1 for u in usage_rows if u["event_type"].startswith("image_"))
+            apollo_calls = sum(1 for u in usage_rows if u["event_type"] == "apollo_enrich")
+        except Exception:
+            leads_count = opps_count = tasks_count = emails_count = 0
+            ai_cents = ai_calls = image_calls = apollo_calls = 0
+
+        cost = _estimate_workspace_cost(ws_id, ws["plan"], leads_count, opps_count, tasks_count,
+                                          emails_count, ai_cents, ai_calls, image_calls, apollo_calls)
+        owner = owner_by_id.get(ws.get("owner_user_id"), {})
+        is_lifetime_beta = bool((ws.get("settings") or {}).get("lifetime_elite_beta_tester"))
+
+        results.append({
+            "workspace_id": ws_id,
+            "name": ws["name"],
+            "plan": ws["plan"],
+            "owner_email": owner.get("email", "?"),
+            "owner_name": owner.get("name", ""),
+            "created_at": ws["created_at"],
+            "is_lifetime_beta": is_lifetime_beta,
+            **cost,
+        })
+
+    results.sort(key=lambda x: x["total_usd"], reverse=True)
+    total = round(sum(r["total_usd"] for r in results), 2)
+
+    return {
+        "month": now.strftime("%Y-%m"),
+        "total_workspaces": len(results),
+        "total_monthly_cost_usd": total,
+        "rates": _COST_RATES,
+        "workspaces": results,
+        "note": "AI + image costs are MEASURED from usage_events when available, otherwise estimated by plan tier.",
+    }
+
+
+# ── SUBSCRIPTIONS / PAYMENTS (Phase 13.8) ──
+
+class SubscriptionUpdate(BaseModel):
+    plan: Optional[str] = None
+    status: Optional[str] = None              # active | canceled | past_due | trial | beta
+    monthly_amount_cents: Optional[int] = None
+    payment_method: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@app.get("/api/admin/subscriptions")
+async def list_subscriptions(req: Request):
+    """Joe-only: every subscription across the platform (with workspace + owner info)."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    subs = supabase.table("subscriptions").select("*").order("created_at", desc=True).execute().data or []
+    ws_ids = list({s["workspace_id"] for s in subs})
+    workspaces = supabase.table("workspaces").select("id, name, owner_user_id").in_("id", ws_ids).execute().data if ws_ids else []
+    ws_by_id = {w["id"]: w for w in workspaces}
+    owner_ids = list({w["owner_user_id"] for w in workspaces if w.get("owner_user_id")})
+    owners = supabase.table("users").select("id, email, name").in_("id", owner_ids).execute().data if owner_ids else []
+    owner_by_id = {u["id"]: u for u in owners}
+    for s in subs:
+        ws = ws_by_id.get(s["workspace_id"], {})
+        s["workspace_name"] = ws.get("name")
+        owner = owner_by_id.get(ws.get("owner_user_id"), {})
+        s["owner_email"] = owner.get("email")
+        s["owner_name"] = owner.get("name")
+    return subs
+
+
+@app.patch("/api/admin/subscriptions/{sub_id}")
+async def update_subscription(sub_id: int, body: SubscriptionUpdate, req: Request):
+    """Joe-only: update plan, price, status, payment method, or notes on a subscription."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    update = {k: v for k, v in body.dict(exclude_none=True).items()}
+    if "plan" in update and update["plan"] not in ("basic", "mid", "elite"):
+        raise HTTPException(status_code=400, detail="Plan must be basic, mid, or elite")
+    if "status" in update and update["status"] not in ("active", "canceled", "past_due", "trial", "beta"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    if not update:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update["updated_at"] = datetime.utcnow().isoformat()
+    if update.get("status") == "canceled" and not update.get("canceled_at"):
+        update["canceled_at"] = datetime.utcnow().isoformat()
+    supabase.table("subscriptions").update(update).eq("id", sub_id).execute()
+
+    # If plan changed, also update the workspace's plan to match (so JWT picks up on next login)
+    if "plan" in update:
+        sub = supabase.table("subscriptions").select("workspace_id").eq("id", sub_id).limit(1).execute()
+        if sub.data:
+            supabase.table("workspaces").update({"plan": update["plan"], "updated_at": datetime.utcnow().isoformat()}).eq("id", sub.data[0]["workspace_id"]).execute()
+
+    _log_admin_action(
+        req.state.user["sub"], "subscription_updated",
+        target_workspace_id=update.get("workspace_id"),
+        meta=update,
+    )
+    return {"ok": True}
+
+
+@app.post("/api/admin/subscriptions")
+async def create_subscription(req: Request):
+    """Joe-only: manually create a subscription (e.g. when collecting payment outside Stripe).
+    If an active sub already exists for the workspace, it must be canceled first."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+    body = await req.json()
+    ws_id = body.get("workspace_id")
+    plan = (body.get("plan") or "basic").lower()
+    status = (body.get("status") or "active").lower()
+    monthly_amount_cents = int(body.get("monthly_amount_cents") or 0)
+    payment_method = body.get("payment_method", "manual")
+    notes = body.get("notes", "")
+
+    if not ws_id:
+        raise HTTPException(status_code=400, detail="workspace_id required")
+    if plan not in ("basic", "mid", "elite"):
+        raise HTTPException(status_code=400, detail="Invalid plan")
+    if status not in ("active", "canceled", "past_due", "trial", "beta"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    inserted = supabase.table("subscriptions").insert({
+        "workspace_id": ws_id, "plan": plan, "status": status,
+        "monthly_amount_cents": monthly_amount_cents,
+        "payment_method": payment_method, "notes": notes,
+    }).execute()
+    _log_admin_action(req.state.user["sub"], "subscription_created", target_workspace_id=ws_id, meta=body)
+    return inserted.data[0] if inserted.data else {"ok": True}
+
+
+@app.get("/api/admin/platform-overview")
+async def platform_overview(req: Request):
+    """Joe-only: unified KPI snapshot — MRR, total cost, profit, active users, top users by usage.
+    Single endpoint that powers the Platform admin page."""
+    if not _is_platform_admin(req):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+    week_ago = (now - timedelta(days=7)).isoformat()
+
+    # Pull everything in parallel-ish (Supabase python is sync, but each call is fast)
+    workspaces = supabase.table("workspaces").select("id, name, plan, owner_user_id, settings, created_at").execute().data or []
+    users = supabase.table("users").select("id, email, name, role, workspace_id, last_login, created_at").execute().data or []
+    subs = supabase.table("subscriptions").select("workspace_id, plan, status, monthly_amount_cents, payment_method, started_at").execute().data or []
+    user_by_ws = {u["workspace_id"]: u for u in users if u.get("workspace_id")}
+    active_subs_by_ws = {s["workspace_id"]: s for s in subs if s["status"] in ("active", "trial", "beta")}
+
+    # MRR — sum of active paid subscriptions
+    mrr_cents = sum(s["monthly_amount_cents"] for s in subs if s["status"] == "active")
+    paying_workspaces = sum(1 for s in subs if s["status"] == "active" and s["monthly_amount_cents"] > 0)
+    beta_workspaces = sum(1 for s in subs if s["status"] == "beta")
+
+    # Active users — logged in last 7 days
+    active_users = sum(1 for u in users if (u.get("last_login") or "") > week_ago)
+
+    # Per-workspace stats
+    ws_stats = []
+    total_cost_usd = 0.0
+    for ws in workspaces:
+        ws_id = ws["id"]
+        try:
+            leads_count  = supabase.table("leads").select("id", count="exact").eq("workspace_id", ws_id).execute().count or 0
+            emails_count = supabase.table("email_send_log").select("id", count="exact").eq("workspace_id", ws_id).gte("created_at", month_start).execute().count or 0
+            opps_count   = supabase.table("opportunities").select("id", count="exact").eq("workspace_id", ws_id).execute().count or 0
+            tasks_count  = supabase.table("tasks").select("id", count="exact").eq("workspace_id", ws_id).execute().count or 0
+            usage_rows = supabase.table("usage_events").select("event_type, cost_cents").eq("workspace_id", ws_id).gte("created_at", month_start).execute().data or []
+            ai_cents = sum(u["cost_cents"] for u in usage_rows if u["event_type"].startswith("ai_") or u["event_type"].startswith("image_"))
+            ai_calls = sum(1 for u in usage_rows if u["event_type"].startswith("ai_"))
+            img_calls = sum(1 for u in usage_rows if u["event_type"].startswith("image_"))
+            apollo_calls = sum(1 for u in usage_rows if u["event_type"] == "apollo_enrich")
+        except Exception:
+            leads_count = opps_count = tasks_count = emails_count = 0
+            ai_cents = ai_calls = img_calls = apollo_calls = 0
+
+        cost = _estimate_workspace_cost(ws_id, ws["plan"], leads_count, opps_count, tasks_count,
+                                         emails_count, ai_cents, ai_calls, img_calls, apollo_calls)
+        owner = user_by_ws.get(ws_id, {})
+        active_sub = active_subs_by_ws.get(ws_id, {})
+        ws_stats.append({
+            "workspace_id": ws_id,
+            "name": ws["name"],
+            "plan": ws["plan"],
+            "owner_email": owner.get("email"),
+            "owner_name": owner.get("name"),
+            "owner_user_id": owner.get("id"),
+            "last_login": owner.get("last_login"),
+            "created_at": ws["created_at"],
+            "is_lifetime_beta": bool((ws.get("settings") or {}).get("lifetime_elite_beta_tester")),
+            "subscription": {
+                "status": active_sub.get("status", "none"),
+                "monthly_amount_cents": active_sub.get("monthly_amount_cents", 0),
+                "payment_method": active_sub.get("payment_method"),
+                "started_at": active_sub.get("started_at"),
+            },
+            "monthly_cost_usd": cost["total_usd"],
+            "monthly_revenue_usd": (active_sub.get("monthly_amount_cents", 0) / 100.0) if active_sub.get("status") == "active" else 0,
+            "usage": cost["usage"],
+            "cost_breakdown": cost["breakdown"],
+        })
+        total_cost_usd += cost["total_usd"]
+
+    ws_stats.sort(key=lambda x: x["monthly_cost_usd"], reverse=True)
+
+    mrr_usd = mrr_cents / 100.0
+    profit_usd = round(mrr_usd - total_cost_usd, 2)
+
+    return {
+        "month": now.strftime("%Y-%m"),
+        "kpis": {
+            "mrr_usd": round(mrr_usd, 2),
+            "monthly_cost_usd": round(total_cost_usd, 2),
+            "profit_usd": profit_usd,
+            "margin_pct": round((profit_usd / mrr_usd * 100), 1) if mrr_usd > 0 else 0,
+            "total_workspaces": len(workspaces),
+            "paying_workspaces": paying_workspaces,
+            "beta_workspaces": beta_workspaces,
+            "active_users_7d": active_users,
+        },
+        "workspaces": ws_stats,
+    }
+
+
+@app.get("/api/auth/invite/{token}")
+async def validate_invite(token: str):
+    """Public — recipient hits this to confirm the token is valid and prefill the signup form."""
+    res = supabase.table("invitations").select("*").eq("token", token).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Invalid invitation")
+    inv = res.data[0]
+    if inv.get("used_at"):
+        raise HTTPException(status_code=400, detail="This invitation has already been used")
+    if inv["expires_at"] < datetime.utcnow().isoformat():
+        raise HTTPException(status_code=400, detail="This invitation has expired")
+    return {"email": inv["email"], "name": inv.get("name") or "", "plan": inv["plan"]}
+
+
+@app.post("/api/auth/signup")
+async def signup(body: SignupRequest):
+    """Public — claim an invitation and create the user + workspace."""
+    token = (body.token or "").strip()
+    name = (body.name or "").strip()
+    password = body.password or ""
+
+    if not token or not name:
+        raise HTTPException(status_code=400, detail="Token and name required")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    inv_res = supabase.table("invitations").select("*").eq("token", token).limit(1).execute()
+    if not inv_res.data:
+        raise HTTPException(status_code=404, detail="Invalid invitation")
+    inv = inv_res.data[0]
+    if inv.get("used_at"):
+        raise HTTPException(status_code=400, detail="This invitation has already been used")
+    if inv["expires_at"] < datetime.utcnow().isoformat():
+        raise HTTPException(status_code=400, detail="This invitation has expired")
+
+    email = inv["email"]
+    plan = inv["plan"]
+    initials = "".join(w[0].upper() for w in name.split()[:2]) or "U"
+
+    # Double-check no race with another claim
+    if supabase.table("users").select("id").eq("email", email).execute().data:
+        raise HTTPException(status_code=400, detail="An account for this email already exists")
+
+    # Create user (workspace_id placeholder; updated after workspace insert)
+    user_row = supabase.table("users").insert({
+        "email": email,
+        "name": name,
+        "role": "agent",
+        "avatar_initials": initials,
+        "password_hash": hash_password(password),
+        "workspace_id": 1,
+    }).execute()
+    user_id = user_row.data[0]["id"]
+
+    # Create workspace
+    ws_row = supabase.table("workspaces").insert({
+        "owner_user_id": user_id,
+        "name": f"{name}'s Workspace",
+        "plan": plan,
+    }).execute()
+    workspace_id = ws_row.data[0]["id"]
+
+    # Point user to their new workspace
+    supabase.table("users").update({"workspace_id": workspace_id}).eq("id", user_id).execute()
+
+    # Mark invitation used
+    supabase.table("invitations").update({"used_at": datetime.utcnow().isoformat()}).eq("id", inv["id"]).execute()
+
+    # Seed defaults (pipeline, funnel templates, smart lists)
+    _seed_default_workspace(workspace_id)
+
+    # Issue auth token
+    user_full = supabase.table("users").select("*").eq("id", user_id).execute().data[0]
+    auth_token = create_token(user_id, email, "agent", workspace_id, plan)
+    return {"token": auth_token, "user": _user_payload(user_full)}
+
+
 @app.post("/api/leads")
 async def create_lead(lead: LeadIn):
     # Check if contact already exists by email
     existing = None
     if lead.email:
-        existing_result = supabase.table("leads").select("id, name, lead_score").eq("email", lead.email).execute()
+        existing_result = db("leads").select("id, name, lead_score").eq("email", lead.email).execute()
         if existing_result.data:
             existing = existing_result.data[0]
 
@@ -383,15 +1511,15 @@ async def create_lead(lead: LeadIn):
             updates["lead_score"] = 50
             updates["lead_temperature"] = "warming"
         updates["last_contacted_at"] = datetime.utcnow().isoformat()
-        supabase.table("leads").update(updates).eq("id", lead_id).execute()
+        db("leads").update(updates).eq("id", lead_id).execute()
 
-        supabase.table("lead_activity").insert({
+        db("lead_activity").insert({
             "lead_id": lead_id,
             "activity_type": "re_engaged",
             "description": f"Re-engaged via {lead.source or 'Web'}. Updated production: {lead.deals_per_year} deals, {lead.avg_price} avg."
         }).execute()
 
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "lead",
             "message": f"Existing contact re-engaged: {existing['name']} via {lead.source or 'Web'}",
             "meta": {"lead_id": lead_id}
@@ -399,9 +1527,9 @@ async def create_lead(lead: LeadIn):
 
         # Move opportunity to "Engaged" if in nurture
         try:
-            opps = supabase.table("opportunities").select("id, stage").eq("contact_id", lead_id).eq("status", "open").execute()
+            opps = db("opportunities").select("id, stage").eq("contact_id", lead_id).eq("status", "open").execute()
             if opps.data and opps.data[0]["stage"] in ("nurture_not_ready", "new_fb_lead"):
-                supabase.table("opportunities").update({
+                db("opportunities").update({
                     "stage": "engaged", "updated_at": datetime.utcnow().isoformat()
                 }).eq("id", opps.data[0]["id"]).execute()
         except Exception:
@@ -409,7 +1537,7 @@ async def create_lead(lead: LeadIn):
 
     else:
         # CREATE new contact
-        result = supabase.table("leads").insert({
+        result = db("leads").insert({
             "name": lead.name,
             "email": lead.email,
             "phone": lead.phone or "",
@@ -426,7 +1554,7 @@ async def create_lead(lead: LeadIn):
         lead_data = result.data[0]
         lead_id = lead_data["id"]
 
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "lead",
             "message": f"New lead: {lead.name} from {lead.brokerage or 'tplcollective.ai'}",
             "meta": {"lead_id": lead_id}
@@ -434,9 +1562,9 @@ async def create_lead(lead: LeadIn):
 
         # Auto-create opportunity in default pipeline
         try:
-            default_pipeline = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+            default_pipeline = db("pipelines").select("id").eq("is_default", True).execute()
             if default_pipeline.data:
-                supabase.table("opportunities").insert({
+                db("opportunities").insert({
                     "contact_id": lead_id,
                     "pipeline_id": default_pipeline.data[0]["id"],
                     "stage": "new_fb_lead",
@@ -460,18 +1588,18 @@ async def create_lead(lead: LeadIn):
         funnel_trigger = "new_legacy_lead"
 
     try:
-        funnel = supabase.table("email_funnels").select("id").eq("trigger_stage", funnel_trigger).eq("active", True).execute()
+        funnel = db("email_funnels").select("id").eq("trigger_stage", funnel_trigger).eq("active", True).execute()
         if funnel.data:
             funnel_id = funnel.data[0]["id"]
-            existing_enrollment = supabase.table("email_funnel_enrollments").select("id").eq("lead_id", lead_id).eq("funnel_id", funnel_id).execute()
+            existing_enrollment = db("email_funnel_enrollments").select("id").eq("lead_id", lead_id).eq("funnel_id", funnel_id).execute()
             if not existing_enrollment.data:
-                supabase.table("email_funnel_enrollments").insert({
+                db("email_funnel_enrollments").insert({
                     "lead_id": lead_id,
                     "funnel_id": funnel_id,
                     "current_step": 1,
                     "status": "active"
                 }).execute()
-                supabase.table("activity_log").insert({
+                db("activity_log").insert({
                     "type": "drip",
                     "message": f"Auto-enrolled into {funnel_trigger} drip sequence",
                     "meta": {"lead_id": lead_id, "funnel_id": funnel_id}
@@ -487,7 +1615,7 @@ async def create_lead(lead: LeadIn):
 
 @app.get("/api/leads")
 def get_leads(status: Optional[str] = None):
-    query = supabase.table("leads").select("*").order("created_at", desc=True)
+    query = db("leads").select("*").order("created_at", desc=True)
     if status:
         query = query.eq("status", status)
     result = query.execute()
@@ -496,7 +1624,7 @@ def get_leads(status: Optional[str] = None):
 
 @app.get("/api/leads/{lead_id}")
 def get_lead(lead_id: int):
-    result = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    result = db("leads").select("*").eq("id", lead_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Lead not found")
     return result.data[0]
@@ -508,21 +1636,21 @@ async def put_lead(lead_id: int, request: Request):
     data["updated_at"] = datetime.utcnow().isoformat()
 
     # Track stage changes
-    old_lead = supabase.table("leads").select("stage, lead_score").eq("id", lead_id).execute()
+    old_lead = db("leads").select("stage, lead_score").eq("id", lead_id).execute()
     old_stage = old_lead.data[0].get("stage") if old_lead.data else None
 
-    supabase.table("leads").update(data).eq("id", lead_id).execute()
+    db("leads").update(data).eq("id", lead_id).execute()
 
     # Log activity for stage change
     new_stage = data.get("stage")
     if new_stage and old_stage and new_stage != old_stage:
-        supabase.table("lead_activity").insert({
+        db("lead_activity").insert({
             "lead_id": lead_id,
             "activity_type": "stage_change",
             "description": f"Stage changed: {old_stage} → {new_stage}",
             "metadata": {"from": old_stage, "to": new_stage}
         }).execute()
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "lead",
             "message": f"Lead stage changed to {new_stage}: {data.get('name', 'Lead #'+str(lead_id))}",
             "meta": {"lead_id": lead_id}
@@ -533,7 +1661,7 @@ async def put_lead(lead_id: int, request: Request):
 
 @app.patch("/api/leads/{lead_id}")
 def update_lead(lead_id: int, update: LeadUpdate):
-    existing = supabase.table("leads").select("id").eq("id", lead_id).execute()
+    existing = db("leads").select("id").eq("id", lead_id).execute()
     if not existing.data:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -543,7 +1671,7 @@ def update_lead(lead_id: int, update: LeadUpdate):
     if update.notes is not None:
         updates["notes"] = update.notes
 
-    supabase.table("leads").update(updates).eq("id", lead_id).execute()
+    db("leads").update(updates).eq("id", lead_id).execute()
     return {"success": True}
 
 
@@ -551,7 +1679,7 @@ def update_lead(lead_id: int, update: LeadUpdate):
 def delete_lead(lead_id: int):
     # Get email before deleting so we can suppress re-import from Meta sync
     try:
-        lead_data = supabase.table("leads").select("email, source").eq("id", lead_id).execute()
+        lead_data = db("leads").select("email, source").eq("id", lead_id).execute()
         if lead_data.data:
             email = lead_data.data[0].get("email", "")
             source = lead_data.data[0].get("source", "")
@@ -567,32 +1695,32 @@ def delete_lead(lead_id: int):
         pass
     # Delete related records first to avoid foreign key constraint errors
     try:
-        supabase.table("email_funnel_enrollments").delete().eq("lead_id", lead_id).execute()
+        db("email_funnel_enrollments").delete().eq("lead_id", lead_id).execute()
     except Exception:
         pass
     try:
-        supabase.table("opportunities").delete().eq("contact_id", lead_id).execute()
+        db("opportunities").delete().eq("contact_id", lead_id).execute()
     except Exception:
         pass
     try:
-        supabase.table("lead_activity").delete().eq("lead_id", lead_id).execute()
+        db("lead_activity").delete().eq("lead_id", lead_id).execute()
     except Exception:
         pass
     try:
-        supabase.table("lead_notes").delete().eq("lead_id", lead_id).execute()
+        db("lead_notes").delete().eq("lead_id", lead_id).execute()
     except Exception:
         pass
     try:
-        supabase.table("drip_queue").delete().eq("lead_id", lead_id).execute()
+        db("drip_queue").delete().eq("lead_id", lead_id).execute()
     except Exception:
         pass
-    supabase.table("leads").delete().eq("id", lead_id).execute()
+    db("leads").delete().eq("id", lead_id).execute()
     return {"success": True}
 
 
 @app.get("/api/stats")
 def get_stats():
-    leads = supabase.table("leads").select("status, created_at").execute().data
+    leads = db("leads").select("status, created_at").execute().data
 
     total = len(leads)
     counts = {}
@@ -620,7 +1748,7 @@ def get_stats():
 
 @app.get("/api/activity")
 def get_activity(limit: int = 40):
-    result = supabase.table("activity_log").select("*").order("created_at", desc=True).limit(limit).execute()
+    result = db("activity_log").select("*").order("created_at", desc=True).limit(limit).execute()
     return result.data
 
 
@@ -634,10 +1762,10 @@ def _map_status(s):
 
 @app.get("/api/dashboard/overview")
 def dashboard_overview():
-    leads = supabase.table("leads").select("status, created_at, lead_score").execute().data
+    leads = db("leads").select("status, created_at, lead_score").execute().data
     agents = supabase.table("agents").select("id, status, created_at").execute().data
-    tasks = supabase.table("tasks").select("id, status, due_date").execute().data
-    drip = supabase.table("drip_queue").select("id", count="exact").eq("status", "pending").execute()
+    tasks = db("tasks").select("id, status, due_date").execute().data
+    drip = db("drip_queue").select("id", count="exact").eq("status", "pending").execute()
 
     total_leads = len(leads)
     total_agents = len(agents)
@@ -669,7 +1797,7 @@ def dashboard_overview():
 
 @app.get("/api/dashboard/funnel")
 def dashboard_funnel():
-    leads = supabase.table("leads").select("status").execute().data
+    leads = db("leads").select("status").execute().data
     stages = ["new", "contacted", "discovery_call", "presentation", "considering", "signed", "onboarding"]
     counts = {s: 0 for s in stages}
     for lead in leads:
@@ -681,7 +1809,7 @@ def dashboard_funnel():
 
 @app.get("/api/dashboard/pipeline-health")
 def dashboard_pipeline_health():
-    leads = supabase.table("leads").select("status, updated_at, created_at, lead_score").execute().data
+    leads = db("leads").select("status, updated_at, created_at, lead_score").execute().data
     total = len(leads)
     if total == 0:
         return {"score": 100, "status": "Healthy", "stale_leads": 0, "avg_lead_score": 0}
@@ -715,7 +1843,7 @@ def dashboard_pipeline_health():
 
 @app.get("/api/leads/hot")
 def get_hot_leads(limit: int = 5):
-    result = supabase.table("leads").select("*").not_.is_("lead_score", "null").order("lead_score", desc=True).limit(limit).execute()
+    result = db("leads").select("*").not_.is_("lead_score", "null").order("lead_score", desc=True).limit(limit).execute()
     return result.data
 
 
@@ -723,10 +1851,10 @@ def get_hot_leads(limit: int = 5):
 
 @app.get("/api/contacts")
 def get_contacts(smart_list: Optional[int] = None, search: Optional[str] = None, limit: int = 500):
-    query = supabase.table("leads").select("*").order("created_at", desc=True).limit(limit)
+    query = db("leads").select("*").order("created_at", desc=True).limit(limit)
 
     if smart_list:
-        sl = supabase.table("smart_lists").select("filters").eq("id", smart_list).execute()
+        sl = db("smart_lists").select("filters").eq("id", smart_list).execute()
         if sl.data:
             filters = sl.data[0].get("filters", {})
             if filters.get("brokerage"):
@@ -749,12 +1877,12 @@ def get_contacts(smart_list: Optional[int] = None, search: Optional[str] = None,
 
 @app.get("/api/contacts/{contact_id}")
 def get_contact(contact_id: int):
-    result = supabase.table("leads").select("*").eq("id", contact_id).execute()
+    result = db("leads").select("*").eq("id", contact_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Contact not found")
     contact = result.data[0]
     # Get active opportunity
-    opp = supabase.table("opportunities").select("*, pipelines(name, stages)").eq("contact_id", contact_id).eq("status", "open").execute()
+    opp = db("opportunities").select("*, pipelines(name, stages)").eq("contact_id", contact_id).eq("status", "open").execute()
     contact["opportunity"] = opp.data[0] if opp.data else None
     return contact
 
@@ -770,17 +1898,17 @@ async def create_contact(request: Request):
     if not data.get("name") and data.get("first_name"):
         data["name"] = f"{data['first_name']} {data.get('last_name', '')}".strip()
 
-    result = supabase.table("leads").insert(data).execute()
+    result = db("leads").insert(data).execute()
     contact = result.data[0] if result.data else {}
     contact_id = contact.get("id")
 
     if contact_id:
-        supabase.table("lead_activity").insert({
+        db("lead_activity").insert({
             "lead_id": contact_id,
             "activity_type": "created",
             "description": f"Contact created: {data.get('name', 'Unknown')}"
         }).execute()
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "lead",
             "message": f"New contact: {data.get('name', 'Unknown')}",
             "meta": {"lead_id": contact_id}
@@ -795,7 +1923,7 @@ async def update_contact(contact_id: int, request: Request):
     data["updated_at"] = datetime.utcnow().isoformat()
 
     # Track changes for activity log
-    old = supabase.table("leads").select("stage, lead_score, name").eq("id", contact_id).execute()
+    old = db("leads").select("stage, lead_score, name").eq("id", contact_id).execute()
     old_data = old.data[0] if old.data else {}
 
     # Auto-sync name
@@ -804,11 +1932,11 @@ async def update_contact(contact_id: int, request: Request):
         ln = data.get("last_name", old_data.get("last_name", ""))
         data["name"] = f"{fn} {ln}".strip()
 
-    supabase.table("leads").update(data).eq("id", contact_id).execute()
+    db("leads").update(data).eq("id", contact_id).execute()
 
     # Log score changes
     if "lead_score" in data and data["lead_score"] != old_data.get("lead_score"):
-        supabase.table("lead_activity").insert({
+        db("lead_activity").insert({
             "lead_id": contact_id,
             "activity_type": "score_change",
             "description": f"Score changed: {old_data.get('lead_score', 0)} → {data['lead_score']}",
@@ -833,7 +1961,7 @@ async def import_contacts(request: Request):
             row["name"] = f"{row['first_name']} {row.get('last_name', '')}".strip()
         row["source"] = row.get("source", "csv_import")
         try:
-            supabase.table("leads").insert(row).execute()
+            db("leads").insert(row).execute()
             imported += 1
         except Exception:
             pass
@@ -844,12 +1972,12 @@ async def import_contacts(request: Request):
 
 @app.get("/api/opportunities")
 def get_opportunities(pipeline_id: Optional[int] = None):
-    query = supabase.table("opportunities").select("*, leads(id, name, first_name, last_name, email, phone, current_brokerage, brokerage, lead_score, lead_temperature, source, tags, last_contacted_at, created_at)")
+    query = db("opportunities").select("*, leads(id, name, first_name, last_name, email, phone, current_brokerage, brokerage, lead_score, lead_temperature, source, tags, last_contacted_at, created_at)")
     if pipeline_id:
         query = query.eq("pipeline_id", pipeline_id)
     else:
         # Default to the default pipeline
-        default = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+        default = db("pipelines").select("id").eq("is_default", True).execute()
         if default.data:
             query = query.eq("pipeline_id", default.data[0]["id"])
     query = query.eq("status", "open").order("created_at", desc=False)
@@ -867,12 +1995,12 @@ async def create_opportunity(request: Request):
     # Get default pipeline if not specified
     pipeline_id = data.get("pipeline_id")
     if not pipeline_id:
-        default = supabase.table("pipelines").select("id").eq("is_default", True).execute()
+        default = db("pipelines").select("id").eq("is_default", True).execute()
         pipeline_id = default.data[0]["id"] if default.data else None
     if not pipeline_id:
         raise HTTPException(status_code=400, detail="No pipeline found")
 
-    result = supabase.table("opportunities").insert({
+    result = db("opportunities").insert({
         "contact_id": contact_id,
         "pipeline_id": pipeline_id,
         "stage": data.get("stage", "new_fb_lead"),
@@ -884,7 +2012,7 @@ async def create_opportunity(request: Request):
     opp = result.data[0] if result.data else {}
 
     # Log activity
-    supabase.table("lead_activity").insert({
+    db("lead_activity").insert({
         "lead_id": contact_id,
         "activity_type": "opportunity_created",
         "description": f"Added to pipeline: {data.get('stage', 'new_fb_lead')}"
@@ -899,30 +2027,30 @@ async def update_opportunity(opp_id: int, request: Request):
     data["updated_at"] = datetime.utcnow().isoformat()
 
     # Track stage changes
-    old = supabase.table("opportunities").select("stage, contact_id").eq("id", opp_id).execute()
+    old = db("opportunities").select("stage, contact_id").eq("id", opp_id).execute()
     old_data = old.data[0] if old.data else {}
     old_stage = old_data.get("stage")
     new_stage = data.get("stage")
 
-    supabase.table("opportunities").update(data).eq("id", opp_id).execute()
+    db("opportunities").update(data).eq("id", opp_id).execute()
 
     if new_stage and old_stage and new_stage != old_stage:
         contact_id = old_data.get("contact_id")
         if contact_id:
             # Update last_contacted_at on the contact
-            supabase.table("leads").update({
+            db("leads").update({
                 "last_contacted_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", contact_id).execute()
 
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": contact_id,
                 "activity_type": "stage_change",
                 "description": f"Stage: {old_stage} → {new_stage}",
                 "metadata": {"from": old_stage, "to": new_stage}
             }).execute()
 
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "opportunity",
                 "message": f"Opportunity moved: {old_stage} → {new_stage}",
                 "meta": {"opportunity_id": opp_id, "contact_id": contact_id}
@@ -930,7 +2058,7 @@ async def update_opportunity(opp_id: int, request: Request):
 
             # If joined_lpt, create agent record
             if new_stage == "joined_lpt":
-                contact = supabase.table("leads").select("name, email, phone, current_brokerage").eq("id", contact_id).execute()
+                contact = db("leads").select("name, email, phone, current_brokerage").eq("id", contact_id).execute()
                 if contact.data:
                     c = contact.data[0]
                     supabase.table("agents").insert({
@@ -947,7 +2075,7 @@ async def update_opportunity(opp_id: int, request: Request):
 
 @app.delete("/api/opportunities/{opp_id}")
 def delete_opportunity(opp_id: int):
-    supabase.table("opportunities").update({"status": "closed"}).eq("id", opp_id).execute()
+    db("opportunities").update({"status": "closed"}).eq("id", opp_id).execute()
     return {"success": True}
 
 
@@ -955,13 +2083,13 @@ def delete_opportunity(opp_id: int):
 
 @app.get("/api/pipelines")
 def get_pipelines():
-    result = supabase.table("pipelines").select("*").order("created_at").execute()
+    result = db("pipelines").select("*").order("created_at").execute()
     return result.data
 
 
 @app.get("/api/pipelines/{pipeline_id}")
 def get_pipeline(pipeline_id: int):
-    result = supabase.table("pipelines").select("*").eq("id", pipeline_id).execute()
+    result = db("pipelines").select("*").eq("id", pipeline_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Pipeline not found")
     return result.data[0]
@@ -970,7 +2098,7 @@ def get_pipeline(pipeline_id: int):
 @app.post("/api/pipelines")
 async def create_pipeline(request: Request):
     data = await request.json()
-    result = supabase.table("pipelines").insert(data).execute()
+    result = db("pipelines").insert(data).execute()
     return {"success": True, "data": result.data[0] if result.data else None}
 
 
@@ -978,7 +2106,7 @@ async def create_pipeline(request: Request):
 async def update_pipeline(pipeline_id: int, request: Request):
     data = await request.json()
     data["updated_at"] = datetime.utcnow().isoformat()
-    supabase.table("pipelines").update(data).eq("id", pipeline_id).execute()
+    db("pipelines").update(data).eq("id", pipeline_id).execute()
     return {"success": True}
 
 
@@ -986,9 +2114,9 @@ async def update_pipeline(pipeline_id: int, request: Request):
 
 @app.get("/api/smart-lists")
 def get_smart_lists():
-    result = supabase.table("smart_lists").select("*").order("sort_order").execute()
+    result = db("smart_lists").select("*").order("sort_order").execute()
     # Add counts
-    all_leads = supabase.table("leads").select("id", count="exact").execute()
+    all_leads = db("leads").select("id", count="exact").execute()
     for sl in result.data:
         if not sl["filters"]:
             sl["count"] = all_leads.count or 0
@@ -1000,13 +2128,13 @@ def get_smart_lists():
 @app.post("/api/smart-lists")
 async def create_smart_list(request: Request):
     data = await request.json()
-    result = supabase.table("smart_lists").insert(data).execute()
+    result = db("smart_lists").insert(data).execute()
     return {"success": True, "data": result.data[0] if result.data else None}
 
 
 @app.delete("/api/smart-lists/{list_id}")
 def delete_smart_list(list_id: int):
-    supabase.table("smart_lists").delete().eq("id", list_id).execute()
+    db("smart_lists").delete().eq("id", list_id).execute()
     return {"success": True}
 
 
@@ -1014,7 +2142,7 @@ def delete_smart_list(list_id: int):
 
 @app.get("/api/contacts/{contact_id}/communications")
 def get_contact_communications(contact_id: int):
-    result = supabase.table("contact_communications").select("*").eq("contact_id", contact_id).order("created_at", desc=True).execute()
+    result = db("contact_communications").select("*").eq("contact_id", contact_id).order("created_at", desc=True).execute()
     return result.data
 
 
@@ -1028,7 +2156,7 @@ async def add_communication(contact_id: int, request: Request):
     email_error = ""
     if data.get("channel") == "email" and data.get("direction") == "outbound":
         # Look up the contact's email
-        contact = supabase.table("leads").select("email, name, first_name").eq("id", contact_id).execute()
+        contact = db("leads").select("email, name, first_name").eq("id", contact_id).execute()
         if contact.data and contact.data[0].get("email"):
             to_email = contact.data[0]["email"]
             subject = data.get("subject", "")
@@ -1053,16 +2181,16 @@ async def add_communication(contact_id: int, request: Request):
             email_error = "Contact has no email address"
 
     # Log the communication record
-    result = supabase.table("contact_communications").insert(data).execute()
+    result = db("contact_communications").insert(data).execute()
 
-    supabase.table("lead_activity").insert({
+    db("lead_activity").insert({
         "lead_id": contact_id,
         "activity_type": "communication",
         "description": f"{data.get('channel', 'email')} {data.get('direction', 'outbound')}: {data.get('subject', '')}"
     }).execute()
 
     # Update last_contacted_at
-    supabase.table("leads").update({
+    db("leads").update({
         "last_contacted_at": datetime.utcnow().isoformat()
     }).eq("id", contact_id).execute()
 
@@ -1073,20 +2201,20 @@ async def add_communication(contact_id: int, request: Request):
 
 @app.get("/api/leads/{lead_id}/notes")
 def get_lead_notes(lead_id: int):
-    result = supabase.table("lead_notes").select("*").eq("lead_id", lead_id).order("created_at", desc=True).execute()
+    result = db("lead_notes").select("*").eq("lead_id", lead_id).order("created_at", desc=True).execute()
     return result.data
 
 
 @app.post("/api/leads/{lead_id}/notes")
 async def add_lead_note(lead_id: int, request: Request):
     data = await request.json()
-    result = supabase.table("lead_notes").insert({
+    result = db("lead_notes").insert({
         "lead_id": lead_id,
         "author": data.get("author", "Joe"),
         "content": data.get("content", "")
     }).execute()
     # Also log as activity
-    supabase.table("lead_activity").insert({
+    db("lead_activity").insert({
         "lead_id": lead_id,
         "activity_type": "note",
         "description": f"Note added: {data.get('content', '')[:100]}"
@@ -1096,14 +2224,14 @@ async def add_lead_note(lead_id: int, request: Request):
 
 @app.get("/api/leads/{lead_id}/activity")
 def get_lead_activity(lead_id: int):
-    result = supabase.table("lead_activity").select("*").eq("lead_id", lead_id).order("created_at", desc=True).limit(50).execute()
+    result = db("lead_activity").select("*").eq("lead_id", lead_id).order("created_at", desc=True).limit(50).execute()
     return result.data
 
 
 @app.get("/api/leads/{lead_id}/enrollments")
 def get_lead_enrollments(lead_id: int):
     """Return all funnel enrollments for a lead, with funnel name + step info."""
-    enrollments = supabase.table("email_funnel_enrollments").select(
+    enrollments = db("email_funnel_enrollments").select(
         "id, funnel_id, current_step, status, last_sent_at, completed_at, enrolled_at, email_funnels(id, name, trigger_stage)"
     ).eq("lead_id", lead_id).order("enrolled_at", desc=True).execute().data or []
 
@@ -1111,7 +2239,7 @@ def get_lead_enrollments(lead_id: int):
     for e in enrollments:
         fid = e.get("funnel_id")
         if fid:
-            steps = supabase.table("email_funnel_steps").select("id, step_order, delay_days, subject").eq("funnel_id", fid).order("step_order").execute().data or []
+            steps = db("email_funnel_steps").select("id, step_order, delay_days, subject").eq("funnel_id", fid).order("step_order").execute().data or []
             e["total_steps"] = len(steps)
             current = e.get("current_step") or 0
             # Next pending step is at index = current_step (0-indexed in current_step field)
@@ -1132,15 +2260,15 @@ def get_lead_enrollments(lead_id: int):
 @app.post("/api/leads/{lead_id}/stop-drips")
 def stop_lead_drips(lead_id: int):
     """Pause all active funnel enrollments for a lead. Used when manual contact is made."""
-    active = supabase.table("email_funnel_enrollments").select("id, funnel_id").eq("lead_id", lead_id).eq("status", "active").execute().data or []
+    active = db("email_funnel_enrollments").select("id, funnel_id").eq("lead_id", lead_id).eq("status", "active").execute().data or []
     if not active:
         return {"success": True, "paused": 0}
 
-    supabase.table("email_funnel_enrollments").update({
+    db("email_funnel_enrollments").update({
         "status": "paused"
     }).eq("lead_id", lead_id).eq("status", "active").execute()
 
-    supabase.table("lead_activity").insert({
+    db("lead_activity").insert({
         "lead_id": lead_id,
         "activity_type": "drips_paused",
         "description": f"All active drip sequences paused ({len(active)} funnel{'s' if len(active) != 1 else ''})"
@@ -1152,13 +2280,13 @@ def stop_lead_drips(lead_id: int):
 @app.post("/api/enrollments/{enrollment_id}/pause")
 def pause_enrollment(enrollment_id: int):
     """Pause a single enrollment."""
-    existing = supabase.table("email_funnel_enrollments").select("id, lead_id, funnel_id").eq("id", enrollment_id).execute().data
+    existing = db("email_funnel_enrollments").select("id, lead_id, funnel_id").eq("id", enrollment_id).execute().data
     if not existing:
         return {"success": False, "error": "not_found"}
-    supabase.table("email_funnel_enrollments").update({"status": "paused"}).eq("id", enrollment_id).execute()
-    funnel = supabase.table("email_funnels").select("name").eq("id", existing[0]["funnel_id"]).execute().data
+    db("email_funnel_enrollments").update({"status": "paused"}).eq("id", enrollment_id).execute()
+    funnel = db("email_funnels").select("name").eq("id", existing[0]["funnel_id"]).execute().data
     fname = funnel[0]["name"] if funnel else "drip"
-    supabase.table("lead_activity").insert({
+    db("lead_activity").insert({
         "lead_id": existing[0]["lead_id"],
         "activity_type": "drips_paused",
         "description": f"Paused drip: {fname}"
@@ -1169,13 +2297,13 @@ def pause_enrollment(enrollment_id: int):
 @app.post("/api/enrollments/{enrollment_id}/resume")
 def resume_enrollment(enrollment_id: int):
     """Resume a paused enrollment."""
-    existing = supabase.table("email_funnel_enrollments").select("id, lead_id, funnel_id").eq("id", enrollment_id).execute().data
+    existing = db("email_funnel_enrollments").select("id, lead_id, funnel_id").eq("id", enrollment_id).execute().data
     if not existing:
         return {"success": False, "error": "not_found"}
-    supabase.table("email_funnel_enrollments").update({"status": "active"}).eq("id", enrollment_id).execute()
-    funnel = supabase.table("email_funnels").select("name").eq("id", existing[0]["funnel_id"]).execute().data
+    db("email_funnel_enrollments").update({"status": "active"}).eq("id", enrollment_id).execute()
+    funnel = db("email_funnels").select("name").eq("id", existing[0]["funnel_id"]).execute().data
     fname = funnel[0]["name"] if funnel else "drip"
-    supabase.table("lead_activity").insert({
+    db("lead_activity").insert({
         "lead_id": existing[0]["lead_id"],
         "activity_type": "drips_resumed",
         "description": f"Resumed drip: {fname}"
@@ -1188,13 +2316,13 @@ def resume_enrollment(enrollment_id: int):
 @app.get("/api/tasks/today")
 def get_tasks_today():
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    result = supabase.table("tasks").select("*").eq("due_date", today_str).neq("status", "done").order("created_at", desc=False).execute()
+    result = db("tasks").select("*").eq("due_date", today_str).neq("status", "done").order("created_at", desc=False).execute()
     return result.data
 
 
 @app.get("/api/tasks")
 def get_tasks(status: Optional[str] = None, assigned_to: Optional[str] = None, lead_id: Optional[int] = None):
-    query = supabase.table("tasks").select("*").order("due_date", desc=False)
+    query = db("tasks").select("*").order("due_date", desc=False)
     if status:
         query = query.eq("status", status)
     if assigned_to:
@@ -1207,7 +2335,7 @@ def get_tasks(status: Optional[str] = None, assigned_to: Optional[str] = None, l
 @app.post("/api/tasks")
 async def create_task(request: Request):
     data = await request.json()
-    result = supabase.table("tasks").insert(data).execute()
+    result = db("tasks").insert(data).execute()
     return {"success": True, "data": result.data[0] if result.data else None}
 
 
@@ -1215,7 +2343,7 @@ async def create_task(request: Request):
 async def update_task(task_id: int, request: Request):
     data = await request.json()
     data["updated_at"] = datetime.utcnow().isoformat()
-    supabase.table("tasks").update(data).eq("id", task_id).execute()
+    db("tasks").update(data).eq("id", task_id).execute()
     return {"success": True}
 
 
@@ -1223,13 +2351,13 @@ async def update_task(task_id: int, request: Request):
 async def put_task(task_id: int, request: Request):
     data = await request.json()
     data["updated_at"] = datetime.utcnow().isoformat()
-    supabase.table("tasks").update(data).eq("id", task_id).execute()
+    db("tasks").update(data).eq("id", task_id).execute()
     return {"success": True}
 
 
 @app.delete("/api/tasks/{task_id}")
 def delete_task(task_id: int):
-    supabase.table("tasks").delete().eq("id", task_id).execute()
+    db("tasks").delete().eq("id", task_id).execute()
     return {"success": True}
 
 
@@ -1257,7 +2385,7 @@ async def create_agent(request: Request):
     data = await request.json()
     result = supabase.table("agents").insert(data).execute()
     if result.data:
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "agent",
             "message": f"New agent added: {data.get('name', 'Unknown')}",
             "meta": {"agent_id": result.data[0]["id"]}
@@ -1277,27 +2405,27 @@ async def update_agent(agent_id: int, request: Request):
 
 @app.get("/api/content")
 def get_content():
-    result = supabase.table("content_posts").select("*").order("created_at", desc=True).execute()
+    result = db("content_posts").select("*").order("created_at", desc=True).execute()
     return result.data
 
 
 @app.post("/api/content")
 async def create_content(request: Request):
     data = await request.json()
-    result = supabase.table("content_posts").insert(data).execute()
+    result = db("content_posts").insert(data).execute()
     return {"success": True, "data": result.data[0] if result.data else None}
 
 
 @app.patch("/api/content/{post_id}")
 async def update_content(post_id: int, request: Request):
     data = await request.json()
-    supabase.table("content_posts").update(data).eq("id", post_id).execute()
+    db("content_posts").update(data).eq("id", post_id).execute()
     return {"success": True}
 
 
 @app.delete("/api/content/{post_id}")
 def delete_content(post_id: int):
-    supabase.table("content_posts").delete().eq("id", post_id).execute()
+    db("content_posts").delete().eq("id", post_id).execute()
     return {"success": True}
 
 
@@ -1306,18 +2434,18 @@ def delete_content(post_id: int):
 @app.get("/api/goals/current")
 def get_current_goals():
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    goals = supabase.table("goals").select("*").lte("start_date", today).gte("end_date", today).execute().data
+    goals = db("goals").select("*").lte("start_date", today).gte("end_date", today).execute().data
     if not goals:
         # Fallback: get latest goals regardless of date
-        goals = supabase.table("goals").select("*").order("created_at", desc=True).limit(4).execute().data
+        goals = db("goals").select("*").order("created_at", desc=True).limit(4).execute().data
 
     # Compute actuals from live data
     from datetime import timedelta
     month_start = datetime.utcnow().replace(day=1).strftime("%Y-%m-%d")
 
-    leads = supabase.table("leads").select("id, created_at").gte("created_at", month_start).execute().data
+    leads = db("leads").select("id, created_at").gte("created_at", month_start).execute().data
     agents_new = supabase.table("agents").select("id, created_at").gte("created_at", month_start).execute().data
-    calls = supabase.table("leads").select("id").eq("stage", "discovery_call").gte("created_at", month_start).execute().data
+    calls = db("leads").select("id").eq("stage", "discovery_call").gte("created_at", month_start).execute().data
     try:
         rs_entries = supabase.table("revshare_entries").select("amount").gte("created_at", month_start).execute().data
         rs_total = sum(float(e.get("amount", 0)) for e in rs_entries)
@@ -1352,16 +2480,16 @@ async def set_goal(request: Request):
         raise HTTPException(status_code=400, detail="metric required")
 
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    existing = supabase.table("goals").select("id").eq("metric", metric).lte("start_date", today).gte("end_date", today).execute()
+    existing = db("goals").select("id").eq("metric", metric).lte("start_date", today).gte("end_date", today).execute()
 
     if existing.data:
-        supabase.table("goals").update({"target": target, "updated_at": datetime.utcnow().isoformat()}).eq("id", existing.data[0]["id"]).execute()
+        db("goals").update({"target": target, "updated_at": datetime.utcnow().isoformat()}).eq("id", existing.data[0]["id"]).execute()
     else:
         month_start = datetime.utcnow().replace(day=1).strftime("%Y-%m-%d")
         from calendar import monthrange
         _, last_day = monthrange(datetime.utcnow().year, datetime.utcnow().month)
         month_end = datetime.utcnow().replace(day=last_day).strftime("%Y-%m-%d")
-        supabase.table("goals").insert({
+        db("goals").insert({
             "metric": metric,
             "target": target,
             "period": "monthly",
@@ -1387,9 +2515,9 @@ def get_recruiting_links(target_brokerage: Optional[str] = None):
 
 @app.get("/api/emails/stats")
 def get_email_stats():
-    sent = supabase.table("emails_sent").select("id, created_at", count="exact").execute()
-    pending = supabase.table("drip_queue").select("id", count="exact").eq("status", "pending").execute()
-    failed = supabase.table("drip_queue").select("id", count="exact").eq("status", "failed").execute()
+    sent = db("emails_sent").select("id, created_at", count="exact").execute()
+    pending = db("drip_queue").select("id", count="exact").eq("status", "pending").execute()
+    failed = db("drip_queue").select("id", count="exact").eq("status", "failed").execute()
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
     sent_today = sum(1 for e in (sent.data or []) if e.get("created_at", "")[:10] == today_str)
     return {"drip_sent": sent.count or 0, "drip_pending": pending.count or 0, "sent_today": sent_today, "drip_failed": failed.count or 0}
@@ -1399,10 +2527,10 @@ def get_email_stats():
 
 @app.get("/api/funnels")
 def get_funnels():
-    funnels = supabase.table("email_funnels").select("*").order("created_at").execute().data
+    funnels = db("email_funnels").select("*").order("created_at").execute().data
     for f in funnels:
-        steps = supabase.table("email_funnel_steps").select("*").eq("funnel_id", f["id"]).order("step_order").execute().data
-        enrolled = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("funnel_id", f["id"]).eq("status", "active").execute()
+        steps = db("email_funnel_steps").select("*").eq("funnel_id", f["id"]).order("step_order").execute().data
+        enrolled = db("email_funnel_enrollments").select("id", count="exact").eq("funnel_id", f["id"]).eq("status", "active").execute()
         f["steps"] = steps
         f["enrolled_count"] = enrolled.count or 0
     return funnels
@@ -1410,19 +2538,19 @@ def get_funnels():
 
 @app.get("/api/funnels/{funnel_id}")
 def get_funnel(funnel_id: int):
-    funnel = supabase.table("email_funnels").select("*").eq("id", funnel_id).execute()
+    funnel = db("email_funnels").select("*").eq("id", funnel_id).execute()
     if not funnel.data:
         raise HTTPException(status_code=404, detail="Funnel not found")
     f = funnel.data[0]
-    f["steps"] = supabase.table("email_funnel_steps").select("*").eq("funnel_id", funnel_id).order("step_order").execute().data
-    f["enrollments"] = supabase.table("email_funnel_enrollments").select("*, leads(name, email)").eq("funnel_id", funnel_id).execute().data
+    f["steps"] = db("email_funnel_steps").select("*").eq("funnel_id", funnel_id).order("step_order").execute().data
+    f["enrollments"] = db("email_funnel_enrollments").select("*, leads(name, email)").eq("funnel_id", funnel_id).execute().data
     return f
 
 
 @app.post("/api/funnels")
 async def create_funnel(request: Request):
     data = await request.json()
-    result = supabase.table("email_funnels").insert({
+    result = db("email_funnels").insert({
         "name": data["name"],
         "trigger_stage": data["trigger_stage"],
         "description": data.get("description", "")
@@ -1434,7 +2562,7 @@ async def create_funnel(request: Request):
 async def update_funnel(funnel_id: int, request: Request):
     data = await request.json()
     data["updated_at"] = datetime.utcnow().isoformat()
-    supabase.table("email_funnels").update(data).eq("id", funnel_id).execute()
+    db("email_funnels").update(data).eq("id", funnel_id).execute()
     return {"success": True}
 
 
@@ -1442,20 +2570,20 @@ async def update_funnel(funnel_id: int, request: Request):
 async def add_funnel_step(funnel_id: int, request: Request):
     data = await request.json()
     data["funnel_id"] = funnel_id
-    result = supabase.table("email_funnel_steps").insert(data).execute()
+    result = db("email_funnel_steps").insert(data).execute()
     return {"success": True, "data": result.data[0] if result.data else None}
 
 
 @app.put("/api/funnels/{funnel_id}/steps/{step_id}")
 async def update_funnel_step(funnel_id: int, step_id: int, request: Request):
     data = await request.json()
-    supabase.table("email_funnel_steps").update(data).eq("id", step_id).execute()
+    db("email_funnel_steps").update(data).eq("id", step_id).execute()
     return {"success": True}
 
 
 @app.delete("/api/funnels/{funnel_id}/steps/{step_id}")
 def delete_funnel_step(funnel_id: int, step_id: int):
-    supabase.table("email_funnel_steps").delete().eq("id", step_id).execute()
+    db("email_funnel_steps").delete().eq("id", step_id).execute()
     return {"success": True}
 
 
@@ -1733,6 +2861,7 @@ Do not include any markdown formatting. Just output the post text with hashtags.
         except Exception as e:
             return {"success": False, "error": f"AI generation failed: {str(e)}"}
 
+    _log_usage("ai_generate_content", request, meta={"model": data.get("model", "claude-haiku"), "type": content_type})
     return {"success": True, "generated": result, "type": content_type}
 
 
@@ -1770,6 +2899,7 @@ async def ai_generate_image(request: Request):
             result = resp.json()
             image_url = result["data"][0]["url"]
             revised_prompt = result["data"][0].get("revised_prompt", "")
+            _log_usage("image_generate", request, meta={"size": size, "prompt_len": len(prompt)})
             return {"success": True, "image_url": image_url, "revised_prompt": revised_prompt}
         else:
             return {"success": False, "error": f"DALL-E error: {resp.status_code} - {resp.text}"}
@@ -1822,7 +2952,7 @@ async def update_onboarding_step(agent_id: int, step_id: int, request: Request):
 
 @app.get("/api/content/{post_id}")
 def get_content_post(post_id: int):
-    result = supabase.table("content_posts").select("*").eq("id", post_id).execute()
+    result = db("content_posts").select("*").eq("id", post_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Post not found")
     return result.data[0]
@@ -1831,7 +2961,7 @@ def get_content_post(post_id: int):
 @app.put("/api/content/{post_id}")
 async def put_content(post_id: int, request: Request):
     data = await request.json()
-    supabase.table("content_posts").update(data).eq("id", post_id).execute()
+    db("content_posts").update(data).eq("id", post_id).execute()
     return {"success": True}
 
 
@@ -1840,7 +2970,7 @@ async def ai_draft_dm(request: Request):
     data = await request.json()
     lead_id = data.get("lead_id")
     if lead_id:
-        lead = supabase.table("leads").select("name, brokerage, current_brokerage").eq("id", lead_id).execute()
+        lead = db("leads").select("name, brokerage, current_brokerage").eq("id", lead_id).execute()
         if lead.data:
             l = lead.data[0]
             name = l.get("name", "there")
@@ -1853,7 +2983,7 @@ async def ai_draft_dm(request: Request):
 
 @app.post("/api/ai/who-to-call")
 async def ai_who_to_call():
-    leads = supabase.table("leads").select("id, name, brokerage, current_brokerage, lead_score, lead_temperature, status, updated_at").order("lead_score", desc=True).limit(10).execute().data
+    leads = db("leads").select("id, name, brokerage, current_brokerage, lead_score, lead_temperature, status, updated_at").order("lead_score", desc=True).limit(10).execute().data
     call_list = []
     for l in leads:
         if l.get("status") in ("joined", "lost"):
@@ -1880,7 +3010,7 @@ async def ai_who_to_call():
 
 @app.post("/api/ai/weekly-plan")
 async def ai_weekly_plan():
-    leads = supabase.table("leads").select("status").execute().data
+    leads = db("leads").select("status").execute().data
     new_count = sum(1 for l in leads if l.get("status") == "new")
     active = sum(1 for l in leads if l.get("status") not in ("joined", "lost", "new"))
     return {
@@ -1901,7 +3031,7 @@ async def ai_weekly_plan():
 
 @app.post("/api/ai/score-leads")
 async def ai_score_leads():
-    leads = supabase.table("leads").select("id, name, email, phone, stage, status, brokerage, current_brokerage, deals_per_year, lead_temperature, created_at, updated_at").execute().data
+    leads = db("leads").select("id, name, email, phone, stage, status, brokerage, current_brokerage, deals_per_year, lead_temperature, created_at, updated_at").execute().data
     updated = 0
     hot_alerts_sent = 0
     for lead in leads:
@@ -1920,7 +3050,7 @@ async def ai_score_leads():
         score = min(100, score)
         temp = "hot" if score >= 70 else "warming" if score >= 40 else "cold"
         prev_temp = lead.get("lead_temperature", "cold")
-        supabase.table("leads").update({"lead_score": score, "lead_temperature": temp}).eq("id", lead["id"]).execute()
+        db("leads").update({"lead_score": score, "lead_temperature": temp}).eq("id", lead["id"]).execute()
         updated += 1
 
         # Hot lead alert - only fire when temperature changes TO hot
@@ -1966,7 +3096,7 @@ async def ai_score_leads():
                 )
                 if success:
                     hot_alerts_sent += 1
-                    supabase.table("activity_log").insert({
+                    db("activity_log").insert({
                         "type": "alert",
                         "message": f"Hot lead alert sent for {lead_name} (score: {score})",
                         "meta": {"lead_id": lead["id"], "score": score}
@@ -1979,7 +3109,7 @@ async def ai_score_leads():
 
 @app.post("/api/ai/generate-tasks")
 async def ai_generate_tasks():
-    leads = supabase.table("leads").select("id, name, stage, status, updated_at").execute().data
+    leads = db("leads").select("id, name, stage, status, updated_at").execute().data
     # Filter to active pipeline leads using stage or status
     active_stages = ["new", "contacted", "discovery_call", "presentation", "considering"]
     leads = [l for l in leads if (l.get("stage") or l.get("status") or "new") in active_stages]
@@ -1988,7 +3118,7 @@ async def ai_generate_tasks():
     for lead in leads[:10]:
         stage = lead.get("stage") or lead.get("status") or "new"
         action = "Follow up" if stage != "new" else "Initial outreach"
-        supabase.table("tasks").insert({
+        db("tasks").insert({
             "task_type": "follow_up" if stage != "new" else "send_outreach",
             "title": f"{action}: {lead['name']}",
             "description": f"Auto-generated task for {lead['name']} (stage: {stage})",
@@ -2006,7 +3136,7 @@ async def ai_generate_tasks():
 
 @app.get("/api/analytics/funnel")
 def analytics_funnel():
-    leads = supabase.table("leads").select("status").execute().data
+    leads = db("leads").select("status").execute().data
     stages = ["new", "contacted", "discovery_call", "presentation", "considering", "signed", "onboarding"]
     counts = {s: 0 for s in stages}
     for lead in leads:
@@ -2024,7 +3154,7 @@ def analytics_funnel():
 
 @app.get("/api/analytics/sources")
 def analytics_sources():
-    leads = supabase.table("leads").select("source, status").execute().data
+    leads = db("leads").select("source, status").execute().data
     source_data = {}
     for lead in leads:
         s = lead.get("source", "Unknown") or "Unknown"
@@ -2043,7 +3173,7 @@ def analytics_sources():
 
 @app.get("/api/analytics/time-in-stage")
 def analytics_time_in_stage():
-    leads = supabase.table("leads").select("status, created_at, updated_at").execute().data
+    leads = db("leads").select("status, created_at, updated_at").execute().data
     stages = ["new", "contacted", "discovery_call", "presentation", "considering", "signed", "onboarding"]
     stage_data = {}
     for s in stages:
@@ -2068,7 +3198,7 @@ def analytics_time_in_stage():
 
 @app.get("/api/analytics/funnel-roi")
 def analytics_funnel_roi():
-    leads = supabase.table("leads").select("status, source").execute().data
+    leads = db("leads").select("status, source").execute().data
     source_data = {}
     for lead in leads:
         s = lead.get("source", "Unknown") or "Unknown"
@@ -2163,7 +3293,7 @@ def revshare_calculator(network_size: int = 10):
 def automations_status():
     # Check for automation_runs table
     try:
-        runs = supabase.table("automation_runs").select("*").order("created_at", desc=True).limit(20).execute().data
+        runs = db("automation_runs").select("*").order("created_at", desc=True).limit(20).execute().data
     except Exception:
         runs = []
     # Check for automation_workflows table
@@ -2261,7 +3391,7 @@ async def test_notification(req: TestNotifRequest):
     success, error = send_email(smtp, req.email, "✦ TPL Mission Control — Test Notification", html)
 
     if success:
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "smtp",
             "message": f"Test notification sent to {req.email}",
             "meta": {}
@@ -2277,7 +3407,7 @@ async def test_notification(req: TestNotifRequest):
 @app.get("/api/ideas")
 async def list_ideas():
     """List all ideas, newest first."""
-    data = supabase.table("ideas").select("*").order("created_at", desc=True).execute()
+    data = db("ideas").select("*").order("created_at", desc=True).execute()
     return data.data
 
 @app.patch("/api/ideas/{idea_id}")
@@ -2288,13 +3418,13 @@ async def update_idea(idea_id: str, request: Request):
     updates = {k: v for k, v in body.items() if k in allowed}
     if not updates:
         raise HTTPException(400, "No valid fields to update")
-    supabase.table("ideas").update(updates).eq("id", idea_id).execute()
+    db("ideas").update(updates).eq("id", idea_id).execute()
     return {"success": True}
 
 @app.delete("/api/ideas/{idea_id}")
 async def delete_idea(idea_id: str):
     """Delete an idea."""
-    supabase.table("ideas").delete().eq("id", idea_id).execute()
+    db("ideas").delete().eq("id", idea_id).execute()
     return {"success": True}
 
 
@@ -2317,19 +3447,19 @@ async def send_daily_report():
     # ── GATHER DATA ──
 
     # New leads (24h)
-    new_leads = supabase.table("leads").select("id, name, email, source, lead_score").gte("created_at", yesterday).order("created_at", desc=True).execute().data
+    new_leads = db("leads").select("id, name, email, source, lead_score").gte("created_at", yesterday).order("created_at", desc=True).execute().data
 
     # Re-engagements (24h)
-    re_engagements = supabase.table("lead_activity").select("lead_id, description").in_("activity_type", ["re_engaged", "calculator_used", "page_view"]).gte("created_at", yesterday).execute().data
+    re_engagements = db("lead_activity").select("lead_id, description").in_("activity_type", ["re_engaged", "calculator_used", "page_view"]).gte("created_at", yesterday).execute().data
 
     # Stage changes (24h)
-    stage_changes = supabase.table("lead_activity").select("lead_id, description").eq("activity_type", "stage_change").gte("created_at", yesterday).execute().data
+    stage_changes = db("lead_activity").select("lead_id, description").eq("activity_type", "stage_change").gte("created_at", yesterday).execute().data
 
     # Calendly bookings (24h)
-    calendly = supabase.table("activity_log").select("message").eq("type", "calendly").gte("created_at", yesterday).execute().data
+    calendly = db("activity_log").select("message").eq("type", "calendly").gte("created_at", yesterday).execute().data
 
     # Email stats (24h)
-    emails_sent = supabase.table("email_send_log").select("id, status").gte("created_at", yesterday).execute().data
+    emails_sent = db("email_send_log").select("id, status").gte("created_at", yesterday).execute().data
     sent_count = sum(1 for e in emails_sent if e["status"] == "sent")
     bounced = sum(1 for e in emails_sent if e["status"] == "failed")
     suppressed = sum(1 for e in emails_sent if e["status"] == "suppressed")
@@ -2338,24 +3468,24 @@ async def send_daily_report():
     unsubs = supabase.table("email_suppressions").select("email").eq("reason", "unsubscribe").gte("created_at", yesterday).execute().data
 
     # Drip progress
-    drip_active = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "active").execute()
-    drip_completed = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "completed").execute()
+    drip_active = db("email_funnel_enrollments").select("id", count="exact").eq("status", "active").execute()
+    drip_completed = db("email_funnel_enrollments").select("id", count="exact").eq("status", "completed").execute()
 
     # Today's tasks
-    tasks_today = supabase.table("tasks").select("id, title, priority").eq("due_date", today_str).neq("status", "done").execute().data
+    tasks_today = db("tasks").select("id, title, priority").eq("due_date", today_str).neq("status", "done").execute().data
 
     # Follow-ups due today
-    followups = supabase.table("leads").select("id, name, follow_up_date").eq("follow_up_date", today_str).execute().data
+    followups = db("leads").select("id, name, follow_up_date").eq("follow_up_date", today_str).execute().data
 
     # Stale leads (no contact in 7+ days, still in active pipeline)
-    stale = supabase.table("leads").select("id, name, last_contacted_at").or_(f"last_contacted_at.is.null,last_contacted_at.lt.{seven_days_ago}").not_.in_("stage", ["signed", "onboarding"]).limit(10).execute().data
+    stale = db("leads").select("id, name, last_contacted_at").or_(f"last_contacted_at.is.null,last_contacted_at.lt.{seven_days_ago}").not_.in_("stage", ["signed", "onboarding"]).limit(10).execute().data
 
     # Hot leads
-    hot = supabase.table("leads").select("id, name, lead_score, current_brokerage, lead_temperature").not_.is_("lead_score", "null").order("lead_score", desc=True).limit(5).execute().data
+    hot = db("leads").select("id, name, lead_score, current_brokerage, lead_temperature").not_.is_("lead_score", "null").order("lead_score", desc=True).limit(5).execute().data
 
     # Pipeline totals
-    total_contacts = supabase.table("leads").select("id", count="exact").execute()
-    total_opps = supabase.table("opportunities").select("id", count="exact").eq("status", "open").execute()
+    total_contacts = db("leads").select("id", count="exact").execute()
+    total_opps = db("opportunities").select("id", count="exact").eq("status", "open").execute()
 
     # Pipeline health
     try:
@@ -2364,22 +3494,22 @@ async def send_daily_report():
         health = {"score": 0, "status": "Unknown"}
 
     # Daily send limits
-    limits = supabase.table("email_daily_limits").select("*").eq("send_date", today_str).execute().data
+    limits = db("email_daily_limits").select("*").eq("send_date", today_str).execute().data
 
     # Ideas captured (24h)
-    new_ideas = supabase.table("ideas").select("id, title, type, url, created_at").gte("created_at", yesterday).order("created_at", desc=True).execute().data
-    ideas_inbox = supabase.table("ideas").select("id", count="exact").eq("status", "inbox").execute()
+    new_ideas = db("ideas").select("id, title, type, url, created_at").gte("created_at", yesterday).order("created_at", desc=True).execute().data
+    ideas_inbox = db("ideas").select("id", count="exact").eq("status", "inbox").execute()
 
     # A/B Test performance (Gut Punch variants)
     ab_test_funnels = {8: "A: $467K Story", 10: "B: Curiosity", 11: "C: Personalized", 12: "D: Social Proof", 13: "E: Direct Savings"}
     ab_results = []
     for fid, fname in ab_test_funnels.items():
-        enrolled = supabase.table("email_funnel_enrollments").select("lead_id", count="exact").eq("funnel_id", fid).execute()
-        sent_logs = supabase.table("email_send_log").select("id, status").ilike("campaign", f"%Step 1%").eq("campaign", f"KW Gut Punch%").execute().data if fid == 8 else []
+        enrolled = db("email_funnel_enrollments").select("lead_id", count="exact").eq("funnel_id", fid).execute()
+        sent_logs = db("email_send_log").select("id, status").ilike("campaign", f"%Step 1%").eq("campaign", f"KW Gut Punch%").execute().data if fid == 8 else []
         # Get emails sent for this funnel by checking campaign field
-        funnel_name = supabase.table("email_funnels").select("name").eq("id", fid).execute().data
+        funnel_name = db("email_funnels").select("name").eq("id", fid).execute().data
         fn = funnel_name[0]["name"] if funnel_name else ""
-        campaign_logs = supabase.table("email_send_log").select("id, status").ilike("campaign", f"{fn}%").execute().data
+        campaign_logs = db("email_send_log").select("id, status").ilike("campaign", f"{fn}%").execute().data
         total_sent = sum(1 for e in campaign_logs if e["status"] in ("sent", "delivered", "opened"))
         total_opened = sum(1 for e in campaign_logs if e["status"] == "opened")
         open_rate = f"{round(total_opened/total_sent*100)}%" if total_sent > 0 else "pending"
@@ -2514,7 +3644,7 @@ async def process_drip_queue():
         return {"success": True, "sent": 0, "reason": "Daily limit reached"}
 
     # Get active enrollments that need sending (respect scheduled enrolled_at)
-    enrollments = supabase.table("email_funnel_enrollments").select(
+    enrollments = db("email_funnel_enrollments").select(
         "*, leads(id, email, first_name, name), email_funnels(name)"
     ).eq("status", "active").lte("enrolled_at", datetime.utcnow().isoformat()).execute().data
 
@@ -2543,10 +3673,10 @@ async def process_drip_queue():
         last_sent = enrollment.get("last_sent_at")
 
         # Get the step details
-        step = supabase.table("email_funnel_steps").select("*").eq("funnel_id", funnel_id).eq("step_order", current_step).execute()
+        step = db("email_funnel_steps").select("*").eq("funnel_id", funnel_id).eq("step_order", current_step).execute()
         if not step.data:
             # No more steps — mark complete
-            supabase.table("email_funnel_enrollments").update({
+            db("email_funnel_enrollments").update({
                 "status": "completed",
                 "completed_at": now.isoformat()
             }).eq("id", enrollment["id"]).execute()
@@ -2648,7 +3778,7 @@ async def process_drip_queue():
             sent += 1
             # Update enrollment
             next_step = current_step + 1
-            next_step_exists = supabase.table("email_funnel_steps").select("id").eq("funnel_id", funnel_id).eq("step_order", next_step).execute()
+            next_step_exists = db("email_funnel_steps").select("id").eq("funnel_id", funnel_id).eq("step_order", next_step).execute()
 
             updates = {
                 "last_sent_at": now.isoformat(),
@@ -2658,11 +3788,11 @@ async def process_drip_queue():
                 updates["status"] = "completed"
                 updates["completed_at"] = now.isoformat()
 
-            supabase.table("email_funnel_enrollments").update(updates).eq("id", enrollment["id"]).execute()
+            db("email_funnel_enrollments").update(updates).eq("id", enrollment["id"]).execute()
 
             # Log activity
             if contact_id:
-                supabase.table("lead_activity").insert({
+                db("lead_activity").insert({
                     "lead_id": contact_id,
                     "activity_type": "email_sent",
                     "description": f"Drip email sent: {subject} ({campaign})"
@@ -2673,7 +3803,7 @@ async def process_drip_queue():
                 skipped += 1
 
     # Log summary
-    supabase.table("activity_log").insert({
+    db("activity_log").insert({
         "type": "drip",
         "message": f"Drip processor ran: {sent} sent, {skipped} skipped, {errors} errors",
         "meta": {"sent": sent, "skipped": skipped, "errors": errors}
@@ -2685,11 +3815,11 @@ async def process_drip_queue():
 @app.get("/api/drip/status")
 def drip_status():
     """Get overview of drip queue status."""
-    active = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "active").execute()
-    completed = supabase.table("email_funnel_enrollments").select("id", count="exact").eq("status", "completed").execute()
+    active = db("email_funnel_enrollments").select("id", count="exact").eq("status", "active").execute()
+    completed = db("email_funnel_enrollments").select("id", count="exact").eq("status", "completed").execute()
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    sent_today = supabase.table("email_send_log").select("id", count="exact").gte("created_at", today).eq("status", "sent").execute()
-    limits = supabase.table("email_daily_limits").select("*").eq("send_date", today).execute()
+    sent_today = db("email_send_log").select("id", count="exact").gte("created_at", today).eq("status", "sent").execute()
+    limits = db("email_daily_limits").select("*").eq("send_date", today).execute()
 
     return {
         "active_enrollments": active.count or 0,
@@ -2714,28 +3844,28 @@ def unsubscribe(email: str):
             pass  # Already suppressed
         # Update contact: add tag, remove from pipelines, log activity
         try:
-            contact = supabase.table("leads").select("id, tags").eq("email", email).execute()
+            contact = db("leads").select("id, tags").eq("email", email).execute()
             if contact.data:
                 cid = contact.data[0]["id"]
                 existing_tags = contact.data[0].get("tags") or []
                 if "unsubscribed" not in existing_tags:
                     existing_tags.append("unsubscribed")
-                supabase.table("leads").update({
+                db("leads").update({
                     "tags": existing_tags,
                     "status": "unsubscribed"
                 }).eq("id", cid).execute()
 
                 # Close all open opportunities
-                supabase.table("opportunities").update({
+                db("opportunities").update({
                     "status": "lost"
                 }).eq("contact_id", cid).eq("status", "open").execute()
 
                 # Cancel all active drip enrollments
-                supabase.table("email_funnel_enrollments").update({
+                db("email_funnel_enrollments").update({
                     "status": "cancelled"
                 }).eq("lead_id", cid).eq("status", "active").execute()
 
-                supabase.table("lead_activity").insert({
+                db("lead_activity").insert({
                     "lead_id": cid,
                     "activity_type": "unsubscribed",
                     "description": "Unsubscribed from emails. Removed from pipelines and drip sequences."
@@ -2765,7 +3895,7 @@ def remove_suppression(email: str):
 @app.get("/api/email/send-limits")
 def get_send_limits():
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    result = supabase.table("email_daily_limits").select("*").eq("send_date", today).execute()
+    result = db("email_daily_limits").select("*").eq("send_date", today).execute()
     return result.data
 
 
@@ -2773,17 +3903,17 @@ def get_send_limits():
 async def update_send_limit(domain: str, request: Request):
     data = await request.json()
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    existing = supabase.table("email_daily_limits").select("id").eq("send_date", today).eq("domain", domain).execute()
+    existing = db("email_daily_limits").select("id").eq("send_date", today).eq("domain", domain).execute()
     if existing.data:
-        supabase.table("email_daily_limits").update({"limit_count": data.get("limit", 50)}).eq("id", existing.data[0]["id"]).execute()
+        db("email_daily_limits").update({"limit_count": data.get("limit", 50)}).eq("id", existing.data[0]["id"]).execute()
     else:
-        supabase.table("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 0, "limit_count": data.get("limit", 50)}).execute()
+        db("email_daily_limits").insert({"send_date": today, "domain": domain, "sent_count": 0, "limit_count": data.get("limit", 50)}).execute()
     return {"success": True}
 
 
 @app.get("/api/email/log")
 def get_email_log(limit: int = 50, campaign: Optional[str] = None):
-    query = supabase.table("email_send_log").select("*").order("created_at", desc=True).limit(limit)
+    query = db("email_send_log").select("*").order("created_at", desc=True).limit(limit)
     if campaign:
         query = query.eq("campaign", campaign)
     return query.execute().data
@@ -2833,7 +3963,7 @@ def short_redirect(code: str):
     # Log click if we have a cid
     if cid:
         try:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": int(cid),
                 "activity_type": "email_click",
                 "description": f"Clicked link: {slug}",
@@ -2852,20 +3982,20 @@ def track_email_open(send_id: str):
     """1x1 tracking pixel for email opens. Returns transparent GIF."""
     try:
         # Look up by tracking_id first (new UUID-based), then fall back to resend_id (legacy)
-        log = supabase.table("email_send_log").select("id, contact_id, subject, status").eq("tracking_id", send_id).execute()
+        log = db("email_send_log").select("id, contact_id, subject, status").eq("tracking_id", send_id).execute()
         if not log.data:
-            log = supabase.table("email_send_log").select("id, contact_id, subject, status").eq("resend_id", send_id).execute()
+            log = db("email_send_log").select("id, contact_id, subject, status").eq("resend_id", send_id).execute()
         if log.data:
             entry = log.data[0]
             # Only update status if not already a higher-value status
             if entry.get("status") in ("sent", "delivered"):
-                supabase.table("email_send_log").update({"status": "opened"}).eq("id", entry["id"]).execute()
+                db("email_send_log").update({"status": "opened"}).eq("id", entry["id"]).execute()
             if entry.get("contact_id"):
                 # Dedup check - don't log multiple opens within 1 hour
                 from datetime import timedelta
-                recent = supabase.table("lead_activity").select("id").eq("lead_id", entry["contact_id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - timedelta(hours=1)).isoformat()).execute()
+                recent = db("lead_activity").select("id").eq("lead_id", entry["contact_id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - timedelta(hours=1)).isoformat()).execute()
                 if not recent.data:
-                    supabase.table("lead_activity").insert({
+                    db("lead_activity").insert({
                         "lead_id": entry["contact_id"],
                         "activity_type": "email_opened",
                         "description": f"Opened email: {entry.get('subject', 'Unknown')}",
@@ -2893,17 +4023,17 @@ async def resend_webhook(request: Request):
     # Find contact by email
     contact = None
     if to_email:
-        result = supabase.table("leads").select("id, name").eq("email", to_email).execute()
+        result = db("leads").select("id, name").eq("email", to_email).execute()
         contact = result.data[0] if result.data else None
 
     if event_type == "email.delivered":
         if email_id:
-            supabase.table("email_send_log").update({"status": "delivered"}).eq("resend_id", email_id).execute()
+            db("email_send_log").update({"status": "delivered"}).eq("resend_id", email_id).execute()
         if contact:
             from datetime import timedelta
-            recent = supabase.table("lead_activity").select("id").eq("lead_id", contact["id"]).eq("activity_type", "email_delivered").gte("created_at", (datetime.utcnow() - timedelta(minutes=5)).isoformat()).execute()
+            recent = db("lead_activity").select("id").eq("lead_id", contact["id"]).eq("activity_type", "email_delivered").gte("created_at", (datetime.utcnow() - timedelta(minutes=5)).isoformat()).execute()
             if not recent.data:
-                supabase.table("lead_activity").insert({
+                db("lead_activity").insert({
                     "lead_id": contact["id"],
                     "activity_type": "email_delivered",
                     "description": f"Email delivered to {to_email}"
@@ -2911,13 +4041,13 @@ async def resend_webhook(request: Request):
 
     elif event_type == "email.opened":
         if email_id:
-            supabase.table("email_send_log").update({"status": "opened"}).eq("resend_id", email_id).execute()
+            db("email_send_log").update({"status": "opened"}).eq("resend_id", email_id).execute()
         if contact:
             # Dedup
             from datetime import timedelta
-            recent = supabase.table("lead_activity").select("id").eq("lead_id", contact["id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - timedelta(hours=1)).isoformat()).execute()
+            recent = db("lead_activity").select("id").eq("lead_id", contact["id"]).eq("activity_type", "email_opened").gte("created_at", (datetime.utcnow() - timedelta(hours=1)).isoformat()).execute()
             if not recent.data:
-                supabase.table("lead_activity").insert({
+                db("lead_activity").insert({
                     "lead_id": contact["id"],
                     "activity_type": "email_opened",
                     "description": f"Opened email"
@@ -2925,7 +4055,7 @@ async def resend_webhook(request: Request):
 
     elif event_type == "email.clicked":
         if contact:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": contact["id"],
                 "activity_type": "email_clicked",
                 "description": f"Clicked link in email"
@@ -2933,14 +4063,14 @@ async def resend_webhook(request: Request):
 
     elif event_type == "email.bounced":
         if email_id:
-            supabase.table("email_send_log").update({"status": "bounced"}).eq("resend_id", email_id).execute()
+            db("email_send_log").update({"status": "bounced"}).eq("resend_id", email_id).execute()
         if to_email:
             try:
                 supabase.table("email_suppressions").insert({"email": to_email.lower(), "reason": "hard_bounce", "source": "resend_webhook"}).execute()
             except Exception:
                 pass
         if contact:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": contact["id"],
                 "activity_type": "email_bounced",
                 "description": f"Email bounced: {to_email}"
@@ -2953,7 +4083,7 @@ async def resend_webhook(request: Request):
             except Exception:
                 pass
         if contact:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": contact["id"],
                 "activity_type": "email_complained",
                 "description": f"Marked as spam: {to_email}"
@@ -2980,15 +4110,15 @@ async def track_pageview(request: Request):
     try:
         cid = int(cid)
         # Verify contact exists
-        contact = supabase.table("leads").select("id, name").eq("id", cid).execute()
+        contact = db("leads").select("id, name").eq("id", cid).execute()
         if not contact.data:
             return {"success": True, "tracked": False}
 
         # Dedup: don't log same page view within 5 minutes
         from datetime import timedelta
-        recent = supabase.table("lead_activity").select("id").eq("lead_id", cid).eq("activity_type", "page_view").eq("description", f"Visited: {page}").gte("created_at", (datetime.utcnow() - timedelta(minutes=5)).isoformat()).execute()
+        recent = db("lead_activity").select("id").eq("lead_id", cid).eq("activity_type", "page_view").eq("description", f"Visited: {page}").gte("created_at", (datetime.utcnow() - timedelta(minutes=5)).isoformat()).execute()
         if not recent.data:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": cid,
                 "activity_type": "page_view",
                 "description": f"Visited: {page}",
@@ -2996,7 +4126,7 @@ async def track_pageview(request: Request):
             }).execute()
 
         # Update last_contacted_at to show engagement
-        supabase.table("leads").update({
+        db("leads").update({
             "last_contacted_at": datetime.utcnow().isoformat()
         }).eq("id", cid).execute()
 
@@ -3016,7 +4146,7 @@ async def track_calculator(request: Request):
 
     try:
         cid = int(cid)
-        contact = supabase.table("leads").select("id, name, lead_score").eq("id", cid).execute()
+        contact = db("leads").select("id, name, lead_score").eq("id", cid).execute()
         if not contact.data:
             return {"success": True, "tracked": False}
 
@@ -3037,14 +4167,14 @@ async def track_calculator(request: Request):
         updates["lead_score"] = new_score
         updates["lead_temperature"] = "hot" if new_score >= 70 else "warming"
 
-        supabase.table("leads").update(updates).eq("id", cid).execute()
+        db("leads").update(updates).eq("id", cid).execute()
 
         # Log activity with calculator results (dedup: 1 per minute)
         savings = data.get("savings", "")
         from datetime import timedelta
-        recent_calc = supabase.table("lead_activity").select("id").eq("lead_id", cid).eq("activity_type", "calculator_used").gte("created_at", (datetime.utcnow() - timedelta(minutes=1)).isoformat()).execute()
+        recent_calc = db("lead_activity").select("id").eq("lead_id", cid).eq("activity_type", "calculator_used").gte("created_at", (datetime.utcnow() - timedelta(minutes=1)).isoformat()).execute()
         if not recent_calc.data:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": cid,
                 "activity_type": "calculator_used",
                 "description": f"Used commission calculator. {data.get('deals_per_year', '')} deals, ${data.get('avg_price', '')} avg. Savings: ${savings}",
@@ -3052,21 +4182,21 @@ async def track_calculator(request: Request):
             }).execute()
 
         # Move opportunity to "Engaged" if they were in nurture
-        opps = supabase.table("opportunities").select("id, stage").eq("contact_id", cid).eq("status", "open").execute()
+        opps = db("opportunities").select("id, stage").eq("contact_id", cid).eq("status", "open").execute()
         if opps.data:
             opp = opps.data[0]
             if opp["stage"] in ("nurture_not_ready", "new_fb_lead"):
-                supabase.table("opportunities").update({
+                db("opportunities").update({
                     "stage": "engaged",
                     "updated_at": datetime.utcnow().isoformat()
                 }).eq("id", opp["id"]).execute()
-                supabase.table("lead_activity").insert({
+                db("lead_activity").insert({
                     "lead_id": cid,
                     "activity_type": "stage_change",
                     "description": f"Stage: {opp['stage']} → engaged (calculator engagement)",
                     "metadata": {"from": opp["stage"], "to": "engaged"}
                 }).execute()
-                supabase.table("activity_log").insert({
+                db("activity_log").insert({
                     "type": "opportunity",
                     "message": f"Revival lead engaged: {c['name']} used calculator",
                     "meta": {"contact_id": cid}
@@ -3081,7 +4211,7 @@ async def track_calculator(request: Request):
 def tracking_identify(cid: int):
     """Return minimal contact info for tracking script to use (no sensitive data)."""
     try:
-        contact = supabase.table("leads").select("id, first_name").eq("id", cid).execute()
+        contact = db("leads").select("id, first_name").eq("id", cid).execute()
         if contact.data:
             return {"found": True, "cid": cid, "name": contact.data[0].get("first_name", "")}
     except Exception:
@@ -3194,7 +4324,7 @@ async def calendly_webhook(request: Request):
 
     if event_type == "invitee.created" and invitee_email:
         # Check if lead already exists by email
-        existing = supabase.table("leads").select("id, status, name").eq("email", invitee_email).execute()
+        existing = db("leads").select("id, status, name").eq("email", invitee_email).execute()
 
         if existing.data:
             # Update existing lead to 'meeting' status
@@ -3206,15 +4336,15 @@ async def calendly_webhook(request: Request):
             }
             if invitee_phone and not lead.get("phone"):
                 updates["phone"] = invitee_phone
-            supabase.table("leads").update(updates).eq("id", lead_id).execute()
+            db("leads").update(updates).eq("id", lead_id).execute()
 
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "calendly",
                 "message": f"Discovery call booked: {lead['name']} ({invitee_email}) - {event_name} at {start_time}",
                 "meta": {"lead_id": lead_id, "event": event_name, "start_time": start_time}
             }).execute()
 
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": lead_id,
                 "activity_type": "meeting_booked",
                 "description": f"Booked discovery call: {event_name} at {start_time}"
@@ -3225,7 +4355,7 @@ async def calendly_webhook(request: Request):
             if utm_source:
                 source = f"calendly:{utm_source}"
 
-            result = supabase.table("leads").insert({
+            result = db("leads").insert({
                 "name": invitee_name,
                 "email": invitee_email,
                 "phone": invitee_phone or "",
@@ -3239,13 +4369,13 @@ async def calendly_webhook(request: Request):
 
             lead_id = result.data[0]["id"]
 
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "calendly",
                 "message": f"New lead via Calendly: {invitee_name} ({invitee_email}) - {event_name} at {start_time}",
                 "meta": {"lead_id": lead_id, "event": event_name, "start_time": start_time}
             }).execute()
 
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": lead_id,
                 "activity_type": "meeting_booked",
                 "description": f"Booked discovery call via Calendly: {event_name} at {start_time}"
@@ -3268,16 +4398,16 @@ async def calendly_webhook(request: Request):
 
     elif event_type == "invitee.canceled" and invitee_email:
         # Log cancellation but don't delete the lead
-        existing = supabase.table("leads").select("id, name").eq("email", invitee_email).execute()
+        existing = db("leads").select("id, name").eq("email", invitee_email).execute()
         if existing.data:
             lead = existing.data[0]
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "calendly",
                 "message": f"Call canceled: {lead['name']} ({invitee_email})",
                 "meta": {"lead_id": lead["id"], "event": event_name}
             }).execute()
 
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": lead["id"],
                 "activity_type": "meeting_canceled",
                 "description": f"Canceled Calendly booking: {event_name or 'discovery call'}"
@@ -3300,7 +4430,7 @@ async def enrich_lead_with_apollo(lead_id: int, settings: dict = None):
         return {"error": "No Apollo API key configured"}
 
     # Get lead data
-    lead = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    lead = db("leads").select("*").eq("id", lead_id).execute()
     if not lead.data:
         return {"error": "Lead not found"}
     lead = lead.data[0]
@@ -3361,18 +4491,18 @@ async def enrich_lead_with_apollo(lead_id: int, settings: dict = None):
 
     if updates:
         updates["updated_at"] = datetime.utcnow().isoformat()
-        supabase.table("leads").update(updates).eq("id", lead_id).execute()
+        db("leads").update(updates).eq("id", lead_id).execute()
 
     # Log enrichment
     enriched_fields = list(updates.keys())
-    supabase.table("activity_log").insert({
+    db("activity_log").insert({
         "type": "enrichment",
         "message": f"Apollo enrichment for {lead.get('name', '')}: {len(enriched_fields)} fields updated",
         "meta": {"lead_id": lead_id, "fields": enriched_fields, "apollo_title": title, "apollo_org": org.get("name")}
     }).execute()
 
     try:
-        supabase.table("lead_activity").insert({
+        db("lead_activity").insert({
             "lead_id": lead_id,
             "type": "enrichment",
             "description": f"Apollo enrichment: {title or 'No title'} at {org.get('name', 'Unknown')}. Updated {len(enriched_fields)} fields.",
@@ -3394,14 +4524,14 @@ async def enrich_lead_with_apollo(lead_id: int, settings: dict = None):
 
 
 @app.post("/api/leads/{lead_id}/enrich")
-async def enrich_lead_preview(lead_id: int):
+async def enrich_lead_preview(lead_id: int, request: Request):
     """Fetch Apollo data for preview - does NOT auto-apply. Returns current vs Apollo values."""
     settings = load_settings()
     api_key = settings.get("apollo_api_key", "")
     if not api_key:
         return {"error": "No Apollo API key configured"}
 
-    lead = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    lead = db("leads").select("*").eq("id", lead_id).execute()
     if not lead.data:
         return {"error": "Lead not found"}
     lead = lead.data[0]
@@ -3436,6 +4566,9 @@ async def enrich_lead_preview(lead_id: int):
     person = data.get("person", {})
     if not person:
         return {"error": "No match found in Apollo", "lead_id": lead_id}
+
+    # Log the Apollo enrichment usage event (1 credit consumed)
+    _log_usage("apollo_enrich", request, meta={"lead_id": lead_id, "matched": True})
 
     org = person.get("organization", {}) or {}
     phone_numbers = person.get("phone_numbers") or []
@@ -3494,20 +4627,20 @@ async def enrich_lead_apply(lead_id: int, request: Request):
         return {"error": "No fields to apply"}
 
     fields["updated_at"] = datetime.utcnow().isoformat()
-    supabase.table("leads").update(fields).eq("id", lead_id).execute()
+    db("leads").update(fields).eq("id", lead_id).execute()
 
     # Log enrichment
-    lead = supabase.table("leads").select("name").eq("id", lead_id).execute()
+    lead = db("leads").select("name").eq("id", lead_id).execute()
     lead_name = lead.data[0]["name"] if lead.data else "Unknown"
 
-    supabase.table("activity_log").insert({
+    db("activity_log").insert({
         "type": "enrichment",
         "message": f"Apollo enrichment applied for {lead_name}: {list(fields.keys())}",
         "meta": {"lead_id": lead_id, "fields": list(fields.keys())}
     }).execute()
 
     try:
-        supabase.table("lead_activity").insert({
+        db("lead_activity").insert({
             "lead_id": lead_id,
             "type": "enrichment",
             "description": f"Apollo enrichment applied: {', '.join(fields.keys())}",
@@ -3637,7 +4770,7 @@ def _extract_info_from_snippets(snippets_by_platform: dict, all_results: list) -
 @app.post("/api/leads/{lead_id}/enrich-web")
 async def enrich_lead_web(lead_id: int):
     """Search the web for real estate agent profiles on Realtor.com, Zillow, Facebook, etc."""
-    lead = supabase.table("leads").select("*").eq("id", lead_id).execute()
+    lead = db("leads").select("*").eq("id", lead_id).execute()
     if not lead.data:
         return {"error": "Lead not found"}
     lead = lead.data[0]
@@ -3797,7 +4930,7 @@ async def meta_leads_webhook(request: Request):
 
             if not leadgen_id or not page_access_token:
                 # If no access token, log what we got and skip Graph API call
-                supabase.table("activity_log").insert({
+                db("activity_log").insert({
                     "type": "meta_lead",
                     "message": f"Meta lead received but no page access token configured. Leadgen ID: {leadgen_id}",
                     "meta": {"leadgen_id": leadgen_id, "form_id": form_id}
@@ -3812,7 +4945,7 @@ async def meta_leads_webhook(request: Request):
                         params={"access_token": page_access_token}
                     )
                     if resp.status_code != 200:
-                        supabase.table("activity_log").insert({
+                        db("activity_log").insert({
                             "type": "meta_lead",
                             "message": f"Failed to fetch lead {leadgen_id} from Graph API: {resp.status_code}",
                             "meta": {"leadgen_id": leadgen_id, "response": resp.text[:500]}
@@ -3821,7 +4954,7 @@ async def meta_leads_webhook(request: Request):
 
                     lead_data = resp.json()
             except Exception as e:
-                supabase.table("activity_log").insert({
+                db("activity_log").insert({
                     "type": "meta_lead",
                     "message": f"Error fetching lead {leadgen_id}: {str(e)}",
                     "meta": {"leadgen_id": leadgen_id}
@@ -3842,7 +4975,7 @@ async def meta_leads_webhook(request: Request):
                 continue
             if not is_valid_email(email):
                 try:
-                    supabase.table("activity_log").insert({
+                    db("activity_log").insert({
                         "type": "webhook_validation_error",
                         "message": f"Meta webhook rejected malformed email from leadgen {leadgen_id}: {email!r}",
                         "meta": {"leadgen_id": leadgen_id, "form_id": form_id, "email": email, "fields": fields}
@@ -3878,7 +5011,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
     email = (email or "").strip()
     if not is_valid_email(email):
         try:
-            supabase.table("activity_log").insert({
+            db("activity_log").insert({
                 "type": "webhook_validation_error",
                 "message": f"Meta webhook rejected malformed email: {email!r} (name={name!r}, phone={phone!r}, form={form_name!r})",
                 "meta": {"email": email, "name": name, "phone": phone, "form": form_name, "platform": platform}
@@ -3898,7 +5031,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
         source_page = f"{ad_name} - {form_name}"
 
     # Check if lead already exists
-    existing = supabase.table("leads").select("id, name, status").eq("email", email).execute()
+    existing = db("leads").select("id, name, status").eq("email", email).execute()
 
     if existing.data:
         lead = existing.data[0]
@@ -3909,9 +5042,9 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
         }
         if phone:
             updates["phone"] = phone
-        supabase.table("leads").update(updates).eq("id", lead_id).execute()
+        db("leads").update(updates).eq("id", lead_id).execute()
 
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "meta_lead",
             "message": f"Existing lead submitted Meta form: {name} ({email}) - {form_name}",
             "meta": {"lead_id": lead_id, "form": form_name, "platform": platform}
@@ -3919,7 +5052,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
 
         # Log lead activity
         try:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": lead_id,
                 "type": "form_submission",
                 "description": f"Submitted Meta lead form: {form_name}",
@@ -3965,7 +5098,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
             auto_tags.append("coldwell-comparison")
 
         # Create new lead with pipeline-ready stage
-        result = supabase.table("leads").insert({
+        result = db("leads").insert({
             "name": name,
             "first_name": first_name,
             "last_name": last_name,
@@ -3985,7 +5118,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
 
         # Create opportunity in LPT Recruiting pipeline
         try:
-            supabase.table("opportunities").insert({
+            db("opportunities").insert({
                 "contact_id": lead_id,
                 "pipeline_id": 1,
                 "stage": "new_fb_lead",
@@ -3998,7 +5131,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
 
         # Auto-enroll in email funnel
         try:
-            supabase.table("email_funnel_enrollments").insert({
+            db("email_funnel_enrollments").insert({
                 "lead_id": lead_id,
                 "funnel_id": funnel_id,
                 "current_step": 1,
@@ -4008,7 +5141,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
         except Exception:
             pass
 
-        supabase.table("activity_log").insert({
+        db("activity_log").insert({
             "type": "meta_lead",
             "message": f"New lead via Meta Ads: {name} ({email}) - {form_name}",
             "meta": {"lead_id": lead_id, "form": form_name, "platform": platform, "funnel_id": funnel_id, "brokerage": current_brokerage}
@@ -4016,7 +5149,7 @@ async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,
 
         # Log lead activity
         try:
-            supabase.table("lead_activity").insert({
+            db("lead_activity").insert({
                 "lead_id": lead_id,
                 "type": "form_submission",
                 "description": f"Submitted Meta lead form: {form_name}",
@@ -4080,6 +5213,278 @@ def _build_meta_lead_email(name: str, email: str, phone: str, form_name: str, pl
 """
 
 
+# ─────────────────────────────────────────────────────────────────────
+# RECRUIT COMPARISON TOOL (Phase 14)
+# Agents (e.g. Connie) run a brokerage cost comparison for a recruit,
+# email them a link to a public report page that requires no login.
+# ─────────────────────────────────────────────────────────────────────
+
+PUBLIC_SITE_URL = os.environ.get("PUBLIC_SITE_URL", "https://tplcollective.ai")
+
+class RecruitComparisonCreate(BaseModel):
+    recruit_first_name: str
+    recruit_last_name: Optional[str] = ""
+    recruit_email: str
+    recruit_phone: Optional[str] = ""
+    current_brokerage_name: Optional[str] = ""
+    selection: list  # list of brokerage objects (slug + plans + isCustom flag)
+    gci: float
+    txns: int
+    avg_gci_per_txn: Optional[float] = None
+    lpt_plan: Optional[str] = "both"
+    lpt_plus: Optional[bool] = False
+    comparison_result: Optional[dict] = None
+    notes: Optional[str] = ""
+    sender_name: Optional[str] = ""
+    sender_personal_email: Optional[str] = ""
+
+def _build_recruit_comparison_email(recruit_first: str, sender_name: str, share_url: str,
+                                     selection: list, gci: float, txns: int) -> tuple[str, str]:
+    """Build subject + HTML body for the recruit comparison email."""
+    sender_display = sender_name or "Your TPL Collective contact"
+    subject = f"Your brokerage comparison from {sender_display}"
+    competitors = [b.get("name", "?") for b in selection if b.get("slug") != "lpt-realty" and b.get("name")]
+    comp_line = ", ".join(competitors[:3]) if competitors else "your current brokerage"
+    safe_first = (recruit_first or "there").strip().split(" ")[0]
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#f5f5f5;margin:0;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px 28px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+    <div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:14px;letter-spacing:0.18em;color:#888;text-transform:uppercase;margin-bottom:6px;">TPL Collective</div>
+    <h1 style="font-size:24px;color:#1a1a1a;margin:0 0 16px;line-height:1.25;">Hi {safe_first} — your comparison is ready</h1>
+    <p style="font-size:15px;line-height:1.6;color:#333;margin:0 0 14px;">{sender_display} ran a side-by-side cost breakdown comparing LPT Realty against {comp_line} at your production level (${int(gci):,} GCI / {txns} transactions).</p>
+    <p style="font-size:15px;line-height:1.6;color:#333;margin:0 0 22px;">Click below to see the full numbers — splits, caps, fees, monthly costs, and what you'd actually keep at year-end.</p>
+    <div style="text-align:center;margin:0 0 24px;">
+      <a href="{share_url}" style="display:inline-block;background:#f0c040;color:#1a1a1a;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.04em;">View Your Comparison →</a>
+    </div>
+    <p style="font-size:13px;line-height:1.6;color:#666;margin:0 0 8px;">No login required. Numbers are from public sources and the LPT comp plan flyer.</p>
+    <p style="font-size:13px;line-height:1.6;color:#666;margin:0;">Questions? Reply directly to this email.</p>
+    <hr style="border:0;border-top:1px solid #eee;margin:24px 0 14px;">
+    <p style="font-size:11px;color:#999;margin:0;">Sent by {sender_display} via TPL Collective. Reply to talk numbers.</p>
+  </div>
+</body></html>"""
+    return subject, html
+
+
+@app.post("/api/recruit-comparisons")
+async def create_recruit_comparison(req: RecruitComparisonCreate, request: Request):
+    """Agent runs a comparison for a recruit. Creates DB row, lead, sends email, returns share URL."""
+    user = get_current_user(request)
+    user_id = user.get("user_id") or user.get("sub")
+    user_email = user.get("email", "")
+
+    if not is_valid_email(req.recruit_email):
+        raise HTTPException(status_code=400, detail="Invalid recruit email address.")
+
+    # Pull user's display name from users table
+    sender_name = req.sender_name or ""
+    sender_personal_email = req.sender_personal_email or ""
+    try:
+        urec = supabase.table("users").select("name, email").eq("id", user_id).limit(1).execute()
+        if urec.data:
+            if not sender_name:
+                sender_name = urec.data[0].get("name") or ""
+            if not user_email:
+                user_email = urec.data[0].get("email") or ""
+    except Exception:
+        pass
+
+    avg_gci = req.avg_gci_per_txn
+    if avg_gci is None and req.txns:
+        avg_gci = req.gci / req.txns if req.txns else 0
+
+    # Create lead under the agent's workspace, owned by them
+    workspace_id_for_lead = user.get("workspace_id") or 1
+    auto_tags = ["recruit-comparison"]
+    if sender_name:
+        slug = sender_name.lower().replace(" ", "-")
+        auto_tags.append(slug + "-recruit")
+    if req.current_brokerage_name:
+        auto_tags.append("from-" + req.current_brokerage_name.lower().replace(" ", "-")[:30])
+
+    lead_full_name = (req.recruit_first_name + " " + (req.recruit_last_name or "")).strip()
+    recruit_lead_id = None
+    try:
+        # Dedup by email within workspace
+        existing = supabase.table("leads").select("id").eq("email", req.recruit_email).eq("workspace_id", workspace_id_for_lead).limit(1).execute()
+        if existing.data:
+            recruit_lead_id = existing.data[0]["id"]
+            supabase.table("leads").update({
+                "lead_temperature": "warm",
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", recruit_lead_id).execute()
+        else:
+            lead_insert = supabase.table("leads").insert({
+                "workspace_id": workspace_id_for_lead,
+                "name": lead_full_name or req.recruit_email,
+                "first_name": req.recruit_first_name,
+                "last_name": req.recruit_last_name or "",
+                "email": req.recruit_email,
+                "phone": req.recruit_phone or "",
+                "source": "Recruit Comparison Tool",
+                "source_page": f"Run by {sender_name or user_email}",
+                "stage": "research",
+                "lead_temperature": "warm",
+                "status": "new",
+                "current_brokerage": req.current_brokerage_name or "",
+                "tags": auto_tags,
+                "owner_user_id": user_id,
+                "notes": f"Comparison sent by {sender_name or user_email} on {datetime.utcnow().date().isoformat()}. Recruit reviewing brokerage options."
+            }).execute()
+            if lead_insert.data:
+                recruit_lead_id = lead_insert.data[0]["id"]
+    except Exception as e:
+        # Don't block comparison creation if lead insert fails - log and continue
+        try:
+            supabase.table("activity_log").insert({
+                "type": "recruit_comparison_lead_error",
+                "message": f"Failed to create lead for recruit comparison: {str(e)[:300]}",
+                "meta": {"email": req.recruit_email, "user_id": user_id}
+            }).execute()
+        except Exception:
+            pass
+
+    # Create the comparison row
+    insert_resp = supabase.table("recruit_comparisons").insert({
+        "created_by_user_id": user_id,
+        "created_by_name": sender_name,
+        "created_by_email": user_email,
+        "created_by_personal_email": sender_personal_email or user_email,
+        "recruit_first_name": req.recruit_first_name,
+        "recruit_last_name": req.recruit_last_name or "",
+        "recruit_email": req.recruit_email,
+        "recruit_phone": req.recruit_phone or "",
+        "recruit_lead_id": recruit_lead_id,
+        "current_brokerage_name": req.current_brokerage_name or "",
+        "selection": req.selection,
+        "gci": req.gci,
+        "txns": req.txns,
+        "avg_gci_per_txn": avg_gci,
+        "lpt_plan": req.lpt_plan or "both",
+        "lpt_plus": bool(req.lpt_plus),
+        "comparison_result": req.comparison_result,
+        "notes": req.notes or ""
+    }).execute()
+    row = insert_resp.data[0] if insert_resp.data else None
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to create comparison row.")
+    share_token = row["share_token"]
+    share_url = f"{PUBLIC_SITE_URL}/compare?report={share_token}"
+
+    # Send email via Resend with reply_to set to the agent's personal email
+    settings = load_settings()
+    smtp = settings.get("smtp", {})
+    subject, html = _build_recruit_comparison_email(
+        req.recruit_first_name, sender_name, share_url, req.selection, req.gci, req.txns
+    )
+    sender_full = f"{sender_name} via TPL Collective <comparisons@send.tplcollective.ai>" if sender_name else "TPL Collective <comparisons@send.tplcollective.ai>"
+    reply_to = sender_personal_email or user_email or "joe@tplcollective.ai"
+    success, err = send_email(
+        smtp,
+        req.recruit_email,
+        subject,
+        html,
+        from_address=sender_full,
+        contact_id=recruit_lead_id,
+        campaign="recruit_comparison",
+        reply_to=reply_to
+    )
+
+    update_data = {
+        "email_status": "sent" if success else "failed",
+        "email_error": err if not success else None,
+        "email_sent_at": datetime.utcnow().isoformat() if success else None,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    supabase.table("recruit_comparisons").update(update_data).eq("id", row["id"]).execute()
+
+    # Log to lead activity
+    if recruit_lead_id:
+        try:
+            supabase.table("lead_activity").insert({
+                "lead_id": recruit_lead_id,
+                "type": "comparison_sent" if success else "comparison_send_failed",
+                "description": f"Comparison email sent by {sender_name or user_email}" + (f" (error: {err})" if err else ""),
+                "meta": {"share_token": share_token, "share_url": share_url, "selection_count": len(req.selection or [])}
+            }).execute()
+        except Exception:
+            pass
+
+    return {
+        "success": success,
+        "share_token": share_token,
+        "share_url": share_url,
+        "comparison_id": row["id"],
+        "recruit_lead_id": recruit_lead_id,
+        "email_status": "sent" if success else "failed",
+        "email_error": err if not success else None
+    }
+
+
+@app.get("/api/recruit-comparisons")
+def list_recruit_comparisons(request: Request, limit: int = 50):
+    """List comparisons created by the current agent."""
+    user = get_current_user(request)
+    user_id = user.get("user_id") or user.get("sub")
+    rows = supabase.table("recruit_comparisons").select(
+        "id, share_token, recruit_first_name, recruit_last_name, recruit_email, "
+        "current_brokerage_name, gci, txns, lpt_plan, email_status, email_sent_at, "
+        "viewed_at, viewed_count, created_at, recruit_lead_id"
+    ).eq("created_by_user_id", user_id).order("created_at", desc=True).limit(min(limit, 200)).execute()
+    return {"comparisons": rows.data or []}
+
+
+@app.get("/api/recruit-comparisons/by-token/{token}")
+def get_recruit_comparison_public(token: str):
+    """Public read endpoint — fetched by the public report page (no auth).
+    Increments viewed_count + stamps viewed_at on first view."""
+    res = supabase.table("recruit_comparisons").select("*").eq("share_token", token).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Comparison not found")
+    row = res.data[0]
+
+    # Track view
+    is_first_view = row.get("viewed_at") is None
+    new_count = (row.get("viewed_count") or 0) + 1
+    update = {"viewed_count": new_count, "updated_at": datetime.utcnow().isoformat()}
+    if is_first_view:
+        update["viewed_at"] = datetime.utcnow().isoformat()
+    try:
+        supabase.table("recruit_comparisons").update(update).eq("id", row["id"]).execute()
+    except Exception:
+        pass
+
+    if is_first_view and row.get("recruit_lead_id"):
+        try:
+            supabase.table("lead_activity").insert({
+                "lead_id": row["recruit_lead_id"],
+                "type": "comparison_viewed",
+                "description": f"Recruit viewed their comparison report",
+                "meta": {"share_token": token, "view_count": new_count}
+            }).execute()
+        except Exception:
+            pass
+
+    # Strip internal fields - only return what the report page needs
+    return {
+        "share_token": row["share_token"],
+        "recruit_first_name": row.get("recruit_first_name"),
+        "recruit_last_name": row.get("recruit_last_name"),
+        "current_brokerage_name": row.get("current_brokerage_name"),
+        "selection": row.get("selection") or [],
+        "gci": row.get("gci"),
+        "txns": row.get("txns"),
+        "avg_gci_per_txn": row.get("avg_gci_per_txn"),
+        "lpt_plan": row.get("lpt_plan"),
+        "lpt_plus": row.get("lpt_plus"),
+        "comparison_result": row.get("comparison_result"),
+        "created_by_name": row.get("created_by_name"),
+        "created_by_email": row.get("created_by_personal_email") or row.get("created_by_email"),
+        "created_at": row.get("created_at"),
+        "view_count": new_count
+    }
+
+
 # ── ROBOTS.TXT (block all crawlers from Mission Control) ──
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -4094,4 +5499,11 @@ app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 @app.get("/", response_class=HTMLResponse)
 def dashboard():
     with open("/app/static/index.html") as f:
+        return f.read()
+
+
+@app.get("/signup", response_class=HTMLResponse)
+def signup_page():
+    """Public signup page — recipient lands here from invitation email."""
+    with open("/app/static/signup.html") as f:
         return f.read()

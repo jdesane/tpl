@@ -158,44 +158,72 @@ th[onclick]:hover{color:var(--accent)}
 </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY (shown when no JWT in localStorage; hidden once authenticated) -->
+<div id="mc-login-screen" style="display:none;position:fixed;inset:0;background:var(--bg,#0a0a0f);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
+  <div style="background:var(--surface,#13131a);border:1px solid var(--border,#26262e);border-radius:12px;padding:40px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+    <div class="logo" style="font-size:28px;text-align:center;margin-bottom:4px">MISSION<span> CONTROL</span></div>
+    <div class="subtitle" style="text-align:center;margin-bottom:32px">TPL Collective</div>
+    <input id="mc-login-email" type="email" placeholder="Email" autocomplete="email" style="width:100%;background:var(--surface-2,#1d1d24);border:1px solid var(--border,#26262e);border-radius:8px;padding:12px 16px;color:var(--text,#fff);font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">
+    <input id="mc-login-password" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;background:var(--surface-2,#1d1d24);border:1px solid var(--border,#26262e);border-radius:8px;padding:12px 16px;color:var(--text,#fff);font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box" onkeydown="if(event.key==='Enter')mcDoLogin()">
+    <button onclick="mcDoLogin()" id="mc-login-btn" style="width:100%;padding:12px;border-radius:8px;background:var(--accent,#ff5800);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;margin-top:8px">Sign In</button>
+    <div id="mc-login-error" style="color:#ef4444;font-size:12px;margin-top:12px;text-align:center;display:none"></div>
+  </div>
+</div>
+
 <div class="topbar">
   <div style="display:flex;align-items:center">
     <div class="logo">MISSION<span> CONTROL</span></div>
     <div class="subtitle">TPL Collective</div>
   </div>
-  <div class="topbar-right">
+  <div class="topbar-right" style="position:relative">
     <div class="status-pill"><div class="dot"></div><span>Systems Online</span></div>
     <div class="clock" id="clock"></div>
-    <div class="avatar">JD</div>
+    <div id="topbar-plan-badge" style="display:none;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;background:var(--surface-2,#1d1d24);border:1px solid var(--border,#26262e);padding:4px 10px;border-radius:4px;color:var(--accent,#ff5800);font-weight:600">BASIC</div>
+    <div class="avatar" id="topbar-avatar" onclick="mcShowMenu()" style="cursor:pointer">JD</div>
+    <div id="topbar-user-menu" style="display:none;position:absolute;top:48px;right:0;background:var(--surface,#13131a);border:1px solid var(--border,#26262e);border-radius:8px;padding:8px;min-width:220px;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,0.4)">
+      <div id="topbar-user-name" style="padding:8px 12px;color:var(--text,#fff);font-size:13px;font-weight:600">—</div>
+      <div id="topbar-user-email" style="padding:0 12px 8px;color:var(--text-muted,#888);font-size:11px;border-bottom:1px solid var(--border,#26262e);margin-bottom:4px">—</div>
+      <div onclick="mcLogout()" style="padding:8px 12px;color:#ef4444;font-size:13px;cursor:pointer;border-radius:4px" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background=''">Sign out</div>
+    </div>
   </div>
 </div>
 <div class="sidebar">
-  <div class="nav-group">
+  <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Command</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">&#x2B21;</span>Dashboard</div>
     <div class="nav-item" onclick="showPage('contacts')"><span class="icon">&#x25CE;</span>Contacts<span class="nav-badge" id="contacts-badge">0</span></div>
     <div class="nav-item" onclick="showPage('opportunities')"><span class="icon">&#x25B7;</span>Opportunities</div>
-    <div class="nav-item" onclick="showPage('agents')"><span class="icon">&#x2606;</span>Agents</div>
+    <div class="nav-item" data-platform-only="true" onclick="showPage('agents')"><span class="icon">&#x2606;</span>Agents</div>
   </div>
-  <div class="nav-group">
+  <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Performance</div>
     <div class="nav-item" onclick="showPage('analytics')"><span class="icon">&#x2261;</span>Funnel Analytics</div>
-    <div class="nav-item" onclick="showPage('revshare')"><span class="icon">&#x2191;</span>Rev Share</div>
+    <div class="nav-item" data-platform-only="true" onclick="showPage('revshare')"><span class="icon">&#x2191;</span>Rev Share</div>
   </div>
-  <div class="nav-group">
+  <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Marketing</div>
-    <div class="nav-item" onclick="showPage('drips')"><span class="icon">&#x2709;</span>Email Drips</div>
-    <div class="nav-item" onclick="showPage('content')"><span class="icon">&#x260E;</span>Content Hub</div>
-    <div class="nav-item" onclick="showPage('links')"><span class="icon">&#x2693;</span>Recruiting Links</div>
+    <div class="nav-item" data-min-plan="mid" onclick="showPage('drips')"><span class="icon">&#x2709;</span>Email Drips</div>
+    <div class="nav-item" data-min-plan="mid" onclick="showPage('content')"><span class="icon">&#x260E;</span>Content Hub</div>
+    <div class="nav-item" data-platform-only="true" onclick="showPage('links')"><span class="icon">&#x2693;</span>Recruiting Links</div>
+    <div class="nav-item" onclick="showPage('recruit-compare')"><span class="icon">&#x25EB;</span>Recruit Comparison</div>
   </div>
-  <div class="nav-group">
+  <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Capture</div>
     <div class="nav-item" onclick="showPage('ideas')"><span class="icon">&#x26A1;</span>Ideas<span class="nav-badge" id="ideas-badge" style="display:none">0</span></div>
   </div>
-  <div class="nav-group">
+  <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Systems</div>
-    <div class="nav-item" onclick="showPage('openclaw')"><span class="icon">&#x2699;</span>Automations</div>
+    <div class="nav-item" data-min-plan="elite" onclick="showPage('openclaw')"><span class="icon">&#x2699;</span>Automations</div>
     <div class="nav-item" onclick="showPage('settings')"><span class="icon">&#x2638;</span>Settings</div>
+  </div>
+  <div class="nav-group" data-nav-group data-admin-only="true">
+    <div class="nav-group-label">Admin</div>
+    <div class="nav-item" data-admin-only="true" onclick="showPage('admin-platform')"><span class="icon">&#x2747;</span>Platform</div>
+    <div class="nav-item" data-admin-only="true" onclick="showPage('admin-users')"><span class="icon">&#x25D5;</span>Users</div>
+    <div class="nav-item" data-admin-only="true" onclick="showPage('admin-invites')"><span class="icon">&#x2709;</span>Invitations</div>
+    <div class="nav-item" data-admin-only="true" onclick="showPage('admin-costs')"><span class="icon">&#x24E7;</span>Costs</div>
+    <div class="nav-item" data-admin-only="true" onclick="showPage('admin-audit')"><span class="icon">&#x29C9;</span>Audit Log</div>
   </div>
 </div>
 <div class="main">
@@ -649,6 +677,111 @@ th[onclick]:hover{color:var(--accent)}
   <div id="links-list"></div>
 </div>
 
+<!-- ═══ RECRUIT COMPARISON PAGE ═══ -->
+<div class="page" id="page-recruit-compare">
+  <div class="panel-title" style="font-size:24px;margin-bottom:6px">Recruit Comparison Tool</div>
+  <div style="color:var(--muted);font-size:13px;margin-bottom:18px">
+    Run a brokerage cost breakdown for a recruit you&rsquo;re talking to. They get a personal report link &mdash; no signup, no gate.
+  </div>
+
+  <div class="row-2" style="align-items:flex-start">
+
+    <!-- LEFT: Form -->
+    <div class="panel" style="display:flex;flex-direction:column;gap:18px">
+
+      <div>
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Recruit Info</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label class="form-label">First name *</label><input type="text" id="rc-first" class="form-input" placeholder="Brian" /></div>
+          <div><label class="form-label">Last name</label><input type="text" id="rc-last" class="form-input" placeholder="" /></div>
+          <div style="grid-column:span 2"><label class="form-label">Email *</label><input type="email" id="rc-email" class="form-input" placeholder="brian@example.com" /></div>
+          <div><label class="form-label">Phone</label><input type="tel" id="rc-phone" class="form-input" /></div>
+          <div><label class="form-label">Current brokerage</label><input type="text" id="rc-current" class="form-input" placeholder="e.g. KW Boca" /></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Compare Against</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:8px">LPT is auto-included. Select up to 4 competitors.</div>
+        <div id="rc-brokerage-list" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px"></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="rcOpenCustomModal()" style="margin-top:8px">+ Add custom brokerage</button>
+        <div id="rc-custom-list" style="margin-top:8px"></div>
+      </div>
+
+      <div>
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Their Numbers</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label class="form-label">Annual GCI *</label><input type="number" id="rc-gci" class="form-input" min="50000" step="5000" value="250000" /></div>
+          <div><label class="form-label">Transactions *</label><input type="number" id="rc-txns" class="form-input" min="1" step="1" value="20" /></div>
+          <div>
+            <label class="form-label">LPT plan to compare</label>
+            <select id="rc-lpt-plan" class="form-input">
+              <option value="both">Both (BP + BB)</option>
+              <option value="bp">Brokerage Partner only</option>
+              <option value="bb">Business Builder only</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text)"><input type="checkbox" id="rc-lpt-plus" /> Include LPT Plus addon</label>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Sender personal email (reply-to)</label>
+        <input type="email" id="rc-reply-to" class="form-input" placeholder="connie@gmail.com" />
+        <div style="color:var(--muted);font-size:11px;margin-top:4px">Recruit replies go directly to this address.</div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="rc-send-btn" onclick="rcSubmit()" style="margin-top:6px">
+        Generate &amp; Send Comparison
+      </button>
+      <div id="rc-result" style="margin-top:8px"></div>
+    </div>
+
+    <!-- RIGHT: Recent comparisons -->
+    <div class="panel">
+      <div class="panel-title" style="font-size:14px;margin-bottom:10px">Recent Comparisons</div>
+      <div id="rc-recent-list">
+        <div style="color:var(--muted);font-size:12px">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Custom brokerage modal for MC -->
+<div id="rc-custom-modal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);">
+  <div class="panel" style="max-width:520px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="panel-title" style="font-size:16px;margin:0">Custom Brokerage</div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="rcCloseCustomModal()">×</button>
+    </div>
+    <input type="text" id="rcc-name" class="form-input" placeholder="Brokerage name *" />
+    <select id="rcc-model" class="form-input" onchange="rcCustomSyncFields()">
+      <option value="split-cap">Split + Cap (most common)</option>
+      <option value="flat-fee">Flat fee per transaction</option>
+      <option value="no-cap">Split forever (no cap)</option>
+    </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div data-rcc-show="split-cap no-cap"><label class="form-label">Split to agent (%)</label><input type="number" id="rcc-split" class="form-input" placeholder="70" /></div>
+      <div data-rcc-show="split-cap"><label class="form-label">Annual cap ($)</label><input type="number" id="rcc-cap" class="form-input" placeholder="16000" /></div>
+      <div data-rcc-show="flat-fee"><label class="form-label">Flat fee/txn ($)</label><input type="number" id="rcc-flat" class="form-input" placeholder="500" /></div>
+      <div data-rcc-show="flat-fee"><label class="form-label">Flat-fee cap ($)</label><input type="number" id="rcc-flat-cap" class="form-input" placeholder="5000" /></div>
+      <div><label class="form-label">Per-txn fee ($)</label><input type="number" id="rcc-per-txn" class="form-input" placeholder="195" /></div>
+      <div><label class="form-label">Monthly ($)</label><input type="number" id="rcc-monthly" class="form-input" placeholder="0" /></div>
+      <div><label class="form-label">Annual ($)</label><input type="number" id="rcc-annual" class="form-input" placeholder="0" /></div>
+      <div><label class="form-label">Royalty (%)</label><input type="number" id="rcc-royalty" class="form-input" placeholder="6" step="0.1" /></div>
+      <div><label class="form-label">Royalty cap ($)</label><input type="number" id="rcc-royalty-cap" class="form-input" placeholder="3000" /></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn btn-ghost" onclick="rcCloseCustomModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="rcSaveCustom()">Save</button>
+    </div>
+    <div id="rcc-error" style="color:#f88;font-size:12px;display:none"></div>
+  </div>
+</div>
+
 <!-- ═══ FUNNEL ANALYTICS PAGE ═══ -->
 <div class="page" id="page-analytics">
   <div class="panel-title" style="font-size:24px;margin-bottom:16px">Recruiting Funnel Analytics</div>
@@ -795,7 +928,6 @@ th[onclick]:hover{color:var(--accent)}
   </div>
 </div>
 
-</div>
 <div class="modal-overlay" id="lead-modal">
   <div class="modal" style="width:900px;max-width:900px">
     <h2 id="modal-title">Add Lead</h2>
@@ -921,8 +1053,410 @@ th[onclick]:hover{color:var(--accent)}
   </div>
 </div>
 
+<!-- ── ADMIN PAGES (Phase 13.6) — only visible to platform admin ── -->
+
+<div class="page" id="page-admin-users">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin:0">USERS</h1>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:4px">All users across the platform. Click Impersonate to see what they see.</div>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--surface-2);text-align:left">
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">User</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Workspace</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Plan</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Role</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Last Login</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="admin-users-tbody"><tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-admin-invites">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin:0">INVITATIONS</h1>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:4px">Invite agents to their own Mission Control workspace.</div>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('invite-modal').classList.add('show')">+ New Invite</button>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--surface-2);text-align:left">
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Email</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Name</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Plan</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Status</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Created</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="admin-invites-tbody"><tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- INVITE MODAL -->
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal" style="width:440px">
+    <h2 style="margin-top:0">Invite a User</h2>
+    <label>Email</label><input id="invite-email" type="email" placeholder="agent@example.com">
+    <label>Name <span style="color:var(--text-muted);font-weight:normal">(optional)</span></label><input id="invite-name" type="text" placeholder="Jane Smith">
+    <label>Plan</label>
+    <select id="invite-plan">
+      <option value="basic">Basic (Free)</option>
+      <option value="mid">Pro</option>
+      <option value="elite">Elite</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('invite-modal').classList.remove('show')">Cancel</button>
+      <button class="btn btn-primary" id="invite-submit-btn" onclick="submitInvite()">Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-admin-platform">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin:0">PLATFORM</h1>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:4px">Revenue, cost, and per-workspace breakdown across the entire platform.</div>
+    </div>
+    <button class="btn btn-ghost" onclick="loadAdminPlatform()" style="font-size:12px">Refresh</button>
+  </div>
+
+  <!-- KPI cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">MRR</div>
+      <div id="kpi-mrr" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#10b981">$0</div>
+      <div id="kpi-mrr-sub" style="color:var(--text-muted);font-size:11px;margin-top:4px">0 paying workspaces</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Monthly Cost</div>
+      <div id="kpi-cost" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#ef4444">$0</div>
+      <div id="kpi-cost-sub" style="color:var(--text-muted);font-size:11px;margin-top:4px">across all workspaces</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Net Profit</div>
+      <div id="kpi-profit" style="font-family:'Bebas Neue',sans-serif;font-size:36px">$0</div>
+      <div id="kpi-margin" style="color:var(--text-muted);font-size:11px;margin-top:4px">— margin</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Active Users (7d)</div>
+      <div id="kpi-active" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent)">0</div>
+      <div id="kpi-active-sub" style="color:var(--text-muted);font-size:11px;margin-top:4px">of 0 total</div>
+    </div>
+  </div>
+
+  <!-- Workspace table -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <div style="background:var(--surface-2);padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:13px;font-weight:600">All Workspaces</div>
+      <div style="color:var(--text-muted);font-size:11px">Click any row to expand &middot; sorted by cost</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--surface-2);text-align:left;border-top:1px solid var(--border)">
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px">Workspace / Owner</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px">Plan</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px">Status</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:right">Revenue</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:right">Cost</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:right">Margin</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:right">Last Login</th>
+          <th style="padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="admin-platform-tbody"><tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SUBSCRIPTION EDIT MODAL -->
+<div class="modal-overlay" id="sub-modal">
+  <div class="modal" style="width:440px">
+    <h2 style="margin-top:0">Edit Subscription</h2>
+    <div id="sub-modal-context" style="color:var(--text-muted);font-size:12px;margin-bottom:16px"></div>
+    <label>Plan</label>
+    <select id="sub-plan">
+      <option value="basic">Basic</option>
+      <option value="mid">Pro / Mid</option>
+      <option value="elite">Elite</option>
+    </select>
+    <label>Status</label>
+    <select id="sub-status">
+      <option value="active">Active (paying)</option>
+      <option value="trial">Trial</option>
+      <option value="beta">Beta (free)</option>
+      <option value="past_due">Past due</option>
+      <option value="canceled">Canceled</option>
+    </select>
+    <label>Monthly Price (USD)</label>
+    <input id="sub-amount" type="number" min="0" step="1" placeholder="0" style="font-family:DM Mono,monospace">
+    <label>Payment Method</label>
+    <select id="sub-method">
+      <option value="manual">Manual (no Stripe)</option>
+      <option value="stripe">Stripe</option>
+      <option value="beta">Beta tester</option>
+      <option value="free">Free tier</option>
+    </select>
+    <label>Notes</label>
+    <input id="sub-notes" type="text" placeholder="Optional internal note">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('sub-modal').classList.remove('show')">Cancel</button>
+      <button class="btn btn-primary" id="sub-save-btn" onclick="saveSubscription()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-admin-costs">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin:0">COSTS</h1>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:4px">Estimated monthly cost per workspace. Email + storage = measured. AI + image = estimated by plan tier.</div>
+    </div>
+    <button class="btn btn-ghost" onclick="loadAdminCosts()" style="font-size:12px">Refresh</button>
+  </div>
+
+  <div id="costs-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Total / Month</div>
+      <div id="costs-total" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent)">$0.00</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Workspaces</div>
+      <div id="costs-count" style="font-family:'Bebas Neue',sans-serif;font-size:36px">0</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px">
+      <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Avg / Workspace</div>
+      <div id="costs-avg" style="font-family:'Bebas Neue',sans-serif;font-size:36px">$0.00</div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--surface-2);text-align:left">
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Workspace</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Plan</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;text-align:right">Leads</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;text-align:right">Emails (mo)</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;text-align:right">AI calls (est)</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px;text-align:right">$/Month</th>
+        </tr>
+      </thead>
+      <tbody id="admin-costs-tbody"><tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:24px;color:var(--text-muted);font-size:11px;line-height:1.6">
+    <strong>How this is calculated:</strong> emails (measured from email_send_log this month) × $0.0004 +
+    AI calls (estimated by plan + activity) × $0.05 +
+    images (estimated) × $0.06 +
+    storage (per row) × $0.0001 +
+    fixed VPS/Supabase amortization $1.30/workspace.
+    Tweak rates in <code style="background:var(--surface-2);padding:2px 6px;border-radius:3px">main.py:_COST_RATES</code>.
+  </div>
+</div>
+
+<div class="page" id="page-admin-audit">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin:0">AUDIT LOG</h1>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:4px">Every privileged admin action — impersonation, plan changes, invitations, deletions.</div>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--surface-2);text-align:left">
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">When</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Actor</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Action</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Target</th>
+          <th style="padding:12px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:1px">Details</th>
+        </tr>
+      </thead>
+      <tbody id="admin-audit-tbody"><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /.main (Phase 13.8 fix: admin pages now live inside .main for correct layout) -->
+
 <div class="toast" id="toast"></div>
 <script>
+// ── AUTH (Phase 13.1) ──
+window.MC_TOKEN=localStorage.getItem('mc_token')||null;
+window.MC_USER=null;
+try{window.MC_USER=JSON.parse(localStorage.getItem('mc_user')||'null')}catch(e){}
+
+(function(){
+  var origFetch=window.fetch;
+  window.fetch=function(input,opts){
+    opts=opts||{};
+    opts.headers=opts.headers||{};
+    var url=(typeof input==='string')?input:(input&&input.url)||'';
+    if(window.MC_TOKEN && url.indexOf('/api/')!==-1){
+      var hasAuth=false;
+      if(opts.headers instanceof Headers){hasAuth=opts.headers.has('Authorization')}
+      else{hasAuth=Object.keys(opts.headers).some(function(k){return k.toLowerCase()==='authorization'})}
+      if(!hasAuth){
+        if(opts.headers instanceof Headers){opts.headers.set('Authorization','Bearer '+window.MC_TOKEN)}
+        else{opts.headers['Authorization']='Bearer '+window.MC_TOKEN}
+      }
+    }
+    return origFetch(input,opts).then(function(r){
+      if(r.status===401 && url.indexOf('/api/auth/login')===-1 && url.indexOf('/api/')!==-1){
+        window.MC_TOKEN=null;window.MC_USER=null;
+        localStorage.removeItem('mc_token');localStorage.removeItem('mc_user');
+        mcShowLogin();
+      }
+      return r;
+    });
+  };
+})();
+
+function mcShowLogin(){var el=document.getElementById('mc-login-screen');if(el){el.style.display='flex';document.body.style.overflow='hidden'}}
+function mcHideLogin(){var el=document.getElementById('mc-login-screen');if(el){el.style.display='none';document.body.style.overflow=''}}
+function mcRenderUser(){if(!window.MC_USER)return;var u=window.MC_USER;var av=document.getElementById('topbar-avatar');if(av)av.textContent=u.avatar_initials||'?';var nm=document.getElementById('topbar-user-name');if(nm)nm.textContent=u.name||'';var em=document.getElementById('topbar-user-email');if(em)em.textContent=u.email||'';mcApplyNavGates()}
+
+// ── PLAN + PLATFORM GATING (Phase 13.4) ──
+// Hides nav items the user can't access:
+//   data-platform-only="true"  → only workspace_id=1 (TPL Collective platform owner) sees it
+//   data-min-plan="mid|elite"  → only users on that plan or higher see it
+// Empty nav groups (all items hidden) collapse so the sidebar stays tight.
+var MC_PLAN_RANK={basic:1,mid:2,elite:3};
+function mcPlanMeets(userPlan,required){return (MC_PLAN_RANK[userPlan]||0)>=(MC_PLAN_RANK[required]||99)}
+function mcApplyNavGates(){
+  var u=window.MC_USER;if(!u)return;
+  var ws=u.workspace||{};
+  var plan=ws.plan||'basic';
+  var isPlatform=(u.workspace_id===1);
+  var isAdmin=(u.role==='admin') && isPlatform;  // admin nav requires both
+  document.querySelectorAll('.nav-item[data-platform-only="true"]').forEach(function(el){
+    el.style.display=isPlatform?'':'none';
+  });
+  document.querySelectorAll('.nav-item[data-admin-only="true"]').forEach(function(el){
+    el.style.display=isAdmin?'':'none';
+  });
+  document.querySelectorAll('.nav-item[data-min-plan]').forEach(function(el){
+    var req=el.getAttribute('data-min-plan');
+    el.style.display=mcPlanMeets(plan,req)?'':'none';
+  });
+  // Collapse empty nav groups so we don't show orphan section headers
+  document.querySelectorAll('[data-nav-group]').forEach(function(group){
+    var items=group.querySelectorAll('.nav-item');
+    var anyVisible=Array.prototype.some.call(items,function(i){return i.style.display!=='none'});
+    group.style.display=anyVisible?'':'none';
+  });
+  // Plan badge in topbar
+  var pb=document.getElementById('topbar-plan-badge');
+  if(pb){pb.textContent=plan.toUpperCase();pb.style.display=''}
+  // Impersonation banner
+  mcRenderImpersonateBanner();
+}
+
+// ── IMPERSONATION (Phase 13.6) ──
+function mcRenderImpersonateBanner(){
+  var u=window.MC_USER;
+  var existing=document.getElementById('mc-impersonate-banner');
+  if(u && u.impersonating && u.actor){
+    if(!existing){
+      existing=document.createElement('div');
+      existing.id='mc-impersonate-banner';
+      existing.style.cssText='position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:8px 16px;text-align:center;font-size:13px;font-weight:600;z-index:10000;font-family:inherit;letter-spacing:0.3px';
+      document.body.insertBefore(existing,document.body.firstChild);
+    }
+    existing.innerHTML='Viewing as <strong>'+(u.name||u.email)+'</strong> — impersonating from '+(u.actor.name||u.actor.email)+'  &nbsp;<a href="javascript:mcStopImpersonate()" style="color:#fff;text-decoration:underline;margin-left:12px;cursor:pointer">Exit impersonation</a>';
+    existing.style.display='block';
+    document.body.style.paddingTop='36px';
+  }else if(existing){
+    existing.style.display='none';
+    document.body.style.paddingTop='';
+  }
+}
+
+async function mcImpersonate(userId,userName){
+  if(!confirm('Sign in as '+(userName||'this user')+'?\n\nYou will see and act as them. All actions are audit-logged.'))return;
+  try{
+    var r=await fetch('/api/admin/impersonate/'+userId,{method:'POST'});
+    var data=await r.json();
+    if(!r.ok){alert(data.detail||'Impersonation failed');return}
+    window.MC_TOKEN=data.token;window.MC_USER=data.user;
+    localStorage.setItem('mc_token',data.token);
+    localStorage.setItem('mc_user',JSON.stringify(data.user));
+    window.location.href='/';
+  }catch(e){alert('Network error during impersonation')}
+}
+
+async function mcStopImpersonate(){
+  try{
+    var r=await fetch('/api/admin/impersonate/stop',{method:'POST'});
+    var data=await r.json();
+    if(!r.ok){alert(data.detail||'Failed to stop impersonation');return}
+    window.MC_TOKEN=data.token;window.MC_USER=data.user;
+    localStorage.setItem('mc_token',data.token);
+    localStorage.setItem('mc_user',JSON.stringify(data.user));
+    window.location.href='/';
+  }catch(e){alert('Network error stopping impersonation')}
+}
+function mcShowMenu(){var m=document.getElementById('topbar-user-menu');if(m)m.style.display=m.style.display==='block'?'none':'block'}
+function mcLogout(){window.MC_TOKEN=null;window.MC_USER=null;localStorage.removeItem('mc_token');localStorage.removeItem('mc_user');var m=document.getElementById('topbar-user-menu');if(m)m.style.display='none';var em=document.getElementById('mc-login-email');if(em)em.value='';var pw=document.getElementById('mc-login-password');if(pw)pw.value='';mcShowLogin()}
+
+document.addEventListener('click',function(e){
+  var menu=document.getElementById('topbar-user-menu');
+  var av=document.getElementById('topbar-avatar');
+  if(menu && menu.style.display==='block' && !menu.contains(e.target) && e.target!==av){menu.style.display='none'}
+});
+
+async function mcDoLogin(){
+  var email=(document.getElementById('mc-login-email').value||'').trim();
+  var pw=document.getElementById('mc-login-password').value||'';
+  var err=document.getElementById('mc-login-error');
+  var btn=document.getElementById('mc-login-btn');
+  err.style.display='none';
+  if(!email||!pw){err.textContent='Email and password required';err.style.display='block';return}
+  btn.disabled=true;btn.textContent='Signing in...';
+  try{
+    var r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pw})});
+    var data=await r.json();
+    if(!r.ok){err.textContent=data.detail||'Sign-in failed';err.style.display='block';btn.disabled=false;btn.textContent='Sign In';return}
+    window.MC_TOKEN=data.token;window.MC_USER=data.user;
+    localStorage.setItem('mc_token',data.token);
+    localStorage.setItem('mc_user',JSON.stringify(data.user));
+    mcRenderUser();mcHideLogin();
+    btn.disabled=false;btn.textContent='Sign In';
+    mcBootstrap();
+  }catch(e){err.textContent='Network error — try again';err.style.display='block';btn.disabled=false;btn.textContent='Sign In'}
+}
+
+async function mcInit(){
+  if(!window.MC_TOKEN){mcShowLogin();return}
+  // Optimistically render cached user, then verify token via /me
+  if(window.MC_USER)mcRenderUser();
+  try{
+    var r=await fetch('/api/auth/me');
+    if(!r.ok)throw new Error('Token invalid');
+    var data=await r.json();
+    window.MC_USER=data.user;
+    localStorage.setItem('mc_user',JSON.stringify(data.user));
+    mcRenderUser();
+    mcBootstrap();
+  }catch(e){
+    window.MC_TOKEN=null;localStorage.removeItem('mc_token');localStorage.removeItem('mc_user');
+    mcShowLogin();
+  }
+}
+
 var API=window.location.origin;
 var allLeads=[],currentView='table',currentFilter='all',searchQuery='';
 var STAGES=['new','contacted','discovery_call','presentation','considering','signed','onboarding'];
@@ -945,10 +1479,16 @@ function showPage(name){window.location.hash=name;
   if(name==='drips')loadDripStats();
   if(name==='content')loadContent();
   if(name==='links')loadLinks();
+  if(name==='recruit-compare')loadRecruitCompare();
   if(name==='analytics')loadFunnelAnalytics();
   if(name==='revshare')loadRevShare();
   if(name==='openclaw')loadAutomations();
   if(name==='ideas')loadIdeas();
+  if(name==='admin-users')loadAdminUsers();
+  if(name==='admin-invites')loadAdminInvites();
+  if(name==='admin-audit')loadAdminAudit();
+  if(name==='admin-costs')loadAdminCosts();
+  if(name==='admin-platform')loadAdminPlatform();
 }
 
 async function loadDashboard(){
@@ -2292,10 +2832,546 @@ async function deleteIdea(id){
   }catch(e){showToast('Error deleting',true);}
 }
 
-var startPage=window.location.hash.replace('#','');
-if(startPage&&document.getElementById('page-'+startPage)){showPage(startPage);}
-else{loadDashboard();}
-setInterval(function(){if(document.getElementById('page-dashboard').classList.contains('active'))loadDashboard();},30000);
+// ── ADMIN PAGES (Phase 13.6) ──
+function _esc(s){if(s==null)return '';return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function _fmtDate(s){if(!s)return '—';try{var d=new Date(s);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}catch(e){return s}}
+function _fmtRelative(s){if(!s)return '—';var d=new Date(s);var diff=(Date.now()-d.getTime())/1000;if(diff<60)return 'just now';if(diff<3600)return Math.round(diff/60)+'m ago';if(diff<86400)return Math.round(diff/3600)+'h ago';if(diff<2592000)return Math.round(diff/86400)+'d ago';return d.toLocaleDateString()}
+
+async function loadAdminUsers(){
+  var tbody=document.getElementById('admin-users-tbody');
+  try{
+    var users=await fetch('/api/admin/users').then(function(r){return r.json()});
+    if(!Array.isArray(users)||users.length===0){tbody.innerHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">No users yet.</td></tr>';return}
+    var meId=window.MC_USER&&window.MC_USER.id;
+    tbody.innerHTML=users.map(function(u){
+      var ws=u.workspace||{};
+      var plan=(ws.plan||'basic').toUpperCase();
+      var planColor=ws.plan==='elite'?'#a855f7':(ws.plan==='mid'?'#3b82f6':'#888');
+      var canImpersonate=u.id!==meId;
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:12px 16px"><div style="font-weight:600">'+_esc(u.name||'(no name)')+'</div><div style="color:var(--text-muted);font-size:11px">'+_esc(u.email)+'</div></td>'+
+        '<td style="padding:12px 16px">'+_esc(ws.name||'—')+'</td>'+
+        '<td style="padding:12px 16px"><span style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;background:var(--surface-2);border:1px solid '+planColor+';color:'+planColor+';padding:3px 8px;border-radius:4px">'+plan+'</span> '+
+          '<select onchange="changePlan('+u.id+',this.value)" style="margin-left:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 4px;border-radius:4px"><option value="">Change…</option><option value="basic">Basic</option><option value="mid">Pro</option><option value="elite">Elite</option></select></td>'+
+        '<td style="padding:12px 16px">'+_esc(u.role)+'</td>'+
+        '<td style="padding:12px 16px;color:var(--text-muted)">'+_fmtRelative(u.last_login)+'</td>'+
+        '<td style="padding:12px 16px;text-align:right">'+
+          (canImpersonate?'<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="mcImpersonate('+u.id+',\''+_esc(u.name||u.email).replace(/'/g,"\\'")+'\')">Impersonate</button>':'')+
+          (canImpersonate?' <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="deleteUser('+u.id+',\''+_esc(u.email).replace(/'/g,"\\'")+'\')">Delete</button>':'')+
+        '</td></tr>';
+    }).join('');
+  }catch(e){tbody.innerHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--red)">Error loading users</td></tr>'}
+}
+
+async function changePlan(userId,plan){
+  if(!plan)return;
+  if(!confirm('Change this user\'s plan to '+plan.toUpperCase()+'?'))return;
+  try{
+    var r=await fetch('/api/admin/users/'+userId+'/plan',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:plan})});
+    var data=await r.json();
+    if(!r.ok){showToast(data.detail||'Failed to change plan',true);return}
+    showToast('Plan changed to '+plan.toUpperCase());loadAdminUsers();
+  }catch(e){showToast('Network error',true)}
+}
+
+async function deleteUser(userId,email){
+  if(!confirm('Delete user '+email+' and their workspace?\n\nThis cannot be undone.'))return;
+  try{
+    var r=await fetch('/api/admin/users/'+userId,{method:'DELETE'});
+    var data=await r.json();
+    if(!r.ok){showToast(data.detail||'Delete failed',true);return}
+    showToast('User deleted');loadAdminUsers();
+  }catch(e){showToast('Network error',true)}
+}
+
+async function loadAdminInvites(){
+  var tbody=document.getElementById('admin-invites-tbody');
+  try{
+    var invites=await fetch('/api/admin/invitations').then(function(r){return r.json()});
+    if(!Array.isArray(invites)||invites.length===0){tbody.innerHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">No invitations yet.</td></tr>';return}
+    var now=new Date().toISOString();
+    tbody.innerHTML=invites.map(function(inv){
+      var status, color;
+      if(inv.used_at){status='USED';color='#10b981'}
+      else if(inv.expires_at<now){status='EXPIRED';color='#888'}
+      else{status='PENDING';color='#f59e0b'}
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:12px 16px;font-weight:600">'+_esc(inv.email)+'</td>'+
+        '<td style="padding:12px 16px">'+_esc(inv.name||'—')+'</td>'+
+        '<td style="padding:12px 16px;text-transform:uppercase;font-size:11px;letter-spacing:1px">'+_esc(inv.plan)+'</td>'+
+        '<td style="padding:12px 16px"><span style="color:'+color+';font-weight:600;font-size:11px">'+status+'</span></td>'+
+        '<td style="padding:12px 16px;color:var(--text-muted)">'+_fmtRelative(inv.created_at)+'</td>'+
+        '<td style="padding:12px 16px;text-align:right">'+
+          (status==='PENDING'?'<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="revokeInvite('+inv.id+')">Revoke</button>':'')+
+        '</td></tr>';
+    }).join('');
+  }catch(e){tbody.innerHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--red)">Error loading invitations</td></tr>'}
+}
+
+async function submitInvite(){
+  var email=document.getElementById('invite-email').value.trim();
+  var name=document.getElementById('invite-name').value.trim();
+  var plan=document.getElementById('invite-plan').value;
+  var btn=document.getElementById('invite-submit-btn');
+  if(!email){showToast('Email required',true);return}
+  btn.disabled=true;btn.textContent='Sending...';
+  try{
+    var r=await fetch('/api/admin/invitations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,name:name,plan:plan})});
+    var data=await r.json();
+    btn.disabled=false;btn.textContent='Send Invite';
+    if(!r.ok){showToast(data.detail||'Invite failed',true);return}
+    document.getElementById('invite-modal').classList.remove('show');
+    document.getElementById('invite-email').value='';
+    document.getElementById('invite-name').value='';
+    showToast(data.email_sent?'Invitation sent to '+email:'Invite created — email failed: '+data.email_status,!data.email_sent);
+    loadAdminInvites();
+  }catch(e){btn.disabled=false;btn.textContent='Send Invite';showToast('Network error',true)}
+}
+
+async function revokeInvite(id){
+  if(!confirm('Revoke this invitation?'))return;
+  try{
+    var r=await fetch('/api/admin/invitations/'+id,{method:'DELETE'});
+    if(!r.ok){showToast('Revoke failed',true);return}
+    showToast('Invitation revoked');loadAdminInvites();
+  }catch(e){showToast('Network error',true)}
+}
+
+// ── PLATFORM OVERVIEW (Phase 13.8) ──
+var _platformWorkspaces=[];
+var _editingSubForWs=null;
+
+async function loadAdminPlatform(){
+  var tbody=document.getElementById('admin-platform-tbody');
+  try{
+    var data=await fetch('/api/admin/platform-overview').then(function(r){return r.json()});
+    var k=data.kpis||{};
+    document.getElementById('kpi-mrr').textContent='$'+(k.mrr_usd||0).toLocaleString();
+    document.getElementById('kpi-mrr-sub').textContent=(k.paying_workspaces||0)+' paying &middot; '+(k.beta_workspaces||0)+' beta';
+    document.getElementById('kpi-cost').textContent='$'+(k.monthly_cost_usd||0).toFixed(2);
+    document.getElementById('kpi-cost-sub').textContent='across '+(k.total_workspaces||0)+' workspaces';
+    var profit=k.profit_usd||0;
+    var profitEl=document.getElementById('kpi-profit');
+    profitEl.textContent=(profit>=0?'$':'-$')+Math.abs(profit).toFixed(2);
+    profitEl.style.color=profit>=0?'#10b981':'#ef4444';
+    document.getElementById('kpi-margin').textContent=(k.margin_pct||0)+'% margin';
+    document.getElementById('kpi-active').textContent=k.active_users_7d||0;
+    document.getElementById('kpi-active-sub').textContent='of '+(k.total_workspaces||0)+' total';
+
+    _platformWorkspaces=data.workspaces||[];
+    if(!_platformWorkspaces.length){tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text-muted)">No workspaces yet.</td></tr>';return}
+    tbody.innerHTML=_platformWorkspaces.map(function(w){
+      var planColor=w.plan==='elite'?'#a855f7':(w.plan==='mid'?'#3b82f6':'#888');
+      var statusColor={active:'#10b981',trial:'#f59e0b',beta:'#3b82f6',past_due:'#f59e0b',canceled:'#888',none:'#888'}[w.subscription.status]||'#888';
+      var betaBadge=w.is_lifetime_beta?' <span title="Lifetime Elite beta tester" style="background:#1d1d24;border:1px solid #10b981;color:#10b981;font-family:DM Mono,monospace;font-size:9px;padding:1px 5px;border-radius:3px;letter-spacing:0.5px">LIFE</span>':'';
+      var rev=w.monthly_revenue_usd||0;
+      var cost=w.monthly_cost_usd||0;
+      var margin=rev-cost;
+      var marginPct=rev>0?Math.round(margin/rev*100):null;
+      var meId=window.MC_USER&&window.MC_USER.id;
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:10px 12px"><div style="font-weight:600">'+_esc(w.name)+betaBadge+'</div><div style="color:var(--text-muted);font-size:10px">'+_esc(w.owner_email||'?')+'</div></td>'+
+        '<td style="padding:10px 12px"><span style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;background:var(--surface-2);border:1px solid '+planColor+';color:'+planColor+';padding:2px 6px;border-radius:3px">'+w.plan.toUpperCase()+'</span></td>'+
+        '<td style="padding:10px 12px"><span style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:'+statusColor+';font-weight:600">'+(w.subscription.status||'none').toUpperCase()+'</span></td>'+
+        '<td style="padding:10px 12px;text-align:right;font-family:DM Mono,monospace;color:#10b981">$'+rev.toFixed(2)+'</td>'+
+        '<td style="padding:10px 12px;text-align:right;font-family:DM Mono,monospace;color:#ef4444">$'+cost.toFixed(2)+'</td>'+
+        '<td style="padding:10px 12px;text-align:right;font-family:DM Mono,monospace;'+(margin>=0?'color:#10b981':'color:#ef4444')+'">'+(margin>=0?'$':'-$')+Math.abs(margin).toFixed(2)+(marginPct!==null?' <span style="color:var(--text-muted);font-size:10px">('+marginPct+'%)</span>':'')+'</td>'+
+        '<td style="padding:10px 12px;text-align:right;color:var(--text-muted);font-size:11px">'+_fmtRelative(w.last_login)+'</td>'+
+        '<td style="padding:10px 12px;text-align:right;white-space:nowrap">'+
+          '<button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="editSubscription('+w.workspace_id+')">Sub</button> '+
+          (w.owner_user_id&&w.owner_user_id!==meId?'<button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="mcImpersonate('+w.owner_user_id+',\''+_esc(w.owner_name||w.owner_email).replace(/\x27/g,"\\x27")+'\')">View as</button>':'')+
+        '</td></tr>';
+    }).join('');
+  }catch(e){tbody.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--red)">Error loading platform overview</td></tr>'}
+}
+
+async function editSubscription(wsId){
+  var w=_platformWorkspaces.find(function(x){return x.workspace_id===wsId});
+  if(!w){return}
+  _editingSubForWs=wsId;
+  document.getElementById('sub-modal-context').innerHTML='<strong style="color:var(--text)">'+_esc(w.name)+'</strong> &middot; '+_esc(w.owner_email||'')+' &middot; current $/mo: $'+(w.monthly_revenue_usd||0).toFixed(2);
+  document.getElementById('sub-plan').value=w.plan||'basic';
+  document.getElementById('sub-status').value=w.subscription.status||'beta';
+  document.getElementById('sub-amount').value=Math.round((w.subscription.monthly_amount_cents||0)/100);
+  document.getElementById('sub-method').value=w.subscription.payment_method||'manual';
+  document.getElementById('sub-notes').value='';
+  document.getElementById('sub-modal').classList.add('show');
+}
+
+async function saveSubscription(){
+  var wsId=_editingSubForWs;
+  if(!wsId){return}
+  var btn=document.getElementById('sub-save-btn');
+  btn.disabled=true;btn.textContent='Saving...';
+  // First, fetch the current subscription id for this workspace
+  try{
+    var subs=await fetch('/api/admin/subscriptions').then(function(r){return r.json()});
+    var current=subs.find(function(s){return s.workspace_id===wsId && (s.status==='active'||s.status==='trial'||s.status==='beta')});
+    var payload={
+      plan: document.getElementById('sub-plan').value,
+      status: document.getElementById('sub-status').value,
+      monthly_amount_cents: Math.round(parseFloat(document.getElementById('sub-amount').value||'0')*100),
+      payment_method: document.getElementById('sub-method').value,
+      notes: document.getElementById('sub-notes').value
+    };
+    var r;
+    if(current){
+      r=await fetch('/api/admin/subscriptions/'+current.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }else{
+      payload.workspace_id=wsId;
+      r=await fetch('/api/admin/subscriptions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }
+    var data=await r.json();
+    btn.disabled=false;btn.textContent='Save';
+    if(!r.ok){showToast(data.detail||'Save failed',true);return}
+    document.getElementById('sub-modal').classList.remove('show');
+    showToast('Subscription updated');
+    loadAdminPlatform();
+  }catch(e){btn.disabled=false;btn.textContent='Save';showToast('Network error',true)}
+}
+
+async function loadAdminCosts(){
+  var tbody=document.getElementById('admin-costs-tbody');
+  try{
+    var data=await fetch('/api/admin/workspace-costs').then(function(r){return r.json()});
+    document.getElementById('costs-total').textContent='$'+(data.total_monthly_cost_usd||0).toFixed(2);
+    document.getElementById('costs-count').textContent=data.total_workspaces||0;
+    var avg=data.total_workspaces?(data.total_monthly_cost_usd/data.total_workspaces):0;
+    document.getElementById('costs-avg').textContent='$'+avg.toFixed(2);
+    var rows=data.workspaces||[];
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">No workspaces yet.</td></tr>';return}
+    tbody.innerHTML=rows.map(function(w){
+      var planColor=w.plan==='elite'?'#a855f7':(w.plan==='mid'?'#3b82f6':'#888');
+      var betaBadge=w.is_lifetime_beta?' <span title="Lifetime Elite beta tester" style="background:#1d1d24;border:1px solid #10b981;color:#10b981;font-family:DM Mono,monospace;font-size:9px;padding:1px 5px;border-radius:3px;letter-spacing:0.5px">BETA</span>':'';
+      var detail='Email: $'+w.breakdown.email.toFixed(2)+'\\nAI (est): $'+w.breakdown.ai_est.toFixed(2)+'\\nImages (est): $'+w.breakdown.image_est.toFixed(2)+'\\nStorage: $'+w.breakdown.storage.toFixed(2)+'\\nFixed: $'+w.breakdown.fixed.toFixed(2);
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:12px 16px"><div style="font-weight:600">'+_esc(w.name)+betaBadge+'</div><div style="color:var(--text-muted);font-size:11px">'+_esc(w.owner_email)+'</div></td>'+
+        '<td style="padding:12px 16px"><span style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;background:var(--surface-2);border:1px solid '+planColor+';color:'+planColor+';padding:3px 8px;border-radius:4px">'+w.plan.toUpperCase()+'</span></td>'+
+        '<td style="padding:12px 16px;text-align:right;font-family:DM Mono,monospace">'+w.usage.leads.toLocaleString()+'</td>'+
+        '<td style="padding:12px 16px;text-align:right;font-family:DM Mono,monospace">'+w.usage.emails_this_month.toLocaleString()+'</td>'+
+        '<td style="padding:12px 16px;text-align:right;font-family:DM Mono,monospace;color:var(--text-muted)">'+w.usage.ai_calls_estimated+'</td>'+
+        '<td style="padding:12px 16px;text-align:right;font-family:DM Mono,monospace;font-weight:600;color:var(--accent)" title="'+detail+'">$'+w.total_usd.toFixed(2)+'</td>'+
+        '</tr>';
+    }).join('');
+  }catch(e){tbody.innerHTML='<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--red)">Error loading costs</td></tr>'}
+}
+
+async function loadAdminAudit(){
+  var tbody=document.getElementById('admin-audit-tbody');
+  try{
+    var rows=await fetch('/api/admin/audit-log?limit=200').then(function(r){return r.json()});
+    if(!Array.isArray(rows)||rows.length===0){tbody.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted)">No audit log entries yet.</td></tr>';return}
+    tbody.innerHTML=rows.map(function(r){
+      var actor=r.actor?(r.actor.name||r.actor.email):'system';
+      var target=r.target_user?(r.target_user.name||r.target_user.email):'';
+      var details=r.meta?Object.keys(r.meta).map(function(k){return k+': '+JSON.stringify(r.meta[k])}).join(', '):'';
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:12px 16px;color:var(--text-muted);white-space:nowrap">'+_fmtRelative(r.created_at)+'</td>'+
+        '<td style="padding:12px 16px">'+_esc(actor)+'</td>'+
+        '<td style="padding:12px 16px;font-family:DM Mono,monospace;font-size:11px;color:var(--accent)">'+_esc(r.action)+'</td>'+
+        '<td style="padding:12px 16px">'+_esc(target||'—')+'</td>'+
+        '<td style="padding:12px 16px;color:var(--text-muted);font-size:11px">'+_esc(details)+'</td></tr>';
+    }).join('');
+  }catch(e){tbody.innerHTML='<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--red)">Error loading audit log</td></tr>'}
+}
+
+function mcBootstrap(){
+  var startPage=window.location.hash.replace('#','');
+  if(startPage&&document.getElementById('page-'+startPage)){showPage(startPage);}
+  else{loadDashboard();}
+  if(!window.__mcDashboardInterval){
+    window.__mcDashboardInterval=setInterval(function(){if(document.getElementById('page-dashboard').classList.contains('active'))loadDashboard();},30000);
+  }
+}
+
+mcInit();
+
+/* ═══ RECRUIT COMPARISON TOOL ═══ */
+window.__rcState = {
+  brokerages: [],   // published brokerages from /data/brokerages.json
+  selected: [],     // slugs (excluding LPT, which is auto-included)
+  customs: [],      // custom brokerage objects (with isCustom: true)
+  customEditId: null
+};
+
+async function loadRecruitCompare(){
+  // Load brokerages once
+  if(!window.__rcState.brokerages.length){
+    try{
+      var res=await fetch('https://tplcollective.ai/data/brokerages.json',{cache:'no-store'});
+      var json=await res.json();
+      window.__rcState.brokerages=(json.brokerages||[]).filter(function(b){return b.status==='published'});
+    }catch(e){
+      document.getElementById('rc-brokerage-list').innerHTML='<div style="color:var(--muted);font-size:12px">Could not load brokerage data: '+e.message+'</div>';
+      return;
+    }
+  }
+  rcRenderBrokerageList();
+  rcLoadRecent();
+  // Pre-fill reply-to from current user
+  try{
+    var meRes=await fetch(API+'/api/auth/me');
+    if(meRes.ok){
+      var me=await meRes.json();
+      var rt=document.getElementById('rc-reply-to');
+      if(rt && !rt.value && me.email) rt.value=me.email;
+    }
+  }catch(_){}
+}
+
+function rcRenderBrokerageList(){
+  var wrap=document.getElementById('rc-brokerage-list');
+  wrap.innerHTML='';
+  var list=window.__rcState.brokerages.filter(function(b){return b.slug!=='lpt-realty'});
+  list.sort(function(a,b){return (a.name||'').localeCompare(b.name||'')});
+  list.forEach(function(b){
+    var checked=window.__rcState.selected.indexOf(b.slug)>-1;
+    var row=document.createElement('label');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text)';
+    row.innerHTML='<input type="checkbox" '+(checked?'checked':'')+' data-slug="'+b.slug+'" onchange="rcToggle(this)" />'+
+                  '<span>'+b.name+'</span>'+
+                  '<span style="margin-left:auto;color:var(--muted);font-size:11px">'+(b.category||'')+'</span>';
+    wrap.appendChild(row);
+  });
+}
+
+function rcToggle(checkbox){
+  var slug=checkbox.getAttribute('data-slug');
+  var max=4 - window.__rcState.customs.length;
+  if(checkbox.checked){
+    if(window.__rcState.selected.length>=max){
+      checkbox.checked=false;
+      alert('Max 4 competitors. Remove one to add another.');
+      return;
+    }
+    window.__rcState.selected.push(slug);
+  }else{
+    window.__rcState.selected=window.__rcState.selected.filter(function(s){return s!==slug});
+  }
+}
+
+function rcOpenCustomModal(existing){
+  window.__rcState.customEditId=existing?existing.id:null;
+  var f=existing?existing._form:{model:'split-cap'};
+  document.getElementById('rcc-name').value=f.name||(existing?existing.name:'')||'';
+  document.getElementById('rcc-model').value=f.model||'split-cap';
+  document.getElementById('rcc-split').value=f.split||'';
+  document.getElementById('rcc-cap').value=f.cap||'';
+  document.getElementById('rcc-flat').value=f.flat||'';
+  document.getElementById('rcc-flat-cap').value=f.flatCap||'';
+  document.getElementById('rcc-per-txn').value=f.perTxn||'';
+  document.getElementById('rcc-monthly').value=f.monthly||'';
+  document.getElementById('rcc-annual').value=f.annual||'';
+  document.getElementById('rcc-royalty').value=f.royalty||'';
+  document.getElementById('rcc-royalty-cap').value=f.royaltyCap||'';
+  document.getElementById('rcc-error').style.display='none';
+  rcCustomSyncFields();
+  var m=document.getElementById('rc-custom-modal');
+  m.style.display='flex';
+}
+
+function rcCloseCustomModal(){
+  document.getElementById('rc-custom-modal').style.display='none';
+  window.__rcState.customEditId=null;
+}
+
+function rcCustomSyncFields(){
+  var model=document.getElementById('rcc-model').value;
+  document.querySelectorAll('[data-rcc-show]').forEach(function(el){
+    var visible=el.getAttribute('data-rcc-show').split(' ').indexOf(model)>-1;
+    el.style.display=visible?'':'none';
+  });
+}
+
+function rcSaveCustom(){
+  var err=document.getElementById('rcc-error');
+  err.style.display='none';
+  var name=document.getElementById('rcc-name').value.trim();
+  if(!name){err.textContent='Name required.';err.style.display='block';return}
+  var model=document.getElementById('rcc-model').value;
+  var f={
+    name:name, model:model,
+    split:document.getElementById('rcc-split').value,
+    cap:document.getElementById('rcc-cap').value,
+    flat:document.getElementById('rcc-flat').value,
+    flatCap:document.getElementById('rcc-flat-cap').value,
+    perTxn:document.getElementById('rcc-per-txn').value,
+    monthly:document.getElementById('rcc-monthly').value,
+    annual:document.getElementById('rcc-annual').value,
+    royalty:document.getElementById('rcc-royalty').value,
+    royaltyCap:document.getElementById('rcc-royalty-cap').value
+  };
+  // Build brokerage object matching compare.js shape
+  var splitPct=parseFloat(f.split);
+  var plan={
+    plan_name:'Their Numbers',
+    split_structure:null,
+    annual_cap:null,
+    flat_fee_per_txn:null,
+    per_txn_brokerage_fee:parseFloat(f.perTxn)||0,
+    per_txn_fee_applies_to:'every_transaction',
+    monthly_fee:parseFloat(f.monthly)||0,
+    annual_fee:parseFloat(f.annual)||0,
+    eo_insurance_annual:0,
+    franchise_fee_pct:parseFloat(f.royalty)||0,
+    franchise_fee_cap_annual:parseFloat(f.royaltyCap)||null,
+    marketing_fee_pct:null,
+    signup_fee:0
+  };
+  if(model==='split-cap'){
+    plan.split_structure=(isNaN(splitPct)?70:splitPct)+'/'+(isNaN(splitPct)?30:(100-splitPct));
+    plan.annual_cap=parseFloat(f.cap)||0;
+  }else if(model==='no-cap'){
+    plan.split_structure=(isNaN(splitPct)?70:splitPct)+'/'+(isNaN(splitPct)?30:(100-splitPct));
+  }else if(model==='flat-fee'){
+    plan.flat_fee_per_txn=parseFloat(f.flat)||0;
+    plan.annual_cap=parseFloat(f.flatCap)||0;
+  }
+  var id=window.__rcState.customEditId||('custom-'+Date.now());
+  var obj={slug:id, name:name, short_name:name.length>18?name.slice(0,16)+'…':name, isCustom:true, status:'custom', category:'custom', plans:[plan], _customForm:f, _form:f, id:id};
+  if(window.__rcState.customEditId){
+    var idx=window.__rcState.customs.findIndex(function(c){return c.id===window.__rcState.customEditId});
+    if(idx>=0)window.__rcState.customs[idx]=obj;
+  }else{
+    var max=4-window.__rcState.selected.length;
+    if(window.__rcState.customs.length>=max){
+      err.textContent='Max 4 competitors selected. Remove one first.';err.style.display='block';return;
+    }
+    window.__rcState.customs.push(obj);
+  }
+  rcRenderCustoms();
+  rcCloseCustomModal();
+}
+
+function rcRenderCustoms(){
+  var wrap=document.getElementById('rc-custom-list');
+  wrap.innerHTML='';
+  window.__rcState.customs.forEach(function(c){
+    var pill=document.createElement('div');
+    pill.style.cssText='display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--accent-br,#444);border-radius:16px;padding:4px 10px;margin:4px 6px 0 0;font-size:12px;color:var(--text)';
+    pill.innerHTML='<span>'+c.name+'</span><button type="button" onclick="rcEditCustom(\''+c.id+'\')" style="background:none;border:0;color:var(--muted);cursor:pointer">✎</button><button type="button" onclick="rcRemoveCustom(\''+c.id+'\')" style="background:none;border:0;color:var(--muted);cursor:pointer">×</button>';
+    wrap.appendChild(pill);
+  });
+}
+
+function rcEditCustom(id){
+  var c=window.__rcState.customs.find(function(x){return x.id===id});
+  if(c)rcOpenCustomModal(c);
+}
+
+function rcRemoveCustom(id){
+  window.__rcState.customs=window.__rcState.customs.filter(function(c){return c.id!==id});
+  rcRenderCustoms();
+}
+
+async function rcSubmit(){
+  var btn=document.getElementById('rc-send-btn');
+  var result=document.getElementById('rc-result');
+  result.innerHTML='';
+  var first=document.getElementById('rc-first').value.trim();
+  var last=document.getElementById('rc-last').value.trim();
+  var email=document.getElementById('rc-email').value.trim();
+  var phone=document.getElementById('rc-phone').value.trim();
+  var current=document.getElementById('rc-current').value.trim();
+  var gci=parseFloat(document.getElementById('rc-gci').value);
+  var txns=parseInt(document.getElementById('rc-txns').value,10);
+  var lptPlan=document.getElementById('rc-lpt-plan').value;
+  var lptPlus=document.getElementById('rc-lpt-plus').checked;
+  var replyTo=document.getElementById('rc-reply-to').value.trim();
+
+  if(!first || !email || !gci || !txns){
+    result.innerHTML='<div style="color:#f88;font-size:13px">First name, email, GCI and transactions are required.</div>';
+    return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    result.innerHTML='<div style="color:#f88;font-size:13px">Invalid recruit email.</div>';
+    return;
+  }
+
+  // Build selection: LPT + selected published + customs
+  var lpt=window.__rcState.brokerages.find(function(b){return b.slug==='lpt-realty'});
+  var selection=[];
+  if(lpt) selection.push(lpt);
+  window.__rcState.selected.forEach(function(slug){
+    var b=window.__rcState.brokerages.find(function(x){return x.slug===slug});
+    if(b)selection.push(b);
+  });
+  selection=selection.concat(window.__rcState.customs);
+
+  if(selection.filter(function(b){return b.slug!=='lpt-realty'}).length===0){
+    result.innerHTML='<div style="color:#f88;font-size:13px">Select at least one competitor (or add custom).</div>';
+    return;
+  }
+
+  btn.disabled=true; btn.textContent='Sending...';
+  try{
+    var res=await fetch(API+'/api/recruit-comparisons',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        recruit_first_name:first,
+        recruit_last_name:last,
+        recruit_email:email,
+        recruit_phone:phone,
+        current_brokerage_name:current,
+        selection:selection,
+        gci:gci, txns:txns,
+        avg_gci_per_txn:gci/txns,
+        lpt_plan:lptPlan, lpt_plus:lptPlus,
+        sender_personal_email:replyTo
+      })
+    });
+    var data=await res.json();
+    if(!res.ok){
+      result.innerHTML='<div style="color:#f88;font-size:13px">Error: '+(data.detail||'Failed to create comparison.')+'</div>';
+    }else{
+      var statusColor=data.email_status==='sent'?'#4dd181':'#f88';
+      result.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px">'+
+        '<div style="color:'+statusColor+';margin-bottom:6px">'+(data.email_status==='sent'?'✓ Email sent':'⚠ Email failed: '+(data.email_error||'unknown'))+'</div>'+
+        '<div style="color:var(--muted);margin-bottom:4px">Share URL:</div>'+
+        '<div><a href="'+data.share_url+'" target="_blank" style="color:var(--accent-hi);word-break:break-all">'+data.share_url+'</a></div>'+
+        (data.recruit_lead_id?'<div style="margin-top:8px"><a href="#" onclick="loadContactProfile('+data.recruit_lead_id+');return false" style="color:var(--accent-hi);font-size:12px">View recruit in CRM →</a></div>':'')+
+      '</div>';
+      // Reset form
+      document.getElementById('rc-first').value='';
+      document.getElementById('rc-last').value='';
+      document.getElementById('rc-email').value='';
+      document.getElementById('rc-phone').value='';
+      document.getElementById('rc-current').value='';
+      window.__rcState.selected=[];
+      window.__rcState.customs=[];
+      rcRenderBrokerageList();
+      rcRenderCustoms();
+      rcLoadRecent();
+    }
+  }catch(e){
+    result.innerHTML='<div style="color:#f88;font-size:13px">Network error: '+e.message+'</div>';
+  }
+  btn.disabled=false; btn.textContent='Generate & Send Comparison';
+}
+
+async function rcLoadRecent(){
+  var wrap=document.getElementById('rc-recent-list');
+  try{
+    var res=await fetch(API+'/api/recruit-comparisons?limit=20');
+    if(!res.ok){wrap.innerHTML='<div style="color:var(--muted);font-size:12px">Could not load recent.</div>';return}
+    var data=await res.json();
+    var rows=data.comparisons||[];
+    if(!rows.length){wrap.innerHTML='<div style="color:var(--muted);font-size:12px">No comparisons yet. Send your first one →</div>';return}
+    wrap.innerHTML=rows.map(function(r){
+      var name=(r.recruit_first_name||'')+' '+(r.recruit_last_name||'');
+      var sentBadge=r.email_status==='sent'?'<span style="color:#4dd181;font-size:10px">✓ sent</span>':'<span style="color:#f88;font-size:10px">⚠ '+r.email_status+'</span>';
+      var viewedBadge=r.viewed_count?'<span style="color:var(--accent-hi);font-size:10px">👁 '+r.viewed_count+'</span>':'<span style="color:var(--muted);font-size:10px">not viewed</span>';
+      return '<div style="border-bottom:1px solid var(--border);padding:10px 0;font-size:12px">'+
+        '<div style="font-weight:600;color:var(--text)">'+name.trim()+' &middot; '+(r.current_brokerage_name||'?')+'</div>'+
+        '<div style="color:var(--muted);font-size:11px;margin-top:2px">$'+(parseInt(r.gci)||0).toLocaleString()+' GCI / '+(r.txns||0)+' txns &middot; '+sentBadge+' &middot; '+viewedBadge+'</div>'+
+        '<div style="margin-top:4px"><a href="https://tplcollective.ai/compare?report='+r.share_token+'" target="_blank" style="color:var(--accent-hi);font-size:11px">Open report →</a></div>'+
+      '</div>';
+    }).join('');
+  }catch(e){
+    wrap.innerHTML='<div style="color:var(--muted);font-size:12px">Network error.</div>';
+  }
+}
 </script>
 </body>
 </html>

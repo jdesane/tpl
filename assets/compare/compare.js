@@ -313,7 +313,9 @@
 
   function writeUrlState() {
     const params = new URLSearchParams();
-    if (state.selected.length) params.set('brokerages', state.selected.map(b => b.slug).join(','));
+    // Custom brokerages are session-only (too many fields to encode); only persist published slugs
+    const persistable = state.selected.filter(b => !b.isCustom).map(b => b.slug);
+    if (persistable.length) params.set('brokerages', persistable.join(','));
     if (state.gci !== 250000) params.set('gci', String(state.gci));
     if (state.txns !== 20) params.set('txns', String(state.txns));
     if (state.lptPlan !== 'both') params.set('plan', state.lptPlan);
@@ -350,8 +352,17 @@
   }
 
   /* ────────── LOGO HELPER ────────── */
+  function monogram(brokerage) {
+    const src = brokerage && (brokerage.short_name || brokerage.name) || '?';
+    const parts = src.trim().split(/\s+/);
+    const initials = (parts[0][0] || '?') + (parts.length > 1 ? parts[parts.length - 1][0] : '');
+    return initials.toUpperCase().slice(0, 2);
+  }
   function logoHtml(brokerage, variant) {
     // variant: 'chip' | 'selector' | 'matrix' | 'breakdown'
+    if (brokerage && brokerage.isCustom) {
+      return '<span class="chip-monogram brk-logo-' + variant + '">' + escapeHtml(monogram(brokerage)) + '</span>';
+    }
     if (!brokerage || !brokerage.logo) return '';
     const cls = 'brk-logo brk-logo-' + variant;
     const alt = escapeHtml((brokerage.short_name || brokerage.name) + ' logo');
@@ -444,8 +455,18 @@
     } else {
       state.selected.forEach(b => {
         const chip = document.createElement('span');
-        chip.className = 'chip' + (b.slug === LPT_SLUG ? ' lpt' : '');
+        chip.className = 'chip' + (b.slug === LPT_SLUG ? ' lpt' : '') + (b.isCustom ? ' chip-custom' : '');
         chip.innerHTML = logoHtml(b, 'chip') + '<span>' + escapeHtml(b.short_name || b.name) + '</span>';
+        if (b.isCustom) {
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'chip-edit-btn';
+          editBtn.setAttribute('aria-label', 'Edit ' + b.name);
+          editBtn.title = 'Edit';
+          editBtn.textContent = '✎';
+          editBtn.addEventListener('click', (e) => { e.stopPropagation(); openCustomModal(b); });
+          chip.appendChild(editBtn);
+        }
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('aria-label', 'Remove ' + b.name);
@@ -508,6 +529,194 @@
       row.addEventListener('click', action);
       list.appendChild(row);
     });
+  }
+
+  /* ────────── CUSTOM BROKERAGE ────────── */
+  let customEditingSlug = null;
+
+  function buildCustomBrokerage(formValues) {
+    // Build a brokerage object that calcTotalCost understands
+    const slug = formValues.editingSlug || ('custom-' + Date.now());
+    const model = formValues.model;
+    const splitPct = parseFloat(formValues.split);
+    const cap = parseFloat(formValues.cap);
+    const flatFee = parseFloat(formValues.flat);
+    const flatCap = parseFloat(formValues.flatCap);
+    const perTxn = parseFloat(formValues.perTxn);
+    const monthly = parseFloat(formValues.monthly);
+    const annual = parseFloat(formValues.annual);
+    const royalty = parseFloat(formValues.royalty);
+    const royaltyCap = parseFloat(formValues.royaltyCap);
+
+    const plan = {
+      plan_name: 'Your Numbers',
+      split_structure: null,
+      annual_cap: null,
+      flat_fee_per_txn: null,
+      per_txn_brokerage_fee: !isNaN(perTxn) ? perTxn : 0,
+      per_txn_fee_applies_to: 'every_transaction',
+      monthly_fee: !isNaN(monthly) ? monthly : 0,
+      annual_fee: !isNaN(annual) ? annual : 0,
+      eo_insurance_annual: 0,
+      franchise_fee_pct: !isNaN(royalty) ? royalty : 0,
+      franchise_fee_cap_annual: !isNaN(royaltyCap) ? royaltyCap : null,
+      marketing_fee_pct: null,
+      signup_fee: 0
+    };
+
+    if (model === 'split-cap') {
+      plan.split_structure = (!isNaN(splitPct) ? splitPct : 70) + '/' + (!isNaN(splitPct) ? (100 - splitPct) : 30);
+      plan.annual_cap = !isNaN(cap) ? cap : 0;
+    } else if (model === 'no-cap') {
+      plan.split_structure = (!isNaN(splitPct) ? splitPct : 70) + '/' + (!isNaN(splitPct) ? (100 - splitPct) : 30);
+      plan.annual_cap = null;
+    } else if (model === 'flat-fee') {
+      plan.flat_fee_per_txn = !isNaN(flatFee) ? flatFee : 0;
+      plan.annual_cap = !isNaN(flatCap) ? flatCap : 0;
+    }
+
+    return {
+      slug,
+      name: formValues.name,
+      short_name: formValues.name.length > 18 ? formValues.name.slice(0, 16) + '…' : formValues.name,
+      isCustom: true,
+      status: 'custom',
+      model_type: model === 'flat-fee' ? 'Flat-Fee' : 'Split',
+      category: 'custom',
+      _customForm: formValues,  // preserve raw form for re-edit
+      plans: [plan]
+    };
+  }
+
+  function openCustomModal(existing) {
+    const modal = $('custom-modal');
+    const err = $('custom-modal-error');
+    err.hidden = true;
+    customEditingSlug = existing ? existing.slug : null;
+    const f = existing && existing._customForm ? existing._customForm : {};
+    $('custom-modal-title').textContent = existing ? 'Edit ' + (existing.name || 'brokerage') : 'Enter your brokerage';
+    $('custom-name').value = f.name || (existing ? existing.name : '') || '';
+    const model = f.model || 'split-cap';
+    document.querySelectorAll('input[name="custom-model"]').forEach(r => { r.checked = (r.value === model); });
+    $('custom-split').value = f.split || '';
+    $('custom-cap').value = f.cap || '';
+    $('custom-flat').value = f.flat || '';
+    $('custom-flat-cap').value = f.flatCap || '';
+    $('custom-per-txn').value = f.perTxn || '';
+    $('custom-monthly').value = f.monthly || '';
+    $('custom-annual').value = f.annual || '';
+    $('custom-royalty').value = f.royalty || '';
+    $('custom-royalty-cap').value = f.royaltyCap || '';
+    syncCustomFieldVisibility();
+    modal.hidden = false;
+    setTimeout(() => $('custom-name').focus(), 50);
+    track('compare_custom_modal_open', { mode: existing ? 'edit' : 'create' });
+  }
+
+  function closeCustomModal() {
+    $('custom-modal').hidden = true;
+    customEditingSlug = null;
+  }
+
+  function syncCustomFieldVisibility() {
+    const model = document.querySelector('input[name="custom-model"]:checked').value;
+    document.querySelectorAll('.custom-field[data-show]').forEach(el => {
+      const visible = el.getAttribute('data-show').split(' ').includes(model);
+      el.style.display = visible ? '' : 'none';
+    });
+  }
+
+  function submitCustomBrokerage(e) {
+    e.preventDefault();
+    const err = $('custom-modal-error');
+    err.hidden = true;
+    const name = $('custom-name').value.trim();
+    if (!name) {
+      err.textContent = 'Please enter a brokerage name.';
+      err.hidden = false;
+      return;
+    }
+    const model = document.querySelector('input[name="custom-model"]:checked').value;
+    const formValues = {
+      name, model,
+      editingSlug: customEditingSlug,
+      split: $('custom-split').value,
+      cap: $('custom-cap').value,
+      flat: $('custom-flat').value,
+      flatCap: $('custom-flat-cap').value,
+      perTxn: $('custom-per-txn').value,
+      monthly: $('custom-monthly').value,
+      annual: $('custom-annual').value,
+      royalty: $('custom-royalty').value,
+      royaltyCap: $('custom-royalty-cap').value
+    };
+
+    if (model === 'split-cap') {
+      const sp = parseFloat(formValues.split);
+      if (isNaN(sp) || sp < 50 || sp > 100) {
+        err.textContent = 'Enter a split between 50 and 100 (e.g. 70 = 70/30).';
+        err.hidden = false; return;
+      }
+      const cap = parseFloat(formValues.cap);
+      if (isNaN(cap) || cap <= 0) {
+        err.textContent = 'Enter an annual cap amount.';
+        err.hidden = false; return;
+      }
+    } else if (model === 'flat-fee') {
+      const ff = parseFloat(formValues.flat);
+      if (isNaN(ff) || ff <= 0) {
+        err.textContent = 'Enter a flat fee per transaction.';
+        err.hidden = false; return;
+      }
+    }
+
+    const brokerage = buildCustomBrokerage(formValues);
+    if (customEditingSlug) {
+      const idx = state.selected.findIndex(b => b.slug === customEditingSlug);
+      if (idx >= 0) {
+        state.selected[idx] = brokerage;
+      } else {
+        if (state.selected.length >= MAX_SELECT) {
+          err.textContent = 'Remove a brokerage first — max ' + MAX_SELECT + ' selected.';
+          err.hidden = false; return;
+        }
+        state.selected.push(brokerage);
+      }
+    } else {
+      if (state.selected.length >= MAX_SELECT) {
+        err.textContent = 'Remove a brokerage first — max ' + MAX_SELECT + ' selected.';
+        err.hidden = false; return;
+      }
+      state.selected.push(brokerage);
+    }
+
+    track('compare_custom_brokerage_saved', {
+      mode: customEditingSlug ? 'edit' : 'create',
+      model: formValues.model,
+      has_split: !!formValues.split,
+      has_cap: !!formValues.cap,
+      has_per_txn: !!formValues.perTxn,
+      has_royalty: !!formValues.royalty
+    });
+
+    closeCustomModal();
+    render();
+    document.getElementById('matrix-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function initCustomModal() {
+    const otherBtn = $('selector-other-btn');
+    if (otherBtn) otherBtn.addEventListener('click', () => openCustomModal(null));
+    $('custom-modal-close').addEventListener('click', closeCustomModal);
+    $('custom-modal-cancel').addEventListener('click', closeCustomModal);
+    $('custom-modal-backdrop').addEventListener('click', closeCustomModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('custom-modal').hidden) closeCustomModal();
+    });
+    document.querySelectorAll('input[name="custom-model"]').forEach(r => {
+      r.addEventListener('change', syncCustomFieldVisibility);
+    });
+    $('custom-modal-form').addEventListener('submit', submitCustomBrokerage);
   }
 
   /* ────────── RENDER: MATRIX ────────── */
@@ -1002,6 +1211,7 @@
 
   /* ────────── WIRING ────────── */
   function wire() {
+    initCustomModal();
     $('brokerage-search').addEventListener('input', (e) => {
       state.search = e.target.value;
       renderSelectorList();
@@ -1195,9 +1405,30 @@
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       const selectionSlugs = state.selected.map(b => b.slug);
+      const customs = state.selected.filter(b => b.isCustom);
       const leadTags = ['compare-tool', 'comparison-requested'].concat(
-        selectionSlugs.map(s => 'compared-' + s)
+        state.selected.filter(b => !b.isCustom).map(b => 'compared-' + b.slug)
       );
+      if (customs.length) leadTags.push('compared-custom-brokerage');
+
+      // Build custom-brokerage detail block for CRM notes
+      let customDetails = '';
+      if (customs.length) {
+        customDetails = '\n\nCUSTOM BROKERAGE(S):\n' + customs.map(b => {
+          const f = b._customForm || {};
+          const lines = ['• ' + b.name + ' [' + f.model + ']'];
+          if (f.split) lines.push('   Split: ' + f.split + '/' + (100 - parseFloat(f.split)));
+          if (f.cap) lines.push('   Cap: $' + f.cap);
+          if (f.flat) lines.push('   Flat fee/txn: $' + f.flat);
+          if (f.flatCap) lines.push('   Flat-fee cap: $' + f.flatCap);
+          if (f.perTxn) lines.push('   Per-txn fee: $' + f.perTxn);
+          if (f.monthly) lines.push('   Monthly: $' + f.monthly);
+          if (f.annual) lines.push('   Annual: $' + f.annual);
+          if (f.royalty) lines.push('   Royalty: ' + f.royalty + '%' + (f.royaltyCap ? ' (cap $' + f.royaltyCap + ')' : ''));
+          return lines.join('\n');
+        }).join('\n');
+      }
+
       const leadPayload = {
         first_name: firstName,
         last_name: lastName,
@@ -1209,7 +1440,7 @@
         notes: 'Brokerage comparison: ' + selectionSlugs.join(', ') +
                ' | GCI $' + state.gci + ' | Txns ' + state.txns +
                ' | LPT plan ' + state.lptPlan + (state.lptPlus ? ' + Plus' : '') +
-               ' | Share URL: ' + shareUrl
+               ' | Share URL: ' + shareUrl + customDetails
       };
       try {
         await fetch('/api/leads', {
@@ -1312,6 +1543,86 @@
     });
   }
 
+  /* ────────── REPORT MODE (?report=<token>) ────────── */
+  // When a recruit lands on /compare?report=<token>, fetch the saved comparison from
+  // Mission Control and lock the page into read-only "report" mode.
+
+  function isReportMode() {
+    return /[?&]report=[\w-]+/.test(window.location.search);
+  }
+
+  async function loadReportFromToken() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('report');
+    if (!token) return false;
+    try {
+      const res = await fetch('https://mission.tplcollective.ai/api/recruit-comparisons/by-token/' + encodeURIComponent(token));
+      if (!res.ok) {
+        console.error('Report load failed:', res.status);
+        return false;
+      }
+      const data = await res.json();
+      // Hydrate state from saved data
+      state.gci = data.gci || 250000;
+      state.txns = data.txns || 20;
+      state.avgGci = data.avg_gci_per_txn || Math.round(state.gci / state.txns);
+      state.lptPlan = data.lpt_plan || 'both';
+      state.lptPlus = !!data.lpt_plus;
+      state.selected = (data.selection || []).map(b => {
+        // Custom brokerages were saved with isCustom flag - preserve it
+        if (b && b.isCustom) return b;
+        // Published brokerages: re-resolve from current published list to get fresh logos/citations
+        const fresh = state.published.find(p => p.slug === b.slug);
+        return fresh || b;
+      });
+      // Apply to UI inputs (sliders/numbers)
+      try {
+        $('gci-slider').value = state.gci;
+        $('gci-value').textContent = fmtMoney(state.gci);
+        $('txns-slider').value = state.txns;
+        $('txns-value').textContent = String(state.txns);
+        $('avg-gci').value = state.avgGci;
+        $('lpt-plus-toggle').checked = state.lptPlus;
+      } catch (_) {}
+
+      // Inject report header banner above the matrix
+      try {
+        const sender = (data.created_by_name || 'Your TPL Collective contact');
+        const recruitFirst = (data.recruit_first_name || 'there').trim().split(/\s+/)[0];
+        const senderEmail = data.created_by_email || '';
+        const banner = document.createElement('section');
+        banner.className = 'cmp-panel report-banner';
+        banner.innerHTML =
+          '<div class="cmp-panel-head">' +
+            '<div class="cmp-panel-label">Personal report</div>' +
+            '<h2 class="cmp-panel-title">Comparison prepared for ' + escapeHtml(recruitFirst) + ' by ' + escapeHtml(sender) + '</h2>' +
+          '</div>' +
+          '<p class="report-banner-sub">' +
+            'These numbers are from public sources and the LPT comp plan flyer. ' +
+            'Have questions? ' +
+            (senderEmail ? '<a href="mailto:' + escapeHtml(senderEmail) + '">Email ' + escapeHtml(sender) + '</a>' : 'Reply to the email you received.') +
+          '</p>';
+        const matrix = document.getElementById('matrix-panel');
+        if (matrix && matrix.parentNode) {
+          matrix.parentNode.insertBefore(banner, matrix);
+        }
+      } catch (_) {}
+
+      // Hide selector + inputs + quiz/share — keep matrix, breakdown, cap break-even, projection
+      try {
+        document.querySelectorAll('.selector-panel, .inputs-panel, .quiz-launcher, .cmp-share-row, #email-comparison-btn').forEach(el => {
+          if (el) el.style.display = 'none';
+        });
+      } catch (_) {}
+
+      track('recruit_comparison_viewed', { token, view_count: data.view_count || 1 });
+      return true;
+    } catch (err) {
+      console.error('Failed to load comparison report', err);
+      return false;
+    }
+  }
+
   async function init() {
     try {
       const res = await fetch(DATA_URL, { cache: 'no-store' });
@@ -1329,6 +1640,14 @@
       return;
     }
     wire();
+    if (isReportMode()) {
+      const ok = await loadReportFromToken();
+      if (ok) {
+        render();
+        return;
+      }
+      // Fall through to normal mode if report load fails
+    }
     applyUrlState();
     render();
     track('compare_loaded', {

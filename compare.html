@@ -149,6 +149,14 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
       </div>
     </div>
 
+    <button type="button" class="selector-other" id="selector-other-btn">
+      <span class="selector-other-icon" aria-hidden="true">+</span>
+      <span class="selector-other-body">
+        <span class="selector-other-title">Don&rsquo;t see your brokerage?</span>
+        <span class="selector-other-sub">Enter your own splits, fees, and cap &rarr; compare apples-to-apples.</span>
+      </span>
+    </button>
+
     <div class="selector-list" id="selector-list" role="listbox" aria-label="Available brokerages"></div>
     <p class="selector-empty" id="selector-empty" hidden>No brokerages match that search.</p>
     <p class="selector-note">Only verified, published entries appear here. Competitor data is being populated. Unverified entries are hidden until confirmed.</p>
@@ -334,6 +342,91 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
     <span class="share-feedback" id="share-feedback" hidden>Link copied</span>
   </section>
 
+  <!-- CUSTOM BROKERAGE MODAL -->
+  <div class="custom-modal" id="custom-modal" hidden>
+    <div class="custom-modal-backdrop" id="custom-modal-backdrop"></div>
+    <div class="custom-modal-card" role="dialog" aria-modal="true" aria-labelledby="custom-modal-title">
+      <button type="button" class="custom-modal-close" id="custom-modal-close" aria-label="Close">&times;</button>
+      <div class="custom-modal-eyebrow">Your numbers, your math</div>
+      <h3 class="custom-modal-title" id="custom-modal-title">Enter your brokerage</h3>
+      <p class="custom-modal-sub">Whatever your shop charges, plug it in and we&rsquo;ll show how it compares to LPT side-by-side.</p>
+
+      <form id="custom-modal-form" class="custom-modal-form" novalidate>
+        <div class="custom-field">
+          <label for="custom-name">Brokerage name <span class="req">*</span></label>
+          <input type="text" id="custom-name" placeholder="e.g. Keller Williams Boca Raton" maxlength="60" required />
+        </div>
+
+        <div class="custom-field">
+          <label>How does it charge?</label>
+          <div class="custom-radio-row">
+            <label class="custom-radio"><input type="radio" name="custom-model" value="split-cap" checked /> Split + Cap</label>
+            <label class="custom-radio"><input type="radio" name="custom-model" value="flat-fee" /> Flat fee per deal</label>
+            <label class="custom-radio"><input type="radio" name="custom-model" value="no-cap" /> Split forever (no cap)</label>
+          </div>
+        </div>
+
+        <div class="custom-grid">
+          <div class="custom-field" data-show="split-cap no-cap">
+            <label for="custom-split">Split to agent (%)</label>
+            <input type="number" id="custom-split" min="50" max="100" step="1" placeholder="70" />
+            <span class="custom-help">e.g. 70 means 70/30 to agent</span>
+          </div>
+
+          <div class="custom-field" data-show="split-cap">
+            <label for="custom-cap">Annual cap ($)</label>
+            <input type="number" id="custom-cap" min="0" step="500" placeholder="16000" />
+          </div>
+
+          <div class="custom-field" data-show="flat-fee">
+            <label for="custom-flat">Flat fee per txn ($)</label>
+            <input type="number" id="custom-flat" min="0" step="50" placeholder="500" />
+          </div>
+
+          <div class="custom-field" data-show="flat-fee">
+            <label for="custom-flat-cap">Flat-fee annual cap ($)</label>
+            <input type="number" id="custom-flat-cap" min="0" step="500" placeholder="5000" />
+            <span class="custom-help">Optional &mdash; leave blank if uncapped</span>
+          </div>
+
+          <div class="custom-field">
+            <label for="custom-per-txn">Per-transaction broker fee ($)</label>
+            <input type="number" id="custom-per-txn" min="0" step="25" placeholder="195" />
+            <span class="custom-help">Tech, admin, or compliance fee charged per deal</span>
+          </div>
+
+          <div class="custom-field">
+            <label for="custom-monthly">Monthly fee ($)</label>
+            <input type="number" id="custom-monthly" min="0" step="10" placeholder="99" />
+          </div>
+
+          <div class="custom-field">
+            <label for="custom-annual">Annual fee ($)</label>
+            <input type="number" id="custom-annual" min="0" step="50" placeholder="0" />
+          </div>
+
+          <div class="custom-field">
+            <label for="custom-royalty">Franchise royalty (%)</label>
+            <input type="number" id="custom-royalty" min="0" max="20" step="0.1" placeholder="6" />
+            <span class="custom-help">e.g. KW: 6%</span>
+          </div>
+
+          <div class="custom-field">
+            <label for="custom-royalty-cap">Royalty cap ($)</label>
+            <input type="number" id="custom-royalty-cap" min="0" step="500" placeholder="3000" />
+            <span class="custom-help">Optional &mdash; if royalty caps annually</span>
+          </div>
+        </div>
+
+        <div class="custom-modal-actions">
+          <button type="button" class="btn-ghost" id="custom-modal-cancel">Cancel</button>
+          <button type="submit" class="btn-gold" id="custom-modal-save">Save &amp; Compare</button>
+        </div>
+        <div class="custom-modal-error" id="custom-modal-error" hidden></div>
+      </form>
+    </div>
+  </div>
+
   <!-- EMAIL COMPARISON MODAL -->
   <div class="email-modal" id="email-modal" hidden>
     <div class="email-modal-backdrop" id="email-modal-backdrop"></div>
@@ -397,6 +490,6 @@ mobileMenu.querySelectorAll('a').forEach(a => {
   });
 });
 </script>
-<script src="/assets/compare/compare.js?v=20260424b" defer></script>
+<script src="/assets/compare/compare.js?v=20260424c-custom" defer></script>
 </body>
 </html>
