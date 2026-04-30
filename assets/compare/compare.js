@@ -1150,11 +1150,27 @@
   }
 
   /* ────────── CALC + RENDER: LPT EQUITY (Performance Awards) ────────── */
-  function lptBadgeForTxns(awards, txns) {
-    // Returns the highest-tier badge whose threshold is met by `txns`.
-    if (!awards || !awards.length) return null;
-    const sorted = awards.slice().sort((a, b) => b.annual_core_transactions - a.annual_core_transactions);
-    return sorted.find(a => txns >= a.annual_core_transactions) || null;
+  // Performance Awards are CUMULATIVE: hitting Silver (3+) means you also earned White,
+  // hitting Gold means White + Silver + Gold, etc. The shares stack each year.
+  function earnedBadgesForTxns(awards, txns) {
+    if (!awards || !awards.length) return [];
+    const asc = awards.slice().sort((a, b) => a.annual_core_transactions - b.annual_core_transactions);
+    return asc.filter(a => txns >= a.annual_core_transactions);
+  }
+
+  function highestEarnedBadge(awards, txns) {
+    const earned = earnedBadgesForTxns(awards, txns);
+    return earned.length ? earned[earned.length - 1] : null;
+  }
+
+  function sumEarnedShares(awards, txns) {
+    const earned = earnedBadgesForTxns(awards, txns);
+    let bp = 0, bb = 0;
+    earned.forEach(a => {
+      if (typeof a.shares_bp === 'number') bp += a.shares_bp;
+      if (typeof a.shares_bb === 'number') bb += a.shares_bb;
+    });
+    return { bp, bb, count: earned.length, list: earned };
   }
 
   function nextBadgeForTxns(awards, txns) {
@@ -1173,28 +1189,33 @@
 
     const eq = lpt.equity;
     const awards = eq.achievement_awards;
-    const earned = lptBadgeForTxns(awards, state.txns);
+    const earned = earnedBadgesForTxns(awards, state.txns);
+    const totals = sumEarnedShares(awards, state.txns);
+    const highest = highestEarnedBadge(awards, state.txns);
     const next = nextBadgeForTxns(awards, state.txns);
-    const isBB = state.lptPlan === 'bb';
-    const isBoth = state.lptPlan === 'both';
 
-    // ── This Year cards (BP + BB) ──
+    // ── This Year cards: CUMULATIVE total across all earned badges ──
     const yearWrap = $('lpt-equity-this-year');
-    if (earned) {
-      const bpVal = earned.shares_bp != null ? earned.shares_bp.toLocaleString() + ' shares' : '—';
-      const bbVal = earned.shares_bb != null
-        ? earned.shares_bb.toLocaleString() + ' shares'
-        : (earned.shares_bb_note || '—');
+    if (earned.length) {
+      const earnedNames = earned.map(b => b.badge).join(' + ');
+      // BB sum: skip badges flagged as not BB-eligible (e.g. Black has shares_bb=null)
+      const bbEligible = earned.filter(b => typeof b.shares_bb === 'number');
+      const bbExcluded = earned.filter(b => b.shares_bb == null && b.shares_bb_note);
+      const bbSubNote = bbExcluded.length
+        ? '(' + bbExcluded.map(b => b.badge + ': ' + (b.shares_bb_note || 'BB n/a')).join(', ') + ')'
+        : '3-yr vest';
+      const breakdownBP = earned.map(b => b.badge + ' ' + (b.shares_bp || 0)).join(' + ');
+      const breakdownBB = bbEligible.map(b => b.badge + ' ' + (b.shares_bb || 0)).join(' + ') || '—';
       yearWrap.innerHTML =
         '<div class="lpt-equity-stat">' +
-          '<div class="lpt-equity-stat-label">' + escapeHtml(earned.badge) + ' badge &middot; Brokerage Partner</div>' +
-          '<div class="lpt-equity-stat-val">' + bpVal + '</div>' +
-          '<div class="lpt-equity-stat-sub">' + state.txns + ' txns &ge; ' + earned.annual_core_transactions + ' threshold &middot; 3-yr vest</div>' +
+          '<div class="lpt-equity-stat-label">' + escapeHtml(earnedNames) + ' &middot; Brokerage Partner</div>' +
+          '<div class="lpt-equity-stat-val">' + totals.bp.toLocaleString() + ' shares</div>' +
+          '<div class="lpt-equity-stat-sub">' + escapeHtml(breakdownBP) + ' &middot; 3-yr vest</div>' +
         '</div>' +
         '<div class="lpt-equity-stat">' +
-          '<div class="lpt-equity-stat-label">' + escapeHtml(earned.badge) + ' badge &middot; Business Builder</div>' +
-          '<div class="lpt-equity-stat-val">' + bbVal + '</div>' +
-          '<div class="lpt-equity-stat-sub">' + (earned.shares_bb_note || '3-yr vest. Upgrade to BP to earn higher tiers.') + '</div>' +
+          '<div class="lpt-equity-stat-label">' + escapeHtml(earnedNames) + ' &middot; Business Builder</div>' +
+          '<div class="lpt-equity-stat-val">' + totals.bb.toLocaleString() + ' shares</div>' +
+          '<div class="lpt-equity-stat-sub">' + escapeHtml(breakdownBB) + ' &middot; ' + escapeHtml(bbSubNote) + '</div>' +
         '</div>';
     } else {
       const ahead = next ? (next.annual_core_transactions - state.txns) : null;
@@ -1207,11 +1228,12 @@
         '</div>';
     }
 
-    // ── Badge ladder (all 4 thresholds) ──
+    // ── Badge ladder: highlight ALL earned (cumulative), mark next as dashed ──
     const ladderWrap = $('lpt-equity-ladder');
     const sortedAsc = awards.slice().sort((a, b) => a.annual_core_transactions - b.annual_core_transactions);
+    const earnedSet = new Set(earned.map(b => b.badge));
     ladderWrap.innerHTML = sortedAsc.map(a => {
-      const isEarned = earned && a.badge === earned.badge;
+      const isEarned = earnedSet.has(a.badge);
       const isNextOne = next && a.badge === next.badge;
       const cls = 'lpt-equity-rung' + (isEarned ? ' earned' : '') + (isNextOne ? ' next' : '');
       const bp = a.shares_bp != null ? a.shares_bp.toLocaleString() : '—';
@@ -1235,21 +1257,21 @@
     }
 
     // ── 3-Year cumulative projection ──
-    // Use the same growth slider and starting txns as the projection panel.
+    // Each year sums ALL earned badges (cumulative), not just the highest.
     let cum_bp = 0, cum_bb = 0;
     const yearRows = [];
     for (let y = 1; y <= 3; y++) {
       const mult = Math.pow(1 + (state.growth || 0) / 100, y - 1);
       const txY = Math.max(1, Math.round(state.txns * mult));
-      const ear = lptBadgeForTxns(awards, txY);
-      const bpY = ear && ear.shares_bp ? ear.shares_bp : 0;
-      const bbY = ear && ear.shares_bb ? ear.shares_bb : 0;
-      cum_bp += bpY; cum_bb += bbY;
-      yearRows.push({ year: y, txns: txY, badge: ear ? ear.badge : '—', bp: bpY, bb: bbY });
+      const yearTotals = sumEarnedShares(awards, txY);
+      const earnedY = earnedBadgesForTxns(awards, txY);
+      const badgeLabel = earnedY.length ? earnedY.map(b => b.badge).join(' + ') : '—';
+      cum_bp += yearTotals.bp; cum_bb += yearTotals.bb;
+      yearRows.push({ year: y, txns: txY, badge: badgeLabel, bp: yearTotals.bp, bb: yearTotals.bb });
     }
     const projWrap = $('lpt-equity-projection');
     projWrap.innerHTML =
-      '<div class="lpt-equity-projection-title">3-Year Equity Projection (annual badge awards only)</div>' +
+      '<div class="lpt-equity-projection-title">3-Year Equity Projection (cumulative badge awards each year)</div>' +
       '<div class="lpt-equity-projection-grid">' +
         yearRows.map(r =>
           '<div class="lpt-equity-projection-cell">' +
