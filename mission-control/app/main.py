@@ -360,7 +360,7 @@ UNSUBSCRIBE_FOOTER = """
 """
 
 
-def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, from_address: str = "", contact_id: int = None, campaign: str = "", reply_to: str = "") -> tuple[bool, str]:
+def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, from_address: str = "", contact_id: int = None, campaign: str = "", reply_to: str = "", attachments: list = None) -> tuple[bool, str]:
     """Send email via Resend API with rails: suppression check, rate limit, unsubscribe footer, tracking pixel, logging."""
     try:
         api_key = smtp_config.get("pass", "")
@@ -410,6 +410,9 @@ def send_email(smtp_config: dict, to_email: str, subject: str, html_body: str, f
         }
         if reply_to:
             resend_payload["reply_to"] = reply_to
+        if attachments:
+            # Resend expects: [{"filename": ..., "content": <base64 string>}]
+            resend_payload["attachments"] = attachments
         resp = httpx.post(
             "https://api.resend.com/emails",
             headers={
@@ -5373,13 +5376,58 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
     share_token = row["share_token"]
     share_url = f"{PUBLIC_SITE_URL}/compare?report={share_token}"
 
+    # Fetch the rich 5-page PDF from the Vercel /api/generate-comparison-pdf endpoint
+    # so the recruit gets the same comprehensive report a public /compare visitor would.
+    pdf_attachments = None
+    pdf_error = None
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as pdf_client:
+            pdf_resp = await pdf_client.post(
+                f"{PUBLIC_SITE_URL}/api/generate-comparison-pdf",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "recipient_name": req.recruit_first_name or "",
+                    "sender_name": sender_name or "",
+                    "share_url": share_url,
+                    "selection": req.selection,
+                    "gci": req.gci,
+                    "txns": req.txns,
+                    "avg_gci_per_txn": avg_gci,
+                    "lpt_plan": req.lpt_plan or "both",
+                    "lpt_plus": bool(req.lpt_plus),
+                    "growth_pct": 10
+                }
+            )
+        if pdf_resp.status_code == 200:
+            pdf_body = pdf_resp.json()
+            if pdf_body.get("success") and pdf_body.get("pdf_base64"):
+                pdf_attachments = [{
+                    "filename": pdf_body.get("filename") or "TPL-Brokerage-Comparison.pdf",
+                    "content": pdf_body["pdf_base64"]
+                }]
+            else:
+                pdf_error = pdf_body.get("error") or "pdf endpoint returned no content"
+        else:
+            pdf_error = f"pdf endpoint HTTP {pdf_resp.status_code}: {pdf_resp.text[:300]}"
+    except Exception as pdf_err:
+        pdf_error = f"pdf fetch exception: {pdf_err}"
+
+    if pdf_error:
+        try:
+            supabase.table("activity_log").insert({
+                "type": "recruit_comparison_pdf_error",
+                "message": f"PDF generation failed for comparison {row['id']}: {pdf_error[:300]}",
+                "meta": {"comparison_id": row["id"], "share_token": share_token}
+            }).execute()
+        except Exception:
+            pass
+
     # Send email via Resend with reply_to set to the agent's personal email
     settings = load_settings()
     smtp = settings.get("smtp", {})
     subject, html = _build_recruit_comparison_email(
         req.recruit_first_name, sender_name, share_url, req.selection, req.gci, req.txns
     )
-    # Use verified tplcollective.ai sender domain. Display name is the agent's name when present.
     safe_sender = (sender_name or "").replace('"', "").replace("<", "").replace(">", "").strip()
     sender_full = f'{safe_sender} via TPL Collective <comparisons@tplcollective.ai>' if safe_sender else "TPL Collective <comparisons@tplcollective.ai>"
     reply_to = sender_personal_email or user_email or "joe@tplcollective.ai"
@@ -5391,7 +5439,8 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
         from_address=sender_full,
         contact_id=recruit_lead_id,
         campaign="recruit_comparison",
-        reply_to=reply_to
+        reply_to=reply_to,
+        attachments=pdf_attachments
     )
 
     update_data = {
@@ -5408,8 +5457,13 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
             supabase.table("lead_activity").insert({
                 "lead_id": recruit_lead_id,
                 "type": "comparison_sent" if success else "comparison_send_failed",
-                "description": f"Comparison email sent by {sender_name or user_email}" + (f" (error: {err})" if err else ""),
-                "meta": {"share_token": share_token, "share_url": share_url, "selection_count": len(req.selection or [])}
+                "description": f"Comparison email sent by {sender_name or user_email}" + (" with PDF" if pdf_attachments else " (no PDF: " + (pdf_error or "?") + ")") + (f" (error: {err})" if err else ""),
+                "meta": {
+                    "share_token": share_token,
+                    "share_url": share_url,
+                    "selection_count": len(req.selection or []),
+                    "pdf_attached": bool(pdf_attachments)
+                }
             }).execute()
         except Exception:
             pass
@@ -5421,7 +5475,9 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
         "comparison_id": row["id"],
         "recruit_lead_id": recruit_lead_id,
         "email_status": "sent" if success else "failed",
-        "email_error": err if not success else None
+        "email_error": err if not success else None,
+        "pdf_attached": bool(pdf_attachments),
+        "pdf_error": pdf_error
     }
 
 
