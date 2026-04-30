@@ -5246,7 +5246,44 @@ def _build_recruit_comparison_email(recruit_first: str, sender_name: str, share_
     """Build subject + HTML body for the recruit comparison email."""
     sender_display = sender_name or "Your TPL Collective contact"
     subject = f"Your brokerage comparison from {sender_display}"
-    competitors = [b.get("name", "?") for b in selection if b.get("slug") != "lpt-realty" and b.get("name")]
+    # Selection items can be slug strings (published brokerages) or dicts
+    # (custom brokerages with {name, isCustom, plans}). Normalize both shapes.
+    SLUG_LABELS = {
+        "lpt-realty": "LPT Realty",
+        "keller-williams": "Keller Williams",
+        "exp-realty": "eXp Realty",
+        "real-brokerage": "REAL Brokerage",
+        "compass": "Compass",
+        "remax": "RE/MAX",
+        "coldwell-banker": "Coldwell Banker",
+        "century-21": "Century 21",
+        "epique-realty": "Epique Realty",
+        "homesmart": "HomeSmart",
+        "berkshire-hathaway": "Berkshire Hathaway HomeServices",
+        "fathom-realty": "Fathom Realty",
+        "sothebys": "Sotheby's International Realty",
+        "douglas-elliman": "Douglas Elliman",
+        "the-agency": "The Agency",
+        "redfin": "Redfin",
+        "realty-one-group": "Realty ONE Group",
+        "united-real-estate": "United Real Estate",
+        "samson-properties": "Samson Properties",
+        "lokation": "LoKation Real Estate",
+    }
+    competitors = []
+    for b in (selection or []):
+        if isinstance(b, str):
+            slug = b
+            if slug == "lpt-realty":
+                continue
+            competitors.append(SLUG_LABELS.get(slug, slug))
+        elif isinstance(b, dict):
+            slug = b.get("slug")
+            if slug == "lpt-realty":
+                continue
+            name = b.get("name") or (SLUG_LABELS.get(slug) if slug else None)
+            if name:
+                competitors.append(name)
     comp_line = ", ".join(competitors[:3]) if competitors else "your current brokerage"
     safe_first = (recruit_first or "there").strip().split(" ")[0]
     html = f"""<!DOCTYPE html>
@@ -5381,7 +5418,7 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
     pdf_attachments = None
     pdf_error = None
     try:
-        async with httpx.AsyncClient(timeout=30.0) as pdf_client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as pdf_client:
             pdf_resp = await pdf_client.post(
                 f"{PUBLIC_SITE_URL}/api/generate-comparison-pdf",
                 headers={"Content-Type": "application/json"},
