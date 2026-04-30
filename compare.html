@@ -171,26 +171,28 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
 
     <div class="inputs-grid">
       <div class="input-block">
-        <label for="gci-slider">Annual GCI</label>
-        <div class="input-value" id="gci-value">$250,000</div>
-        <input type="range" id="gci-slider" min="50000" max="1000000" step="5000" value="250000" />
-        <div class="input-range-meta"><span>$50K</span><span>$1M</span></div>
+        <label for="calc-price">Avg sale price</label>
+        <div class="input-value">
+          <span class="input-prefix">$</span>
+          <input type="number" id="calc-price" value="450000" min="0" step="5000" />
+        </div>
+        <div class="input-range-meta"><span>Average per closing</span></div>
       </div>
 
       <div class="input-block">
-        <label for="txns-slider">Transactions / year</label>
+        <label for="calc-rate">Avg commission %</label>
+        <div class="input-value">
+          <input type="number" id="calc-rate" value="2.5" min="0" max="10" step="0.1" />
+          <span class="input-suffix">%</span>
+        </div>
+        <div class="input-range-meta"><span>Your side, e.g. 2.5%</span></div>
+      </div>
+
+      <div class="input-block">
+        <label for="txns-slider">Deals per year</label>
         <div class="input-value" id="txns-value">20</div>
         <input type="range" id="txns-slider" min="1" max="60" step="1" value="20" />
         <div class="input-range-meta"><span>1</span><span>60</span></div>
-      </div>
-
-      <div class="input-block">
-        <label for="avg-gci">Avg GCI per txn</label>
-        <div class="input-value">
-          <span class="input-prefix">$</span>
-          <input type="number" id="avg-gci" value="12500" min="0" step="100" />
-        </div>
-        <div class="input-range-meta"><span>Auto-calculated. Editable.</span></div>
       </div>
 
       <div class="input-block">
@@ -202,42 +204,16 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
       </div>
     </div>
 
-    <details class="calc-accordion" id="calc-accordion">
-      <summary class="calc-accordion-summary">
-        <span class="calc-accordion-icon" aria-hidden="true">+</span>
-        <span class="calc-accordion-label">Not sure what your GCI is? Calculate from price + deals</span>
-      </summary>
-      <div class="calc-accordion-body">
-        <div class="calc-grid">
-          <div class="input-block">
-            <label for="calc-price">Avg sale price</label>
-            <div class="input-value">
-              <span class="input-prefix">$</span>
-              <input type="number" id="calc-price" value="450000" min="0" step="5000" />
-            </div>
-          </div>
-          <div class="input-block">
-            <label for="calc-rate">Commission rate (%)</label>
-            <div class="input-value">
-              <input type="number" id="calc-rate" value="2.5" min="0" max="10" step="0.1" />
-              <span class="input-suffix">%</span>
-            </div>
-          </div>
-          <div class="input-block">
-            <label for="calc-deals">Deals per year</label>
-            <div class="input-value">
-              <input type="number" id="calc-deals" value="20" min="1" max="60" step="1" />
-            </div>
-          </div>
-        </div>
-        <div class="calc-derived" id="calc-derived">
-          <span class="calc-derived-label">Derived</span>
-          <span class="calc-derived-gci">GCI: <strong id="calc-derived-gci">$225,000</strong></span>
-          <span class="calc-derived-avg">Avg GCI/txn: <strong id="calc-derived-avg">$11,250</strong></span>
-          <button type="button" class="calc-apply-btn" id="calc-apply-btn">Apply to sliders</button>
-        </div>
-      </div>
-    </details>
+    <div class="calc-derived" id="calc-derived" style="margin-top:14px">
+      <span class="calc-derived-label">Derived</span>
+      <span class="calc-derived-gci">Annual GCI: <strong id="calc-derived-gci">$225,000</strong></span>
+      <span class="calc-derived-avg">Avg GCI / deal: <strong id="calc-derived-avg">$11,250</strong></span>
+    </div>
+
+    <!-- Hidden inputs to keep existing handlers/state happy without UI sliders -->
+    <input type="hidden" id="gci-slider" value="225000" />
+    <input type="hidden" id="gci-value" />
+    <input type="hidden" id="avg-gci" value="11250" />
 
     <div class="lpt-plan-toggle" id="lpt-plan-toggle" hidden>
       <div class="plan-toggle-label">LPT Plan View</div>
@@ -490,6 +466,6 @@ mobileMenu.querySelectorAll('a').forEach(a => {
   });
 });
 </script>
-<script src="/assets/compare/compare.js?v=20260424c-custom" defer></script>
+<script src="/assets/compare/compare.js?v=20260430a-pricerate" defer></script>
 </body>
 </html>

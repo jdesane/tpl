@@ -864,7 +864,9 @@
       const card = document.createElement('div');
       card.className = 'breakdown-card' + (b.slug === LPT_SLUG ? ' lpt' : '');
 
-      if (!plan || b.status !== 'published') {
+      // Custom brokerages always render (their data is user-supplied).
+      // Only treat as "pending" if it's neither published nor a custom entry.
+      if (!plan || (b.status !== 'published' && !b.isCustom)) {
         card.classList.add('pending');
         card.innerHTML =
           '<div class="breakdown-header">' +
@@ -1227,31 +1229,40 @@
       });
     });
 
-    $('gci-slider').addEventListener('input', (e) => {
-      state.gci = parseInt(e.target.value, 10);
-      $('gci-value').textContent = fmtMoney(state.gci);
-      if (!state.avgGciEdited && state.txns > 0) {
-        state.avgGci = Math.round(state.gci / state.txns);
-        $('avg-gci').value = state.avgGci;
-      }
+    // Price + commission % + deals are now the PRIMARY inputs.
+    // GCI and avg-gci are derived: avg = price × rate/100, gci = avg × deals.
+    function recomputeFromPriceRateDeals() {
+      const priceEl = $('calc-price');
+      const rateEl = $('calc-rate');
+      const price = Math.max(0, parseFloat(priceEl ? priceEl.value : 0) || 0);
+      const rate = Math.max(0, parseFloat(rateEl ? rateEl.value : 0) || 0);
+      const perDealGci = Math.round(price * (rate / 100));
+      const totalGci = perDealGci * state.txns;
+      state.avgGci = perDealGci;
+      state.avgGciEdited = false;
+      state.gci = totalGci;
+      // Keep hidden mirrors in sync (used by some legacy paths)
+      try {
+        $('gci-slider').value = totalGci;
+        $('gci-value').textContent = fmtMoney(totalGci);
+        $('avg-gci').value = perDealGci;
+      } catch (_) {}
+      // Update the derived line
+      const dgci = $('calc-derived-gci'); if (dgci) dgci.textContent = fmtMoney(totalGci);
+      const davg = $('calc-derived-avg'); if (davg) davg.textContent = fmtMoney(perDealGci);
       renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
-    });
+    }
+
+    const priceEl = $('calc-price');
+    const rateEl = $('calc-rate');
+    if (priceEl) priceEl.addEventListener('input', recomputeFromPriceRateDeals);
+    if (rateEl) rateEl.addEventListener('input', recomputeFromPriceRateDeals);
+
     $('txns-slider').addEventListener('input', (e) => {
       state.txns = parseInt(e.target.value, 10);
       $('txns-value').textContent = String(state.txns);
-      if (!state.avgGciEdited && state.txns > 0) {
-        state.avgGci = Math.round(state.gci / state.txns);
-        $('avg-gci').value = state.avgGci;
-      }
-      renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
-    });
-    $('avg-gci').addEventListener('input', (e) => {
-      const v = parseInt(e.target.value, 10);
-      if (!isNaN(v) && v > 0) {
-        state.avgGci = v;
-        state.avgGciEdited = true;
-        renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection();
-      }
+      // Recompute total GCI from current price/rate
+      recomputeFromPriceRateDeals();
     });
 
     $('lpt-plus-toggle').addEventListener('change', (e) => {
@@ -1297,57 +1308,6 @@
         state.lptPlan = btn.dataset.plan;
         renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
       });
-    });
-
-    /* ── CALC ACCORDION ── */
-    const calcPrice = $('calc-price');
-    const calcRate = $('calc-rate');
-    const calcDeals = $('calc-deals');
-    const calcApply = $('calc-apply-btn');
-
-    function recomputeCalcDerived() {
-      const price = Math.max(0, parseFloat(calcPrice.value) || 0);
-      const rate = Math.max(0, parseFloat(calcRate.value) || 0);
-      const deals = Math.max(1, parseInt(calcDeals.value, 10) || 1);
-      const perDealGci = price * (rate / 100);
-      const totalGci = Math.round(perDealGci * deals);
-      $('calc-derived-gci').textContent = fmtMoney(totalGci);
-      $('calc-derived-avg').textContent = fmtMoney(Math.round(perDealGci));
-      return { totalGci, perDealGci: Math.round(perDealGci), deals };
-    }
-    [calcPrice, calcRate, calcDeals].forEach(el => {
-      el.addEventListener('input', recomputeCalcDerived);
-    });
-    calcApply.addEventListener('click', () => {
-      const { totalGci, perDealGci, deals } = recomputeCalcDerived();
-      const clampedGci = Math.max(50000, Math.min(1000000, totalGci));
-      const clampedTxns = Math.max(1, Math.min(60, deals));
-      state.gci = clampedGci;
-      state.txns = clampedTxns;
-      state.avgGci = perDealGci > 0 ? perDealGci : Math.round(clampedGci / clampedTxns);
-      state.avgGciEdited = true;
-      $('gci-slider').value = clampedGci;
-      $('gci-value').textContent = fmtMoney(clampedGci);
-      $('txns-slider').value = clampedTxns;
-      $('txns-value').textContent = String(clampedTxns);
-      $('avg-gci').value = state.avgGci;
-      renderMatrix(); renderBreakdown(); writeUrlState();
-      track('compare_calc_applied', {
-        gci: clampedGci, txns: clampedTxns, avg_gci: state.avgGci,
-        selection: state.selected.map(b => b.slug).join(',')
-      });
-      postMcTracking({
-        source: 'compare_accordion',
-        gci: clampedGci,
-        txns: clampedTxns,
-        avg_gci_per_txn: state.avgGci,
-        selection: state.selected.map(b => b.slug),
-        lpt_plan: state.lptPlan,
-        lpt_plus: state.lptPlus,
-        page_url: window.location.origin + window.location.pathname + window.location.search,
-        ts: new Date().toISOString()
-      });
-      $('calc-accordion').open = false;
     });
 
     /* ── EMAIL MODAL ── */
@@ -1524,6 +1484,20 @@
 
     state.avgGci = state.txns > 0 ? Math.round(state.gci / state.txns) : 12500;
 
+    // Hydrate price + rate inputs so derived values match GCI from URL state.
+    // Default rate is 2.5%; back-derive price from avgGci so things stay consistent.
+    try {
+      const priceEl = $('calc-price');
+      const rateEl = $('calc-rate');
+      if (priceEl && rateEl) {
+        const rate = parseFloat(rateEl.value) || 2.5;
+        const derivedPrice = state.avgGci > 0 && rate > 0
+          ? Math.round(state.avgGci / (rate / 100))
+          : 450000;
+        priceEl.value = derivedPrice;
+      }
+    } catch (_) {}
+
     $('gci-slider').value = state.gci;
     $('gci-value').textContent = fmtMoney(state.gci);
     $('txns-slider').value = state.txns;
@@ -1532,6 +1506,10 @@
     $('lpt-plus-toggle').checked = state.lptPlus;
     $('growth-slider').value = state.growth;
     $('growth-value').textContent = String(state.growth);
+
+    // Refresh derived display
+    const dgci = $('calc-derived-gci'); if (dgci) dgci.textContent = fmtMoney(state.gci);
+    const davg = $('calc-derived-avg'); if (davg) davg.textContent = fmtMoney(state.avgGci);
 
     document.querySelectorAll('.filter-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.category === state.category);
