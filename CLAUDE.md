@@ -242,6 +242,43 @@
   - blog.html index updated with 4 new Guide cards
   - All blog content em-dash-free per Joe's rule
 
+## Phase 13 — Multi-Tenant Foundation ✅
+- See [project_multi_tenant.md](memory/project_multi_tenant.md) for full Phase 13 architecture
+- workspaces table, db() wrapper for tenant scoping, JWT carries workspace_id+plan
+- Plan tiers basic/mid/elite, /api/admin endpoints, impersonation
+
+## Phase 14 — Comparator V2: Custom Brokerages + Recruit Tool + Rich PDF ✅
+**Public /compare upgrades:**
+- "Don't see your brokerage?" pinned card + custom brokerage modal: agent inputs splits / cap / fees / royalty for any unlisted shop, plugs into the same matrix / breakdown / cap break-even / 3-yr projection. Edit pencil reopens prefilled. Multiple customs allowed.
+- "Your Numbers" inputs reworked: avg sale price + avg commission % + deals/year (replaces standalone GCI slider). GCI auto-derived.
+- LPT Equity Bonus panel — cumulative shares earned by unit count (White + Silver + Gold + Black). Awards STACK (3 txns = White+Silver = 100/50; 15 txns = +Gold = 700/350; 35 txns = +Black = 2,500/350). 3-year projection sums earned badges per year. Source: official lpt.com flyer (valid 4/30/26).
+- Email-share modal now actually sends email (was previously fake-success). Saves full snapshot to recruit_comparisons table; "View Full Comparison" link uses /compare?report=<token> so the recipient gets the exact saved state including custom brokerages (URL state can't encode them).
+- Rich 5-page branded PDF attached to the email: header + Your Numbers + Cost Comparison summary; Side-By-Side detail table (model, founded, ticker, plan, splits, caps, fees, royalty, totals, retained %); Where Every Dollar Goes per-brokerage breakdown cards; The Bigger Picture page (cap break-even with progress bars + 3-yr projection table + LPT equity ladder + HybridShare 7-tier table). Per-page footer with source citation + page X of N.
+
+**Mission Control Recruit Comparison Tool:**
+- New nav item under Marketing → Recruit Comparison
+- Form: recruit info, multi-select competitors, "Add custom brokerage", GCI/txns, LPT plan, +Plus, sender personal email (auto-prefills from logged-in user)
+- POST /api/recruit-comparisons creates row + lead (assigned_to=sender) + sends Resend email from "<Sender> via TPL Collective <comparisons@tplcollective.ai>" with reply-to set to sender's personal email + same rich 5-page PDF attached
+- Recipient lands on /compare?report=<token>; report-mode hides selectors/inputs/quiz, shows "Comparison prepared for X by Y" banner, increments view count, logs comparison_viewed to lead activity
+- Right-side panel on the MC page lists recent comparisons with sent/viewed status
+
+**Schema additions:**
+- `recruit_comparisons` table: share_token UUID, created_by_user_id, recruit_first/last/email/phone, recruit_lead_id FK, current_brokerage_name, selection JSONB, gci/txns/avg_gci_per_txn, lpt_plan/lpt_plus, comparison_result JSONB, email_sent_at/email_resend_id/email_status, viewed_at/viewed_count, RLS service-role policy
+
+**Architecture:**
+- `api/_lib/comparison-calc.js` — shared JS calc module mirroring compare.js math; loads /data/brokerages.json; buildReportData() builds the full PDF payload from raw inputs
+- `api/_lib/comparison-pdf.js` — pdfkit-based PDF generator (LETTER, dark Luxe theme, bufferPages, footer pinned to page 0 within bottom margin)
+- `api/compare-share-email.js` — public endpoint, saves snapshot + sends email + attaches PDF; returns share_token + token_url
+- `api/generate-comparison-pdf.js` — public Vercel endpoint, returns base64 PDF; called by MC's recruit-comparison flow via httpx (follow_redirects=True)
+- `mission-control/app/main.py`: send_email() supports `attachments` param; POST /api/recruit-comparisons fetches PDF from Vercel before sending
+
+## Phase 14.1 — Rail 3 Closure ✅
+- Email validation rail was missing on the live `/api/webhooks/meta-leads` endpoint — bad email `bieker1@gmail.com1` (Meta autofill bug) created duplicate lead 482. Merged into canonical 318 (lead_activity + email_send_log repointed, duplicate opportunity + cancelled enrollment removed, full snapshot archived to activity_log).
+- Added shared `is_valid_email()` regex helper to main.py and sync_meta_leads.py
+- Gated 4 insert paths: webhook direct-POST, webhook entry/changes loop, `_create_meta_lead()` entry, sync backfill loop
+- Malformed emails skipped + logged as `webhook_validation_error` / `sync_validation_error`
+- Verified: 0 malformed emails remain in leads table
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
@@ -255,3 +292,5 @@
 - Never fabricate LPT financial figures
 - Keep POST /api/leads backward compatible (live website uses it)
 - Always confirm before deploying to the VPS
+- Comparator PDFs use ASCII-only labels (Helvetica bundled with pdfkit can't render Δ, em-dashes, U+2713 checkmark, etc.). Use "vs LPT BP:" not "Δ vs LPT BP:" and avoid em-dashes in PDF body text.
+- pdfkit footer Y coordinates must stay within the bottom margin (page.height - marginBottom) or text auto-paginates to a fresh page even with `lineBreak: false`.
