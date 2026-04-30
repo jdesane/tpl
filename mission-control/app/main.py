@@ -5269,9 +5269,11 @@ def _build_recruit_comparison_email(recruit_first: str, sender_name: str, share_
 @app.post("/api/recruit-comparisons")
 async def create_recruit_comparison(req: RecruitComparisonCreate, request: Request):
     """Agent runs a comparison for a recruit. Creates DB row, lead, sends email, returns share URL."""
-    user = get_current_user(request)
-    user_id = user.get("user_id") or user.get("sub")
+    user = getattr(request.state, "user", None) or {}
+    user_id = user.get("sub")
     user_email = user.get("email", "")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
 
     if not is_valid_email(req.recruit_email):
         raise HTTPException(status_code=400, detail="Invalid recruit email address.")
@@ -5328,7 +5330,7 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
                 "status": "new",
                 "current_brokerage": req.current_brokerage_name or "",
                 "tags": auto_tags,
-                "owner_user_id": user_id,
+                "assigned_to": user_id,
                 "notes": f"Comparison sent by {sender_name or user_email} on {datetime.utcnow().date().isoformat()}. Recruit reviewing brokerage options."
             }).execute()
             if lead_insert.data:
@@ -5377,7 +5379,9 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
     subject, html = _build_recruit_comparison_email(
         req.recruit_first_name, sender_name, share_url, req.selection, req.gci, req.txns
     )
-    sender_full = f"{sender_name} via TPL Collective <comparisons@send.tplcollective.ai>" if sender_name else "TPL Collective <comparisons@send.tplcollective.ai>"
+    # Use verified tplcollective.ai sender domain. Display name is the agent's name when present.
+    safe_sender = (sender_name or "").replace('"', "").replace("<", "").replace(">", "").strip()
+    sender_full = f'{safe_sender} via TPL Collective <comparisons@tplcollective.ai>' if safe_sender else "TPL Collective <comparisons@tplcollective.ai>"
     reply_to = sender_personal_email or user_email or "joe@tplcollective.ai"
     success, err = send_email(
         smtp,
@@ -5424,8 +5428,10 @@ async def create_recruit_comparison(req: RecruitComparisonCreate, request: Reque
 @app.get("/api/recruit-comparisons")
 def list_recruit_comparisons(request: Request, limit: int = 50):
     """List comparisons created by the current agent."""
-    user = get_current_user(request)
-    user_id = user.get("user_id") or user.get("sub")
+    user = getattr(request.state, "user", None) or {}
+    user_id = user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
     rows = supabase.table("recruit_comparisons").select(
         "id, share_token, recruit_first_name, recruit_last_name, recruit_email, "
         "current_brokerage_name, gci, txns, lpt_plan, email_status, email_sent_at, "
