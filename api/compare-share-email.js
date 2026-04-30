@@ -100,8 +100,16 @@ export default async function handler(req, res) {
   const {
     name, email, share_url, selection,
     gci, txns, lpt_plan, lpt_plus,
+    growth_pct,
     avg_sale_price, commission_pct,
-    comparison_results, lpt_equity
+    comparison_results,
+    detail_columns,
+    breakdown_blocks,
+    cap_breakeven,
+    projection,
+    hybridshare,
+    lpt_equity_ladder,
+    lpt_equity
   } = body;
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -184,14 +192,21 @@ export default async function handler(req, res) {
     const pdfBuf = await generateComparisonPdf({
       recipientName: firstName || null,
       brokerages: Array.isArray(comparison_results) ? comparison_results : [],
+      detailColumns: Array.isArray(detail_columns) ? detail_columns : [],
+      breakdownBlocks: Array.isArray(breakdown_blocks) ? breakdown_blocks : [],
+      capBreakeven: Array.isArray(cap_breakeven) ? cap_breakeven : [],
+      projection: Array.isArray(projection) ? projection : [],
+      hybridshare: hybridshare || null,
+      lptEquityLadder: lpt_equity_ladder || null,
+      lptEquity: lpt_equity || null,
       avgSalePrice: avg_sale_price || null,
       commissionPct: commission_pct || null,
       gci: gci || 0,
       txns: txns || 0,
       lptPlan: lpt_plan || 'both',
       lptPlus: !!lpt_plus,
-      shareUrl: tokenUrl,                    // token URL preserves full state
-      lptEquity: lpt_equity || null
+      growthPct: growth_pct || 0,
+      shareUrl: tokenUrl
     });
     const today = new Date().toISOString().slice(0, 10);
     const safeName = (firstName || 'Comparison').replace(/[^A-Za-z0-9_-]/g, '');

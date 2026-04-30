@@ -1575,27 +1575,166 @@
         return { slug: b.slug, name: b.name, isCustom: false };
       });
 
-      // Compute per-brokerage costs server-side input (frontend has the data already).
-      const comparisonResults = [];
+      // Compute everything the PDF generator needs. Frontend has all the data + helpers.
       const matrixCols = getColumnsForMatrix();
+      const lptSel = state.selected.find(b => b.slug === LPT_SLUG);
+
+      // (a) Top-line cost rows (page 1 cost comparison table)
+      const comparisonResults = [];
+      // (b) Detail rows (Side-by-Side table - one row per attribute, columns per brokerage)
+      const detailColumns = [];
+      // (c) Cost breakdown blocks ("Where Every Dollar Goes" cards)
+      const breakdownBlocks = [];
+      // (d) Cap break-even cards
+      const capBreakevenData = [];
+      // (e) 3-year projection rows
+      const projectionData = [];
+
       matrixCols.forEach(col => {
-        const r = calcTotalCost(col.brokerage, col.plan, state.gci, state.txns, state.avgGci, state.lptPlus);
+        const b = col.brokerage;
+        const plan = col.plan;
+        const r = calcTotalCost(b, plan, state.gci, state.txns, state.avgGci, state.lptPlus);
         if (!r) return;
+
         comparisonResults.push({
-          slug: col.brokerage.slug,
-          name: col.brokerage.name,
-          short_name: col.brokerage.short_name,
-          isCustom: !!col.brokerage.isCustom,
-          plan_name: col.plan && col.plan.plan_name,
-          total: r.total,
-          net: r.net,
-          retainedPct: r.retainedPct
+          slug: b.slug, name: b.name, short_name: b.short_name,
+          isCustom: !!b.isCustom,
+          plan_name: plan && plan.plan_name,
+          total: r.total, net: r.net, retainedPct: r.retainedPct
+        });
+
+        // Detail column data
+        detailColumns.push({
+          slug: b.slug, name: b.name, short_name: b.short_name,
+          isCustom: !!b.isCustom,
+          model_type: b.model_type || null,
+          founded: b.founded || null,
+          public_ticker: b.public_ticker || null,
+          plan_name: plan ? plan.plan_name : null,
+          split_structure: plan ? plan.split_structure : null,
+          annual_cap: plan ? plan.annual_cap : null,
+          monthly_fee: plan ? plan.monthly_fee : null,
+          annual_fee: plan ? plan.annual_fee : null,
+          annual_fee_note: plan ? plan.annual_fee_note : null,
+          eo_insurance_annual: plan ? plan.eo_insurance_annual : null,
+          eo_note: plan ? plan.eo_note : null,
+          franchise_fee_pct: plan ? plan.franchise_fee_pct : null,
+          franchise_fee_cap_annual: plan ? plan.franchise_fee_cap_annual : null,
+          per_txn_brokerage_fee: plan ? plan.per_txn_brokerage_fee : null,
+          flat_fee_per_txn: plan ? plan.flat_fee_per_txn : null,
+          total: r.total, net: r.net, retainedPct: r.retainedPct
+        });
+
+        // Breakdown card data
+        const bd = r.breakdown || {};
+        const isLpt = b.slug === LPT_SLUG;
+        breakdownBlocks.push({
+          slug: b.slug, name: b.name, short_name: b.short_name,
+          isCustom: !!b.isCustom,
+          isLpt: isLpt,
+          plan_name: plan ? plan.plan_name : null,
+          rows: [
+            (bd.splitCost > 0
+              ? { label: plan && plan.flat_fee_per_txn ? 'Flat fees to cap' : 'Split to cap',
+                  sub: plan && plan.flat_fee_per_txn
+                    ? Math.min(state.txns, Math.floor((plan.annual_cap || 0) / plan.flat_fee_per_txn)) + ' x ' + fmtMoney(plan.flat_fee_per_txn)
+                    : (plan ? plan.split_structure + ' until ' + fmtMoney(plan.annual_cap || 0) + ' cap' : ''),
+                  value: bd.splitCost }
+              : null),
+            (bd.txnBrokerageFees > 0
+              ? { label: 'Per-txn brokerage fee',
+                  sub: state.txns + ' x ' + fmtMoney((plan && plan.per_txn_brokerage_fee) || (plan && plan.post_cap_per_txn_fee) || 0),
+                  value: bd.txnBrokerageFees }
+              : null),
+            { label: 'Monthly fee',
+              sub: plan && plan.monthly_fee ? fmtMoney(plan.monthly_fee) + '/mo x 12' : 'No monthly fees',
+              value: bd.monthly || 0 },
+            { label: 'Annual fee',
+              sub: (plan && plan.annual_fee_note) || 'Annual fee',
+              value: bd.annual || 0 },
+            (bd.eo > 0 || !(plan && plan.eo_note)
+              ? { label: 'E&O insurance', sub: (plan && plan.eo_note) || 'Annual E&O', value: bd.eo || 0 }
+              : null),
+            (bd.franchise > 0
+              ? { label: 'Franchise royalty',
+                  sub: (plan ? plan.franchise_fee_pct : 0) + '% (cap ' + fmtMoney((plan && plan.franchise_fee_cap_annual) || 0) + ')',
+                  value: bd.franchise }
+              : null),
+            (bd.marketing > 0
+              ? { label: 'Marketing fee', sub: (plan && plan.marketing_fee_pct) + '%', value: bd.marketing }
+              : null),
+            (bd.optional > 0
+              ? { label: 'LPT Plus upgrade', sub: 'Optional tech add-on', value: bd.optional }
+              : null)
+          ].filter(Boolean),
+          total: r.total, net: r.net, retainedPct: r.retainedPct,
+          per_txn_brokerage_fee: plan ? plan.per_txn_brokerage_fee : null,
+          source_url: b.source_url || null,
+          data_asof: b.data_asof || null
+        });
+
+        // Cap break-even
+        const be = calcCapBreakeven(plan, state.avgGci);
+        const pct = progressToCap(plan, state.gci, state.txns);
+        capBreakevenData.push({
+          slug: b.slug, name: b.name, short_name: b.short_name,
+          plan_name: plan && plan.plan_name,
+          isLpt,
+          cap: plan && plan.annual_cap ? plan.annual_cap : null,
+          breakEvenLabel: be.label || '-',
+          breakEvenSub: be.sub || null,
+          progressPct: pct
         });
       });
 
+      // 3-year projection per brokerage
+      matrixCols.forEach(col => {
+        const proj = calcProjection(col.brokerage, col.plan, state.gci, state.txns, state.avgGci, state.growth || 0, state.lptPlus);
+        if (!proj) return;
+        projectionData.push({
+          slug: col.brokerage.slug,
+          name: col.brokerage.name,
+          short_name: col.brokerage.short_name,
+          plan_name: col.plan && col.plan.plan_name,
+          isLpt: col.brokerage.slug === LPT_SLUG,
+          rows: proj.rows.map(r => ({
+            year: r.year, gci: r.gci, txns: r.txns, net: r.net, cumulative: r.cumulative
+          })),
+          total: proj.total
+        });
+      });
+
+      // HybridShare 7-tier (only when LPT selected)
+      let hybridshareData = null;
+      if (lptSel && lptSel.revshare && Array.isArray(lptSel.revshare.tier_breakdown)) {
+        hybridshareData = {
+          tiers: lptSel.revshare.tier_breakdown.map(t => ({
+            tier: t.tier,
+            pct_of_pool: t.pct_of_pool,
+            max_bp: t.max_annual_from_bp_downline_usd,
+            max_bb: t.max_annual_from_bb_downline_usd,
+            min_directs: t.min_active_direct_sponsored_to_unlock
+          }))
+        };
+      }
+
+      // LPT equity full ladder for PDF
+      let lptEquityLadder = null;
+      if (lptSel && lptSel.equity && lptSel.equity.achievement_awards) {
+        lptEquityLadder = {
+          awards: lptSel.equity.achievement_awards.map(a => ({
+            badge: a.badge,
+            threshold: a.annual_core_transactions,
+            shares_bp: a.shares_bp,
+            shares_bb: a.shares_bb,
+            shares_bb_note: a.shares_bb_note || null
+          })),
+          sponsorship: lptSel.equity.sponsorship_award_per_direct_sponsored || null
+        };
+      }
+
       // LPT equity (cumulative) for the PDF, if LPT is in the selection
       let lptEquityPayload = null;
-      const lptSel = state.selected.find(b => b.slug === LPT_SLUG);
       if (lptSel && lptSel.equity && lptSel.equity.achievement_awards) {
         const awards = lptSel.equity.achievement_awards;
         const earned = earnedBadgesForTxns(awards, state.txns);
@@ -1637,9 +1776,16 @@
             txns: state.txns,
             lpt_plan: state.lptPlan,
             lpt_plus: state.lptPlus,
+            growth_pct: state.growth || 0,
             avg_sale_price: avgSalePrice,
             commission_pct: commissionPct,
             comparison_results: comparisonResults,
+            detail_columns: detailColumns,
+            breakdown_blocks: breakdownBlocks,
+            cap_breakeven: capBreakevenData,
+            projection: projectionData,
+            hybridshare: hybridshareData,
+            lpt_equity_ladder: lptEquityLadder,
             lpt_equity: lptEquityPayload
           })
         });
