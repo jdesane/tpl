@@ -285,6 +285,20 @@ src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
     <p class="projection-note">Projection holds avg GCI/txn constant and scales transactions by the growth rate. Caps, franchise royalties, and all fees re-calculated each year. Δ vs LPT compares against LPT Brokerage Partner.</p>
   </section>
 
+  <!-- LPT EQUITY PANEL (Performance Awards / shares) -->
+  <section class="cmp-panel lpt-equity-panel" id="lpt-equity-panel" hidden>
+    <div class="cmp-panel-head">
+      <div class="cmp-panel-label">LPT Equity Bonus</div>
+      <h2 class="cmp-panel-title">Shares Earned By Unit Count</h2>
+    </div>
+    <p class="lpt-equity-intro">LPT awards RSUs every year based on your annual core transactions. Awards vest over 3 years. Liquidity depends on future IPO, acquisition, or internal buyback &mdash; not currently publicly traded.</p>
+    <div class="lpt-equity-this-year" id="lpt-equity-this-year"></div>
+    <div class="lpt-equity-ladder" id="lpt-equity-ladder"></div>
+    <div class="lpt-equity-extras" id="lpt-equity-extras"></div>
+    <div class="lpt-equity-projection" id="lpt-equity-projection"></div>
+    <p class="lpt-equity-note">Source: official lpt.com flyer (valid 4/30/26). Black Badge requires Brokerage Partner plan for the full period. Gold/Black require leadership &amp; community engagement (waived until lptConnect 2.0). Sponsorship awards require sponsored agent to remain Active during your vesting period.</p>
+  </section>
+
   <!-- HYBRIDSHARE PANEL -->
   <section class="cmp-panel hybridshare-panel" id="hybridshare-panel" hidden>
     <div class="cmp-panel-head">
@@ -466,6 +480,6 @@ mobileMenu.querySelectorAll('a').forEach(a => {
   });
 });
 </script>
-<script src="/assets/compare/compare.js?v=20260430a-pricerate" defer></script>
+<script src="/assets/compare/compare.js?v=20260430b-equity" defer></script>
 </body>
 </html>

@@ -1149,6 +1149,122 @@
       '</tbody>';
   }
 
+  /* ────────── CALC + RENDER: LPT EQUITY (Performance Awards) ────────── */
+  function lptBadgeForTxns(awards, txns) {
+    // Returns the highest-tier badge whose threshold is met by `txns`.
+    if (!awards || !awards.length) return null;
+    const sorted = awards.slice().sort((a, b) => b.annual_core_transactions - a.annual_core_transactions);
+    return sorted.find(a => txns >= a.annual_core_transactions) || null;
+  }
+
+  function nextBadgeForTxns(awards, txns) {
+    if (!awards || !awards.length) return null;
+    const sorted = awards.slice().sort((a, b) => a.annual_core_transactions - b.annual_core_transactions);
+    return sorted.find(a => txns < a.annual_core_transactions) || null;
+  }
+
+  function renderLptEquity() {
+    const panel = $('lpt-equity-panel');
+    const lpt = state.selected.find(b => b.slug === LPT_SLUG);
+    if (!lpt || !lpt.equity || !lpt.equity.achievement_awards) {
+      panel.hidden = true; return;
+    }
+    panel.hidden = false;
+
+    const eq = lpt.equity;
+    const awards = eq.achievement_awards;
+    const earned = lptBadgeForTxns(awards, state.txns);
+    const next = nextBadgeForTxns(awards, state.txns);
+    const isBB = state.lptPlan === 'bb';
+    const isBoth = state.lptPlan === 'both';
+
+    // ── This Year cards (BP + BB) ──
+    const yearWrap = $('lpt-equity-this-year');
+    if (earned) {
+      const bpVal = earned.shares_bp != null ? earned.shares_bp.toLocaleString() + ' shares' : '—';
+      const bbVal = earned.shares_bb != null
+        ? earned.shares_bb.toLocaleString() + ' shares'
+        : (earned.shares_bb_note || '—');
+      yearWrap.innerHTML =
+        '<div class="lpt-equity-stat">' +
+          '<div class="lpt-equity-stat-label">' + escapeHtml(earned.badge) + ' badge &middot; Brokerage Partner</div>' +
+          '<div class="lpt-equity-stat-val">' + bpVal + '</div>' +
+          '<div class="lpt-equity-stat-sub">' + state.txns + ' txns &ge; ' + earned.annual_core_transactions + ' threshold &middot; 3-yr vest</div>' +
+        '</div>' +
+        '<div class="lpt-equity-stat">' +
+          '<div class="lpt-equity-stat-label">' + escapeHtml(earned.badge) + ' badge &middot; Business Builder</div>' +
+          '<div class="lpt-equity-stat-val">' + bbVal + '</div>' +
+          '<div class="lpt-equity-stat-sub">' + (earned.shares_bb_note || '3-yr vest. Upgrade to BP to earn higher tiers.') + '</div>' +
+        '</div>';
+    } else {
+      const ahead = next ? (next.annual_core_transactions - state.txns) : null;
+      yearWrap.innerHTML =
+        '<div class="lpt-equity-stat" style="grid-column:span 2">' +
+          '<div class="lpt-equity-stat-label">No badge earned this year</div>' +
+          '<div class="lpt-equity-stat-val" style="font-size:22px;color:var(--muted)">' +
+            (next ? ahead + ' more txns to reach ' + escapeHtml(next.badge) : 'Outside award range') + '</div>' +
+          '<div class="lpt-equity-stat-sub">First badge unlocks at 1 core transaction.</div>' +
+        '</div>';
+    }
+
+    // ── Badge ladder (all 4 thresholds) ──
+    const ladderWrap = $('lpt-equity-ladder');
+    const sortedAsc = awards.slice().sort((a, b) => a.annual_core_transactions - b.annual_core_transactions);
+    ladderWrap.innerHTML = sortedAsc.map(a => {
+      const isEarned = earned && a.badge === earned.badge;
+      const isNextOne = next && a.badge === next.badge;
+      const cls = 'lpt-equity-rung' + (isEarned ? ' earned' : '') + (isNextOne ? ' next' : '');
+      const bp = a.shares_bp != null ? a.shares_bp.toLocaleString() : '—';
+      const bb = a.shares_bb != null ? a.shares_bb.toLocaleString() : (a.shares_bb_note ? 'N/A' : '—');
+      return '<div class="' + cls + '">' +
+        '<div class="lpt-equity-rung-badge">' + escapeHtml(a.badge) + '</div>' +
+        '<div class="lpt-equity-rung-thresh">' + a.annual_core_transactions + '+ txns/yr</div>' +
+        '<div class="lpt-equity-rung-shares">BP: <b>' + bp + '</b><br>BB: <b>' + bb + '</b></div>' +
+      '</div>';
+    }).join('');
+
+    // ── Sponsorship extras ──
+    const extras = $('lpt-equity-extras');
+    const sp = eq.sponsorship_award_per_direct_sponsored;
+    if (sp) {
+      extras.innerHTML =
+        '<strong>+ Sponsorship Performance Awards:</strong> ' +
+        sp.shares_bp.toLocaleString() + ' shares (BP) / ' + sp.shares_bb.toLocaleString() + ' shares (BB) ' +
+        'for each directly-sponsored agent\'s first Core Transaction (one-time per recruit). ' +
+        'Stacks on top of your annual badge award.';
+    }
+
+    // ── 3-Year cumulative projection ──
+    // Use the same growth slider and starting txns as the projection panel.
+    let cum_bp = 0, cum_bb = 0;
+    const yearRows = [];
+    for (let y = 1; y <= 3; y++) {
+      const mult = Math.pow(1 + (state.growth || 0) / 100, y - 1);
+      const txY = Math.max(1, Math.round(state.txns * mult));
+      const ear = lptBadgeForTxns(awards, txY);
+      const bpY = ear && ear.shares_bp ? ear.shares_bp : 0;
+      const bbY = ear && ear.shares_bb ? ear.shares_bb : 0;
+      cum_bp += bpY; cum_bb += bbY;
+      yearRows.push({ year: y, txns: txY, badge: ear ? ear.badge : '—', bp: bpY, bb: bbY });
+    }
+    const projWrap = $('lpt-equity-projection');
+    projWrap.innerHTML =
+      '<div class="lpt-equity-projection-title">3-Year Equity Projection (annual badge awards only)</div>' +
+      '<div class="lpt-equity-projection-grid">' +
+        yearRows.map(r =>
+          '<div class="lpt-equity-projection-cell">' +
+            '<span class="yr">Year ' + r.year + ' &middot; ' + r.txns + ' txns &middot; ' + escapeHtml(r.badge) + '</span><br>' +
+            '<span class="val">' + (r.bp ? r.bp.toLocaleString() : '0') + '</span> BP<br>' +
+            '<span class="val">' + (r.bb ? r.bb.toLocaleString() : '0') + '</span> BB' +
+          '</div>'
+        ).join('') +
+      '</div>' +
+      '<div class="lpt-equity-projection-total">' +
+        '<span class="total-label">3-Year Total Shares</span>' +
+        '<span class="total-val">' + cum_bp.toLocaleString() + ' BP &middot; ' + cum_bb.toLocaleString() + ' BB</span>' +
+      '</div>';
+  }
+
   /* ────────── RENDER: HYBRIDSHARE + TPL CALLOUT ────────── */
   function renderHybridshare() {
     const panel = $('hybridshare-panel');
@@ -1195,6 +1311,7 @@
     renderBreakdown();
     renderCapBreakeven();
     renderProjection();
+    renderLptEquity();
     renderHybridshare();
     renderTplCallout();
     const hasLpt = state.selected.some(b => b.slug === LPT_SLUG);
@@ -1250,7 +1367,7 @@
       // Update the derived line
       const dgci = $('calc-derived-gci'); if (dgci) dgci.textContent = fmtMoney(totalGci);
       const davg = $('calc-derived-avg'); if (davg) davg.textContent = fmtMoney(perDealGci);
-      renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
+      renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); renderLptEquity(); writeUrlState();
     }
 
     const priceEl = $('calc-price');
@@ -1267,13 +1384,13 @@
 
     $('lpt-plus-toggle').addEventListener('change', (e) => {
       state.lptPlus = e.target.checked;
-      renderMatrix(); renderBreakdown(); renderProjection(); writeUrlState();
+      renderMatrix(); renderBreakdown(); renderProjection(); renderLptEquity(); writeUrlState();
     });
 
     $('growth-slider').addEventListener('input', (e) => {
       state.growth = parseInt(e.target.value, 10);
       $('growth-value').textContent = String(state.growth);
-      renderProjection(); writeUrlState();
+      renderProjection(); renderLptEquity(); writeUrlState();
     });
 
     const stateSel = $('state-filter');
@@ -1306,7 +1423,7 @@
         btn.classList.add('active');
         btn.setAttribute('aria-checked', 'true');
         state.lptPlan = btn.dataset.plan;
-        renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); writeUrlState();
+        renderMatrix(); renderBreakdown(); renderCapBreakeven(); renderProjection(); renderLptEquity(); writeUrlState();
       });
     });
 

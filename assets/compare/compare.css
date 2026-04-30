@@ -1389,6 +1389,135 @@ nav {
 }
 
 /* ── HYBRIDSHARE ── */
+/* ── LPT EQUITY PANEL ── */
+.lpt-equity-panel {
+  border-color: var(--gold-br);
+  background: linear-gradient(145deg, rgba(240,192,64,0.03), var(--surface));
+}
+.lpt-equity-panel .cmp-panel-label { color: var(--gold); }
+.lpt-equity-intro {
+  font-size: 14px; line-height: 1.7; color: var(--muted);
+  margin-bottom: 22px; max-width: 900px;
+}
+.lpt-equity-this-year {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.lpt-equity-stat {
+  background: var(--bg);
+  border: 1px solid var(--gold-br);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.lpt-equity-stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.lpt-equity-stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px; line-height: 1; color: var(--gold);
+  letter-spacing: 0.02em; margin-bottom: 2px;
+}
+.lpt-equity-stat-sub {
+  display: block; font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--muted); margin-top: 6px;
+}
+.lpt-equity-ladder {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.lpt-equity-rung {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  position: relative;
+  transition: all 0.15s;
+}
+.lpt-equity-rung.earned {
+  border-color: var(--gold);
+  background: linear-gradient(145deg, rgba(240,192,64,0.08), var(--bg));
+}
+.lpt-equity-rung.earned::before {
+  content: '✓';
+  position: absolute; top: 8px; right: 10px;
+  color: var(--gold); font-size: 14px; font-weight: 700;
+}
+.lpt-equity-rung.next {
+  border-style: dashed;
+  border-color: var(--accent-br);
+}
+.lpt-equity-rung-badge {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px; color: var(--text); letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.lpt-equity-rung.earned .lpt-equity-rung-badge { color: var(--gold); }
+.lpt-equity-rung-thresh {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.12em; color: var(--muted);
+  margin-bottom: 8px;
+}
+.lpt-equity-rung-shares {
+  font-size: 12px; color: var(--text); line-height: 1.5;
+}
+.lpt-equity-rung-shares b { color: var(--text); font-weight: 600; }
+.lpt-equity-extras {
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  font-size: 13px; color: var(--text); line-height: 1.6;
+}
+.lpt-equity-extras strong { color: var(--gold); }
+.lpt-equity-projection {
+  background: var(--bg);
+  border: 1px solid var(--gold-br);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 13px; color: var(--text); line-height: 1.6;
+  margin-bottom: 0;
+}
+.lpt-equity-projection-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 8px;
+}
+.lpt-equity-projection-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.lpt-equity-projection-cell { font-variant-numeric: tabular-nums; }
+.lpt-equity-projection-cell .yr { color: var(--muted); font-size: 11px; }
+.lpt-equity-projection-cell .val { color: var(--gold); font-family: 'Bebas Neue', sans-serif; font-size: 22px; }
+.lpt-equity-projection-total {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.lpt-equity-projection-total .total-label {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--muted);
+}
+.lpt-equity-projection-total .total-val {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--gold);
+}
+.lpt-equity-note {
+  margin-top: 16px; padding: 14px 16px;
+  background: var(--gold-bg);
+  border-left: 2px solid var(--gold);
+  border-radius: 5px;
+  font-size: 11px; color: var(--text); line-height: 1.6;
+}
+@media (max-width: 720px) {
+  .lpt-equity-ladder { grid-template-columns: 1fr 1fr; }
+  .lpt-equity-this-year { grid-template-columns: 1fr; }
+  .lpt-equity-projection-grid { grid-template-columns: 1fr; }
+}
+
 .hybridshare-panel {
   border-color: var(--gold-br);
   background: linear-gradient(145deg, rgba(240,192,64,0.03), var(--surface));
