@@ -1,11 +1,14 @@
 // Vercel serverless function — sends the "email this comparison to me" email
 // triggered from the public /compare email modal. Public endpoint, no auth.
+// Generates a branded PDF recap and attaches it to the Resend send.
+import { generateComparisonPdf } from './_lib/comparison-pdf.js';
 
-async function sendResend({ to, from, replyTo, subject, html }) {
+async function sendResend({ to, from, replyTo, subject, html, attachments }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { ok: false, error: 'RESEND_API_KEY missing' };
   const payload = { from, to: Array.isArray(to) ? to : [to], subject, html };
   if (replyTo) payload.reply_to = replyTo;
+  if (Array.isArray(attachments) && attachments.length) payload.attachments = attachments;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -86,7 +89,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const body = req.body || {};
-  const { name, email, share_url, selection, gci, txns, lpt_plan, lpt_plus } = body;
+  const {
+    name, email, share_url, selection,
+    gci, txns, lpt_plan, lpt_plus,
+    avg_sale_price, commission_pct,
+    comparison_results, lpt_equity
+  } = body;
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ success: false, error: 'Valid email required' });
@@ -114,24 +122,55 @@ export default async function handler(req, res) {
     lptPlus: !!lpt_plus
   });
 
+  // Generate the PDF recap
+  let attachments = [];
+  let pdfError = null;
+  try {
+    const pdfBuf = await generateComparisonPdf({
+      recipientName: firstName || null,
+      brokerages: Array.isArray(comparison_results) ? comparison_results : [],
+      avgSalePrice: avg_sale_price || null,
+      commissionPct: commission_pct || null,
+      gci: gci || 0,
+      txns: txns || 0,
+      lptPlan: lpt_plan || 'both',
+      lptPlus: !!lpt_plus,
+      shareUrl: share_url,
+      lptEquity: lpt_equity || null
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    const safeName = (firstName || 'Comparison').replace(/[^A-Za-z0-9_-]/g, '');
+    attachments = [{
+      filename: `TPL-Brokerage-Comparison-${safeName}-${today}.pdf`,
+      content: pdfBuf.toString('base64')
+    }];
+  } catch (err) {
+    pdfError = err && err.message ? err.message : 'PDF generation failed';
+    console.error('PDF generation error:', err);
+  }
+
   const result = await sendResend({
     to: email,
     from: 'TPL Collective <comparisons@tplcollective.ai>',
     replyTo: 'joe@tplcollective.co',
     subject,
-    html
+    html,
+    attachments
   });
 
   if (!result.ok) {
     return res.status(502).json({
       success: false,
       error: result.error || result.body?.message || 'Email send failed',
-      status: result.status
+      status: result.status,
+      pdf_error: pdfError
     });
   }
 
   return res.status(200).json({
     success: true,
-    resend_id: result.body?.id || null
+    resend_id: result.body?.id || null,
+    pdf_attached: attachments.length > 0,
+    pdf_error: pdfError
   });
 }

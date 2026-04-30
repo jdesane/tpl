@@ -1549,9 +1549,57 @@
         });
       } catch (err) { /* non-blocking */ }
 
-      // Actually send the comparison email to the user.
+      // Actually send the comparison email + PDF to the user.
       // Build a richer selection payload that handles custom brokerages by name.
       const emailSelection = state.selected.map(b => b.isCustom ? { name: b.name, isCustom: true } : b.slug);
+
+      // Compute per-brokerage costs server-side input (frontend has the data already).
+      const comparisonResults = [];
+      const matrixCols = getColumnsForMatrix();
+      matrixCols.forEach(col => {
+        const r = calcTotalCost(col.brokerage, col.plan, state.gci, state.txns, state.avgGci, state.lptPlus);
+        if (!r) return;
+        comparisonResults.push({
+          slug: col.brokerage.slug,
+          name: col.brokerage.name,
+          short_name: col.brokerage.short_name,
+          isCustom: !!col.brokerage.isCustom,
+          plan_name: col.plan && col.plan.plan_name,
+          total: r.total,
+          net: r.net,
+          retainedPct: r.retainedPct
+        });
+      });
+
+      // LPT equity (cumulative) for the PDF, if LPT is in the selection
+      let lptEquityPayload = null;
+      const lptSel = state.selected.find(b => b.slug === LPT_SLUG);
+      if (lptSel && lptSel.equity && lptSel.equity.achievement_awards) {
+        const awards = lptSel.equity.achievement_awards;
+        const earned = earnedBadgesForTxns(awards, state.txns);
+        const totals = sumEarnedShares(awards, state.txns);
+        let cum_bp = 0, cum_bb = 0;
+        for (let y = 1; y <= 3; y++) {
+          const mult = Math.pow(1 + (state.growth || 0) / 100, y - 1);
+          const txY = Math.max(1, Math.round(state.txns * mult));
+          const yt = sumEarnedShares(awards, txY);
+          cum_bp += yt.bp; cum_bb += yt.bb;
+        }
+        lptEquityPayload = {
+          thisYear: { badges: earned.map(b => b.badge), bp: totals.bp, bb: totals.bb },
+          threeYear: { bp: cum_bp, bb: cum_bb }
+        };
+      }
+
+      // Compute price/rate from inputs for PDF "Your Numbers" block
+      let avgSalePrice = null, commissionPct = null;
+      try {
+        const priceEl = $('calc-price');
+        const rateEl = $('calc-rate');
+        if (priceEl) avgSalePrice = parseFloat(priceEl.value) || null;
+        if (rateEl) commissionPct = parseFloat(rateEl.value) || null;
+      } catch (_) {}
+
       let emailSendOk = false;
       let emailSendError = null;
       try {
@@ -1565,7 +1613,11 @@
             gci: state.gci,
             txns: state.txns,
             lpt_plan: state.lptPlan,
-            lpt_plus: state.lptPlus
+            lpt_plus: state.lptPlus,
+            avg_sale_price: avgSalePrice,
+            commission_pct: commissionPct,
+            comparison_results: comparisonResults,
+            lpt_equity: lptEquityPayload
           })
         });
         const sendBody = await sendRes.json().catch(() => ({}));

@@ -2,6 +2,7 @@
   "name": "tpl-site",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2"
+    "@supabase/supabase-js": "^2",
+    "pdfkit": "^0.18.0"
   }
 }
