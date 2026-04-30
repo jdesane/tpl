@@ -190,14 +190,15 @@ export async function generateComparisonPdf({
     }
 
     // ── FOOTER ── (always on page 0)
-    // Background-fill any pages that exist (in case body overflowed onto pages 2+).
+    // Fill bg on any OVERFLOW pages (pages 1+) so they match the dark theme. We
+    // explicitly DO NOT refill page 0 here — its bg was filled at the start, and
+    // refilling now would paint over the body content (rect.fill draws on top).
     const range = doc.bufferedPageRange();
-    for (let i = range.start; i < range.start + range.count; i++) {
+    for (let i = range.start + 1; i < range.start + range.count; i++) {
       doc.switchToPage(i);
       doc.rect(0, 0, doc.page.width, doc.page.height).fill(COLORS.bg);
     }
-    // Anchor footer to page 0. Stay well within the bottom margin (56) so pdfkit
-    // doesn't auto-paginate on us. Bottom-of-usable-area is page.height - 56 = 736.
+    // Anchor footer to page 0.
     doc.switchToPage(range.start);
     const pageH = doc.page.height;
     const footerLineY = pageH - 92;   // 700 — divider line
