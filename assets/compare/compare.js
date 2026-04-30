@@ -1549,6 +1549,32 @@
         });
       } catch (err) { /* non-blocking */ }
 
+      // Actually send the comparison email to the user.
+      // Build a richer selection payload that handles custom brokerages by name.
+      const emailSelection = state.selected.map(b => b.isCustom ? { name: b.name, isCustom: true } : b.slug);
+      let emailSendOk = false;
+      let emailSendError = null;
+      try {
+        const sendRes = await fetch('/api/compare-share-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name, email,
+            share_url: shareUrl,
+            selection: emailSelection,
+            gci: state.gci,
+            txns: state.txns,
+            lpt_plan: state.lptPlan,
+            lpt_plus: state.lptPlus
+          })
+        });
+        const sendBody = await sendRes.json().catch(() => ({}));
+        emailSendOk = !!sendBody.success;
+        if (!emailSendOk) emailSendError = sendBody.error || ('HTTP ' + sendRes.status);
+      } catch (err) {
+        emailSendError = err && err.message ? err.message : 'network error';
+      }
+
       const payload = {
         name, email, phone,
         source: 'compare_email_share',
@@ -1559,6 +1585,8 @@
         selection: selectionSlugs,
         lpt_plan: state.lptPlan,
         lpt_plus: state.lptPlus,
+        email_sent: emailSendOk,
+        email_error: emailSendError,
         ts: new Date().toISOString()
       };
       try {
@@ -1573,13 +1601,22 @@
       }
       track('compare_email_share_submit', {
         selection: state.selected.map(b => b.slug).join(','),
-        gci: state.gci, txns: state.txns
+        gci: state.gci, txns: state.txns,
+        email_sent: emailSendOk
       });
       if (typeof fbq === 'function') {
         try { fbq('track', 'Lead', { content_name: 'Compare Email Share' }); } catch (_) {}
       }
+      // Show success regardless of send outcome (lead is captured), but if send failed
+      // surface a small note so the user knows to check spam or contact.
       emailForm.hidden = true;
       emailSuccess.hidden = false;
+      if (!emailSendOk) {
+        const successBody = emailSuccess.querySelector('.email-modal-success-body');
+        if (successBody) {
+          successBody.textContent = "We received your request — if the email doesn't arrive in a few minutes, check spam or reply to this thread.";
+        }
+      }
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send My Comparison';
     });
