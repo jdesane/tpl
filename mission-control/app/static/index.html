@@ -209,6 +209,10 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-item" onclick="showPage('recruit-compare')"><span class="icon">&#x25EB;</span>Recruit Comparison</div>
   </div>
   <div class="nav-group" data-nav-group>
+    <div class="nav-group-label">Coaching</div>
+    <div class="nav-item" onclick="showPage('coaching')"><span class="icon">&#x25C8;</span>Coaching Clients</div>
+  </div>
+  <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Capture</div>
     <div class="nav-item" onclick="showPage('ideas')"><span class="icon">&#x26A1;</span>Ideas<span class="nav-badge" id="ideas-badge" style="display:none">0</span></div>
   </div>
@@ -781,6 +785,275 @@ th[onclick]:hover{color:var(--accent)}
     <div id="rcc-error" style="color:#f88;font-size:12px;display:none"></div>
   </div>
 </div>
+
+<!-- ═══ COACHING PAGE (Phase 15) ═══ -->
+<div class="page" id="page-coaching">
+  <!-- LIST VIEW -->
+  <div id="coaching-list-view">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="panel-title" style="font-size:24px;margin-bottom:6px">Coaching Clients</div>
+        <div style="color:var(--muted);font-size:13px">Real-estate agents you actively coach. Plans, pace, calls, accountability.</div>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="cgOpenInviteModal()">+ Invite Client</button>
+    </div>
+
+    <div class="metric-row" style="margin-bottom:16px">
+      <div class="metric-card"><div class="metric-label">Active Clients</div><div class="metric-value" id="cg-stat-active">&mdash;</div></div>
+      <div class="metric-card"><div class="metric-label">Paused</div><div class="metric-value" id="cg-stat-paused">&mdash;</div></div>
+      <div class="metric-card"><div class="metric-label">Churned</div><div class="metric-value" id="cg-stat-churned">&mdash;</div></div>
+      <div class="metric-card"><div class="metric-label">Aggregate GCI Goal</div><div class="metric-value" id="cg-stat-gci">&mdash;</div></div>
+    </div>
+
+    <div class="panel">
+      <div id="cg-clients-list">
+        <div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="coaching-detail-view" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button class="btn btn-ghost btn-sm" onclick="cgBackToList()">&larr; Back</button>
+      <div style="flex:1">
+        <div class="panel-title" style="font-size:22px;margin:0" id="cg-detail-name">&mdash;</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:2px" id="cg-detail-meta">&mdash;</div>
+      </div>
+      <select id="cg-detail-status" class="form-input" style="width:auto" onchange="cgUpdateStatus()">
+        <option value="ACTIVE">Active</option>
+        <option value="PAUSED">Paused</option>
+        <option value="CHURNED">Churned</option>
+      </select>
+    </div>
+
+    <!-- Client metadata strip -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title" style="font-size:14px;margin-bottom:10px">Profile</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+        <div><label class="form-label">Brokerage</label>
+          <select id="cg-d-brokerage" class="form-input" onchange="cgSaveClient()">
+            <option value="">&mdash;</option>
+            <option value="LPT">LPT</option><option value="EXP">eXp</option>
+            <option value="KW">Keller Williams</option><option value="REMAX">RE/MAX</option>
+            <option value="C21">Century 21</option><option value="COMPASS">Compass</option>
+            <option value="REAL">Real Brokerage</option><option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div><label class="form-label">LPT Comp Plan</label>
+          <select id="cg-d-comp" class="form-input" onchange="cgSaveClient()">
+            <option value="">&mdash;</option>
+            <option value="BUSINESS_BUILDER">Business Builder</option>
+            <option value="BROKERAGE_PARTNER">Brokerage Partner</option>
+          </select>
+        </div>
+        <div><label class="form-label">Call Cadence</label>
+          <select id="cg-d-cadence" class="form-input" onchange="cgSaveClient()">
+            <option value="WEEKLY">Weekly</option>
+            <option value="BIWEEKLY">Bi-weekly</option>
+            <option value="MONTHLY">Monthly</option>
+          </select>
+        </div>
+        <div><label class="form-label">License Date</label>
+          <input type="date" id="cg-d-license" class="form-input" onblur="cgSaveClient()" />
+        </div>
+        <div><label class="form-label">Avg Sale Price</label>
+          <input type="number" id="cg-d-asp" class="form-input" placeholder="400000" onblur="cgSaveClient()" />
+        </div>
+        <div><label class="form-label">Avg Commission %</label>
+          <input type="number" step="0.01" id="cg-d-comm" class="form-input" placeholder="2.5" onblur="cgSaveClient()" />
+        </div>
+        <div><label class="form-label">Market (city)</label>
+          <input type="text" id="cg-d-city" class="form-input" placeholder="Boca Raton" onblur="cgSaveClient()" />
+        </div>
+        <div><label class="form-label">Market (state)</label>
+          <input type="text" id="cg-d-state" class="form-input" maxlength="2" placeholder="FL" onblur="cgSaveClient()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;gap:4px">
+      <button class="btn btn-ghost btn-sm cg-tab cg-tab-active" data-cg-tab="plan" onclick="cgSwitchTab('plan')">Business Plan</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="calls" onclick="cgSwitchTab('calls')" disabled style="opacity:0.4">Coaching Calls</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="pipeline" onclick="cgSwitchTab('pipeline')" disabled style="opacity:0.4">Pipeline</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="activity" onclick="cgSwitchTab('activity')" disabled style="opacity:0.4">Daily Activity</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')" disabled style="opacity:0.4">Recruiting</button>
+    </div>
+
+    <!-- PLAN TAB -->
+    <div id="cg-tab-plan">
+      <!-- Income target -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Income Target</div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:180px">
+            <label class="form-label">Annual GCI Goal</label>
+            <input type="number" id="cg-d-gci" class="form-input" placeholder="350000" step="1000" onblur="cgSavePlan()" />
+            <div style="color:var(--muted);font-size:11px;margin-top:4px">All numbers below derive from this.</div>
+          </div>
+          <div style="flex:2;min-width:240px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div class="metric-card" style="padding:10px"><div class="metric-label" style="font-size:9px">Total Closings</div><div class="metric-value" style="font-size:18px" id="cg-c-closings">&mdash;</div></div>
+            <div class="metric-card" style="padding:10px"><div class="metric-label" style="font-size:9px">Listing Appts/wk</div><div class="metric-value" style="font-size:18px" id="cg-c-listappts">&mdash;</div></div>
+            <div class="metric-card" style="padding:10px"><div class="metric-label" style="font-size:9px">Buyer Consults/wk</div><div class="metric-value" style="font-size:18px" id="cg-c-buyappts">&mdash;</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Economic Model -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Economic Model
+          <span style="color:var(--muted);font-weight:normal;font-size:11px;margin-left:8px">money goal &rarr; activities</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          <div><label class="form-label">% Seller Business</label><input type="number" id="cg-em-seller-pct" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">Seller Avg Sale $</label><input type="number" id="cg-em-sasp" class="form-input" step="1000" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">Buyer Avg Sale $</label><input type="number" id="cg-em-basp" class="form-input" step="1000" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">Commission %</label><input type="number" id="cg-em-comm" class="form-input" step="0.01" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">% Listings Close</label><input type="number" id="cg-em-listclose" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">% Buyers Close</label><input type="number" id="cg-em-buyclose" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">% Listing Appts &rarr; List</label><input type="number" id="cg-em-listappt" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">% Buyer Appts &rarr; Work</label><input type="number" id="cg-em-buyappt" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">Avg DOM (days)</label><input type="number" id="cg-em-dom" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+          <div><label class="form-label">Avg Buyer Working Days</label><input type="number" id="cg-em-buydays" class="form-input" step="1" onblur="cgSaveEconomic()" /></div>
+        </div>
+
+        <!-- Computed table -->
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Derived (every value shows formula on hover)</div>
+          <div id="cg-em-computed" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px"></div>
+        </div>
+      </div>
+
+      <!-- Budget Model -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Budget Model
+          <span style="color:var(--muted);font-weight:normal;font-size:11px;margin-left:8px">cost of sale + operating + allocation + survival</span>
+        </div>
+
+        <!-- Cost of Sale block -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cost of Sale</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+            <div><label class="form-label">Paid to Brokerage (cap)</label><input type="number" id="cg-bm-cap" class="form-input" step="100" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Referrals to You (count)</label><input type="number" id="cg-bm-refcount" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Avg Referral Commission</label><input type="number" id="cg-bm-refavg" class="form-input" step="100" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Referral Split %</label><input type="number" id="cg-bm-refsplit" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Seller Specialist Split %</label><input type="number" id="cg-bm-sellerspec" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Buyer Specialist Split %</label><input type="number" id="cg-bm-buyerspec" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+          </div>
+        </div>
+
+        <!-- Operating expenses block -->
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Operating Expenses</div>
+            <button class="btn btn-ghost btn-sm" onclick="cgAddOpExpenseRow()">+ Add line</button>
+          </div>
+          <div id="cg-bm-opexp" style="display:grid;grid-template-columns:2fr 1fr auto;gap:6px;align-items:center"></div>
+        </div>
+
+        <!-- Allocation block -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Allocation %</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+            <div><label class="form-label">Charity %</label><input type="number" id="cg-bm-charity" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Retirement / IRA / HSA %</label><input type="number" id="cg-bm-retirement" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+            <div><label class="form-label">Income Tax %</label><input type="number" id="cg-bm-tax" class="form-input" step="1" onblur="cgSaveBudget()" /></div>
+          </div>
+        </div>
+
+        <!-- Personal expenses block -->
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Personal Expenses (monthly $)</div>
+            <button class="btn btn-ghost btn-sm" onclick="cgAddPersonalRow()">+ Add line</button>
+          </div>
+          <div id="cg-bm-personal" style="display:grid;grid-template-columns:2fr 1fr auto;gap:6px;align-items:center"></div>
+        </div>
+
+        <!-- Survival inputs -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Survival Inputs</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+            <div><label class="form-label">Avg Net Commission per Close</label><input type="number" id="cg-bm-avgnet" class="form-input" step="100" onblur="cgSaveBudget()" /></div>
+          </div>
+        </div>
+
+        <!-- Computed budget -->
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Derived</div>
+          <div id="cg-bm-computed" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other tabs (placeholders) -->
+    <div id="cg-tab-calls" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Coaching Calls workflow &mdash; coming next session</div></div>
+    <div id="cg-tab-pipeline" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Pipeline tracker &mdash; coming next session</div></div>
+    <div id="cg-tab-activity" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Daily activity log &mdash; coming next session</div></div>
+    <div id="cg-tab-recruiting" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Recruiting / HybridShare &mdash; coming next session</div></div>
+  </div>
+</div>
+
+<!-- Invite Coaching Client modal -->
+<div id="cg-invite-modal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);">
+  <div class="panel" style="max-width:540px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="panel-title" style="font-size:16px;margin:0">Invite Coaching Client</div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="cgCloseInviteModal()">×</button>
+    </div>
+
+    <!-- Tab toggle -->
+    <div style="display:flex;gap:4px;border-bottom:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm cg-inv-tab cg-inv-tab-active" data-tab="existing" onclick="cgInviteSwitch('existing')">Existing Contact</button>
+      <button class="btn btn-ghost btn-sm cg-inv-tab" data-tab="new" onclick="cgInviteSwitch('new')">New Contact</button>
+    </div>
+
+    <!-- Existing path -->
+    <div id="cg-inv-existing">
+      <label class="form-label">Search by name or email</label>
+      <input type="text" id="cg-inv-search" class="form-input" placeholder="Connie Davy..." oninput="cgInviteSearch()" autocomplete="off" />
+      <div id="cg-inv-results" style="margin-top:8px;max-height:240px;overflow-y:auto"></div>
+    </div>
+
+    <!-- New path -->
+    <div id="cg-inv-new" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">First name *</label><input type="text" id="cg-inv-first" class="form-input" /></div>
+        <div><label class="form-label">Last name *</label><input type="text" id="cg-inv-last" class="form-input" /></div>
+        <div style="grid-column:span 2"><label class="form-label">Email *</label><input type="email" id="cg-inv-email" class="form-input" /></div>
+        <div><label class="form-label">Phone</label><input type="tel" id="cg-inv-phone" class="form-input" /></div>
+        <div><label class="form-label">Current brokerage</label><input type="text" id="cg-inv-brokerage" class="form-input" placeholder="LPT, KW..." /></div>
+      </div>
+    </div>
+
+    <div id="cg-inv-error" style="color:#f88;font-size:12px;display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn btn-ghost" onclick="cgCloseInviteModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="cg-inv-submit" onclick="cgInviteSubmit()">Add as Coaching Client</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cg-tab-active{background:var(--accent-glow);color:var(--accent);border-bottom:2px solid var(--accent)}
+  .cg-inv-tab-active{background:var(--accent-glow);color:var(--accent)}
+  .cg-client-row{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;gap:10px;align-items:center;transition:background .12s}
+  .cg-client-row:hover{background:var(--surface-2)}
+  .cg-client-row:last-child{border-bottom:none}
+  .cg-client-name{font-weight:600;color:var(--text)}
+  .cg-client-sub{color:var(--muted);font-size:11px;margin-top:2px}
+  .cg-status-pill{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
+  .cg-status-active{background:rgba(80,200,120,.15);color:#5fcf86}
+  .cg-status-paused{background:rgba(220,180,80,.15);color:#d0b660}
+  .cg-status-churned{background:rgba(180,80,80,.15);color:#cc7070}
+  .cg-derived-card{padding:10px 12px;background:var(--surface-2);border-radius:8px;cursor:help;border:1px solid var(--border)}
+  .cg-derived-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .cg-derived-value{font-size:18px;font-weight:600;color:var(--text);margin-top:4px}
+  .cg-opexp-row .form-input{padding:6px 8px;font-size:13px}
+  @media(max-width:720px){.cg-client-row{grid-template-columns:1fr 1fr}}
+</style>
 
 <!-- ═══ FUNNEL ANALYTICS PAGE ═══ -->
 <div class="page" id="page-analytics">
@@ -1480,6 +1753,7 @@ function showPage(name){window.location.hash=name;
   if(name==='content')loadContent();
   if(name==='links')loadLinks();
   if(name==='recruit-compare')loadRecruitCompare();
+  if(name==='coaching')loadCoaching();
   if(name==='analytics')loadFunnelAnalytics();
   if(name==='revshare')loadRevShare();
   if(name==='openclaw')loadAutomations();
@@ -3371,6 +3645,585 @@ async function rcLoadRecent(){
   }catch(e){
     wrap.innerHTML='<div style="color:var(--muted);font-size:12px">Network error.</div>';
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// COACHING (Phase 15)
+// ════════════════════════════════════════════════════════════
+
+var cgState = {
+  clients: [],
+  current: null,        // currently selected coaching_client row
+  plan: null,           // current year business_plan + child models bundle
+  computed: null,       // derived numbers
+  saveTimeout: null,
+};
+
+function cgFmtMoney(v){
+  if(v===null||v===undefined||v==='') return '$0';
+  var n=parseFloat(v);
+  if(!isFinite(n)) return '$0';
+  return '$'+n.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+
+function cgFmtNum(v, dec){
+  if(v===null||v===undefined||v==='') return '0';
+  var n=parseFloat(v);
+  if(!isFinite(n)) return '0';
+  return n.toLocaleString(undefined,{maximumFractionDigits:dec===undefined?1:dec});
+}
+
+function cgFmtPct(v){
+  if(v===null||v===undefined||v==='') return '';
+  var n=parseFloat(v);
+  if(!isFinite(n)) return '';
+  return (n*100).toFixed(2);
+}
+
+async function loadCoaching(){
+  document.getElementById('coaching-list-view').style.display='block';
+  document.getElementById('coaching-detail-view').style.display='none';
+  var listEl = document.getElementById('cg-clients-list');
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">Loading...</div>';
+  try{
+    var res = await fetch(API+'/api/coaching/clients');
+    if(!res.ok){
+      listEl.innerHTML='<div style="color:#f88;padding:20px;text-align:center">Failed to load coaching clients ('+res.status+')</div>';
+      return;
+    }
+    var clients = await res.json();
+    cgState.clients = clients;
+    cgRenderStats(clients);
+    cgRenderList(clients);
+  }catch(e){
+    listEl.innerHTML='<div style="color:#f88;padding:20px;text-align:center">Network error</div>';
+  }
+}
+
+function cgRenderStats(clients){
+  var active=0,paused=0,churned=0,totalGoal=0;
+  // We don't yet have GCI goals on the client list response; sum after we load plans.
+  for(var i=0;i<clients.length;i++){
+    var s=(clients[i].status||'ACTIVE').toUpperCase();
+    if(s==='ACTIVE')active++;
+    else if(s==='PAUSED')paused++;
+    else if(s==='CHURNED')churned++;
+  }
+  document.getElementById('cg-stat-active').textContent=active;
+  document.getElementById('cg-stat-paused').textContent=paused;
+  document.getElementById('cg-stat-churned').textContent=churned;
+  document.getElementById('cg-stat-gci').textContent='—';
+}
+
+function cgRenderList(clients){
+  var listEl = document.getElementById('cg-clients-list');
+  if(!clients.length){
+    listEl.innerHTML='<div style="padding:32px;text-align:center;color:var(--muted)"><div style="font-size:14px;margin-bottom:8px">No coaching clients yet</div><div style="font-size:12px">Click <strong>+ Invite Client</strong> to add your first.</div></div>';
+    return;
+  }
+  // Header row
+  var header = '<div class="cg-client-row" style="background:var(--surface-2);font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:default">' +
+    '<div>Name</div><div>Brokerage</div><div>Plan</div><div>Cadence</div><div>Status</div><div></div>' +
+    '</div>';
+  var rows = clients.map(function(c){
+    var lead=c.lead||{};
+    var name=lead.name||((lead.first_name||'')+' '+(lead.last_name||'')).trim()||'Unnamed';
+    var brokerage=c.brokerage||lead.current_brokerage||'—';
+    var planLabel = c.lpt_comp_plan==='BROKERAGE_PARTNER'?'BP':(c.lpt_comp_plan==='BUSINESS_BUILDER'?'BB':'—');
+    var cadence=c.call_cadence||'—';
+    var status=(c.status||'ACTIVE').toUpperCase();
+    var pillClass='cg-status-active';
+    if(status==='PAUSED')pillClass='cg-status-paused';
+    else if(status==='CHURNED')pillClass='cg-status-churned';
+    return '<div class="cg-client-row" onclick="cgOpenClient('+c.id+')">' +
+      '<div><div class="cg-client-name">'+name+'</div><div class="cg-client-sub">'+(lead.email||'')+'</div></div>' +
+      '<div>'+brokerage+'</div>' +
+      '<div>'+planLabel+'</div>' +
+      '<div>'+cadence+'</div>' +
+      '<div><span class="cg-status-pill '+pillClass+'">'+status.toLowerCase()+'</span></div>' +
+      '<div style="text-align:right;color:var(--muted)">›</div>' +
+      '</div>';
+  }).join('');
+  listEl.innerHTML = header + rows;
+}
+
+// ── Client detail ──
+
+async function cgOpenClient(id){
+  var c = cgState.clients.find(function(x){return x.id===id});
+  if(!c) return;
+  cgState.current = c;
+  document.getElementById('coaching-list-view').style.display='none';
+  document.getElementById('coaching-detail-view').style.display='block';
+  cgRenderProfile(c);
+  await cgLoadPlan(id);
+}
+
+function cgBackToList(){
+  cgState.current=null;
+  cgState.plan=null;
+  cgState.computed=null;
+  loadCoaching();
+}
+
+function cgRenderProfile(c){
+  var lead=c.lead||{};
+  var name=lead.name||((lead.first_name||'')+' '+(lead.last_name||'')).trim()||'Unnamed';
+  document.getElementById('cg-detail-name').textContent=name;
+  var meta=[];
+  if(lead.email) meta.push(lead.email);
+  if(lead.phone) meta.push(lead.phone);
+  if(c.coaching_start_date) meta.push('Coaching since '+c.coaching_start_date);
+  document.getElementById('cg-detail-meta').textContent=meta.join(' · ')||'—';
+
+  document.getElementById('cg-d-brokerage').value=c.brokerage||'';
+  document.getElementById('cg-d-comp').value=c.lpt_comp_plan||'';
+  document.getElementById('cg-d-cadence').value=c.call_cadence||'WEEKLY';
+  document.getElementById('cg-d-license').value=c.license_date||'';
+  document.getElementById('cg-d-asp').value=c.avg_sale_price||'';
+  document.getElementById('cg-d-comm').value = c.avg_commission_rate ? (parseFloat(c.avg_commission_rate)*100).toFixed(2) : '';
+  document.getElementById('cg-d-city').value=c.market_city||'';
+  document.getElementById('cg-d-state').value=c.market_state||'';
+  document.getElementById('cg-detail-status').value=c.status||'ACTIVE';
+}
+
+async function cgSaveClient(){
+  if(!cgState.current) return;
+  var id=cgState.current.id;
+  var payload={
+    brokerage: document.getElementById('cg-d-brokerage').value || null,
+    lpt_comp_plan: document.getElementById('cg-d-comp').value || null,
+    call_cadence: document.getElementById('cg-d-cadence').value,
+    license_date: document.getElementById('cg-d-license').value || null,
+    avg_sale_price: parseFloat(document.getElementById('cg-d-asp').value)||null,
+    avg_commission_rate: parseFloat(document.getElementById('cg-d-comm').value)||null,
+    market_city: document.getElementById('cg-d-city').value || null,
+    market_state: document.getElementById('cg-d-state').value || null,
+  };
+  // strip nulls so backend's "no fields" check doesn't trip
+  Object.keys(payload).forEach(function(k){ if(payload[k]===null||payload[k]==='') delete payload[k]; });
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+id,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(res.ok){
+      var updated = await res.json();
+      cgState.current = Object.assign({}, cgState.current, updated);
+      // Refresh computed numbers since asp/comm affect them via auto-seed defaults
+      await cgLoadComputed();
+    }
+  }catch(e){}
+}
+
+async function cgUpdateStatus(){
+  if(!cgState.current) return;
+  var newStatus = document.getElementById('cg-detail-status').value;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status: newStatus})
+  });
+  cgState.current.status = newStatus;
+}
+
+// ── Tabs ──
+
+function cgSwitchTab(tab){
+  document.querySelectorAll('.cg-tab').forEach(function(b){b.classList.remove('cg-tab-active')});
+  var btn = document.querySelector('.cg-tab[data-cg-tab="'+tab+'"]');
+  if(btn) btn.classList.add('cg-tab-active');
+  ['plan','calls','pipeline','activity','recruiting'].forEach(function(t){
+    document.getElementById('cg-tab-'+t).style.display = (t===tab?'block':'none');
+  });
+}
+
+// ── Business plan loading + saving ──
+
+async function cgLoadPlan(clientId){
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+clientId+'/plan');
+    if(!res.ok) return;
+    var bundle = await res.json();
+    cgState.plan = bundle;
+    cgRenderPlanInputs();
+    await cgLoadComputed();
+  }catch(e){}
+}
+
+function cgRenderPlanInputs(){
+  if(!cgState.plan) return;
+  var p=cgState.plan.plan, bm=cgState.plan.budget_model, em=cgState.plan.economic_model;
+  // Income target
+  document.getElementById('cg-d-gci').value = p.gci_target || '';
+  // Economic Model
+  document.getElementById('cg-em-seller-pct').value = cgFmtPct(em.seller_pct);
+  document.getElementById('cg-em-sasp').value = em.seller_avg_sale_price || '';
+  document.getElementById('cg-em-basp').value = em.buyer_avg_sale_price || '';
+  document.getElementById('cg-em-comm').value = cgFmtPct(em.commission_rate);
+  document.getElementById('cg-em-listclose').value = cgFmtPct(em.listings_close_pct);
+  document.getElementById('cg-em-buyclose').value = cgFmtPct(em.buyers_close_pct);
+  document.getElementById('cg-em-listappt').value = cgFmtPct(em.listing_appt_to_list_pct);
+  document.getElementById('cg-em-buyappt').value = cgFmtPct(em.buyer_appt_to_work_pct);
+  document.getElementById('cg-em-dom').value = em.avg_days_on_market || '';
+  document.getElementById('cg-em-buydays').value = em.avg_buyer_working_days || '';
+  // Budget Model
+  document.getElementById('cg-bm-cap').value = bm.paid_to_brokerage || '';
+  document.getElementById('cg-bm-refcount').value = bm.referrals_to_you_count || '';
+  document.getElementById('cg-bm-refavg').value = bm.referrals_avg_commission || '';
+  document.getElementById('cg-bm-refsplit').value = cgFmtPct(bm.referrals_split_pct);
+  document.getElementById('cg-bm-sellerspec').value = cgFmtPct(bm.seller_specialist_split_pct);
+  document.getElementById('cg-bm-buyerspec').value = cgFmtPct(bm.buyer_specialist_split_pct);
+  document.getElementById('cg-bm-charity').value = cgFmtPct(bm.charity_pct);
+  document.getElementById('cg-bm-retirement').value = cgFmtPct(bm.retirement_pct);
+  document.getElementById('cg-bm-tax').value = cgFmtPct(bm.income_tax_pct);
+  document.getElementById('cg-bm-avgnet').value = bm.avg_net_commission_per_close || '';
+  // Operating expenses
+  cgRenderOpExpenses(bm.operating_expenses || {});
+  // Personal expenses
+  cgRenderPersonalExpenses(bm.personal_expenses || {});
+}
+
+function cgRenderOpExpenses(obj){
+  var wrap=document.getElementById('cg-bm-opexp');
+  wrap.innerHTML='';
+  var keys=Object.keys(obj);
+  keys.forEach(function(label){
+    cgAppendKVRow(wrap, label, obj[label], 'opexp');
+  });
+  if(!keys.length){
+    wrap.innerHTML='<div style="grid-column:span 3;color:var(--muted);font-size:12px;padding:6px 0">No operating expenses yet. Click "+ Add line" to start.</div>';
+  }
+}
+
+function cgRenderPersonalExpenses(obj){
+  var wrap=document.getElementById('cg-bm-personal');
+  wrap.innerHTML='';
+  var keys=Object.keys(obj);
+  keys.forEach(function(label){
+    cgAppendKVRow(wrap, label, obj[label], 'personal');
+  });
+  if(!keys.length){
+    wrap.innerHTML='<div style="grid-column:span 3;color:var(--muted);font-size:12px;padding:6px 0">No personal expense lines yet. Click "+ Add line" to start.</div>';
+  }
+}
+
+function cgAppendKVRow(wrap, label, value, kind){
+  var row=document.createElement('div');
+  row.style.display='contents';
+  row.innerHTML =
+    '<input type="text" class="form-input" value="'+(label.replace(/"/g,'&quot;'))+'" data-cg-label="'+kind+'" data-orig="'+(label.replace(/"/g,'&quot;'))+'" onblur="cgSaveBudgetExpenses(\''+kind+'\')" />' +
+    '<input type="number" class="form-input" step="1" value="'+(value||0)+'" data-cg-val="'+kind+'" onblur="cgSaveBudgetExpenses(\''+kind+'\')" />' +
+    '<button class="btn btn-ghost btn-sm" onclick="cgRemoveExpenseRow(this,\''+kind+'\')">×</button>';
+  wrap.appendChild(row);
+}
+
+function cgAddOpExpenseRow(){
+  var wrap=document.getElementById('cg-bm-opexp');
+  if(wrap.querySelector('[style*="grid-column"]')) wrap.innerHTML='';
+  cgAppendKVRow(wrap, 'New Line', 0, 'opexp');
+}
+
+function cgAddPersonalRow(){
+  var wrap=document.getElementById('cg-bm-personal');
+  if(wrap.querySelector('[style*="grid-column"]')) wrap.innerHTML='';
+  cgAppendKVRow(wrap, 'New Line', 0, 'personal');
+}
+
+function cgRemoveExpenseRow(btn, kind){
+  var sib1=btn.previousSibling, sib2=sib1.previousSibling;
+  btn.remove(); sib1.remove(); sib2.remove();
+  cgSaveBudgetExpenses(kind);
+}
+
+function cgSaveBudgetExpenses(kind){
+  var wrapId = kind==='opexp'?'cg-bm-opexp':'cg-bm-personal';
+  var wrap=document.getElementById(wrapId);
+  var labels = wrap.querySelectorAll('[data-cg-label="'+kind+'"]');
+  var vals   = wrap.querySelectorAll('[data-cg-val="'+kind+'"]');
+  var obj={};
+  for(var i=0;i<labels.length;i++){
+    var k=(labels[i].value||'').trim();
+    if(!k) continue;
+    obj[k] = parseFloat(vals[i].value)||0;
+  }
+  var payload = {};
+  payload[kind==='opexp'?'operating_expenses':'personal_expenses'] = obj;
+  cgPatchBudget(payload);
+}
+
+async function cgSavePlan(){
+  if(!cgState.current||!cgState.plan) return;
+  var gci = parseFloat(document.getElementById('cg-d-gci').value)||0;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/plan',{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({gci_target: gci})
+  });
+  cgState.plan.plan.gci_target = gci;
+  await cgLoadComputed();
+}
+
+async function cgSaveEconomic(){
+  if(!cgState.current||!cgState.plan) return;
+  var payload = {
+    seller_pct: parseFloat(document.getElementById('cg-em-seller-pct').value),
+    seller_avg_sale_price: parseFloat(document.getElementById('cg-em-sasp').value),
+    buyer_avg_sale_price: parseFloat(document.getElementById('cg-em-basp').value),
+    commission_rate: parseFloat(document.getElementById('cg-em-comm').value),
+    listings_close_pct: parseFloat(document.getElementById('cg-em-listclose').value),
+    buyers_close_pct: parseFloat(document.getElementById('cg-em-buyclose').value),
+    listing_appt_to_list_pct: parseFloat(document.getElementById('cg-em-listappt').value),
+    buyer_appt_to_work_pct: parseFloat(document.getElementById('cg-em-buyappt').value),
+    avg_days_on_market: parseInt(document.getElementById('cg-em-dom').value)||null,
+    avg_buyer_working_days: parseInt(document.getElementById('cg-em-buydays').value)||null,
+  };
+  Object.keys(payload).forEach(function(k){
+    if(payload[k]===null||payload[k]===undefined||isNaN(payload[k])) delete payload[k];
+  });
+  if(!Object.keys(payload).length) return;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/economic-model',{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  await cgLoadComputed();
+}
+
+async function cgSaveBudget(){
+  if(!cgState.current||!cgState.plan) return;
+  var payload = {
+    paid_to_brokerage: parseFloat(document.getElementById('cg-bm-cap').value),
+    referrals_to_you_count: parseInt(document.getElementById('cg-bm-refcount').value),
+    referrals_avg_commission: parseFloat(document.getElementById('cg-bm-refavg').value),
+    referrals_split_pct: parseFloat(document.getElementById('cg-bm-refsplit').value),
+    seller_specialist_split_pct: parseFloat(document.getElementById('cg-bm-sellerspec').value),
+    buyer_specialist_split_pct: parseFloat(document.getElementById('cg-bm-buyerspec').value),
+    charity_pct: parseFloat(document.getElementById('cg-bm-charity').value),
+    retirement_pct: parseFloat(document.getElementById('cg-bm-retirement').value),
+    income_tax_pct: parseFloat(document.getElementById('cg-bm-tax').value),
+    avg_net_commission_per_close: parseFloat(document.getElementById('cg-bm-avgnet').value),
+  };
+  Object.keys(payload).forEach(function(k){
+    if(payload[k]===null||payload[k]===undefined||isNaN(payload[k])) delete payload[k];
+  });
+  cgPatchBudget(payload);
+}
+
+async function cgPatchBudget(payload){
+  if(!cgState.current||!Object.keys(payload).length) return;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/budget-model',{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  await cgLoadComputed();
+}
+
+// ── Computed numbers ──
+
+async function cgLoadComputed(){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/computed');
+    if(!res.ok) return;
+    var data = await res.json();
+    cgState.computed = data;
+    cgRenderComputed(data);
+  }catch(e){}
+}
+
+function cgRenderComputed(data){
+  // Top stat cards
+  var econ = data.economic||{};
+  document.getElementById('cg-c-closings').textContent = econ.houses_sold_total ? cgFmtNum(econ.houses_sold_total.value, 1) : '0';
+  document.getElementById('cg-c-listappts').textContent = econ.listing_appts_per_week ? cgFmtNum(econ.listing_appts_per_week.value, 1) : '0';
+  document.getElementById('cg-c-buyappts').textContent = econ.buyer_consults_per_week ? cgFmtNum(econ.buyer_consults_per_week.value, 1) : '0';
+
+  // Economic derived grid
+  var emWrap=document.getElementById('cg-em-computed');
+  var emLabels = [
+    ['seller_revenue', 'Seller Revenue', 'money'],
+    ['buyer_revenue', 'Buyer Revenue', 'money'],
+    ['sellers_closed', 'Sellers Closed', 'num'],
+    ['buyers_closed', 'Buyers Closed', 'num'],
+    ['houses_sold_total', 'Total Closings', 'num'],
+    ['listings_taken', 'Listings Taken', 'num'],
+    ['buyers_shown', 'Buyers Shown', 'num'],
+    ['listing_appts_annual', 'Listing Appts (annual)', 'num'],
+    ['buyer_consults_annual', 'Buyer Consults (annual)', 'num'],
+    ['listing_appts_per_week', 'Listing Appts / week', 'num'],
+    ['buyer_consults_per_week', 'Buyer Consults / week', 'num'],
+    ['active_listings_to_carry', 'Active Listings to Carry', 'num'],
+    ['ready_buyers', 'Ready Buyers', 'num'],
+  ];
+  emWrap.innerHTML = emLabels.map(function(row){
+    var key=row[0], label=row[1], type=row[2];
+    var v = econ[key];
+    if(!v) return '';
+    var disp = type==='money' ? cgFmtMoney(v.value) : cgFmtNum(v.value, 1);
+    return '<div class="cg-derived-card" title="'+(v.formula||'').replace(/"/g,'&quot;')+'">' +
+      '<div class="cg-derived-label">'+label+'</div>' +
+      '<div class="cg-derived-value">'+disp+'</div>' +
+      '</div>';
+  }).join('');
+
+  // Budget derived grid
+  var bm = data.budget||{};
+  var bmWrap=document.getElementById('cg-bm-computed');
+  var bmLabels = [
+    ['total_cost_of_sale', 'Total Cost of Sale', 'money'],
+    ['gross_profit', 'Gross Profit', 'money'],
+    ['total_operating_expenses', 'Total Op Expenses', 'money'],
+    ['net_income', 'Net Income', 'money'],
+    ['taxable_income', 'Taxable Income', 'money'],
+    ['tax_amount', 'Tax', 'money'],
+    ['take_home', 'Take Home', 'money'],
+    ['monthly_life_budget', 'Monthly Life Budget', 'money'],
+    ['annual_personal_expenses', 'Annual Personal $', 'money'],
+    ['annual_need_w_tax', 'Annual Need (incl. tax)', 'money'],
+    ['survival_closings', 'Survival # of Closings', 'num'],
+    ['closings_beyond_survival', 'Closings Beyond Survival', 'num'],
+    ['surplus', 'Surplus', 'money'],
+  ];
+  bmWrap.innerHTML = bmLabels.map(function(row){
+    var key=row[0], label=row[1], type=row[2];
+    var v = bm[key];
+    if(!v) return '';
+    var disp = type==='money' ? cgFmtMoney(v.value) : cgFmtNum(v.value, 1);
+    return '<div class="cg-derived-card" title="'+(v.formula||'').replace(/"/g,'&quot;')+'">' +
+      '<div class="cg-derived-label">'+label+'</div>' +
+      '<div class="cg-derived-value">'+disp+'</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ── Invite flow ──
+
+function cgOpenInviteModal(){
+  document.getElementById('cg-invite-modal').style.display='flex';
+  document.getElementById('cg-inv-search').value='';
+  document.getElementById('cg-inv-results').innerHTML='';
+  ['cg-inv-first','cg-inv-last','cg-inv-email','cg-inv-phone','cg-inv-brokerage'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  document.getElementById('cg-inv-error').style.display='none';
+  cgInviteSwitch('existing');
+  setTimeout(function(){
+    document.getElementById('cg-inv-search').focus();
+    cgInviteSearch();
+  },50);
+}
+
+function cgCloseInviteModal(){
+  document.getElementById('cg-invite-modal').style.display='none';
+}
+
+function cgInviteSwitch(tab){
+  document.querySelectorAll('.cg-inv-tab').forEach(function(b){b.classList.remove('cg-inv-tab-active')});
+  var btn=document.querySelector('.cg-inv-tab[data-tab="'+tab+'"]');
+  if(btn) btn.classList.add('cg-inv-tab-active');
+  document.getElementById('cg-inv-existing').style.display=(tab==='existing'?'block':'none');
+  document.getElementById('cg-inv-new').style.display=(tab==='new'?'block':'none');
+}
+
+var cgInviteSearchTimeout=null;
+function cgInviteSearch(){
+  var q = document.getElementById('cg-inv-search').value.trim();
+  clearTimeout(cgInviteSearchTimeout);
+  cgInviteSearchTimeout = setTimeout(async function(){
+    try{
+      var url = API+'/api/coaching/lead-search'+(q?('?q='+encodeURIComponent(q)):'');
+      var res = await fetch(url);
+      if(!res.ok) return;
+      var leads = await res.json();
+      var resWrap = document.getElementById('cg-inv-results');
+      if(!leads.length){
+        resWrap.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px">No matching contacts. Try the "New Contact" tab.</div>';
+        return;
+      }
+      resWrap.innerHTML = leads.map(function(l){
+        var name = l.name || ((l.first_name||'')+' '+(l.last_name||'')).trim() || '(no name)';
+        return '<div onclick="cgInviteSelect('+l.id+')" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;cursor:pointer" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+          '<div style="font-weight:600">'+name+'</div>' +
+          '<div style="font-size:11px;color:var(--muted)">'+(l.email||'')+(l.current_brokerage?(' &middot; '+l.current_brokerage):'')+'</div>' +
+          '</div>';
+      }).join('');
+    }catch(e){}
+  }, 200);
+}
+
+async function cgInviteSelect(leadId){
+  var btn=document.getElementById('cg-inv-submit');
+  btn.disabled=true; btn.textContent='Adding...';
+  try{
+    var res = await fetch(API+'/api/coaching/clients',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({lead_id: leadId})
+    });
+    if(!res.ok){
+      var err = await res.json().catch(function(){return{detail:'Failed'}});
+      cgShowInviteError(err.detail||'Failed to add');
+      btn.disabled=false; btn.textContent='Add as Coaching Client';
+      return;
+    }
+    cgCloseInviteModal();
+    await loadCoaching();
+  }catch(e){
+    cgShowInviteError('Network error');
+    btn.disabled=false; btn.textContent='Add as Coaching Client';
+  }
+}
+
+async function cgInviteSubmit(){
+  var existingActive = document.querySelector('.cg-inv-tab-active').dataset.tab==='existing';
+  if(existingActive){
+    cgShowInviteError('Pick a contact from the list, or switch to "New Contact" tab.');
+    return;
+  }
+  var first=document.getElementById('cg-inv-first').value.trim();
+  var last=document.getElementById('cg-inv-last').value.trim();
+  var email=document.getElementById('cg-inv-email').value.trim();
+  if(!first||!email){
+    cgShowInviteError('First name and email are required.');
+    return;
+  }
+  var btn=document.getElementById('cg-inv-submit');
+  btn.disabled=true; btn.textContent='Adding...';
+  try{
+    var res = await fetch(API+'/api/coaching/clients',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        new_contact: {
+          first_name: first,
+          last_name: last,
+          email: email,
+          phone: document.getElementById('cg-inv-phone').value.trim(),
+          current_brokerage: document.getElementById('cg-inv-brokerage').value.trim()
+        }
+      })
+    });
+    if(!res.ok){
+      var err = await res.json().catch(function(){return{detail:'Failed'}});
+      cgShowInviteError(err.detail||'Failed to add');
+      btn.disabled=false; btn.textContent='Add as Coaching Client';
+      return;
+    }
+    cgCloseInviteModal();
+    await loadCoaching();
+  }catch(e){
+    cgShowInviteError('Network error');
+    btn.disabled=false; btn.textContent='Add as Coaching Client';
+  }
+}
+
+function cgShowInviteError(msg){
+  var el=document.getElementById('cg-inv-error');
+  el.textContent=msg;
+  el.style.display='block';
 }
 </script>
 </body>

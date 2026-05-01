@@ -5,7 +5,7 @@
   - 37 tables including: leads (187), activity_log, emails_sent, drip_queue, users, agents, tasks (1,588), onboarding_steps, resources, email_queue, referrals, recruiting_links (40), content_posts, lead_stage_history, revshare_entries, automation_runs, automation_settings, goals, lead_notes, lead_activity, email_funnels, email_funnel_steps, email_funnel_enrollments (239), pipelines, opportunities (188), smart_lists, contact_communications, email_suppressions, email_send_log (24,804), email_daily_limits, buyer_intake_submissions, ideas, prospects, activities, recruiting_tasks, newsletter_subscribers, newsletter_issues
   - RLS enabled on all tables, service role policies for backend access
 - VPS at 187.77.213.230 runs Mission Control in Docker (`/docker/mission-control/`)
-- FastAPI backend — modular: `main.py`, `auth.py`, `models.py`, `extended_routes.py`, `report_generator_v2.py`
+- FastAPI backend — modular: `main.py`, `auth.py`, `models.py`, `extended_routes.py`, `report_generator_v2.py`, `coaching.py`
 - Traefik: SSL, basic auth for Mission Control UI, all `/api` routes use JWT auth, portal has no basic auth
 - **Deploy**: `docker compose build && docker compose up -d` (static files baked into image at build time)
 
@@ -278,6 +278,64 @@
 - Gated 4 insert paths: webhook direct-POST, webhook entry/changes loop, `_create_meta_lead()` entry, sync backfill loop
 - Malformed emails skipped + logged as `webhook_validation_error` / `sync_validation_error`
 - Verified: 0 malformed emails remain in leads table
+
+## Phase 15 — Coaching Platform Foundation ✅ (Session 1)
+**Goal:** Build a real-estate coaching practice operating system inside Mission Control. Coach (Joe) sets agents' goals, builds business plans, tracks pace, runs accountability calls. Clients are TPL contacts flagged as coaching clients — one source of truth, one CRM.
+
+**Architecture:** New module inside the existing TPL stack rather than a standalone app. Coaching tables live alongside the 37 existing tables. Coaching clients FK to `leads` (every client is also a CRM contact). Workspace-scoped via `db()` wrapper.
+
+**Schema (migration `2026-05-01-phase-15-coaching-foundation.sql`):**
+- 21 new tables, all RLS-enabled with service-role policy + `updated_at` triggers
+- Spine: `coaching_clients` (FK→leads UNIQUE, optional FK→users for portal login, brokerage/comp plan/cadence/license/market/ASP/comm rate/status)
+- Plan: `business_plans` (one per client per year), `budget_models`, `economic_models`, `lead_gen_models`, `lead_sources`, `wealth_goals`, `org_models`
+- Goal cascade: `gps_goals` / `gps_priorities` / `gps_strategies`, `four_one_ones`
+- Execution: `perfect_weeks`, `pipeline_entries` (1-10 rating), `contact_touches`, `coaching_activity_logs`
+- Coaching surface: `coaching_calls`, `coaching_action_items`, `review_snapshots`
+- Recruiting: `coaching_recruits` (HybridShare downline), `recruiting_plans`
+- Workspace-scoped tables added to `TENANT_TABLES` so `db()` auto-filters
+
+**Backend (`mission-control/app/coaching.py` — new file, wired into main.py via `setup(db, supabase)` + `app.include_router`):**
+- `GET /api/coaching/clients` — list (workspace-scoped, lead-enriched)
+- `GET /api/coaching/clients/{id}` — detail
+- `POST /api/coaching/clients` — create from existing lead (`lead_id`) or new contact (`new_contact: {first_name,last_name,email,phone,current_brokerage}`); auto-creates current-year business plan + budget_model + economic_model + lead_gen_model with seeded defaults
+- `PATCH /api/coaching/clients/{id}` — update metadata; commission rate auto-normalized from "2.5" or "0.025"
+- `DELETE /api/coaching/clients/{id}` — removes coaching_client row (lead remains)
+- `GET /api/coaching/clients/{id}/plan?year=YYYY` — returns the bundle, auto-creating if missing
+- `PATCH /api/coaching/clients/{id}/plan` — update gci_target / notes
+- `PATCH /api/coaching/clients/{id}/budget-model` — update Budget Model
+- `PATCH /api/coaching/clients/{id}/economic-model` — update Economic Model
+- `GET /api/coaching/clients/{id}/computed?year=YYYY` — full derived numbers (Cost of Sale, Net Income, Survival, Listings Taken, Buyer Consults, Listings to Carry, Lead Gen gaps, etc.) every value carries its `formula` string for the UI's audit popovers
+- `GET /api/coaching/lead-search?q=` — autocomplete for the Invite modal; filters out leads already linked to a coaching client
+
+**Math (mirrors MREA workbook exactly):**
+- Per week = annual ÷ 48 (NOT 52 — accounts for vacation/holidays per legacy spreadsheet)
+- Required Met DB = Met sales × 12 ÷ 2 (12 touches/yr, 2 contacts per sale)
+- Required Haven't-Met DB = Haven't-Met sales × 50
+- Survival closings = (annual personal + op exp) × 1.30 ÷ avg net commission per close
+- LPT cap defaults: $5K Business Builder, $15K Brokerage Partner — auto-fills `paid_to_brokerage` based on the client's `lpt_comp_plan`
+- Verified end-to-end: $350K GCI / $400K ASP / 2.5% comm / 60-40 split → 35 closings, 31.7 listing appts/yr, 0.66 listing appts/wk, $175K seller revenue ✓
+
+**Frontend (Mission Control `static/index.html`):**
+- New "Coaching" nav group with "Coaching Clients" item (between Marketing and Capture)
+- New `<div id="page-coaching">` page: list view (4 metric cards + table with name/brokerage/plan/cadence/status pill) and detail view
+- "+ Invite Client" modal with two tabs: Existing Contact (autocomplete via `/api/coaching/lead-search`) + New Contact (creates lead + coaching_client in one POST)
+- Detail view: profile strip (brokerage, comp plan, cadence, license date, ASP, commission, market) + tabs (Plan live; Calls/Pipeline/Activity/Recruiting stubbed for next session)
+- Plan tab: Income Target panel + Economic Model panel (10 inputs + 13 derived cards) + Budget Model panel (cost of sale + dynamic operating expense rows + allocation %s + dynamic personal expense rows + survival inputs + 13 derived cards)
+- Auto-save on blur for every input; computed cards re-fetch + re-render after each save
+- Every derived card has `title="formula"` for hover-to-audit
+- Status dropdown (Active/Paused/Churned) in the detail view header
+
+**Deploy:** files rsynced to VPS (`main.py`, `coaching.py`, `static/index.html`); backed up as `*.pre-phase15-{ts}`; rebuilt Docker image; container booted clean. Live at `https://mission.tplcollective.ai` → click **Coaching** in sidebar.
+
+**Out of scope this session (queued for next):**
+- Agent portal `/coaching` tab (agents log activity, view plan, prep for calls)
+- Coaching call workflow (pre-call brief auto-generation, in-call notes, action items, recap)
+- GPS (1-3-5) editor with rollup validation
+- 4-1-1 cascade (annual / monthly / weekly across Job/Business/Personal Financial/Personal)
+- Pipeline tracker (listing + buyer with 1-10 rating)
+- Daily activity log + streak counter + pace indicators
+- LPT HybridShare module + recruiting kanban + 5-year projection
+- Reviews (quarterly/semi-annual/annual snapshots)
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)

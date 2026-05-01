@@ -217,6 +217,26 @@ def db(name: str) -> _ScopedQB:
     return _ScopedQB(name)
 
 
+# ── COACHING TABLES ARE WORKSPACE-SCOPED (Phase 15) ──
+# Add the workspace-scoped coaching tables to TENANT_TABLES so db() auto-filters.
+# Child tables (budget_models, economic_models, gps_*, etc.) scope via FK chain and don't
+# carry workspace_id, so they aren't added here — coaching.py uses raw supabase.table() for those.
+COACHING_TENANT_TABLES = frozenset({
+    "coaching_clients", "business_plans", "pipeline_entries",
+    "coaching_calls", "coaching_action_items", "review_snapshots",
+    "coaching_recruits",
+})
+TENANT_TABLES = TENANT_TABLES | COACHING_TENANT_TABLES
+
+
+# ── PHASE 15: COACHING ROUTER ──
+# coaching.py needs db() + supabase but can't import them at module load (circular import).
+# We pass them in via setup() after both are defined.
+import coaching as _coaching_mod  # noqa: E402
+_coaching_mod.setup(db, supabase)
+app.include_router(_coaching_mod.router)
+
+
 # ── PLAN TIERS & PLATFORM GATING (Phase 13.4) ──
 # - Plan tiers (basic/mid/elite) gate features by URL path prefix.
 # - "Platform-only" routes (TPL Collective recruiting features) are restricted to workspace_id=1.
