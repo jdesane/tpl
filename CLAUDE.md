@@ -356,13 +356,63 @@
 
 **Math sanity check on VPS:** $350K goal / $0 YTD on May 1 → "behind 33.2%, gap = $116,027"; 1 listing-10 + 1 listing-9 + 1 buyer-cold counted correctly; talking points generated for pace + daily discipline.
 
-**Out of scope (queued for next):**
-- Agent portal `/coaching` tab — agents log activity + view plan from portal.tplcollective.ai
-- GPS (1-3-5) editor with rollup validation
-- 4-1-1 cascade
-- LPT HybridShare module + recruiting kanban + 5-year projection
-- Reviews (quarterly/semi-annual/annual snapshots)
-- Coaching dashboard ("who needs my attention this week")
+## Phase 15.3 — Coaching: Agent Portal + Dashboard + GPS + 4-1-1 + HybridShare ✅ (Session 3)
+**Goal:** Ship 4 features in one session — agent self-service portal, coach dashboard, GPS (1-3-5) editor, 4-1-1 goal cascade, LPT HybridShare module with recruiting kanban + 5-year projection.
+
+**Backend (`coaching.py` extended, no new tables — schema already in place):**
+
+*Provisioning:*
+- `POST /api/coaching/clients/{id}/provision-portal` — creates a `users` row (role=agent) + dedicated `workspaces` row for the client, links via `coaching_clients.user_id`. Sends invite email with temp password + portal URL. Reuses existing user if email already on file.
+
+*Agent self-service (`/api/coaching/me/*`):*
+- All endpoints scoped by `coaching_clients.user_id = current_user.sub` (NOT by workspace, since the agent lives in their own isolated workspace but their coaching_client record lives in Joe's workspace).
+- `GET /api/coaching/me` — agent's coaching client + plan + computed numbers
+- `GET/POST /api/coaching/me/activity` — daily log (upsert by log_date)
+- `GET/POST/PATCH/DELETE /api/coaching/me/pipeline` — agent edits their own pipeline
+- `GET /api/coaching/me/calls` — read-only list
+- `GET/PATCH /api/coaching/me/action-items` — agent can mark items COMPLETED/MISSED but cannot edit text/owner/tag (only items where `owner = AGENT`)
+- `GET /api/coaching/me/brief` — same pre-call brief Joe sees (transparency)
+
+*Coach dashboard:*
+- `GET /api/coaching/dashboard` — aggregate book-of-business: totals (active clients, GCI goal/YTD, pace), `behind_pace` (clients with -10%+ gap), `thin_pipeline` (no hot listings or empty), `no_recent_activity` (>3 days since last log), `upcoming_calls` (next 7 days), `low_commitment_keep` (<70% on last call).
+
+*GPS (1-3-5):*
+- `GET /api/coaching/clients/{id}/gps` — auto-creates Goal with GCI target if missing, returns priorities (3 max) with strategies (5 max each)
+- Full CRUD: `gps-goals/{id}`, `gps-priorities/{id}`, `gps-strategies/{id}`
+- UI shows warning when sum of strategy targets < priority target
+
+*4-1-1:*
+- `GET /api/coaching/clients/{id}/four-one-one?period_type=ANNUAL|MONTHLY|WEEKLY&period_key=YYYY|YYYY-MM|YYYY-Www` — returns 4 columns (JOB, BUSINESS, PERSONAL_FINANCIAL, PERSONAL); ANNUAL+BUSINESS auto-includes `suggestions` from Big Rocks (Listings taken, Buyers shown, Listing appts, Buyer consults, GCI)
+- `PUT /api/coaching/clients/{id}/four-one-one` — upsert by (plan, period_type, period_key, column_key)
+
+*HybridShare / Recruits:*
+- `GET/POST/PATCH/DELETE /api/coaching/clients/{id}/recruits` + `/api/coaching/recruits/{id}` — recruit CRUD with status (HITLIST/WORKING_HOT/IN_PROCESS/SIGNED/UNQUALIFIED/CHURNED), tier (1-7), comp plan, sponsor chain
+- `GET /api/coaching/clients/{id}/hybridshare` — 7-tier ladder from official LPT flyer constants: tier 1 (31% pool, $2,325/BP, $775/BB, unlock at 1 active), tier 7 (20% pool, $1,500/BP, $500/BB, unlock at 20 active), max $7,500/BP-yr, $2,500/BB-yr. Counts agent's signed recruits per tier, marks unlock state, computes tier subtotals. Performance Awards progress: White Badge (1 txn), Silver Badge (3), Gold Badge (15), Black Badge (35, BP only). Pulls agent's YTD txns from closed pipeline entries.
+- `GET /api/coaching/clients/{id}/hybridshare/projection?recruits_per_year=4&pct_bp=0.5&cap_hit_rate=0.30&children_per_recruit=1.5` — 5-year stacked projection: each year direct recruits + trickle (children per existing tier-N → tier-N+1, diminishing past tier 2). Returns network size, tiers unlocked, projected income per year. Verified: 4 recruits/yr, 50% BP, 30% cap-hit, 1.5 children → Y1 $3,480 → Y5 $50,245 with 267 agents in network.
+
+**Frontend — Mission Control (`static/index.html`):**
+- Coaching list view now has a Dashboard / All Clients toggle. Dashboard surfaces: active clients, aggregate goal/YTD/pace, then 5 sectioned lists (behind pace, thin pipeline, no recent activity, calls this week, low commit-keep) — every row clickable to drill into the client.
+- Detail view tab bar expanded to 7: Plan / GPS (1-3-5) / 4-1-1 / Calls / Pipeline / Activity / HybridShare.
+- "Portal Access" button in detail header — provisions a portal login + emails temp password; auto-disables to "✓ Portal Provisioned" once done.
+- GPS tab: editable goal (auto-suggests "Earn $X GCI in YYYY"), priorities cards (3 max) with 5-strategy slots each, inline rollup validation warns when strategy sum < priority target.
+- 4-1-1 tab: ANNUAL / MONTHLY / WEEKLY toggle, 4-column grid (Job / Business / Personal Financial / Personal), checkbox-toggle complete, ANNUAL+BUSINESS shows clickable suggestion chips from Big Rocks.
+- HybridShare tab: gated to LPT comp plans; summary cards (comp plan, projected at full cap, max possible/yr, YTD txns); performance award badges with progress bars; 4-column recruit kanban (Hitlist → Working Hot → In Process → Signed); 7-tier ladder (top-down) with lock/unlock state + per-tier subtotal; 5-year projection panel with editable params and yearly income breakdown.
+
+**Frontend — Agent Portal (`static/portal/index.html`):**
+- "My Coaching" nav group appears only for users whose `users.id` matches a `coaching_clients.user_id` (auto-detected on login).
+- 4 new pages:
+  - **Today** — daily activity log entry (auto-saves on blur), pace/streak summary, open action items with checkbox-toggle
+  - **My Plan** — read-only view of GCI goal, all activity targets (Listings taken / Buyers shown / etc.), key money rows (Take Home, Net Income, Survival, Surplus) with hover-to-formula
+  - **Pipeline** — Listings/Buyers toggle, rating summary, full CRUD (agents edit their own pipeline)
+  - **Calls & Commitments** — read-only call history with notes, all action items they own across all calls
+
+**Smoke tests verified on VPS:** dashboard returns correct totals; GPS auto-creates with $350K goal; 4-1-1 returns Big Rocks suggestions (20.59 listings, 21.88 buyers, 31.7 appts); HybridShare returns 4 awards + 7 tiers + 5-year ladder; provision-portal creates user + workspace + links coaching_client.user_id.
+
+**Out of scope (queued):**
+- Reviews (quarterly/semi-annual/annual snapshots) — schema exists, UI deferred
+- Perfect Week scheduler — schema exists, UI deferred
+- Database touch tracker (`contact_touches`) — schema exists, UI deferred
+- Excel imports of legacy worksheets
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)

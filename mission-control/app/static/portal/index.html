@@ -134,6 +134,13 @@ a{color:var(--accent);text-decoration:none}
     <div class="nav-group-label">Home</div>
     <div class="nav-item active" onclick="portalPage('home')"><span class="icon">&#x2302;</span>Dashboard</div>
   </div>
+  <div class="nav-group" id="coaching-nav-group" style="display:none">
+    <div class="nav-group-label">My Coaching</div>
+    <div class="nav-item" onclick="portalPage('coachtoday')"><span class="icon">&#x25C9;</span>Today</div>
+    <div class="nav-item" onclick="portalPage('coachplan')"><span class="icon">&#x25CE;</span>My Plan</div>
+    <div class="nav-item" onclick="portalPage('coachpipeline')"><span class="icon">&#x25B7;</span>Pipeline</div>
+    <div class="nav-item" onclick="portalPage('coachcalls')"><span class="icon">&#x260E;</span>Calls &amp; Commitments</div>
+  </div>
   <div class="nav-group">
     <div class="nav-group-label">Learn</div>
     <div class="nav-item" onclick="portalPage('training')"><span class="icon">&#x1F3AC;</span>Training</div>
@@ -286,6 +293,69 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- ─── COACHING: TODAY ─── -->
+<div class="page" id="portal-coachtoday">
+  <h2 style="margin-bottom:18px">Today</h2>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-title">Today's Activity Log</div>
+    <div style="color:var(--text-muted);font-size:11px;margin-bottom:12px">Auto-saves on blur. Coach sees this in your pre-call brief.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Contacts Made</label><input type="number" id="ptl-act-contacts" class="form-input" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Appts Set</label><input type="number" id="ptl-act-set" class="form-input" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Appts Held</label><input type="number" id="ptl-act-held" class="form-input" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Hours Prospected</label><input type="number" id="ptl-act-hours" class="form-input" step="0.5" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+    </div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Wins</label><input type="text" id="ptl-act-wins" placeholder="What went well?" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Notes</label><input type="text" id="ptl-act-notes" placeholder="Anything else" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-title">My Pace</div>
+    <div id="ptl-brief"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Open Action Items</div>
+    <div id="ptl-action-items"></div>
+  </div>
+</div>
+
+<!-- ─── COACHING: MY PLAN ─── -->
+<div class="page" id="portal-coachplan">
+  <h2 style="margin-bottom:18px">My Business Plan</h2>
+  <div id="ptl-plan-content">
+    <div style="color:var(--text-muted);font-size:12px">Loading...</div>
+  </div>
+</div>
+
+<!-- ─── COACHING: PIPELINE ─── -->
+<div class="page" id="portal-coachpipeline">
+  <h2 style="margin-bottom:18px">My Pipeline</h2>
+  <div style="display:flex;gap:6px;margin-bottom:14px">
+    <button class="btn btn-ghost btn-sm ptl-pipe-tab" data-pt="LISTING" onclick="ptlPipeSwitch('LISTING')" style="background:var(--accent-glow);color:var(--accent)">Listings</button>
+    <button class="btn btn-ghost btn-sm ptl-pipe-tab" data-pt="BUYER" onclick="ptlPipeSwitch('BUYER')">Buyers</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary btn-sm" onclick="ptlPipeAdd()">+ Add Entry</button>
+  </div>
+  <div id="ptl-pipe-summary" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px"></div>
+  <div class="panel"><div id="ptl-pipe-list"></div></div>
+</div>
+
+<!-- ─── COACHING: CALLS ─── -->
+<div class="page" id="portal-coachcalls">
+  <h2 style="margin-bottom:18px">Coaching Calls &amp; Commitments</h2>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-title">Recent Calls</div>
+    <div id="ptl-calls-list"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">All My Action Items</div>
+    <div id="ptl-all-action-items"></div>
+  </div>
+</div>
+
 </div><!-- /main -->
 </div><!-- /app-shell -->
 
@@ -341,6 +411,10 @@ function portalPage(name){
   if(name==='resources')loadResources();
   if(name==='referrals')loadReferrals();
   if(name==='aitools'){}
+  if(name==='coachtoday')ptlLoadToday();
+  if(name==='coachplan')ptlLoadPlan();
+  if(name==='coachpipeline')ptlLoadPipeline();
+  if(name==='coachcalls')ptlLoadCalls();
 }
 
 // ── HOME ──
@@ -442,6 +516,291 @@ function loadTraining(cat){
 }
 function filterTraining(cat){loadTraining(cat);}
 function copyPrompt(idx){var el=document.getElementById('prompt-'+idx);navigator.clipboard.writeText(el.textContent);pToast('Prompt copied!');}
+
+// ════════════════════════════════════════════════════════════
+// COACHING (agent-facing /me endpoints)
+// ════════════════════════════════════════════════════════════
+
+var ptlState = { client: null, plan: null, computed: null, pipeType:'LISTING' };
+
+async function ptlInitCoachingNav(){
+  // Show "My Coaching" nav group only if this user is a coaching client
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/me',{headers:authHeaders()});
+    if(res.ok){
+      document.getElementById('coaching-nav-group').style.display='block';
+      var data = await res.json();
+      ptlState.client = data.client;
+      ptlState.plan = data.plan;
+      ptlState.computed = data.computed;
+    }
+  }catch(e){}
+}
+
+// Hook into existing showApp flow
+var __ptl_origShowApp = window.showApp;
+window.showApp = function(){
+  __ptl_origShowApp();
+  ptlInitCoachingNav();
+};
+
+// ─── Today ───
+async function ptlLoadToday(){
+  if(!ptlState.client){
+    document.getElementById('ptl-brief').innerHTML = '<div style="color:var(--text-muted)">Not enrolled in coaching.</div>';
+    return;
+  }
+  // Today's activity log
+  try{
+    var actRes = await fetch(API_BASE+'/api/coaching/me/activity?days=1',{headers:authHeaders()});
+    if(actRes.ok){
+      var logs = await actRes.json();
+      var today = new Date().toISOString().substring(0,10);
+      var t = (logs.find(function(l){return l.log_date===today})) || {};
+      document.getElementById('ptl-act-contacts').value = t.contacts_made || '';
+      document.getElementById('ptl-act-set').value = t.appts_set || '';
+      document.getElementById('ptl-act-held').value = t.appts_held || '';
+      document.getElementById('ptl-act-hours').value = t.hours_prospected || '';
+      document.getElementById('ptl-act-wins').value = t.wins || '';
+      document.getElementById('ptl-act-notes').value = t.notes || '';
+    }
+  }catch(e){}
+  // Brief (read-only — same data the coach sees)
+  try{
+    var bRes = await fetch(API_BASE+'/api/coaching/me/brief',{headers:authHeaders()});
+    if(bRes.ok){
+      var b = await bRes.json();
+      ptlRenderBrief(b);
+    }
+  }catch(e){}
+  // Open action items
+  try{
+    var aRes = await fetch(API_BASE+'/api/coaching/me/action-items?status=OPEN',{headers:authHeaders()});
+    if(aRes.ok){
+      var items = await aRes.json();
+      ptlRenderActionItems(items, 'ptl-action-items');
+    }
+  }catch(e){}
+}
+
+function ptlRenderBrief(b){
+  if(!b){ document.getElementById('ptl-brief').innerHTML='<div style="color:var(--text-muted)">No data yet.</div>'; return; }
+  var pace = b.pace||{};
+  var paceColor = pace.status==='ahead'?'var(--green)':(pace.status==='on-pace'?'var(--amber)':'var(--red)');
+  var act = b.activity_14d||{};
+  document.getElementById('ptl-brief').innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">' +
+    '<div style="padding:10px;border-radius:8px;background:var(--surface-2)"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">GCI YTD</div><div style="font-size:18px;font-weight:600">$'+(pace.gci_ytd||0).toLocaleString()+'</div><div style="font-size:11px;color:var(--text-muted)">/ $'+(pace.gci_target||0).toLocaleString()+' target</div></div>' +
+    '<div style="padding:10px;border-radius:8px;background:var(--surface-2)"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Pace</div><div style="font-size:18px;font-weight:600;color:'+paceColor+'">'+(pace.status||'').toUpperCase()+'</div><div style="font-size:11px;color:var(--text-muted)">'+(pace.pace_gap_pct>=0?'+':'')+(pace.pace_gap_pct||0)+'% gap</div></div>' +
+    '<div style="padding:10px;border-radius:8px;background:var(--surface-2)"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">14-day Contacts</div><div style="font-size:18px;font-weight:600">'+(act.contacts_made||0)+'</div><div style="font-size:11px;color:var(--text-muted)">'+(act.days_logged||0)+'/14 days logged</div></div>' +
+    '<div style="padding:10px;border-radius:8px;background:var(--surface-2)"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Streak</div><div style="font-size:18px;font-weight:600">'+(act.streak_days||0)+' 🔥</div><div style="font-size:11px;color:var(--text-muted)">consecutive days</div></div>' +
+    '</div>';
+}
+
+function ptlRenderActionItems(items, containerId){
+  var el = document.getElementById(containerId);
+  if(!items.length){ el.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:10px">No open action items.</div>'; return; }
+  el.innerHTML = items.map(function(it){
+    var done = (it.status||'').toUpperCase()==='COMPLETED';
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px;'+(done?'opacity:0.5':'')+'">' +
+      '<div style="display:flex;align-items:flex-start;gap:8px">' +
+      '<input type="checkbox" '+(done?'checked':'')+' onchange="ptlToggleActionItem('+it.id+', this.checked)" style="margin-top:3px" />' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;'+(done?'text-decoration:line-through':'')+'">'+it.text+'</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+(it.measurement?(it.measurement+' &middot; '):'')+(it.due_date?('due '+it.due_date):'no due date')+'</div>' +
+      '</div></div></div>';
+  }).join('');
+}
+
+async function ptlToggleActionItem(id, checked){
+  await fetch(API_BASE+'/api/coaching/me/action-items/'+id,{
+    method:'PATCH', headers:authHeaders(),
+    body: JSON.stringify({status: checked?'COMPLETED':'OPEN'})
+  });
+  ptlLoadToday();
+}
+
+async function ptlSaveActivity(){
+  if(!ptlState.client) return;
+  await fetch(API_BASE+'/api/coaching/me/activity',{
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify({
+      log_date: new Date().toISOString().substring(0,10),
+      contacts_made: parseInt(document.getElementById('ptl-act-contacts').value)||0,
+      appts_set: parseInt(document.getElementById('ptl-act-set').value)||0,
+      appts_held: parseInt(document.getElementById('ptl-act-held').value)||0,
+      hours_prospected: parseFloat(document.getElementById('ptl-act-hours').value)||0,
+      wins: document.getElementById('ptl-act-wins').value||null,
+      notes: document.getElementById('ptl-act-notes').value||null,
+    })
+  });
+  ptlLoadToday();
+}
+
+// ─── My Plan (read-only) ───
+async function ptlLoadPlan(){
+  if(!ptlState.client){ document.getElementById('ptl-plan-content').innerHTML='<div style="color:var(--text-muted)">Not enrolled.</div>'; return; }
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/me',{headers:authHeaders()});
+    if(!res.ok) return;
+    var data = await res.json();
+    ptlState.plan = data.plan;
+    ptlState.computed = data.computed;
+    var p = data.plan, c = data.computed;
+    var econ = c.economic||{};
+    var bm = c.budget||{};
+    var html = '<div class="panel" style="margin-bottom:14px">' +
+      '<div class="panel-title">Annual GCI Goal</div>' +
+      '<div style="font-size:32px;font-weight:700;color:var(--accent)">$'+(p.gci_target||0).toLocaleString()+'</div>' +
+      '<div style="color:var(--text-muted);font-size:12px;margin-top:4px">Set by your coach. Talk to Joe to update.</div>' +
+      '</div>';
+    html += '<div class="panel" style="margin-bottom:14px"><div class="panel-title">Activity Targets</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">';
+    var rows = [
+      ['Total closings target', econ.houses_sold_total],
+      ['Listings taken', econ.listings_taken],
+      ['Buyers shown', econ.buyers_shown],
+      ['Listing appts / yr', econ.listing_appts_annual],
+      ['Buyer consults / yr', econ.buyer_consults_annual],
+      ['Listing appts / wk', econ.listing_appts_per_week],
+      ['Buyer consults / wk', econ.buyer_consults_per_week],
+      ['Active listings to carry', econ.active_listings_to_carry],
+    ];
+    rows.forEach(function(r){
+      var v = r[1];
+      if(!v) return;
+      html += '<div style="background:var(--surface-2);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">'+r[0]+'</div><div style="font-size:18px;font-weight:600;margin-top:4px">'+(v.value||0).toLocaleString()+'</div></div>';
+    });
+    html += '</div></div>';
+    html += '<div class="panel"><div class="panel-title">The Math (where it comes from)</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">';
+    var moneyRows = [
+      ['Take Home', bm.take_home],
+      ['Gross Profit', bm.gross_profit],
+      ['Net Income', bm.net_income],
+      ['Survival # of Closings', bm.survival_closings],
+      ['Closings Beyond Survival', bm.closings_beyond_survival],
+      ['Surplus', bm.surplus],
+    ];
+    moneyRows.forEach(function(r){
+      var v = r[1];
+      if(!v) return;
+      var disp = ['Take Home','Gross Profit','Net Income','Surplus'].indexOf(r[0])>=0 ? '$'+(v.value||0).toLocaleString() : (v.value||0).toLocaleString();
+      html += '<div style="background:var(--surface-2);border-radius:8px;padding:10px" title="'+(v.formula||'').replace(/"/g,'&quot;')+'"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">'+r[0]+'</div><div style="font-size:16px;font-weight:600;margin-top:4px">'+disp+'</div></div>';
+    });
+    html += '</div></div>';
+    document.getElementById('ptl-plan-content').innerHTML = html;
+  }catch(e){}
+}
+
+// ─── My Pipeline ───
+async function ptlLoadPipeline(){
+  if(!ptlState.client) return;
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/me/pipeline',{headers:authHeaders()});
+    if(!res.ok) return;
+    var entries = await res.json();
+    ptlRenderPipeline(entries);
+  }catch(e){}
+}
+
+function ptlPipeSwitch(t){
+  ptlState.pipeType = t;
+  document.querySelectorAll('.ptl-pipe-tab').forEach(function(b){b.style.background='';b.style.color=''});
+  var active = document.querySelector('.ptl-pipe-tab[data-pt="'+t+'"]');
+  active.style.background='var(--accent-glow)'; active.style.color='var(--accent)';
+  ptlLoadPipeline();
+}
+
+function ptlRenderPipeline(allEntries){
+  var entries = (allEntries||[]).filter(function(e){return e.entry_type===ptlState.pipeType && !e.closed});
+  var ratings=[10,9,8,7,6,5,'≤4'];
+  document.getElementById('ptl-pipe-summary').innerHTML = ratings.map(function(r){
+    var count = r==='≤4' ? entries.filter(function(e){return (e.rating||0)<=4}).length : entries.filter(function(e){return e.rating===r}).length;
+    var hot = (r===10||r===9);
+    return '<div style="background:var(--surface-2);border-radius:8px;padding:8px;text-align:center;'+(hot?'border:1px solid var(--accent)':'')+'">' +
+      '<div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">'+r+'s</div>' +
+      '<div style="font-size:18px;font-weight:600;color:'+(hot?'var(--accent)':'var(--text)')+'">'+count+'</div>' +
+      '</div>';
+  }).join('');
+
+  var el = document.getElementById('ptl-pipe-list');
+  if(!entries.length){ el.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:18px;text-align:center">No '+ptlState.pipeType.toLowerCase()+' entries yet.</div>'; return; }
+  entries.sort(function(a,b){return (b.rating||0)-(a.rating||0)});
+  el.innerHTML = entries.map(function(e){
+    var color = e.rating>=9?'var(--green)':(e.rating>=7?'var(--amber)':'var(--text-dim)');
+    return '<div style="display:grid;grid-template-columns:60px 2fr 2fr 80px;gap:8px;padding:10px;border-bottom:1px solid var(--border);align-items:center">' +
+      '<input type="number" min="1" max="10" value="'+(e.rating||'')+'" onblur="ptlPipeEdit('+e.id+', \'rating\', parseInt(this.value)||null)" style="width:50px;padding:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:'+color+';font-weight:600" />' +
+      '<div><div style="font-weight:600">'+(e.contact_name||'—')+'</div><div style="color:var(--text-muted);font-size:11px">'+(e.address||'')+'</div></div>' +
+      '<input type="text" value="'+(e.next_step||'').replace(/"/g,'&quot;')+'" placeholder="Next step" onblur="ptlPipeEdit('+e.id+', \'next_step\', this.value)" style="padding:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px" />' +
+      '<div style="text-align:right"><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 6px" onclick="ptlPipeEditFull('+e.id+')">Edit</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 6px;color:var(--red)" onclick="ptlPipeDelete('+e.id+')">×</button></div>' +
+      '</div>';
+  }).join('');
+}
+
+async function ptlPipeAdd(){
+  var name = prompt('Contact name'); if(!name) return;
+  var rating = parseInt(prompt('Rating 1-10 (10=this month, 9=next month, 8=in 2mo, ...)'));
+  var addr = prompt('Address (optional)') || '';
+  var phone = prompt('Phone (optional)') || '';
+  var email = prompt('Email (optional)') || '';
+  var next = prompt('Next step (optional)') || '';
+  await fetch(API_BASE+'/api/coaching/me/pipeline',{
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify({entry_type: ptlState.pipeType, contact_name:name, address:addr, contact_phone:phone, contact_email:email, next_step:next, rating: isNaN(rating)?null:rating})
+  });
+  ptlLoadPipeline();
+}
+
+async function ptlPipeEdit(id, field, value){
+  var p={}; p[field]=value;
+  await fetch(API_BASE+'/api/coaching/me/pipeline/'+id,{method:'PATCH',headers:authHeaders(),body:JSON.stringify(p)});
+  if(field==='rating') ptlLoadPipeline();
+}
+
+async function ptlPipeEditFull(id){
+  var name=prompt('Contact name'); if(name===null) return;
+  var addr=prompt('Address'); var phone=prompt('Phone'); var email=prompt('Email');
+  var next=prompt('Next step'); var apptDate=prompt('Appt date (YYYY-MM-DD)');
+  await fetch(API_BASE+'/api/coaching/me/pipeline/'+id,{
+    method:'PATCH', headers:authHeaders(),
+    body: JSON.stringify({contact_name:name,address:addr,contact_phone:phone,contact_email:email,next_step:next,appointment_date:apptDate||null})
+  });
+  ptlLoadPipeline();
+}
+
+async function ptlPipeDelete(id){
+  if(!confirm('Delete this entry?')) return;
+  await fetch(API_BASE+'/api/coaching/me/pipeline/'+id,{method:'DELETE',headers:authHeaders()});
+  ptlLoadPipeline();
+}
+
+// ─── Calls & Commitments ───
+async function ptlLoadCalls(){
+  if(!ptlState.client) return;
+  try{
+    var [callRes, aiRes] = await Promise.all([
+      fetch(API_BASE+'/api/coaching/me/calls',{headers:authHeaders()}),
+      fetch(API_BASE+'/api/coaching/me/action-items',{headers:authHeaders()}),
+    ]);
+    var calls = await callRes.json();
+    var items = await aiRes.json();
+    var cEl = document.getElementById('ptl-calls-list');
+    if(!calls.length){ cEl.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:10px">No calls yet.</div>'; }
+    else {
+      cEl.innerHTML = calls.map(function(c){
+        var dt = c.scheduled_at ? new Date(c.scheduled_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) : '—';
+        var status = (c.status||'SCHEDULED').toUpperCase();
+        var color = status==='COMPLETED'?'var(--green)':(status==='SCHEDULED'?'var(--amber)':'var(--red)');
+        return '<div style="padding:10px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-weight:600">'+dt+' &middot; '+(c.call_type||'WEEKLY')+' <span style="color:'+color+';font-size:11px;margin-left:6px">'+status.toLowerCase()+'</span></div>' +
+          (c.in_call_notes?('<div style="color:var(--text-muted);font-size:11px;margin-top:4px;white-space:pre-wrap">'+c.in_call_notes.substring(0,300)+(c.in_call_notes.length>300?'...':'')+'</div>'):'') +
+          '</div>';
+      }).join('');
+    }
+    ptlRenderActionItems(items, 'ptl-all-action-items');
+  }catch(e){}
+}
 
 // ── INIT ──
 if(token){

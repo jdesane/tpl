@@ -1207,3 +1207,707 @@ def _build_brief_no_call(client_id: int, workspace_id: int) -> dict:
         "commitment_keep_score": None,
         "talking_points": talking,
     }
+
+
+# ════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════
+# SESSION 3 — Agent Portal /coaching + Coaching Dashboard +
+#             GPS / 4-1-1 + HybridShare
+# ════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════
+
+# ─── Portal provisioning (creates a user the agent logs in with) ───
+
+class ProvisionPortalIn(BaseModel):
+    send_email: Optional[bool] = True
+
+
+@router.post("/clients/{client_id}/provision-portal")
+def provision_portal(client_id: int, payload: ProvisionPortalIn, request: Request):
+    """Create a users row + own workspace for a coaching client so they can log in
+    to mission.tplcollective.ai (admin view) or portal.tplcollective.ai with their own
+    creds. The coaching_client.user_id field links them; their workspace stays isolated
+    from Joe's data; the coaching API uses /me endpoints scoped by user_id, not workspace."""
+    import secrets as _secrets
+    from auth import hash_password as _hp
+
+    cc = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data
+    if not cc:
+        raise HTTPException(404, "Coaching client not found")
+    if cc.get("user_id"):
+        return {"already_provisioned": True, "user_id": cc["user_id"]}
+
+    lead = _supabase.table("leads").select("*").eq("id", cc["lead_id"]).single().execute().data or {}
+    email = (lead.get("email") or "").strip().lower()
+    name = lead.get("name") or ((lead.get("first_name") or "") + " " + (lead.get("last_name") or "")).strip()
+    if not email or not is_valid_email(email):
+        raise HTTPException(400, "Lead email is missing or invalid")
+
+    # Reuse if a user already exists for this email
+    existing = _supabase.table("users").select("id, workspace_id").eq("email", email).execute().data or []
+    if existing:
+        user_id = existing[0]["id"]
+        _supabase.table("coaching_clients").update({"user_id": user_id}).eq("id", client_id).execute()
+        return {"reused_existing_user": True, "user_id": user_id}
+
+    # Create the user + workspace
+    temp_pwd = _secrets.token_urlsafe(8)
+    password_hash = _hp(temp_pwd)
+    initials = "".join([p[0] for p in name.split()[:2] if p]).upper() or "AG"
+
+    # Create user first (workspace_id will be set after we make the workspace)
+    user_ins = _supabase.table("users").insert({
+        "email": email,
+        "password_hash": password_hash,
+        "name": name,
+        "role": "agent",
+        "avatar_initials": initials[:2],
+    }).execute()
+    user_id = user_ins.data[0]["id"]
+
+    # Create the workspace (basic plan — coaching access doesn't need elite/mid)
+    ws_ins = _supabase.table("workspaces").insert({
+        "owner_user_id": user_id,
+        "name": name + "'s Workspace",
+        "plan": "basic",
+        "settings": {"coaching_only": True},
+    }).execute()
+    ws_id = ws_ins.data[0]["id"]
+
+    # Update user.workspace_id, link coaching_client.user_id
+    _supabase.table("users").update({"workspace_id": ws_id}).eq("id", user_id).execute()
+    _supabase.table("coaching_clients").update({"user_id": user_id}).eq("id", client_id).execute()
+
+    # Send invite email with temp password
+    if payload.send_email:
+        try:
+            from main import send_email as _send, load_settings as _load_settings
+            settings = _load_settings()
+            smtp_cfg = settings.get("resend") or {"pass": settings.get("resend_api_key", "")}
+            html = f"""
+            <div style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px'>
+              <h2 style='color:#6c63ff'>Welcome to Coaching with TPL Collective</h2>
+              <p>Hey {name.split(' ')[0]} —</p>
+              <p>Your coaching portal is ready. Log in here to view your business plan, log daily activity, track your pipeline, and see prep for our calls.</p>
+              <p style='background:#f5f5fa;border-radius:8px;padding:14px;font-family:monospace;font-size:13px'>
+                <strong>Login:</strong> https://portal.tplcollective.ai<br>
+                <strong>Email:</strong> {email}<br>
+                <strong>Temporary password:</strong> {temp_pwd}
+              </p>
+              <p>Change your password after first login. See you on our next call.</p>
+              <p>— Joe</p>
+            </div>
+            """
+            _send(smtp_cfg, email, "Your TPL Coaching Portal is Ready", html, from_address="Joe DeSane <joe@tplcollective.co>", campaign="coaching-invite")
+        except Exception:
+            pass  # Email failure shouldn't block provisioning
+
+    return {"provisioned": True, "user_id": user_id, "workspace_id": ws_id, "temp_password": temp_pwd, "email": email}
+
+
+# ─── Agent self-service endpoints (/api/coaching/me/*) ───
+# Scoped by current_user.sub via coaching_clients.user_id (NOT by workspace).
+# Lets an agent in their own isolated workspace still see their coaching record
+# which lives in Joe's workspace.
+
+def _my_client(request: Request) -> dict:
+    user = getattr(request.state, "user", None) or {}
+    user_id = user.get("sub")
+    if not user_id:
+        raise HTTPException(401, "Not authenticated")
+    res = _supabase.table("coaching_clients").select("*").eq("user_id", user_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(404, "You are not enrolled as a coaching client")
+    return res.data[0]
+
+
+@router.get("/me")
+def my_coaching(request: Request):
+    cc = _my_client(request)
+    cc = _enrich_client(cc)
+    bundle = _ensure_business_plan(cc["id"], datetime.utcnow().year, cc["workspace_id"])
+    plan = bundle["plan"]
+    em = bundle["economic_model"]
+    bm = bundle["budget_model"]
+    economic = calc_economic(float(plan.get("gci_target") or 0), em)
+    budget = calc_budget(float(plan.get("gci_target") or 0), bm, economic)
+    return {
+        "client": cc,
+        "plan": plan,
+        "budget_model": bm,
+        "economic_model": em,
+        "computed": {"economic": economic, "budget": budget},
+    }
+
+
+@router.get("/me/pipeline")
+def my_pipeline(request: Request, entry_type: Optional[str] = None):
+    cc = _my_client(request)
+    qb = _supabase.table("pipeline_entries").select("*").eq("coaching_client_id", cc["id"])
+    if entry_type:
+        qb = qb.eq("entry_type", entry_type)
+    return qb.order("rating", desc=True).execute().data or []
+
+
+@router.post("/me/pipeline")
+def my_pipeline_create(payload: PipelineEntryIn, request: Request):
+    cc = _my_client(request)
+    if payload.entry_type not in ("LISTING", "BUYER"):
+        raise HTTPException(400, "entry_type must be LISTING or BUYER")
+    if payload.rating is not None and not (1 <= payload.rating <= 10):
+        raise HTTPException(400, "rating must be 1–10")
+    row = {"workspace_id": cc["workspace_id"], "coaching_client_id": cc["id"], **payload.dict(exclude_unset=True)}
+    return _supabase.table("pipeline_entries").insert(row).execute().data[0]
+
+
+@router.patch("/me/pipeline/{entry_id}")
+def my_pipeline_update(entry_id: int, payload: PipelineEntryIn, request: Request):
+    cc = _my_client(request)
+    own = _supabase.table("pipeline_entries").select("id").eq("id", entry_id).eq("coaching_client_id", cc["id"]).execute().data
+    if not own:
+        raise HTTPException(404, "Not found")
+    data = payload.dict(exclude_unset=True)
+    res = _supabase.table("pipeline_entries").update(data).eq("id", entry_id).execute()
+    return res.data[0]
+
+
+@router.delete("/me/pipeline/{entry_id}")
+def my_pipeline_delete(entry_id: int, request: Request):
+    cc = _my_client(request)
+    own = _supabase.table("pipeline_entries").select("id").eq("id", entry_id).eq("coaching_client_id", cc["id"]).execute().data
+    if not own:
+        raise HTTPException(404, "Not found")
+    _supabase.table("pipeline_entries").delete().eq("id", entry_id).execute()
+    return {"ok": True}
+
+
+@router.get("/me/activity")
+def my_activity(request: Request, days: int = 30):
+    cc = _my_client(request)
+    return _supabase.table("coaching_activity_logs").select("*").eq("coaching_client_id", cc["id"]).order("log_date", desc=True).limit(max(1, min(days, 365))).execute().data or []
+
+
+@router.post("/me/activity")
+def my_activity_upsert(payload: ActivityLogIn, request: Request):
+    cc = _my_client(request)
+    log_date = payload.log_date or date.today().isoformat()
+    row = {
+        "coaching_client_id": cc["id"],
+        "log_date": log_date,
+        **{k: v for k, v in payload.dict(exclude_unset=True).items() if k != "log_date"},
+    }
+    return _supabase.table("coaching_activity_logs").upsert(row, on_conflict="coaching_client_id,log_date").execute().data[0]
+
+
+@router.get("/me/calls")
+def my_calls(request: Request):
+    cc = _my_client(request)
+    return _supabase.table("coaching_calls").select("*").eq("coaching_client_id", cc["id"]).order("scheduled_at", desc=True).limit(50).execute().data or []
+
+
+@router.get("/me/action-items")
+def my_action_items(request: Request, status: Optional[str] = None):
+    cc = _my_client(request)
+    qb = _supabase.table("coaching_action_items").select("*").eq("coaching_client_id", cc["id"]).eq("owner", "AGENT")
+    if status:
+        qb = qb.eq("status", status)
+    return qb.order("due_date", desc=False).execute().data or []
+
+
+@router.patch("/me/action-items/{item_id}")
+def my_action_item_status(item_id: int, payload: ActionItemUpdate, request: Request):
+    """Agents can mark items COMPLETED/MISSED/OPEN, but can't edit text/measurement/due/owner/tag."""
+    cc = _my_client(request)
+    own = _supabase.table("coaching_action_items").select("id").eq("id", item_id).eq("coaching_client_id", cc["id"]).eq("owner", "AGENT").execute().data
+    if not own:
+        raise HTTPException(404, "Not found or not yours")
+    if not payload.status:
+        raise HTTPException(400, "status is required")
+    data = {"status": payload.status}
+    if payload.status == "COMPLETED":
+        data["completed_at"] = datetime.utcnow().isoformat()
+    return _supabase.table("coaching_action_items").update(data).eq("id", item_id).execute().data[0]
+
+
+@router.get("/me/brief")
+def my_brief(request: Request):
+    """The agent sees the same pre-call brief their coach uses."""
+    cc = _my_client(request)
+    last = _supabase.table("coaching_calls").select("id").eq("coaching_client_id", cc["id"]).order("scheduled_at", desc=True).limit(1).execute()
+    if last.data:
+        return _build_brief(cc["id"], last.data[0]["id"], cc["workspace_id"])
+    return _build_brief_no_call(cc["id"], cc["workspace_id"])
+
+
+# ─── Coaching Dashboard (coach view across all clients) ───
+
+@router.get("/dashboard")
+def coaching_dashboard(request: Request):
+    """Aggregate book-of-business: who needs attention this week."""
+    workspace_id = _ws(request)
+    today = date.today()
+    yr = today.year
+    days_elapsed = (today - date(yr, 1, 1)).days + 1
+    expected_pct = days_elapsed / 365.0
+
+    clients = _db("coaching_clients").select("*").eq("status", "ACTIVE").execute().data or []
+    clients = [_enrich_client(c) for c in clients]
+
+    rows = []
+    total_gci_goal = 0
+    total_gci_ytd = 0
+    behind_clients = []
+    thin_pipeline = []
+    no_recent_activity = []
+    upcoming_calls = []
+    low_keep = []
+
+    from datetime import timedelta as _td
+    cutoff_activity = (today - _td(days=7)).isoformat()
+    cutoff_calls_lo = today.isoformat()
+    cutoff_calls_hi = (today + _td(days=7)).isoformat()
+
+    for c in clients:
+        bundle = _ensure_business_plan(c["id"], yr, workspace_id)
+        plan = bundle["plan"]
+        gci_target = float(plan.get("gci_target") or 0)
+        # YTD
+        closed = _supabase.table("pipeline_entries").select("gross_commission,closed_date").eq("coaching_client_id", c["id"]).eq("closed", True).execute().data or []
+        gci_ytd = sum(float(r.get("gross_commission") or 0) for r in closed if (r.get("closed_date") or "").startswith(str(yr)))
+        total_gci_goal += gci_target
+        total_gci_ytd += gci_ytd
+        actual_pct = (gci_ytd / gci_target) if gci_target > 0 else 0
+        gap_pct = round((actual_pct - expected_pct) * 100, 1)
+
+        # Pipeline 10s+9s count (open)
+        open_pipe = _supabase.table("pipeline_entries").select("rating,entry_type").eq("coaching_client_id", c["id"]).eq("closed", False).execute().data or []
+        hot_listings = sum(1 for p in open_pipe if p.get("entry_type") == "LISTING" and p.get("rating") in (9, 10))
+
+        # Recent activity
+        last_act = _supabase.table("coaching_activity_logs").select("log_date").eq("coaching_client_id", c["id"]).order("log_date", desc=True).limit(1).execute().data or []
+        last_log_date = last_act[0]["log_date"] if last_act else None
+        days_since_log = None
+        if last_log_date:
+            try:
+                d = datetime.strptime(last_log_date, "%Y-%m-%d").date()
+                days_since_log = (today - d).days
+            except Exception:
+                pass
+
+        # Upcoming + last call
+        next_call = _supabase.table("coaching_calls").select("id,scheduled_at,call_type,status").eq("coaching_client_id", c["id"]).gte("scheduled_at", cutoff_calls_lo).lte("scheduled_at", cutoff_calls_hi).order("scheduled_at").limit(1).execute().data or []
+        last_completed = _supabase.table("coaching_calls").select("commitment_keep_score").eq("coaching_client_id", c["id"]).eq("status", "COMPLETED").order("completed_at", desc=True).limit(1).execute().data or []
+        last_keep = last_completed[0]["commitment_keep_score"] if last_completed and last_completed[0].get("commitment_keep_score") is not None else None
+
+        lead = c.get("lead") or {}
+        client_summary = {
+            "id": c["id"],
+            "name": lead.get("name") or "—",
+            "comp_plan": c.get("lpt_comp_plan"),
+            "cadence": c.get("call_cadence"),
+            "gci_target": gci_target,
+            "gci_ytd": round(gci_ytd, 2),
+            "pace_gap_pct": gap_pct,
+            "hot_listings": hot_listings,
+            "open_pipeline_total": len(open_pipe),
+            "days_since_log": days_since_log,
+            "next_call": next_call[0] if next_call else None,
+            "last_commit_keep": last_keep,
+        }
+        rows.append(client_summary)
+
+        if gap_pct < -10:
+            behind_clients.append(client_summary)
+        if hot_listings == 0 and len(open_pipe) > 0:
+            thin_pipeline.append(client_summary)
+        elif len(open_pipe) == 0:
+            thin_pipeline.append(client_summary)
+        if days_since_log is None or days_since_log > 3:
+            no_recent_activity.append(client_summary)
+        if next_call:
+            upcoming_calls.append(client_summary)
+        if last_keep is not None and last_keep < 70:
+            low_keep.append(client_summary)
+
+    return {
+        "totals": {
+            "active_clients": len(clients),
+            "aggregate_gci_goal": round(total_gci_goal, 2),
+            "aggregate_gci_ytd": round(total_gci_ytd, 2),
+            "aggregate_pace_pct": round((total_gci_ytd / total_gci_goal * 100), 1) if total_gci_goal else 0,
+            "expected_pct": round(expected_pct * 100, 1),
+        },
+        "all_clients": sorted(rows, key=lambda r: r["pace_gap_pct"]),
+        "behind_pace": sorted(behind_clients, key=lambda r: r["pace_gap_pct"]),
+        "thin_pipeline": thin_pipeline,
+        "no_recent_activity": no_recent_activity,
+        "upcoming_calls": upcoming_calls,
+        "low_commitment_keep": low_keep,
+    }
+
+
+# ─── GPS (1-3-5) ───
+
+class GPSGoalIn(BaseModel):
+    goal_text: Optional[str] = None
+    target_number: Optional[float] = None
+
+
+class GPSPriorityIn(BaseModel):
+    priority_text: Optional[str] = None
+    target_number: Optional[float] = None
+    sort_order: Optional[int] = None
+
+
+class GPSStrategyIn(BaseModel):
+    strategy_text: Optional[str] = None
+    target_number: Optional[float] = None
+    source_or_method: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+@router.get("/clients/{client_id}/gps")
+def get_gps(client_id: int, request: Request, year: Optional[int] = None):
+    workspace_id = _ws(request)
+    yr = year or datetime.utcnow().year
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan_id = bundle["plan"]["id"]
+    goal_resp = _supabase.table("gps_goals").select("*").eq("business_plan_id", plan_id).execute()
+    if goal_resp.data:
+        goal = goal_resp.data[0]
+    else:
+        # Auto-create with the GCI target as the goal
+        gci = bundle["plan"].get("gci_target") or 0
+        ins = _supabase.table("gps_goals").insert({
+            "business_plan_id": plan_id,
+            "goal_text": f"Earn ${int(float(gci)):,} in GCI in {yr}",
+            "target_number": gci,
+        }).execute()
+        goal = ins.data[0]
+    priorities = _supabase.table("gps_priorities").select("*").eq("gps_goal_id", goal["id"]).order("sort_order").execute().data or []
+    out_priorities = []
+    for p in priorities:
+        strats = _supabase.table("gps_strategies").select("*").eq("gps_priority_id", p["id"]).order("sort_order").execute().data or []
+        p["strategies"] = strats
+        out_priorities.append(p)
+    return {"goal": goal, "priorities": out_priorities}
+
+
+@router.patch("/gps-goals/{goal_id}")
+def update_gps_goal(goal_id: int, payload: GPSGoalIn, request: Request):
+    data = payload.dict(exclude_unset=True)
+    return _supabase.table("gps_goals").update(data).eq("id", goal_id).execute().data[0]
+
+
+@router.post("/gps-goals/{goal_id}/priorities")
+def create_priority(goal_id: int, payload: GPSPriorityIn, request: Request):
+    row = {"gps_goal_id": goal_id, **payload.dict(exclude_unset=True)}
+    return _supabase.table("gps_priorities").insert(row).execute().data[0]
+
+
+@router.patch("/gps-priorities/{pid}")
+def update_priority(pid: int, payload: GPSPriorityIn, request: Request):
+    return _supabase.table("gps_priorities").update(payload.dict(exclude_unset=True)).eq("id", pid).execute().data[0]
+
+
+@router.delete("/gps-priorities/{pid}")
+def delete_priority(pid: int, request: Request):
+    _supabase.table("gps_priorities").delete().eq("id", pid).execute()
+    return {"ok": True}
+
+
+@router.post("/gps-priorities/{pid}/strategies")
+def create_strategy(pid: int, payload: GPSStrategyIn, request: Request):
+    row = {"gps_priority_id": pid, **payload.dict(exclude_unset=True)}
+    return _supabase.table("gps_strategies").insert(row).execute().data[0]
+
+
+@router.patch("/gps-strategies/{sid}")
+def update_strategy(sid: int, payload: GPSStrategyIn, request: Request):
+    return _supabase.table("gps_strategies").update(payload.dict(exclude_unset=True)).eq("id", sid).execute().data[0]
+
+
+@router.delete("/gps-strategies/{sid}")
+def delete_strategy(sid: int, request: Request):
+    _supabase.table("gps_strategies").delete().eq("id", sid).execute()
+    return {"ok": True}
+
+
+# ─── 4-1-1 ───
+
+class FourOneOneItemIn(BaseModel):
+    items: list  # [{text, target_number, completed}]
+
+
+@router.get("/clients/{client_id}/four-one-one")
+def get_411(client_id: int, request: Request, period_type: str = "ANNUAL", period_key: Optional[str] = None, year: Optional[int] = None):
+    workspace_id = _ws(request)
+    yr = year or datetime.utcnow().year
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan_id = bundle["plan"]["id"]
+
+    if not period_key:
+        if period_type == "ANNUAL":
+            period_key = str(yr)
+        elif period_type == "MONTHLY":
+            period_key = f"{yr}-{datetime.utcnow().month:02d}"
+        else:  # WEEKLY
+            iso = datetime.utcnow().isocalendar()
+            period_key = f"{iso[0]}-W{iso[1]:02d}"
+
+    rows = _supabase.table("four_one_ones").select("*").eq("business_plan_id", plan_id).eq("period_type", period_type).eq("period_key", period_key).execute().data or []
+    by_col = {r["column_key"]: r for r in rows}
+    out = {}
+    for col in ("JOB", "BUSINESS", "PERSONAL_FINANCIAL", "PERSONAL"):
+        out[col] = by_col.get(col, {"items": [], "column_key": col, "period_type": period_type, "period_key": period_key, "business_plan_id": plan_id})
+    # Suggestions for ANNUAL Business column from Big Rocks
+    if period_type == "ANNUAL" and not out["BUSINESS"].get("items"):
+        em = bundle["economic_model"]
+        gci = float(bundle["plan"].get("gci_target") or 0)
+        econ = calc_economic(gci, em)
+        out["BUSINESS"]["suggestions"] = [
+            {"text": "Listings taken", "target_number": econ["listings_taken"]["value"]},
+            {"text": "Buyers shown", "target_number": econ["buyers_shown"]["value"]},
+            {"text": "Listing appts", "target_number": econ["listing_appts_annual"]["value"]},
+            {"text": "Buyer consults", "target_number": econ["buyer_consults_annual"]["value"]},
+            {"text": "GCI", "target_number": gci},
+        ]
+    return {"period_type": period_type, "period_key": period_key, "columns": out}
+
+
+@router.put("/clients/{client_id}/four-one-one")
+def upsert_411(client_id: int, request: Request, period_type: str, period_key: str, column_key: str, payload: FourOneOneItemIn, year: Optional[int] = None):
+    workspace_id = _ws(request)
+    yr = year or datetime.utcnow().year
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan_id = bundle["plan"]["id"]
+    row = {
+        "business_plan_id": plan_id,
+        "period_type": period_type,
+        "period_key": period_key,
+        "column_key": column_key,
+        "items": payload.items,
+    }
+    return _supabase.table("four_one_ones").upsert(row, on_conflict="business_plan_id,period_type,period_key,column_key").execute().data[0]
+
+
+# ─── HybridShare / Recruiting ───
+
+LPT_HYBRIDSHARE_TIERS = [
+    {"tier": 1, "pct_pool": 31, "min_active": 1,  "max_per_bp": 2325, "max_per_bb": 775},
+    {"tier": 2, "pct_pool": 18, "min_active": 4,  "max_per_bp": 1350, "max_per_bb": 450},
+    {"tier": 3, "pct_pool": 7,  "min_active": 8,  "max_per_bp": 525,  "max_per_bb": 175},
+    {"tier": 4, "pct_pool": 7,  "min_active": 12, "max_per_bp": 525,  "max_per_bb": 175},
+    {"tier": 5, "pct_pool": 7,  "min_active": 16, "max_per_bp": 525,  "max_per_bb": 175},
+    {"tier": 6, "pct_pool": 10, "min_active": 19, "max_per_bp": 750,  "max_per_bb": 250},
+    {"tier": 7, "pct_pool": 20, "min_active": 20, "max_per_bp": 1500, "max_per_bb": 500},
+]
+LPT_BP_MAX_TOTAL = 7500
+LPT_BB_MAX_TOTAL = 2500
+
+LPT_PERFORMANCE_AWARDS = [
+    {"award": "White Badge",  "txns": 1,  "shares_bp": 50,   "shares_bb": 25},
+    {"award": "Silver Badge", "txns": 3,  "shares_bp": 50,   "shares_bb": 25},
+    {"award": "Gold Badge",   "txns": 15, "shares_bp": 600,  "shares_bb": 300},
+    {"award": "Black Badge",  "txns": 35, "shares_bp": 1800, "shares_bb": None},  # BP only
+]
+
+
+class RecruitIn(BaseModel):
+    recruit_name: str
+    recruit_email: Optional[str] = None
+    recruit_phone: Optional[str] = None
+    status: Optional[str] = "HITLIST"
+    tier: Optional[int] = None
+    sponsor_recruit_id: Optional[int] = None
+    co_sponsor_recruit_id: Optional[int] = None
+    join_date: Optional[str] = None
+    comp_plan: Optional[str] = None
+    current_ytd_core_txns: Optional[int] = None
+    last_contact_date: Optional[str] = None
+    source: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class RecruitUpdate(BaseModel):
+    recruit_name: Optional[str] = None
+    recruit_email: Optional[str] = None
+    recruit_phone: Optional[str] = None
+    status: Optional[str] = None
+    tier: Optional[int] = None
+    sponsor_recruit_id: Optional[int] = None
+    co_sponsor_recruit_id: Optional[int] = None
+    join_date: Optional[str] = None
+    comp_plan: Optional[str] = None
+    current_ytd_core_txns: Optional[int] = None
+    last_contact_date: Optional[str] = None
+    source: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get("/clients/{client_id}/recruits")
+def list_recruits(client_id: int, request: Request, status: Optional[str] = None):
+    qb = _db("coaching_recruits").select("*").eq("coaching_client_id", client_id)
+    if status:
+        qb = qb.eq("status", status)
+    return qb.order("status").order("created_at", desc=True).execute().data or []
+
+
+@router.post("/clients/{client_id}/recruits")
+def create_recruit(client_id: int, payload: RecruitIn, request: Request):
+    workspace_id = _ws(request)
+    row = {"workspace_id": workspace_id, "coaching_client_id": client_id, "tier": payload.tier or 1, **payload.dict(exclude_unset=True)}
+    return _supabase.table("coaching_recruits").insert(row).execute().data[0]
+
+
+@router.patch("/recruits/{rid}")
+def update_recruit(rid: int, payload: RecruitUpdate, request: Request):
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields")
+    return _supabase.table("coaching_recruits").update(data).eq("id", rid).execute().data[0]
+
+
+@router.delete("/recruits/{rid}")
+def delete_recruit(rid: int, request: Request):
+    _supabase.table("coaching_recruits").delete().eq("id", rid).execute()
+    return {"ok": True}
+
+
+@router.get("/clients/{client_id}/hybridshare")
+def hybridshare_summary(client_id: int, request: Request):
+    """Computed HybridShare summary for a coaching client. Returns:
+    - Tier table with current count, lock state, tier subtotal
+    - Performance awards progress for the agent + each signed recruit
+    - 5-year freedom-number projection (params: assume_recruits_per_year, pct_bp, etc.)
+    """
+    cc = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data
+    if not cc:
+        raise HTTPException(404, "Client not found")
+    own_plan = cc.get("lpt_comp_plan")  # BUSINESS_BUILDER or BROKERAGE_PARTNER
+
+    recruits = _supabase.table("coaching_recruits").select("*").eq("coaching_client_id", client_id).execute().data or []
+    signed = [r for r in recruits if r.get("status") == "SIGNED"]
+
+    # Group by tier
+    by_tier = {}
+    for r in signed:
+        t = r.get("tier") or 1
+        by_tier.setdefault(t, []).append(r)
+
+    tiers_out = []
+    total_projected_income = 0
+    for tdef in LPT_HYBRIDSHARE_TIERS:
+        t = tdef["tier"]
+        slots = by_tier.get(t, [])
+        bp_count = sum(1 for r in slots if r.get("comp_plan") == "BROKERAGE_PARTNER")
+        bb_count = sum(1 for r in slots if r.get("comp_plan") == "BUSINESS_BUILDER")
+        total_active_in_tier = bp_count + bb_count
+        unlocked = total_active_in_tier >= tdef["min_active"]
+        tier_subtotal = bp_count * tdef["max_per_bp"] + bb_count * tdef["max_per_bb"]
+        if unlocked:
+            total_projected_income += tier_subtotal
+        tiers_out.append({
+            **tdef,
+            "bp_count": bp_count,
+            "bb_count": bb_count,
+            "total_active": total_active_in_tier,
+            "unlocked": unlocked,
+            "tier_subtotal": tier_subtotal,
+            "slots": slots,
+        })
+
+    # Performance Awards for the agent
+    agent_txns = 0
+    # Sum closed pipeline for the agent in current year
+    yr = datetime.utcnow().year
+    closed = _supabase.table("pipeline_entries").select("closed_date").eq("coaching_client_id", client_id).eq("closed", True).execute().data or []
+    agent_txns = sum(1 for r in closed if (r.get("closed_date") or "").startswith(str(yr)))
+
+    awards_progress = []
+    for a in LPT_PERFORMANCE_AWARDS:
+        shares = a["shares_bp"] if own_plan == "BROKERAGE_PARTNER" else a["shares_bb"]
+        if shares is None:
+            achieved = False
+            progress_pct = 0
+        else:
+            achieved = agent_txns >= a["txns"]
+            progress_pct = min(100, round((agent_txns / a["txns"]) * 100, 1))
+        awards_progress.append({
+            "award": a["award"],
+            "txns_required": a["txns"],
+            "txns_current": agent_txns,
+            "shares": shares,
+            "achieved": achieved,
+            "progress_pct": progress_pct,
+            "available_to_agent": shares is not None,
+        })
+
+    return {
+        "comp_plan": own_plan,
+        "tiers": tiers_out,
+        "total_projected_income_at_full_cap": total_projected_income,
+        "max_possible_total": LPT_BP_MAX_TOTAL if own_plan == "BROKERAGE_PARTNER" else LPT_BB_MAX_TOTAL,
+        "agent_ytd_txns": agent_txns,
+        "performance_awards": awards_progress,
+    }
+
+
+@router.get("/clients/{client_id}/hybridshare/projection")
+def hybridshare_projection(
+    client_id: int, request: Request,
+    recruits_per_year: float = 4.0,
+    pct_bp: float = 0.5,
+    cap_hit_rate: float = 0.30,
+    children_per_recruit: float = 1.5,
+):
+    """5-year stacked projection. Each year the network grows by recruits_per_year tier-1,
+    plus children_per_recruit per existing tier-1 recruit (which fills tier 2, etc.)."""
+    cc = _supabase.table("coaching_clients").select("lpt_comp_plan").eq("id", client_id).single().execute().data or {}
+    own_plan = cc.get("lpt_comp_plan") or "BROKERAGE_PARTNER"
+    pct_bb = 1.0 - pct_bp
+
+    network = [0] * 8  # tier 1..7 counts, ignore index 0
+    network[1] = 0
+    rows = []
+    for yr in range(1, 6):
+        # New tier-1 from agent's direct recruiting
+        network[1] += recruits_per_year
+        # Trickle: each existing tier-N produces children at tier N+1
+        for t in range(7, 1, -1):
+            parents_at_prev = network[t - 1]
+            new_children = parents_at_prev * children_per_recruit if t == 2 else parents_at_prev * (children_per_recruit / 2)  # diminishing
+            network[t] += new_children
+
+        # Project income at cap_hit_rate
+        income = 0
+        unlocked_tiers = 0
+        for tdef in LPT_HYBRIDSHARE_TIERS:
+            t = tdef["tier"]
+            n = network[t]
+            if n >= tdef["min_active"]:
+                unlocked_tiers += 1
+            bp_count = n * pct_bp
+            bb_count = n * pct_bb
+            tier_max = bp_count * tdef["max_per_bp"] + bb_count * tdef["max_per_bb"]
+            income += tier_max * cap_hit_rate
+
+        rows.append({
+            "year": yr,
+            "network_size": int(sum(network[1:8])),
+            "tiers_unlocked": unlocked_tiers,
+            "projected_income": round(income, 2),
+            "tier_breakdown": {f"tier_{t}": int(network[t]) for t in range(1, 8)},
+        })
+
+    return {
+        "params": {"recruits_per_year": recruits_per_year, "pct_bp": pct_bp, "cap_hit_rate": cap_hit_rate, "children_per_recruit": children_per_recruit},
+        "comp_plan": own_plan,
+        "years": rows,
+    }
+
+
+# Need to import is_valid_email from main lazily
+def is_valid_email(value):
+    from main import is_valid_email as _ive
+    return _ive(value)

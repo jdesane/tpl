@@ -792,22 +792,64 @@ th[onclick]:hover{color:var(--accent)}
   <div id="coaching-list-view">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap">
       <div>
-        <div class="panel-title" style="font-size:24px;margin-bottom:6px">Coaching Clients</div>
+        <div class="panel-title" style="font-size:24px;margin-bottom:6px">Coaching</div>
         <div style="color:var(--muted);font-size:13px">Real-estate agents you actively coach. Plans, pace, calls, accountability.</div>
       </div>
       <button type="button" class="btn btn-primary" onclick="cgOpenInviteModal()">+ Invite Client</button>
     </div>
 
-    <div class="metric-row" style="margin-bottom:16px">
-      <div class="metric-card"><div class="metric-label">Active Clients</div><div class="metric-value" id="cg-stat-active">&mdash;</div></div>
-      <div class="metric-card"><div class="metric-label">Paused</div><div class="metric-value" id="cg-stat-paused">&mdash;</div></div>
-      <div class="metric-card"><div class="metric-label">Churned</div><div class="metric-value" id="cg-stat-churned">&mdash;</div></div>
-      <div class="metric-card"><div class="metric-label">Aggregate GCI Goal</div><div class="metric-value" id="cg-stat-gci">&mdash;</div></div>
+    <!-- Toggle: Dashboard | Clients -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm cg-listview-tab cg-listview-tab-active" data-lv="dashboard" onclick="cgListViewSwitch('dashboard')">Dashboard</button>
+      <button class="btn btn-ghost btn-sm cg-listview-tab" data-lv="clients" onclick="cgListViewSwitch('clients')">All Clients</button>
     </div>
 
-    <div class="panel">
-      <div id="cg-clients-list">
-        <div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">Loading...</div>
+    <!-- DASHBOARD SUB-VIEW -->
+    <div id="cg-lv-dashboard">
+      <div class="metric-row" style="margin-bottom:16px">
+        <div class="metric-card"><div class="metric-label">Active Clients</div><div class="metric-value" id="cg-dash-active">&mdash;</div></div>
+        <div class="metric-card"><div class="metric-label">Aggregate GCI Goal</div><div class="metric-value" id="cg-dash-gci-goal">&mdash;</div></div>
+        <div class="metric-card"><div class="metric-label">Aggregate GCI YTD</div><div class="metric-value" id="cg-dash-gci-ytd">&mdash;</div></div>
+        <div class="metric-card"><div class="metric-label">Pace vs Expected</div><div class="metric-value" id="cg-dash-pace">&mdash;</div></div>
+      </div>
+      <div class="row-2" style="align-items:flex-start;margin-bottom:14px">
+        <div class="panel">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">Behind Pace</div>
+          <div id="cg-dash-behind"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">Thin / Empty Pipeline</div>
+          <div id="cg-dash-thin"></div>
+        </div>
+      </div>
+      <div class="row-2" style="align-items:flex-start;margin-bottom:14px">
+        <div class="panel">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">No Recent Activity (3+ days)</div>
+          <div id="cg-dash-noact"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">Calls This Week</div>
+          <div id="cg-dash-upcoming"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Low Commitment-Keep (&lt;70%)</div>
+        <div id="cg-dash-lowkeep"></div>
+      </div>
+    </div>
+
+    <!-- CLIENTS LIST SUB-VIEW -->
+    <div id="cg-lv-clients" style="display:none">
+      <div class="metric-row" style="margin-bottom:16px">
+        <div class="metric-card"><div class="metric-label">Active Clients</div><div class="metric-value" id="cg-stat-active">&mdash;</div></div>
+        <div class="metric-card"><div class="metric-label">Paused</div><div class="metric-value" id="cg-stat-paused">&mdash;</div></div>
+        <div class="metric-card"><div class="metric-label">Churned</div><div class="metric-value" id="cg-stat-churned">&mdash;</div></div>
+        <div class="metric-card"><div class="metric-label">Aggregate GCI Goal</div><div class="metric-value" id="cg-stat-gci">&mdash;</div></div>
+      </div>
+      <div class="panel">
+        <div id="cg-clients-list">
+          <div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">Loading...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -820,6 +862,7 @@ th[onclick]:hover{color:var(--accent)}
         <div class="panel-title" style="font-size:22px;margin:0" id="cg-detail-name">&mdash;</div>
         <div style="color:var(--muted);font-size:12px;margin-top:2px" id="cg-detail-meta">&mdash;</div>
       </div>
+      <button class="btn btn-ghost btn-sm" onclick="cgProvisionPortal()" title="Create a portal login for this client" id="cg-provision-btn">Portal Access</button>
       <select id="cg-detail-status" class="form-input" style="width:auto" onchange="cgUpdateStatus()">
         <option value="ACTIVE">Active</option>
         <option value="PAUSED">Paused</option>
@@ -875,10 +918,12 @@ th[onclick]:hover{color:var(--accent)}
     <!-- Tabs -->
     <div style="border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;gap:4px">
       <button class="btn btn-ghost btn-sm cg-tab cg-tab-active" data-cg-tab="plan" onclick="cgSwitchTab('plan')">Business Plan</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="gps" onclick="cgSwitchTab('gps')">GPS (1-3-5)</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="fouroneone" onclick="cgSwitchTab('fouroneone')">4-1-1</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="calls" onclick="cgSwitchTab('calls')">Coaching Calls</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="pipeline" onclick="cgSwitchTab('pipeline')">Pipeline</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="activity" onclick="cgSwitchTab('activity')">Daily Activity</button>
-      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')" disabled style="opacity:0.4">Recruiting</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')">HybridShare</button>
     </div>
 
     <!-- PLAN TAB -->
@@ -1079,7 +1124,91 @@ th[onclick]:hover{color:var(--accent)}
       </div>
     </div>
 
-    <div id="cg-tab-recruiting" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Recruiting / HybridShare &mdash; coming next session</div></div>
+    <!-- ─── GPS TAB ─── -->
+    <div id="cg-tab-gps" style="display:none">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Goal · Priorities · Strategies</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:14px">One Goal &rarr; three Priorities &rarr; five Strategies per Priority. Strategy targets should sum to at least the Priority target.</div>
+        <div>
+          <label class="form-label">Goal</label>
+          <textarea id="cg-gps-goal" class="form-input" style="min-height:60px" onblur="cgGpsSaveGoal()" placeholder="e.g. Earn $350,000 in GCI in 2026"></textarea>
+          <div style="margin-top:6px;display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:center">
+            <label class="form-label" style="margin:0">Goal target #</label>
+            <input type="number" id="cg-gps-goal-num" class="form-input" step="1000" onblur="cgGpsSaveGoal()" />
+          </div>
+        </div>
+        <div id="cg-gps-priorities" style="margin-top:18px;display:flex;flex-direction:column;gap:14px"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="cgGpsAddPriority()">+ Add Priority</button>
+      </div>
+    </div>
+
+    <!-- ─── 4-1-1 TAB ─── -->
+    <div id="cg-tab-fouroneone" style="display:none">
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <button class="btn btn-ghost btn-sm cg-411-tab cg-411-tab-active" data-pt="ANNUAL" onclick="cg411SwitchPeriod('ANNUAL')">Annual</button>
+        <button class="btn btn-ghost btn-sm cg-411-tab" data-pt="MONTHLY" onclick="cg411SwitchPeriod('MONTHLY')">This Month</button>
+        <button class="btn btn-ghost btn-sm cg-411-tab" data-pt="WEEKLY" onclick="cg411SwitchPeriod('WEEKLY')">This Week</button>
+        <div style="flex:1"></div>
+        <span id="cg-411-period-key" style="color:var(--muted);font-size:12px;align-self:center"></span>
+      </div>
+      <div class="row-2" style="align-items:flex-start;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="panel"><div class="panel-title" style="font-size:13px;margin-bottom:8px">Job (My Day-to-Day)</div><div id="cg-411-JOB" data-col="JOB"></div><button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="cg411AddItem('JOB')">+ Add</button></div>
+        <div class="panel"><div class="panel-title" style="font-size:13px;margin-bottom:8px">Business</div><div id="cg-411-BUSINESS" data-col="BUSINESS"></div><div id="cg-411-BUSINESS-suggest" style="margin-top:6px"></div><button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="cg411AddItem('BUSINESS')">+ Add</button></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="panel"><div class="panel-title" style="font-size:13px;margin-bottom:8px">Personal Financial</div><div id="cg-411-PERSONAL_FINANCIAL" data-col="PERSONAL_FINANCIAL"></div><button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="cg411AddItem('PERSONAL_FINANCIAL')">+ Add</button></div>
+        <div class="panel"><div class="panel-title" style="font-size:13px;margin-bottom:8px">Personal</div><div id="cg-411-PERSONAL" data-col="PERSONAL"></div><button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="cg411AddItem('PERSONAL')">+ Add</button></div>
+      </div>
+    </div>
+
+    <!-- ─── HYBRIDSHARE / RECRUITING TAB ─── -->
+    <div id="cg-tab-recruiting" style="display:none">
+      <div id="cg-hs-not-lpt" style="display:none" class="panel">
+        <div style="text-align:center;color:var(--muted);padding:32px">HybridShare is for LPT clients. Set the comp plan above (Brokerage Partner or Business Builder) to unlock.</div>
+      </div>
+      <div id="cg-hs-content">
+        <!-- Summary cards -->
+        <div class="metric-row" style="margin-bottom:14px">
+          <div class="metric-card"><div class="metric-label">Comp Plan</div><div class="metric-value" id="cg-hs-plan" style="font-size:18px">&mdash;</div></div>
+          <div class="metric-card"><div class="metric-label">Projected at Full Cap</div><div class="metric-value" id="cg-hs-projected">&mdash;</div></div>
+          <div class="metric-card"><div class="metric-label">Max Possible / Year</div><div class="metric-value" id="cg-hs-max">&mdash;</div></div>
+          <div class="metric-card"><div class="metric-label">YTD Core Transactions</div><div class="metric-value" id="cg-hs-txns">&mdash;</div></div>
+        </div>
+
+        <!-- Performance Awards progress -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">Performance Awards (Stock)</div>
+          <div id="cg-hs-awards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px"></div>
+        </div>
+
+        <!-- Recruit pipeline kanban -->
+        <div class="panel" style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="panel-title" style="font-size:14px;margin:0">Recruit Pipeline</div>
+            <button class="btn btn-primary btn-sm" onclick="cgHsAddRecruit()">+ Add Recruit</button>
+          </div>
+          <div id="cg-hs-kanban" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+        </div>
+
+        <!-- 7-Tier Wealth Chart -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">HybridShare Tiers</div>
+          <div id="cg-hs-tiers"></div>
+        </div>
+
+        <!-- 5-year projection -->
+        <div class="panel">
+          <div class="panel-title" style="font-size:14px;margin-bottom:10px">5-Year Freedom Number Projection</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+            <div><label class="form-label">Recruits / yr</label><input type="number" id="cg-hs-rpy" class="form-input" value="4" step="1" onchange="cgHsLoadProjection()" /></div>
+            <div><label class="form-label">% Brokerage Partner</label><input type="number" id="cg-hs-pctbp" class="form-input" value="50" step="5" onchange="cgHsLoadProjection()" /></div>
+            <div><label class="form-label">Cap-hit rate %</label><input type="number" id="cg-hs-caphit" class="form-input" value="30" step="5" onchange="cgHsLoadProjection()" /></div>
+            <div><label class="form-label">Children / recruit</label><input type="number" id="cg-hs-cpr" class="form-input" value="1.5" step="0.1" onchange="cgHsLoadProjection()" /></div>
+          </div>
+          <div id="cg-hs-projection"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -4832,6 +4961,476 @@ function cgRenderActivityHistory(){
         '</div>';
     }).join('');
 }
+
+// ════════════════════════════════════════════════════════════
+// SESSION 3 — Dashboard, GPS, 4-1-1, HybridShare, Provision Portal
+// ════════════════════════════════════════════════════════════
+
+// ─── List-view toggle (Dashboard | All Clients) ───
+function cgListViewSwitch(view){
+  document.querySelectorAll('.cg-listview-tab').forEach(function(b){b.classList.remove('cg-listview-tab-active')});
+  document.querySelector('.cg-listview-tab[data-lv="'+view+'"]').classList.add('cg-listview-tab-active');
+  document.getElementById('cg-lv-dashboard').style.display = (view==='dashboard'?'block':'none');
+  document.getElementById('cg-lv-clients').style.display = (view==='clients'?'block':'none');
+  if(view==='dashboard') cgLoadDashboard();
+}
+
+// Patch loadCoaching to also load dashboard
+var __cg_origLoadCoaching = window.loadCoaching;
+window.loadCoaching = async function(){
+  await __cg_origLoadCoaching();
+  cgLoadDashboard();
+};
+
+async function cgLoadDashboard(){
+  try{
+    var res = await fetch(API+'/api/coaching/dashboard');
+    if(!res.ok) return;
+    var d = await res.json();
+    var t = d.totals || {};
+    document.getElementById('cg-dash-active').textContent = t.active_clients;
+    document.getElementById('cg-dash-gci-goal').textContent = '$'+(t.aggregate_gci_goal||0).toLocaleString();
+    document.getElementById('cg-dash-gci-ytd').textContent = '$'+(t.aggregate_gci_ytd||0).toLocaleString();
+    var paceEl = document.getElementById('cg-dash-pace');
+    var pacePct = (t.aggregate_pace_pct||0) - (t.expected_pct||0);
+    paceEl.textContent = (pacePct>=0?'+':'')+pacePct.toFixed(1)+'%';
+    paceEl.style.color = pacePct>=0?'#5fcf86':(pacePct>=-10?'#d0b660':'#cc7070');
+
+    function renderClientList(arr, container, fmt){
+      var el = document.getElementById(container);
+      if(!arr.length){ el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px">— None —</div>'; return; }
+      el.innerHTML = arr.map(function(c){
+        return '<div onclick="cgOpenClient('+c.id+')" style="padding:8px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+          '<div style="font-weight:600;font-size:13px">'+c.name+'</div>' +
+          '<div style="color:var(--muted);font-size:11px;margin-top:2px">'+fmt(c)+'</div>' +
+          '</div>';
+      }).join('');
+    }
+    renderClientList(d.behind_pace||[], 'cg-dash-behind', function(c){return 'Pace gap '+c.pace_gap_pct+'% &middot; $'+(c.gci_ytd||0).toLocaleString()+' / $'+(c.gci_target||0).toLocaleString();});
+    renderClientList(d.thin_pipeline||[], 'cg-dash-thin', function(c){return c.hot_listings+' hot listings &middot; '+c.open_pipeline_total+' total pipeline';});
+    renderClientList(d.no_recent_activity||[], 'cg-dash-noact', function(c){return c.days_since_log==null?'Never logged':c.days_since_log+' days since last log';});
+    renderClientList(d.upcoming_calls||[], 'cg-dash-upcoming', function(c){var nc=c.next_call||{};return (nc.scheduled_at?new Date(nc.scheduled_at).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}):'—')+' &middot; '+(nc.call_type||'WEEKLY');});
+    renderClientList(d.low_commitment_keep||[], 'cg-dash-lowkeep', function(c){return 'Last call: '+c.last_commit_keep+'% kept';});
+  }catch(e){}
+}
+
+// ─── Provision Portal ───
+async function cgProvisionPortal(){
+  if(!cgState.current) return;
+  if(cgState.current.user_id){
+    alert('Portal access already provisioned for this client (user_id='+cgState.current.user_id+').');
+    return;
+  }
+  if(!confirm('Create a portal login for this client? They will receive an email with a temporary password and the link to portal.tplcollective.ai.')) return;
+  var btn = document.getElementById('cg-provision-btn');
+  btn.disabled=true; btn.textContent='Provisioning...';
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/provision-portal',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({send_email: true})
+    });
+    var data = await res.json();
+    if(!res.ok){ alert('Failed: '+(data.detail||'Unknown error')); btn.disabled=false; btn.textContent='Portal Access'; return; }
+    if(data.already_provisioned){ alert('Already provisioned (user_id='+data.user_id+').'); }
+    else if(data.reused_existing_user){ alert('Linked to existing user account (user_id='+data.user_id+'). No invite email sent.'); }
+    else {
+      alert('Portal access provisioned!\n\nEmail: '+data.email+'\nTemp password: '+data.temp_password+'\n\nInvite email sent. Login URL: portal.tplcollective.ai');
+    }
+    cgState.current.user_id = data.user_id;
+    btn.textContent='✓ Portal Provisioned';
+    btn.disabled=true;
+  }catch(e){
+    alert('Network error');
+    btn.disabled=false; btn.textContent='Portal Access';
+  }
+}
+
+// Update detail-render to disable provision button if already done
+var __cg_origRenderProfile = window.cgRenderProfile;
+window.cgRenderProfile = function(c){
+  __cg_origRenderProfile(c);
+  var btn = document.getElementById('cg-provision-btn');
+  if(c.user_id){ btn.textContent='✓ Portal Provisioned'; btn.disabled=true; }
+  else { btn.textContent='Portal Access'; btn.disabled=false; }
+};
+
+// ─── Tab switch hook for new tabs ───
+var __cg_origSwitchTab2 = window.cgSwitchTab;
+window.cgSwitchTab = function(tab){
+  __cg_origSwitchTab2(tab);
+  if(!cgState.current) return;
+  if(tab==='gps') cgGpsLoad();
+  if(tab==='fouroneone') cg411Load();
+  if(tab==='recruiting') cgHsLoad();
+};
+
+// ─── GPS (1-3-5) ───
+var cgGpsState = { goal: null, priorities: [] };
+
+async function cgGpsLoad(){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/gps');
+    if(!res.ok) return;
+    var data = await res.json();
+    cgGpsState.goal = data.goal;
+    cgGpsState.priorities = data.priorities || [];
+    document.getElementById('cg-gps-goal').value = cgGpsState.goal.goal_text || '';
+    document.getElementById('cg-gps-goal-num').value = cgGpsState.goal.target_number || '';
+    cgGpsRender();
+  }catch(e){}
+}
+
+function cgGpsRender(){
+  var el = document.getElementById('cg-gps-priorities');
+  if(!cgGpsState.priorities.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px;text-align:center">No priorities yet. Click + Add Priority below.</div>';
+    return;
+  }
+  el.innerHTML = cgGpsState.priorities.map(function(p, idx){
+    var stratSum = (p.strategies||[]).reduce(function(s,x){return s+(parseFloat(x.target_number)||0)},0);
+    var pTarget = parseFloat(p.target_number)||0;
+    var warn = pTarget>0 && stratSum<pTarget;
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px">' +
+      '<div style="display:grid;grid-template-columns:30px 2fr 1fr auto;gap:8px;align-items:center">' +
+        '<div style="font-family:DM Mono,monospace;color:var(--muted);font-size:11px">P'+(idx+1)+'</div>' +
+        '<input type="text" class="form-input" value="'+(p.priority_text||'').replace(/"/g,'&quot;')+'" placeholder="Priority text" onblur="cgGpsSavePriority('+p.id+', \'priority_text\', this.value)" />' +
+        '<input type="number" class="form-input" value="'+(p.target_number||'')+'" placeholder="Target #" onblur="cgGpsSavePriority('+p.id+', \'target_number\', parseFloat(this.value)||null)" />' +
+        '<button class="btn btn-ghost btn-sm" style="color:#cc7070" onclick="cgGpsDeletePriority('+p.id+')">×</button>' +
+      '</div>' +
+      (warn ? '<div style="color:#d0b660;font-size:11px;margin-top:6px;margin-left:38px">⚠ Strategy targets sum to '+stratSum+', below priority target '+pTarget+'.</div>' : '') +
+      '<div style="margin-top:10px;margin-left:38px;display:flex;flex-direction:column;gap:6px">' +
+        (p.strategies||[]).map(function(s, sidx){
+          return '<div style="display:grid;grid-template-columns:30px 2fr 1fr 1.5fr auto;gap:6px;align-items:center">' +
+            '<div style="color:var(--muted);font-size:10px">S'+(sidx+1)+'</div>' +
+            '<input type="text" class="form-input" value="'+(s.strategy_text||'').replace(/"/g,'&quot;')+'" placeholder="Strategy" onblur="cgGpsSaveStrategy('+s.id+', \'strategy_text\', this.value)" />' +
+            '<input type="number" class="form-input" value="'+(s.target_number||'')+'" placeholder="#" onblur="cgGpsSaveStrategy('+s.id+', \'target_number\', parseFloat(this.value)||null)" />' +
+            '<input type="text" class="form-input" value="'+(s.source_or_method||'').replace(/"/g,'&quot;')+'" placeholder="Source / method" onblur="cgGpsSaveStrategy('+s.id+', \'source_or_method\', this.value)" />' +
+            '<button class="btn btn-ghost btn-sm" style="color:#cc7070" onclick="cgGpsDeleteStrategy('+s.id+')">×</button>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div style="margin-top:8px;margin-left:38px"><button class="btn btn-ghost btn-sm" onclick="cgGpsAddStrategy('+p.id+')" '+((p.strategies||[]).length>=5?'disabled style="opacity:0.4"':'')+'>+ Add Strategy ('+(p.strategies||[]).length+'/5)</button></div>' +
+    '</div>';
+  }).join('');
+}
+
+async function cgGpsSaveGoal(){
+  if(!cgGpsState.goal) return;
+  var data = {
+    goal_text: document.getElementById('cg-gps-goal').value,
+    target_number: parseFloat(document.getElementById('cg-gps-goal-num').value) || null,
+  };
+  await fetch(API+'/api/coaching/gps-goals/'+cgGpsState.goal.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+}
+
+async function cgGpsAddPriority(){
+  if(!cgGpsState.goal||cgGpsState.priorities.length>=3){ if(cgGpsState.priorities.length>=3)alert('Max 3 priorities per goal.'); return; }
+  await fetch(API+'/api/coaching/gps-goals/'+cgGpsState.goal.id+'/priorities',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({sort_order: cgGpsState.priorities.length})
+  });
+  await cgGpsLoad();
+}
+
+async function cgGpsSavePriority(id, field, value){
+  var p = {}; p[field]=value;
+  await fetch(API+'/api/coaching/gps-priorities/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  // Update state and re-render to reflect any warning shifts
+  var pri = cgGpsState.priorities.find(function(x){return x.id===id});
+  if(pri){ pri[field]=value; cgGpsRender(); }
+}
+
+async function cgGpsDeletePriority(id){
+  if(!confirm('Delete this priority and its strategies?')) return;
+  await fetch(API+'/api/coaching/gps-priorities/'+id,{method:'DELETE'});
+  await cgGpsLoad();
+}
+
+async function cgGpsAddStrategy(priorityId){
+  var p = cgGpsState.priorities.find(function(x){return x.id===priorityId});
+  if(p && (p.strategies||[]).length>=5){ alert('Max 5 strategies per priority.'); return; }
+  await fetch(API+'/api/coaching/gps-priorities/'+priorityId+'/strategies',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({sort_order: (p.strategies||[]).length})
+  });
+  await cgGpsLoad();
+}
+
+async function cgGpsSaveStrategy(id, field, value){
+  var p = {}; p[field]=value;
+  await fetch(API+'/api/coaching/gps-strategies/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  for(var i=0;i<cgGpsState.priorities.length;i++){
+    var s = (cgGpsState.priorities[i].strategies||[]).find(function(x){return x.id===id});
+    if(s){ s[field]=value; cgGpsRender(); break; }
+  }
+}
+
+async function cgGpsDeleteStrategy(id){
+  if(!confirm('Delete this strategy?')) return;
+  await fetch(API+'/api/coaching/gps-strategies/'+id,{method:'DELETE'});
+  await cgGpsLoad();
+}
+
+// ─── 4-1-1 ───
+var cg411State = { period_type: 'ANNUAL', period_key: null, columns: {} };
+
+async function cg411Load(){
+  if(!cgState.current) return;
+  try{
+    var url = API+'/api/coaching/clients/'+cgState.current.id+'/four-one-one?period_type='+cg411State.period_type;
+    if(cg411State.period_key) url += '&period_key='+encodeURIComponent(cg411State.period_key);
+    var res = await fetch(url);
+    if(!res.ok) return;
+    var d = await res.json();
+    cg411State.period_key = d.period_key;
+    cg411State.columns = d.columns;
+    document.getElementById('cg-411-period-key').textContent = d.period_key;
+    ['JOB','BUSINESS','PERSONAL_FINANCIAL','PERSONAL'].forEach(function(col){
+      cg411RenderColumn(col);
+    });
+    // Render BUSINESS suggestions if present
+    var sugs = (d.columns.BUSINESS||{}).suggestions;
+    var sEl = document.getElementById('cg-411-BUSINESS-suggest');
+    if(sugs && sugs.length){
+      sEl.innerHTML = '<div style="color:var(--muted);font-size:11px;margin-bottom:4px">Suggested from Big Rocks:</div>' +
+        sugs.map(function(s){
+          return '<button class="btn btn-ghost btn-sm" style="margin-right:4px;margin-bottom:4px;font-size:11px" onclick="cg411AddSuggestion(\''+s.text.replace(/'/g,"\\\\'")+'\', '+(s.target_number||0)+')">'+s.text+' ('+(s.target_number||0)+')</button>';
+        }).join('');
+    } else {
+      sEl.innerHTML = '';
+    }
+  }catch(e){}
+}
+
+function cg411SwitchPeriod(pt){
+  cg411State.period_type = pt;
+  cg411State.period_key = null;
+  document.querySelectorAll('.cg-411-tab').forEach(function(b){b.classList.remove('cg-411-tab-active')});
+  document.querySelector('.cg-411-tab[data-pt="'+pt+'"]').classList.add('cg-411-tab-active');
+  cg411Load();
+}
+
+function cg411RenderColumn(col){
+  var el = document.getElementById('cg-411-'+col);
+  var c = cg411State.columns[col] || {items: []};
+  var items = c.items || [];
+  if(!items.length){
+    el.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:6px">No items.</div>';
+    return;
+  }
+  el.innerHTML = items.map(function(it, idx){
+    var done = !!it.completed;
+    return '<div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">' +
+      '<input type="checkbox" '+(done?'checked':'')+' onchange="cg411ToggleItem(\''+col+'\', '+idx+', this.checked)" />' +
+      '<input type="text" class="form-input" style="padding:4px 6px;font-size:12px;'+(done?'text-decoration:line-through;color:var(--muted);':'')+'" value="'+(it.text||'').replace(/"/g,'&quot;')+'" onblur="cg411EditItem(\''+col+'\', '+idx+', \'text\', this.value)" />' +
+      '<input type="number" class="form-input" style="padding:4px 6px;font-size:12px;width:80px" value="'+(it.target_number||'')+'" onblur="cg411EditItem(\''+col+'\', '+idx+', \'target_number\', parseFloat(this.value)||null)" />' +
+      '<button class="btn btn-ghost btn-sm" style="color:#cc7070;padding:2px 6px" onclick="cg411DeleteItem(\''+col+'\', '+idx+')">×</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function cg411AddItem(col){
+  var text = prompt('Item text');
+  if(!text) return;
+  var num = parseFloat(prompt('Target number (optional)', '')) || null;
+  cg411State.columns[col] = cg411State.columns[col] || {items: []};
+  cg411State.columns[col].items.push({text: text, target_number: num, completed: false});
+  await cg411SaveColumn(col);
+  cg411RenderColumn(col);
+}
+
+async function cg411AddSuggestion(text, num){
+  cg411State.columns.BUSINESS = cg411State.columns.BUSINESS || {items: []};
+  cg411State.columns.BUSINESS.items.push({text: text, target_number: num, completed: false});
+  await cg411SaveColumn('BUSINESS');
+  cg411RenderColumn('BUSINESS');
+}
+
+async function cg411ToggleItem(col, idx, checked){
+  cg411State.columns[col].items[idx].completed = checked;
+  await cg411SaveColumn(col);
+  cg411RenderColumn(col);
+}
+
+async function cg411EditItem(col, idx, field, value){
+  cg411State.columns[col].items[idx][field] = value;
+  await cg411SaveColumn(col);
+}
+
+async function cg411DeleteItem(col, idx){
+  cg411State.columns[col].items.splice(idx, 1);
+  await cg411SaveColumn(col);
+  cg411RenderColumn(col);
+}
+
+async function cg411SaveColumn(col){
+  var url = API+'/api/coaching/clients/'+cgState.current.id+'/four-one-one'
+    + '?period_type='+cg411State.period_type
+    + '&period_key='+encodeURIComponent(cg411State.period_key)
+    + '&column_key='+col;
+  await fetch(url,{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({items: cg411State.columns[col].items})
+  });
+}
+
+// ─── HybridShare ───
+var cgHsState = { summary: null, recruits: [] };
+
+async function cgHsLoad(){
+  if(!cgState.current) return;
+  if(!cgState.current.lpt_comp_plan){
+    document.getElementById('cg-hs-not-lpt').style.display='block';
+    document.getElementById('cg-hs-content').style.display='none';
+    return;
+  }
+  document.getElementById('cg-hs-not-lpt').style.display='none';
+  document.getElementById('cg-hs-content').style.display='block';
+  try{
+    var [sumRes, recRes] = await Promise.all([
+      fetch(API+'/api/coaching/clients/'+cgState.current.id+'/hybridshare'),
+      fetch(API+'/api/coaching/clients/'+cgState.current.id+'/recruits'),
+    ]);
+    cgHsState.summary = await sumRes.json();
+    cgHsState.recruits = await recRes.json();
+    cgHsRenderSummary();
+    cgHsRenderAwards();
+    cgHsRenderKanban();
+    cgHsRenderTiers();
+    await cgHsLoadProjection();
+  }catch(e){}
+}
+
+function cgHsRenderSummary(){
+  var s = cgHsState.summary || {};
+  document.getElementById('cg-hs-plan').textContent = s.comp_plan==='BROKERAGE_PARTNER'?'BP':'BB';
+  document.getElementById('cg-hs-projected').textContent = '$'+(s.total_projected_income_at_full_cap||0).toLocaleString();
+  document.getElementById('cg-hs-max').textContent = '$'+(s.max_possible_total||0).toLocaleString();
+  document.getElementById('cg-hs-txns').textContent = s.agent_ytd_txns||0;
+}
+
+function cgHsRenderAwards(){
+  var s = cgHsState.summary || {};
+  var awards = s.performance_awards || [];
+  document.getElementById('cg-hs-awards').innerHTML = awards.map(function(a){
+    var na = !a.available_to_agent;
+    var color = a.achieved?'#5fcf86':(a.progress_pct>=50?'#d0b660':'var(--text-dim)');
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;'+(na?'opacity:0.4':'')+'">' +
+      '<div style="font-weight:600;font-size:13px;color:'+color+'">'+a.award+'</div>' +
+      '<div style="color:var(--muted);font-size:11px;margin-top:2px">'+a.txns_current+' / '+a.txns_required+' transactions'+(na?' (BP only)':'')+'</div>' +
+      '<div style="height:4px;background:var(--surface-2);border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;background:'+color+';width:'+(a.progress_pct||0)+'%"></div></div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+(a.shares?(a.shares+' shares'):'—')+(a.achieved?' &middot; ✓ earned':'')+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function cgHsRenderKanban(){
+  var cols = ['HITLIST','WORKING_HOT','IN_PROCESS','SIGNED'];
+  var labels = {HITLIST:'Hitlist',WORKING_HOT:'Working Hot',IN_PROCESS:'In Process',SIGNED:'Signed'};
+  var el = document.getElementById('cg-hs-kanban');
+  el.innerHTML = cols.map(function(col){
+    var rs = cgHsState.recruits.filter(function(r){return r.status===col});
+    return '<div style="background:var(--surface-2);border-radius:8px;padding:10px;min-height:120px">' +
+      '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">'+labels[col]+' &middot; '+rs.length+'</div>' +
+      rs.map(function(r){
+        var planTag = r.comp_plan==='BROKERAGE_PARTNER'?'<span style="background:var(--accent-glow);color:var(--accent);padding:1px 4px;border-radius:4px;font-size:9px">BP</span>':(r.comp_plan==='BUSINESS_BUILDER'?'<span style="background:rgba(220,180,80,.1);color:#d0b660;padding:1px 4px;border-radius:4px;font-size:9px">BB</span>':'');
+        return '<div onclick="cgHsEditRecruit('+r.id+')" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer">' +
+          '<div style="font-weight:600;font-size:12px">'+r.recruit_name+' '+planTag+'</div>' +
+          '<div style="color:var(--muted);font-size:10px;margin-top:2px">'+(r.last_contact_date?('last '+r.last_contact_date):'never contacted')+'</div>' +
+          '</div>';
+      }).join('') +
+    '</div>';
+  }).join('');
+}
+
+function cgHsRenderTiers(){
+  var s = cgHsState.summary || {};
+  var tiers = s.tiers || [];
+  var el = document.getElementById('cg-hs-tiers');
+  el.innerHTML = '<div style="display:grid;grid-template-columns:50px 1fr 100px 100px 120px 100px;gap:8px;padding:6px 8px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
+    '<div>Tier</div><div>State</div><div>BPs</div><div>BBs</div><div>Min unlock</div><div>Subtotal</div>' +
+    '</div>' +
+    tiers.slice().reverse().map(function(t){
+      var stateColor = t.unlocked?'#5fcf86':'var(--text-dim)';
+      var stateLabel = t.unlocked?'🔓 unlocked':'🔒 locked ('+t.total_active+'/'+t.min_active+')';
+      return '<div style="display:grid;grid-template-columns:50px 1fr 100px 100px 120px 100px;gap:8px;padding:8px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">' +
+        '<div style="font-weight:700;font-size:14px">T'+t.tier+'</div>' +
+        '<div style="color:'+stateColor+';font-size:11px">'+stateLabel+'</div>' +
+        '<div>'+t.bp_count+' &times; $'+t.max_per_bp.toLocaleString()+'</div>' +
+        '<div>'+t.bb_count+' &times; $'+t.max_per_bb.toLocaleString()+'</div>' +
+        '<div style="color:var(--muted)">'+t.min_active+' active</div>' +
+        '<div style="font-weight:600">$'+t.tier_subtotal.toLocaleString()+'/yr</div>' +
+      '</div>';
+    }).join('');
+}
+
+async function cgHsLoadProjection(){
+  if(!cgState.current) return;
+  var rpy = parseFloat(document.getElementById('cg-hs-rpy').value)||4;
+  var pctbp = (parseFloat(document.getElementById('cg-hs-pctbp').value)||50)/100;
+  var caphit = (parseFloat(document.getElementById('cg-hs-caphit').value)||30)/100;
+  var cpr = parseFloat(document.getElementById('cg-hs-cpr').value)||1.5;
+  try{
+    var url = API+'/api/coaching/clients/'+cgState.current.id+'/hybridshare/projection?recruits_per_year='+rpy+'&pct_bp='+pctbp+'&cap_hit_rate='+caphit+'&children_per_recruit='+cpr;
+    var res = await fetch(url);
+    var d = await res.json();
+    var rows = d.years || [];
+    var el = document.getElementById('cg-hs-projection');
+    el.innerHTML = '<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr;gap:8px;padding:6px 8px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
+      '<div>Year</div><div>Network Size</div><div>Tiers Unlocked</div><div>Projected Income</div>' +
+      '</div>' +
+      rows.map(function(r){
+        return '<div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr;gap:8px;padding:10px 8px;border-bottom:1px solid var(--border);font-size:13px">' +
+          '<div style="font-weight:600">Y'+r.year+'</div>' +
+          '<div>'+r.network_size+' agents</div>' +
+          '<div>'+r.tiers_unlocked+' / 7</div>' +
+          '<div style="font-weight:600;color:var(--accent)">$'+(r.projected_income||0).toLocaleString()+'</div>' +
+        '</div>';
+      }).join('');
+  }catch(e){}
+}
+
+async function cgHsAddRecruit(){
+  var name = prompt('Recruit name');
+  if(!name) return;
+  var status = prompt('Status (HITLIST / WORKING_HOT / IN_PROCESS / SIGNED)', 'HITLIST') || 'HITLIST';
+  var plan = prompt('Comp plan if signed (BROKERAGE_PARTNER / BUSINESS_BUILDER, or blank)', '') || null;
+  var src = prompt('Source (where you met them)', '') || null;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/recruits',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({recruit_name: name, status: status.toUpperCase(), comp_plan: plan, source: src, tier: 1})
+  });
+  await cgHsLoad();
+}
+
+async function cgHsEditRecruit(id){
+  var r = cgHsState.recruits.find(function(x){return x.id===id});
+  if(!r) return;
+  var status = prompt('Status (HITLIST / WORKING_HOT / IN_PROCESS / SIGNED / UNQUALIFIED / CHURNED)', r.status||'HITLIST');
+  if(status===null) return;
+  var plan = prompt('Comp plan (BROKERAGE_PARTNER / BUSINESS_BUILDER, or blank)', r.comp_plan||'');
+  var lastContact = prompt('Last contact date (YYYY-MM-DD, or blank)', r.last_contact_date||'');
+  var del = confirm('Save changes? (Cancel = delete recruit)');
+  if(!del){
+    await fetch(API+'/api/coaching/recruits/'+id,{method:'DELETE'});
+  } else {
+    await fetch(API+'/api/coaching/recruits/'+id,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({status: status.toUpperCase(), comp_plan: plan||null, last_contact_date: lastContact||null})
+    });
+  }
+  await cgHsLoad();
+}
+
+// Re-load HybridShare when comp plan changes
+var __cg_origSaveClient = window.cgSaveClient;
+window.cgSaveClient = async function(){
+  await __cg_origSaveClient();
+  // If currently on Recruiting tab, refresh the gating
+  var rt = document.querySelector('.cg-tab-active');
+  if(rt && rt.dataset.cgTab==='recruiting') cgHsLoad();
+};
 </script>
 </body>
 </html>
