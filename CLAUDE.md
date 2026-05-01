@@ -327,15 +327,42 @@
 
 **Deploy:** files rsynced to VPS (`main.py`, `coaching.py`, `static/index.html`); backed up as `*.pre-phase15-{ts}`; rebuilt Docker image; container booted clean. Live at `https://mission.tplcollective.ai` → click **Coaching** in sidebar.
 
-**Out of scope this session (queued for next):**
-- Agent portal `/coaching` tab (agents log activity, view plan, prep for calls)
-- Coaching call workflow (pre-call brief auto-generation, in-call notes, action items, recap)
+## Phase 15.2 — Coaching: Calls + Action Items + Pipeline + Activity ✅ (Session 2)
+**Goal:** Build the killer feature — coaching call workflow with auto-generated pre-call brief — plus the supporting pipeline + activity data sources that feed it.
+
+**Backend (`coaching.py` extended, no new tables — all schema already in place from session 1):**
+- `GET/POST/PATCH/DELETE /api/coaching/clients/{id}/pipeline` + `/api/coaching/pipeline/{id}` — listing + buyer entries with 1-10 rating; closed flag with closing_price + gross_commission feed GCI YTD
+- `GET/POST /api/coaching/clients/{id}/activity` — daily log with upsert on `(client_id, log_date)`; streak counter helper `_activity_streak()` walks logs back from today, breaks on first day below target contacts
+- `GET/POST/PATCH/DELETE /api/coaching/clients/{id}/calls` + `/api/coaching/calls/{id}` — schedule, list, update, delete; auto-snapshots `pre_call_brief` JSONB on creation; `prior_call_id` chain for commitment tracking
+- `POST /api/coaching/calls/{id}/refresh-brief` — re-builds the brief from current data right before the call starts
+- `POST /api/coaching/calls/{id}/complete` — marks completed + computes `commitment_keep_score` as % of prior call's action items in COMPLETED status
+- `GET/POST/PATCH/DELETE /api/coaching/clients/{id}/action-items` + `/api/coaching/action-items/{id}` — text/measurement/due_date/owner/tag/status/source_call_id; auto-stamps completed_at when status=COMPLETED
+- `GET /api/coaching/clients/{id}/brief-preview` — ad-hoc brief without creating a call (uses last call if any, else `_build_brief_no_call`)
+
+**Pre-call brief structure (`_build_brief()`):**
+- **pace** — GCI YTD vs target with day-of-year gap; status = ahead | on-pace | behind (>10% gap)
+- **big_rocks** — listings/buyers closed YTD vs targets from Economic Model
+- **pipeline** — open entries by rating (10s/9s/8s/7s/6s/cold/total) split by LISTING vs BUYER
+- **activity_14d** — contacts made, appts held, hours prospected, days logged, current streak (consecutive days with contacts ≥ 1)
+- **last_call_action_items** — commitments from prior call with completion status
+- **commitment_keep_score** — completed ÷ total of prior call's action items
+- **talking_points** — heuristically generated red flags (behind pace, empty pipeline, low commit-keep, daily discipline gap, contact volume too low)
+
+**Frontend (Mission Control `static/index.html`):**
+- Tab bar in client detail view enabled: Business Plan / Coaching Calls / Pipeline / Daily Activity (Recruiting still stubbed)
+- **Calls tab** — list view (date + type + status pill + commitment-keep % + notes preview) and detail view; "+ Schedule Next Call" creates the call and opens it; detail view splits left (brief + in-call markdown notes auto-saving on blur) and right (action items panel with checkbox-toggle to flip OPEN→COMPLETED, inline text edit, prompt-based add/edit, delete); "↻ Refresh Brief" rebuilds from current data; "Mark Complete" computes commitment-keep
+- **Pipeline tab** — Listings/Buyers toggle, 7-column rating summary cards (10s/9s/8s/7s/6s/5s/≤4) with hot ratings highlighted in accent color, table with inline rating + next-step editing, full-edit and delete actions
+- **Activity tab** — today's log entry form (auto-saves each field on blur, upserts so re-saving doesn't dupe) + last-14-days table
+
+**Math sanity check on VPS:** $350K goal / $0 YTD on May 1 → "behind 33.2%, gap = $116,027"; 1 listing-10 + 1 listing-9 + 1 buyer-cold counted correctly; talking points generated for pace + daily discipline.
+
+**Out of scope (queued for next):**
+- Agent portal `/coaching` tab — agents log activity + view plan from portal.tplcollective.ai
 - GPS (1-3-5) editor with rollup validation
-- 4-1-1 cascade (annual / monthly / weekly across Job/Business/Personal Financial/Personal)
-- Pipeline tracker (listing + buyer with 1-10 rating)
-- Daily activity log + streak counter + pace indicators
+- 4-1-1 cascade
 - LPT HybridShare module + recruiting kanban + 5-year projection
 - Reviews (quarterly/semi-annual/annual snapshots)
+- Coaching dashboard ("who needs my attention this week")
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)

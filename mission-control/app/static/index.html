@@ -875,9 +875,9 @@ th[onclick]:hover{color:var(--accent)}
     <!-- Tabs -->
     <div style="border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;gap:4px">
       <button class="btn btn-ghost btn-sm cg-tab cg-tab-active" data-cg-tab="plan" onclick="cgSwitchTab('plan')">Business Plan</button>
-      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="calls" onclick="cgSwitchTab('calls')" disabled style="opacity:0.4">Coaching Calls</button>
-      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="pipeline" onclick="cgSwitchTab('pipeline')" disabled style="opacity:0.4">Pipeline</button>
-      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="activity" onclick="cgSwitchTab('activity')" disabled style="opacity:0.4">Daily Activity</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="calls" onclick="cgSwitchTab('calls')">Coaching Calls</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="pipeline" onclick="cgSwitchTab('pipeline')">Pipeline</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="activity" onclick="cgSwitchTab('activity')">Daily Activity</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')" disabled style="opacity:0.4">Recruiting</button>
     </div>
 
@@ -989,9 +989,96 @@ th[onclick]:hover{color:var(--accent)}
     </div>
 
     <!-- Other tabs (placeholders) -->
-    <div id="cg-tab-calls" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Coaching Calls workflow &mdash; coming next session</div></div>
-    <div id="cg-tab-pipeline" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Pipeline tracker &mdash; coming next session</div></div>
-    <div id="cg-tab-activity" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Daily activity log &mdash; coming next session</div></div>
+    <!-- ─── CALLS TAB ─── -->
+    <div id="cg-tab-calls" style="display:none">
+      <!-- Calls list view -->
+      <div id="cg-calls-list-view">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="panel-title" style="font-size:16px;margin:0">Coaching Calls</div>
+          <button class="btn btn-primary btn-sm" onclick="cgScheduleCall()">+ Schedule Next Call</button>
+        </div>
+        <div class="panel">
+          <div id="cg-calls-list" style="min-height:80px"></div>
+        </div>
+      </div>
+
+      <!-- Single call view -->
+      <div id="cg-calls-detail-view" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <button class="btn btn-ghost btn-sm" onclick="cgBackToCalls()">&larr; All Calls</button>
+          <div style="flex:1">
+            <div id="cg-call-title" style="font-weight:600;font-size:15px">&mdash;</div>
+            <div id="cg-call-sub" style="color:var(--muted);font-size:11px;margin-top:2px">&mdash;</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="cgRefreshBrief()" title="Re-build the pre-call brief from current data">↻ Refresh Brief</button>
+          <button class="btn btn-primary btn-sm" id="cg-complete-call-btn" onclick="cgCompleteCall()">Mark Complete</button>
+        </div>
+
+        <div class="row-2" style="align-items:flex-start">
+          <!-- LEFT: Brief + Notes -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Pre-call brief -->
+            <div class="panel">
+              <div class="panel-title" style="font-size:14px;margin-bottom:10px">Pre-Call Brief</div>
+              <div id="cg-brief-content" style="font-size:13px;line-height:1.5"></div>
+            </div>
+            <!-- In-call notes -->
+            <div class="panel">
+              <div class="panel-title" style="font-size:14px;margin-bottom:8px">In-Call Notes <span style="color:var(--muted);font-weight:normal;font-size:11px;margin-left:6px">(markdown — auto-saves on blur)</span></div>
+              <textarea id="cg-call-notes" class="form-input" style="min-height:280px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.55" placeholder="What did the agent commit to? What broke? What's the focus for next week?" onblur="cgSaveCallNotes()"></textarea>
+            </div>
+          </div>
+
+          <!-- RIGHT: Action items -->
+          <div class="panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div class="panel-title" style="font-size:14px;margin:0">Action Items <span id="cg-ai-count" style="color:var(--muted);font-weight:normal;font-size:11px;margin-left:4px">0</span></div>
+              <button class="btn btn-ghost btn-sm" onclick="cgAddActionItem()">+ Add</button>
+            </div>
+            <div id="cg-action-items-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PIPELINE TAB ─── -->
+    <div id="cg-tab-pipeline" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm cg-pipe-tab cg-pipe-tab-active" data-pt="LISTING" onclick="cgPipeSwitchType('LISTING')">Listings</button>
+          <button class="btn btn-ghost btn-sm cg-pipe-tab" data-pt="BUYER" onclick="cgPipeSwitchType('BUYER')">Buyers</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="cgAddPipelineEntry()">+ Add Entry</button>
+      </div>
+      <!-- Rating breakdown -->
+      <div id="cg-pipe-summary" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px"></div>
+      <div class="panel">
+        <div id="cg-pipe-list"></div>
+      </div>
+    </div>
+
+    <!-- ─── ACTIVITY TAB ─── -->
+    <div id="cg-tab-activity" style="display:none">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Today's Activity Log</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+          <div><label class="form-label">Contacts Made</label><input type="number" id="cg-act-contacts" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Appts Set</label><input type="number" id="cg-act-set" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Appts Held</label><input type="number" id="cg-act-held" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Hours Prospected</label><input type="number" id="cg-act-hours" class="form-input" step="0.5" onblur="cgSaveActivity()" /></div>
+        </div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label class="form-label">Wins</label><input type="text" id="cg-act-wins" class="form-input" placeholder="What went well today?" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Notes</label><input type="text" id="cg-act-notes" class="form-input" placeholder="Anything else worth capturing" onblur="cgSaveActivity()" /></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Last 14 Days</div>
+        <div id="cg-act-history"></div>
+      </div>
+    </div>
+
     <div id="cg-tab-recruiting" style="display:none"><div class="panel" style="text-align:center;color:var(--muted);padding:32px">Recruiting / HybridShare &mdash; coming next session</div></div>
   </div>
 </div>
@@ -4224,6 +4311,526 @@ function cgShowInviteError(msg){
   var el=document.getElementById('cg-inv-error');
   el.textContent=msg;
   el.style.display='block';
+}
+
+// ════════════════════════════════════════════════════════════
+// COACHING — Session 2 (Calls + Action Items + Pipeline + Activity)
+// ════════════════════════════════════════════════════════════
+
+var cgCallState = {
+  calls: [],
+  current: null,        // {id, ...} of selected call
+  actionItems: [],
+};
+var cgPipeState = { entries: [], type: 'LISTING' };
+var cgActState = { logs: [], today: null };
+
+// Patch cgSwitchTab to lazy-load each tab's data
+var __cg_origSwitchTab = window.cgSwitchTab;
+window.cgSwitchTab = function(tab){
+  __cg_origSwitchTab(tab);
+  if(!cgState.current) return;
+  if(tab==='calls')   cgLoadCalls();
+  if(tab==='pipeline')cgLoadPipeline();
+  if(tab==='activity')cgLoadActivity();
+};
+
+// ─────────────────────────────────────────────
+// CALLS
+// ─────────────────────────────────────────────
+
+async function cgLoadCalls(){
+  cgShowCallsListView();
+  if(!cgState.current) return;
+  var listEl = document.getElementById('cg-calls-list');
+  listEl.innerHTML='<div style="color:var(--muted);font-size:12px;padding:18px;text-align:center">Loading...</div>';
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/calls');
+    if(!res.ok) return;
+    var calls = await res.json();
+    cgCallState.calls = calls;
+    cgRenderCallsList();
+  }catch(e){}
+}
+
+function cgShowCallsListView(){
+  document.getElementById('cg-calls-list-view').style.display='block';
+  document.getElementById('cg-calls-detail-view').style.display='none';
+}
+
+function cgRenderCallsList(){
+  var el = document.getElementById('cg-calls-list');
+  if(!cgCallState.calls.length){
+    el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No calls yet. Click <strong>+ Schedule Next Call</strong> to start.</div>';
+    return;
+  }
+  el.innerHTML = cgCallState.calls.map(function(c){
+    var dt = c.scheduled_at ? new Date(c.scheduled_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) : '—';
+    var status = (c.status||'SCHEDULED').toUpperCase();
+    var pill='cg-status-paused';
+    if(status==='COMPLETED')pill='cg-status-active';
+    else if(status==='MISSED'||status==='CANCELLED')pill='cg-status-churned';
+    var keep = c.commitment_keep_score!==null && c.commitment_keep_score!==undefined ?
+      ('<span style="color:'+(c.commitment_keep_score>=70?'#5fcf86':'#cc7070')+';font-size:11px;margin-left:8px">'+c.commitment_keep_score+'% kept</span>') : '';
+    return '<div onclick="cgOpenCall('+c.id+')" style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+      '<div><div style="font-weight:600;font-size:13px">'+dt+' &middot; '+(c.call_type||'WEEKLY')+keep+'</div>' +
+      '<div style="color:var(--muted);font-size:11px;margin-top:2px">'+(c.in_call_notes ? (c.in_call_notes.substring(0,80)+(c.in_call_notes.length>80?'...':'')) : 'No notes yet')+'</div></div>' +
+      '<span class="cg-status-pill '+pill+'">'+status.toLowerCase()+'</span>' +
+      '</div>';
+  }).join('');
+}
+
+async function cgScheduleCall(){
+  if(!cgState.current) return;
+  // Default to "now" — Joe can change scheduled_at via input later if we add one.
+  var nowIso = new Date().toISOString();
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/calls',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({scheduled_at: nowIso, call_type: cgState.current.call_cadence||'WEEKLY'})
+    });
+    if(!res.ok) return;
+    var call = await res.json();
+    await cgLoadCalls();
+    cgOpenCall(call.id);
+  }catch(e){}
+}
+
+async function cgOpenCall(callId){
+  if(!cgState.current) return;
+  // Fetch the call (in case its brief was just refreshed)
+  try{
+    var res = await fetch(API+'/api/coaching/calls/'+callId);
+    if(!res.ok) return;
+    var call = await res.json();
+    cgCallState.current = call;
+
+    document.getElementById('cg-calls-list-view').style.display='none';
+    document.getElementById('cg-calls-detail-view').style.display='block';
+
+    var lead = (cgState.current.lead||{});
+    var name = lead.name || ((lead.first_name||'')+' '+(lead.last_name||'')).trim();
+    var dt = call.scheduled_at ? new Date(call.scheduled_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) : '—';
+    document.getElementById('cg-call-title').textContent = name+' · '+(call.call_type||'WEEKLY')+' Call';
+    document.getElementById('cg-call-sub').textContent = dt+' · '+((call.status||'SCHEDULED').toLowerCase());
+    document.getElementById('cg-call-notes').value = call.in_call_notes || '';
+    document.getElementById('cg-complete-call-btn').textContent = (call.status==='COMPLETED'?'✓ Completed':'Mark Complete');
+    document.getElementById('cg-complete-call-btn').disabled = (call.status==='COMPLETED');
+
+    cgRenderBrief(call.pre_call_brief);
+    await cgLoadActionItems(callId);
+  }catch(e){}
+}
+
+function cgBackToCalls(){
+  cgCallState.current=null;
+  cgShowCallsListView();
+}
+
+async function cgRefreshBrief(){
+  if(!cgCallState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/calls/'+cgCallState.current.id+'/refresh-brief',{method:'POST'});
+    if(!res.ok) return;
+    var brief = await res.json();
+    cgCallState.current.pre_call_brief = brief;
+    cgRenderBrief(brief);
+  }catch(e){}
+}
+
+function cgRenderBrief(b){
+  var el = document.getElementById('cg-brief-content');
+  if(!b){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px">No brief available. Click ↻ Refresh Brief.</div>';
+    return;
+  }
+  var pace = b.pace||{};
+  var paceColor = pace.status==='ahead'?'#5fcf86':(pace.status==='on-pace'?'#d0b660':'#cc7070');
+  var br = b.big_rocks||{};
+  var pl = (b.pipeline||{}).listings||{};
+  var pb = (b.pipeline||{}).buyers||{};
+  var act = b.activity_14d||{};
+  var keep = b.commitment_keep_score;
+  var keepColor = keep===null||keep===undefined?'var(--muted)':(keep>=70?'#5fcf86':'#cc7070');
+
+  var html = '';
+
+  // Pace section
+  html += '<div style="margin-bottom:14px;padding:10px;border-left:3px solid '+paceColor+';background:var(--surface-2);border-radius:0 6px 6px 0">' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Pace</div>' +
+    '<div style="font-size:18px;font-weight:600;color:'+paceColor+'">'+(pace.status||'').toUpperCase()+' · '+(pace.pace_gap_pct>=0?'+':'')+pace.pace_gap_pct+'%</div>' +
+    '<div style="font-size:12px;color:var(--text);margin-top:4px">$'+(pace.gci_ytd||0).toLocaleString()+' / $'+(pace.gci_target||0).toLocaleString()+' &middot; '+(pace.actual_pct||0)+'% of goal at day '+(pace.days_elapsed||0)+' of 365 ('+(pace.expected_pct||0)+'% expected)</div>' +
+    '</div>';
+
+  // Big Rocks
+  html += '<div style="margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Big Rocks (YTD vs target)</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">' +
+    '<div>Listings closed: <strong>'+(br.listings_closed_ytd||0)+'</strong> / target '+(br.listings_taken_target||0)+'</div>' +
+    '<div>Buyers closed: <strong>'+(br.buyers_closed_ytd||0)+'</strong> / target '+(br.houses_sold_target ? (br.houses_sold_target - (br.listings_taken_target||0)) : '—')+'</div>' +
+    '<div>Listing appts target: '+(br.listing_appts_target||0)+'/yr</div>' +
+    '<div>Buyer consults target: '+(br.buyer_consults_target||0)+'/yr</div>' +
+    '</div></div>';
+
+  // Pipeline
+  html += '<div style="margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Pipeline by rating</div>' +
+    '<div style="display:grid;grid-template-columns:auto repeat(7,1fr);gap:4px;font-size:11px;text-align:center">' +
+    '<div style="text-align:left;color:var(--muted)">&nbsp;</div><div style="color:var(--muted)">10s</div><div style="color:var(--muted)">9s</div><div style="color:var(--muted)">8s</div><div style="color:var(--muted)">7s</div><div style="color:var(--muted)">6s</div><div style="color:var(--muted)">≤5</div><div style="color:var(--muted)">total</div>' +
+    '<div style="text-align:left">Listings</div><div><strong>'+(pl["10s"]||0)+'</strong></div><div>'+(pl["9s"]||0)+'</div><div>'+(pl["8s"]||0)+'</div><div>'+(pl["7s"]||0)+'</div><div>'+(pl["6s"]||0)+'</div><div>'+(pl.cold||0)+'</div><div><strong>'+(pl.total||0)+'</strong></div>' +
+    '<div style="text-align:left">Buyers</div><div><strong>'+(pb["10s"]||0)+'</strong></div><div>'+(pb["9s"]||0)+'</div><div>'+(pb["8s"]||0)+'</div><div>'+(pb["7s"]||0)+'</div><div>'+(pb["6s"]||0)+'</div><div>'+(pb.cold||0)+'</div><div><strong>'+(pb.total||0)+'</strong></div>' +
+    '</div></div>';
+
+  // Activity 14d
+  html += '<div style="margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Activity (last 14 days)</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:12px">' +
+    '<div><div style="color:var(--muted);font-size:10px">Contacts</div><div style="font-size:16px;font-weight:600">'+(act.contacts_made||0)+'</div></div>' +
+    '<div><div style="color:var(--muted);font-size:10px">Appts Held</div><div style="font-size:16px;font-weight:600">'+(act.appts_held||0)+'</div></div>' +
+    '<div><div style="color:var(--muted);font-size:10px">Hours</div><div style="font-size:16px;font-weight:600">'+(act.hours_prospected||0)+'</div></div>' +
+    '<div><div style="color:var(--muted);font-size:10px">Days logged</div><div style="font-size:16px;font-weight:600">'+(act.days_logged||0)+'/14</div></div>' +
+    '<div><div style="color:var(--muted);font-size:10px">Streak</div><div style="font-size:16px;font-weight:600">'+(act.streak_days||0)+' 🔥</div></div>' +
+    '</div></div>';
+
+  // Commitment-keep + last-call action items
+  html += '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Last-call commitments</div>' +
+    '<div style="color:'+keepColor+';font-size:12px;font-weight:600">'+(keep===null||keep===undefined?'no prior call':keep+'% kept')+'</div></div>';
+  if(b.last_call_action_items && b.last_call_action_items.length){
+    html += '<div style="font-size:12px;display:flex;flex-direction:column;gap:3px">';
+    b.last_call_action_items.forEach(function(it){
+      var done = (it.status||'').toUpperCase()==='COMPLETED';
+      var icon = done ? '✓' : '○';
+      var color = done ? '#5fcf86' : '#cc7070';
+      html += '<div style="color:'+color+'"><span style="display:inline-block;width:14px">'+icon+'</span> '+(it.text||'')+(it.measurement?(' <span style="color:var(--muted)">('+it.measurement+')</span>'):'')+'</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div style="color:var(--muted);font-size:11px">No prior call action items.</div>';
+  }
+  html += '</div>';
+
+  // Talking points
+  if(b.talking_points && b.talking_points.length){
+    html += '<div style="margin-bottom:6px;padding:10px;background:rgba(220,180,80,.1);border-left:3px solid #d0b660;border-radius:0 6px 6px 0">' +
+      '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#d0b660;margin-bottom:6px">Suggested Talking Points</div>' +
+      '<ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.55">';
+    b.talking_points.forEach(function(t){ html += '<li>'+t+'</li>'; });
+    html += '</ul></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function cgSaveCallNotes(){
+  if(!cgCallState.current) return;
+  var notes = document.getElementById('cg-call-notes').value;
+  await fetch(API+'/api/coaching/calls/'+cgCallState.current.id,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({in_call_notes: notes})
+  });
+  cgCallState.current.in_call_notes = notes;
+}
+
+async function cgCompleteCall(){
+  if(!cgCallState.current) return;
+  var btn = document.getElementById('cg-complete-call-btn');
+  btn.disabled=true; btn.textContent='Completing...';
+  try{
+    var res = await fetch(API+'/api/coaching/calls/'+cgCallState.current.id+'/complete',{method:'POST'});
+    if(!res.ok){ btn.disabled=false; btn.textContent='Mark Complete'; return; }
+    var updated = await res.json();
+    cgCallState.current = Object.assign({}, cgCallState.current, updated);
+    btn.textContent='✓ Completed';
+    document.getElementById('cg-call-sub').textContent =
+      (cgCallState.current.scheduled_at ? new Date(cgCallState.current.scheduled_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) : '—') +
+      ' · completed' + (updated.commitment_keep_score!==null && updated.commitment_keep_score!==undefined ? ' · '+updated.commitment_keep_score+'% kept' : '');
+  }catch(e){ btn.disabled=false; btn.textContent='Mark Complete'; }
+}
+
+// ─── Action items ───
+
+async function cgLoadActionItems(callId){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/action-items?source_call_id='+callId);
+    if(!res.ok) return;
+    var items = await res.json();
+    cgCallState.actionItems = items;
+    cgRenderActionItems();
+  }catch(e){}
+}
+
+function cgRenderActionItems(){
+  var el = document.getElementById('cg-action-items-list');
+  document.getElementById('cg-ai-count').textContent = cgCallState.actionItems.length;
+  if(!cgCallState.actionItems.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:14px;text-align:center">No commitments yet.</div>';
+    return;
+  }
+  el.innerHTML = cgCallState.actionItems.map(function(it){
+    var done = (it.status||'').toUpperCase()==='COMPLETED';
+    var missed = (it.status||'').toUpperCase()==='MISSED';
+    var due = it.due_date ? '<span style="color:var(--muted);font-size:11px">due '+it.due_date+'</span>' : '';
+    var meas = it.measurement ? '<span style="color:var(--muted);font-size:11px">('+it.measurement+')</span>' : '';
+    return '<div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;background:'+(done?'rgba(80,200,120,.06)':'')+'">' +
+      '<div style="display:flex;align-items:flex-start;gap:8px">' +
+      '<input type="checkbox" '+(done?'checked':'')+' onchange="cgToggleActionItem('+it.id+', this.checked)" style="margin-top:3px" />' +
+      '<div style="flex:1">' +
+        '<input type="text" value="'+(it.text||'').replace(/"/g,'&quot;')+'" class="form-input" style="padding:4px 6px;font-size:13px;border:none;background:transparent;'+(done?'text-decoration:line-through;color:var(--muted);':'')+'" onblur="cgEditActionItem('+it.id+', \'text\', this.value)" />' +
+        '<div style="display:flex;gap:8px;margin-top:2px;align-items:center">' + meas + due +
+          '<button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;margin-left:auto" onclick="cgEditActionItemFull('+it.id+')">Edit</button>' +
+          '<button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;color:#cc7070" onclick="cgDeleteActionItem('+it.id+')">Delete</button>' +
+        '</div>' +
+      '</div></div></div>';
+  }).join('');
+}
+
+async function cgAddActionItem(){
+  if(!cgCallState.current) return;
+  var text = prompt('Action item — what is the agent committing to?');
+  if(!text||!text.trim()) return;
+  var measurement = prompt('Measurement (e.g. "150 contacts", "2 listings", or leave blank)') || '';
+  var due = prompt('Due date (YYYY-MM-DD, or leave blank for next call)') || '';
+  try{
+    await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/action-items',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        text: text.trim(),
+        measurement: measurement.trim() || null,
+        due_date: due.trim() || null,
+        owner: 'AGENT',
+        source_call_id: cgCallState.current.id,
+      })
+    });
+    await cgLoadActionItems(cgCallState.current.id);
+  }catch(e){}
+}
+
+async function cgToggleActionItem(id, checked){
+  await fetch(API+'/api/coaching/action-items/'+id,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status: checked?'COMPLETED':'OPEN'})
+  });
+  if(cgCallState.current) await cgLoadActionItems(cgCallState.current.id);
+}
+
+async function cgEditActionItem(id, field, value){
+  var payload={}; payload[field]=value;
+  await fetch(API+'/api/coaching/action-items/'+id,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+}
+
+async function cgEditActionItemFull(id){
+  var item = cgCallState.actionItems.find(function(x){return x.id===id});
+  if(!item) return;
+  var text = prompt('Text', item.text||'')||item.text;
+  var meas = prompt('Measurement', item.measurement||'');
+  var due = prompt('Due date (YYYY-MM-DD)', item.due_date||'');
+  await fetch(API+'/api/coaching/action-items/'+id,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text:text, measurement:meas||null, due_date:due||null})
+  });
+  if(cgCallState.current) await cgLoadActionItems(cgCallState.current.id);
+}
+
+async function cgDeleteActionItem(id){
+  if(!confirm('Delete this action item?')) return;
+  await fetch(API+'/api/coaching/action-items/'+id,{method:'DELETE'});
+  if(cgCallState.current) await cgLoadActionItems(cgCallState.current.id);
+}
+
+// ─────────────────────────────────────────────
+// PIPELINE
+// ─────────────────────────────────────────────
+
+async function cgLoadPipeline(){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/pipeline');
+    if(!res.ok) return;
+    cgPipeState.entries = await res.json();
+    cgRenderPipeline();
+  }catch(e){}
+}
+
+function cgPipeSwitchType(t){
+  cgPipeState.type = t;
+  document.querySelectorAll('.cg-pipe-tab').forEach(function(b){b.classList.remove('cg-pipe-tab-active')});
+  document.querySelector('.cg-pipe-tab[data-pt="'+t+'"]').classList.add('cg-pipe-tab-active');
+  cgRenderPipeline();
+}
+
+function cgRenderPipeline(){
+  var entries = cgPipeState.entries.filter(function(e){return e.entry_type===cgPipeState.type && !e.closed});
+  // Summary by rating
+  var sum = document.getElementById('cg-pipe-summary');
+  var ratings=[10,9,8,7,6,5,'≤4'];
+  sum.innerHTML = ratings.map(function(r){
+    var count;
+    if(r==='≤4') count = entries.filter(function(e){return (e.rating||0)<=4}).length;
+    else count = entries.filter(function(e){return e.rating===r}).length;
+    var hot = (r===10||r===9);
+    return '<div class="metric-card" style="padding:8px;text-align:center;'+(hot?'border:1px solid var(--accent)':'')+'">' +
+      '<div class="metric-label" style="font-size:9px">'+r+'s</div>' +
+      '<div class="metric-value" style="font-size:18px;color:'+(hot?'var(--accent)':'var(--text)')+'">'+count+'</div>' +
+      '</div>';
+  }).join('');
+
+  // List
+  var list = document.getElementById('cg-pipe-list');
+  if(!entries.length){
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No '+cgPipeState.type.toLowerCase()+' pipeline entries yet.</div>';
+    return;
+  }
+  // Sort by rating desc then appointment_date desc
+  entries.sort(function(a,b){return (b.rating||0)-(a.rating||0)});
+  list.innerHTML = '<div style="display:grid;grid-template-columns:60px 2fr 2fr 1fr 1fr 1fr 80px;gap:8px;padding:8px 10px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
+    '<div>Rate</div><div>Contact / Address</div><div>Next Step</div><div>Phone</div><div>Email</div><div>Appt Date</div><div></div>' +
+    '</div>' +
+    entries.map(function(e){
+      var ratingColor = e.rating>=9?'#5fcf86':(e.rating>=7?'#d0b660':'var(--text-dim)');
+      return '<div style="display:grid;grid-template-columns:60px 2fr 2fr 1fr 1fr 1fr 80px;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">' +
+        '<div><input type="number" min="1" max="10" value="'+(e.rating||'')+'" class="form-input" style="padding:4px;width:50px;font-weight:600;color:'+ratingColor+'" onblur="cgPipeEdit('+e.id+', \'rating\', parseInt(this.value)||null)" /></div>' +
+        '<div><div style="font-weight:600">'+(e.contact_name||'—')+'</div><div style="color:var(--muted);font-size:11px">'+(e.address||'')+'</div></div>' +
+        '<div><input type="text" value="'+(e.next_step||'').replace(/"/g,'&quot;')+'" class="form-input" style="padding:4px 6px;font-size:12px" onblur="cgPipeEdit('+e.id+', \'next_step\', this.value)" /></div>' +
+        '<div style="color:var(--muted)">'+(e.contact_phone||'')+'</div>' +
+        '<div style="color:var(--muted);font-size:11px">'+(e.contact_email||'')+'</div>' +
+        '<div style="color:var(--muted)">'+(e.appointment_date||'')+'</div>' +
+        '<div style="text-align:right"><button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px" onclick="cgPipeEditFull('+e.id+')">Edit</button>' +
+        '<button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;color:#cc7070" onclick="cgPipeDelete('+e.id+')">×</button></div>' +
+        '</div>';
+    }).join('');
+}
+
+async function cgAddPipelineEntry(){
+  if(!cgState.current) return;
+  var name = prompt('Contact name');
+  if(!name) return;
+  var rating = parseInt(prompt('Rating (1-10): 10=closing this month, 9=next month, 8=in 2 mo, 7=in 3 mo, 6=good meeting, ≤5=cold/dead'));
+  if(isNaN(rating)) rating = null;
+  var addr = prompt('Address (optional)') || '';
+  var phone = prompt('Phone (optional)') || '';
+  var email = prompt('Email (optional)') || '';
+  var next = prompt('Next step (optional)') || '';
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/pipeline',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      entry_type: cgPipeState.type,
+      contact_name: name, address: addr, contact_phone: phone, contact_email: email,
+      next_step: next, rating: rating
+    })
+  });
+  await cgLoadPipeline();
+}
+
+async function cgPipeEdit(id, field, value){
+  var payload={}; payload[field]=value;
+  await fetch(API+'/api/coaching/pipeline/'+id,{
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  // refresh summary counts
+  var item = cgPipeState.entries.find(function(x){return x.id===id});
+  if(item) item[field] = value;
+  if(field==='rating') cgRenderPipeline();
+}
+
+async function cgPipeEditFull(id){
+  var item = cgPipeState.entries.find(function(x){return x.id===id});
+  if(!item) return;
+  var name = prompt('Contact name', item.contact_name||'');
+  var addr = prompt('Address', item.address||'');
+  var phone = prompt('Phone', item.contact_phone||'');
+  var email = prompt('Email', item.contact_email||'');
+  var next = prompt('Next step', item.next_step||'');
+  var apptDate = prompt('Appt date (YYYY-MM-DD)', item.appointment_date||'');
+  await fetch(API+'/api/coaching/pipeline/'+id,{
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      contact_name: name, address: addr, contact_phone: phone, contact_email: email,
+      next_step: next, appointment_date: apptDate||null
+    })
+  });
+  await cgLoadPipeline();
+}
+
+async function cgPipeDelete(id){
+  if(!confirm('Delete this pipeline entry?')) return;
+  await fetch(API+'/api/coaching/pipeline/'+id,{method:'DELETE'});
+  await cgLoadPipeline();
+}
+
+// ─────────────────────────────────────────────
+// ACTIVITY
+// ─────────────────────────────────────────────
+
+async function cgLoadActivity(){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/activity?days=14');
+    if(!res.ok) return;
+    cgActState.logs = await res.json();
+    var today = new Date().toISOString().substring(0,10);
+    var todayLog = cgActState.logs.find(function(l){return l.log_date===today});
+    cgActState.today = todayLog || null;
+    cgRenderActivityToday();
+    cgRenderActivityHistory();
+  }catch(e){}
+}
+
+function cgRenderActivityToday(){
+  var t = cgActState.today || {};
+  document.getElementById('cg-act-contacts').value = t.contacts_made || '';
+  document.getElementById('cg-act-set').value = t.appts_set || '';
+  document.getElementById('cg-act-held').value = t.appts_held || '';
+  document.getElementById('cg-act-hours').value = t.hours_prospected || '';
+  document.getElementById('cg-act-wins').value = t.wins || '';
+  document.getElementById('cg-act-notes').value = t.notes || '';
+}
+
+async function cgSaveActivity(){
+  if(!cgState.current) return;
+  var payload = {
+    log_date: new Date().toISOString().substring(0,10),
+    contacts_made: parseInt(document.getElementById('cg-act-contacts').value)||0,
+    appts_set: parseInt(document.getElementById('cg-act-set').value)||0,
+    appts_held: parseInt(document.getElementById('cg-act-held').value)||0,
+    hours_prospected: parseFloat(document.getElementById('cg-act-hours').value)||0,
+    wins: document.getElementById('cg-act-wins').value || null,
+    notes: document.getElementById('cg-act-notes').value || null,
+  };
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/activity',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  await cgLoadActivity();
+}
+
+function cgRenderActivityHistory(){
+  var el = document.getElementById('cg-act-history');
+  if(!cgActState.logs.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:14px;text-align:center">No activity logged yet.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 2fr;gap:8px;padding:6px 10px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
+    '<div>Date</div><div>Contacts</div><div>Set</div><div>Held</div><div>Hrs</div><div>Wins / Notes</div>' +
+    '</div>' +
+    cgActState.logs.map(function(l){
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 2fr;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);font-size:12px">' +
+        '<div>'+l.log_date+'</div>' +
+        '<div>'+(l.contacts_made||0)+'</div>' +
+        '<div>'+(l.appts_set||0)+'</div>' +
+        '<div>'+(l.appts_held||0)+'</div>' +
+        '<div>'+(l.hours_prospected||0)+'</div>' +
+        '<div style="color:var(--muted);font-size:11px">'+(l.wins||'')+(l.notes?(' &middot; '+l.notes):'')+'</div>' +
+        '</div>';
+    }).join('');
 }
 </script>
 </body>

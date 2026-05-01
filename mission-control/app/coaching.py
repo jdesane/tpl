@@ -657,3 +657,553 @@ def search_leads(request: Request, q: Optional[str] = None, limit: int = 15):
         existing_set = {r["lead_id"] for r in existing}
         leads = [l for l in leads if l["id"] not in existing_set]
     return leads
+
+
+# ════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════
+# SESSION 2 — Coaching Calls / Action Items / Activity / Pipeline
+# ════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════
+
+# ─── Pydantic ───
+
+class PipelineEntryIn(BaseModel):
+    entry_type: str  # LISTING | BUYER
+    appointment_date: Optional[str] = None
+    address: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    next_step: Optional[str] = None
+    notes: Optional[str] = None
+    rating: Optional[int] = None
+    closed: Optional[bool] = None
+    closed_date: Optional[str] = None
+    closing_price: Optional[float] = None
+    gross_commission: Optional[float] = None
+
+
+class ActivityLogIn(BaseModel):
+    log_date: Optional[str] = None
+    contacts_made: Optional[int] = 0
+    appts_set: Optional[int] = 0
+    appts_held: Optional[int] = 0
+    hours_prospected: Optional[float] = 0
+    wins: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class CoachingCallIn(BaseModel):
+    scheduled_at: Optional[str] = None  # ISO datetime
+    call_type: Optional[str] = "WEEKLY"
+    in_call_notes: Optional[str] = None
+    status: Optional[str] = None
+    completed_at: Optional[str] = None
+
+
+class ActionItemIn(BaseModel):
+    text: str
+    measurement: Optional[str] = None
+    due_date: Optional[str] = None
+    owner: Optional[str] = "AGENT"
+    tag: Optional[str] = None
+    status: Optional[str] = "OPEN"
+    source_call_id: Optional[int] = None
+
+
+class ActionItemUpdate(BaseModel):
+    text: Optional[str] = None
+    measurement: Optional[str] = None
+    due_date: Optional[str] = None
+    owner: Optional[str] = None
+    tag: Optional[str] = None
+    status: Optional[str] = None
+
+
+# ─── Pipeline entries ───
+
+@router.get("/clients/{client_id}/pipeline")
+def list_pipeline(client_id: int, request: Request, entry_type: Optional[str] = None):
+    qb = _supabase.table("pipeline_entries").select("*").eq("coaching_client_id", client_id)
+    if entry_type:
+        qb = qb.eq("entry_type", entry_type)
+    res = qb.order("rating", desc=True).order("appointment_date", desc=True).execute()
+    return res.data or []
+
+
+@router.post("/clients/{client_id}/pipeline")
+def create_pipeline(client_id: int, payload: PipelineEntryIn, request: Request):
+    workspace_id = _ws(request)
+    if payload.entry_type not in ("LISTING", "BUYER"):
+        raise HTTPException(400, "entry_type must be LISTING or BUYER")
+    if payload.rating is not None and not (1 <= payload.rating <= 10):
+        raise HTTPException(400, "rating must be 1–10")
+    row = {"workspace_id": workspace_id, "coaching_client_id": client_id, **payload.dict(exclude_unset=True)}
+    res = _supabase.table("pipeline_entries").insert(row).execute()
+    return res.data[0]
+
+
+@router.patch("/pipeline/{entry_id}")
+def update_pipeline(entry_id: int, payload: PipelineEntryIn, request: Request):
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    res = _supabase.table("pipeline_entries").update(data).eq("id", entry_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Pipeline entry not found")
+    return res.data[0]
+
+
+@router.delete("/pipeline/{entry_id}")
+def delete_pipeline(entry_id: int, request: Request):
+    _supabase.table("pipeline_entries").delete().eq("id", entry_id).execute()
+    return {"ok": True}
+
+
+# ─── Activity logs (daily) ───
+
+@router.get("/clients/{client_id}/activity")
+def list_activity(client_id: int, request: Request, days: int = 30):
+    res = _supabase.table("coaching_activity_logs").select("*").eq("coaching_client_id", client_id).order("log_date", desc=True).limit(max(1, min(days, 365))).execute()
+    return res.data or []
+
+
+@router.post("/clients/{client_id}/activity")
+def upsert_activity(client_id: int, payload: ActivityLogIn, request: Request):
+    """Upsert by (client_id, log_date) so re-saving today's entry doesn't dupe."""
+    log_date = payload.log_date or date.today().isoformat()
+    row = {
+        "coaching_client_id": client_id,
+        "log_date": log_date,
+        **{k: v for k, v in payload.dict(exclude_unset=True).items() if k != "log_date"},
+    }
+    res = _supabase.table("coaching_activity_logs").upsert(row, on_conflict="coaching_client_id,log_date").execute()
+    return res.data[0] if res.data else row
+
+
+def _activity_streak(client_id: int, target_contacts: int = 1) -> int:
+    """Count consecutive days back from today where contacts_made >= target."""
+    res = _supabase.table("coaching_activity_logs").select("log_date,contacts_made").eq("coaching_client_id", client_id).order("log_date", desc=True).limit(120).execute()
+    rows = res.data or []
+    if not rows:
+        return 0
+    today = date.today()
+    streak = 0
+    expected = today
+    for r in rows:
+        ld = r.get("log_date")
+        if not ld:
+            continue
+        try:
+            d = datetime.strptime(ld, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if d == expected and (r.get("contacts_made") or 0) >= target_contacts:
+            streak += 1
+            expected = expected.replace(day=expected.day) - timedelta_days(1)
+        else:
+            break
+    return streak
+
+
+# datetime.timedelta; declare a small helper to avoid importing timedelta separately.
+def timedelta_days(n):
+    from datetime import timedelta
+    return timedelta(days=n)
+
+
+# ─── Coaching calls ───
+
+@router.get("/clients/{client_id}/calls")
+def list_calls(client_id: int, request: Request, limit: int = 50):
+    res = _db("coaching_calls").select("*").eq("coaching_client_id", client_id).order("scheduled_at", desc=True).limit(limit).execute()
+    return res.data or []
+
+
+@router.get("/calls/{call_id}")
+def get_call(call_id: int, request: Request):
+    res = _db("coaching_calls").select("*").eq("id", call_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Call not found")
+    return res.data[0]
+
+
+@router.post("/clients/{client_id}/calls")
+def create_call(client_id: int, payload: CoachingCallIn, request: Request):
+    """Schedule a new call. Auto-snapshots the pre-call brief at scheduled time."""
+    workspace_id = _ws(request)
+    # Find prior call for commitment-keep score chaining
+    prior = _supabase.table("coaching_calls").select("id").eq("coaching_client_id", client_id).order("scheduled_at", desc=True).limit(1).execute()
+    prior_id = prior.data[0]["id"] if prior.data else None
+
+    row = {
+        "workspace_id": workspace_id,
+        "coaching_client_id": client_id,
+        "scheduled_at": payload.scheduled_at or datetime.utcnow().isoformat(),
+        "call_type": payload.call_type or "WEEKLY",
+        "status": "SCHEDULED",
+        "prior_call_id": prior_id,
+    }
+    res = _supabase.table("coaching_calls").insert(row).execute()
+    call = res.data[0]
+    # Pre-snapshot the brief on the call so it's preserved even if numbers change later
+    try:
+        brief = _build_brief(client_id, call["id"], workspace_id)
+        _supabase.table("coaching_calls").update({"pre_call_brief": brief}).eq("id", call["id"]).execute()
+        call["pre_call_brief"] = brief
+    except Exception:
+        pass
+    return call
+
+
+@router.patch("/calls/{call_id}")
+def update_call(call_id: int, payload: CoachingCallIn, request: Request):
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    if data.get("status") == "COMPLETED" and not data.get("completed_at"):
+        data["completed_at"] = datetime.utcnow().isoformat()
+    res = _supabase.table("coaching_calls").update(data).eq("id", call_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Call not found")
+    return res.data[0]
+
+
+@router.delete("/calls/{call_id}")
+def delete_call(call_id: int, request: Request):
+    _supabase.table("coaching_calls").delete().eq("id", call_id).execute()
+    return {"ok": True}
+
+
+@router.post("/calls/{call_id}/refresh-brief")
+def refresh_brief(call_id: int, request: Request):
+    """Re-build the pre-call brief from current data (useful right before the call starts)."""
+    workspace_id = _ws(request)
+    call_resp = _supabase.table("coaching_calls").select("coaching_client_id").eq("id", call_id).single().execute()
+    if not call_resp.data:
+        raise HTTPException(404, "Call not found")
+    client_id = call_resp.data["coaching_client_id"]
+    brief = _build_brief(client_id, call_id, workspace_id)
+    _supabase.table("coaching_calls").update({"pre_call_brief": brief}).eq("id", call_id).execute()
+    return brief
+
+
+@router.post("/calls/{call_id}/complete")
+def complete_call(call_id: int, request: Request):
+    """Mark the call complete + compute commitment-keep score by counting completion of action items
+    that were set on the PRIOR call."""
+    call = _supabase.table("coaching_calls").select("*").eq("id", call_id).single().execute().data
+    if not call:
+        raise HTTPException(404, "Call not found")
+    prior_id = call.get("prior_call_id")
+    score = None
+    if prior_id:
+        items = _supabase.table("coaching_action_items").select("status").eq("source_call_id", prior_id).execute().data or []
+        if items:
+            completed = sum(1 for it in items if (it.get("status") or "").upper() == "COMPLETED")
+            score = round((completed / len(items)) * 100.0, 1)
+    update = {
+        "status": "COMPLETED",
+        "completed_at": datetime.utcnow().isoformat(),
+    }
+    if score is not None:
+        update["commitment_keep_score"] = score
+    res = _supabase.table("coaching_calls").update(update).eq("id", call_id).execute()
+    return res.data[0]
+
+
+# ─── Action items ───
+
+@router.get("/clients/{client_id}/action-items")
+def list_action_items(client_id: int, request: Request, status: Optional[str] = None, source_call_id: Optional[int] = None):
+    qb = _db("coaching_action_items").select("*").eq("coaching_client_id", client_id)
+    if status:
+        qb = qb.eq("status", status)
+    if source_call_id is not None:
+        qb = qb.eq("source_call_id", source_call_id)
+    res = qb.order("due_date", desc=False).order("created_at", desc=True).execute()
+    return res.data or []
+
+
+@router.post("/clients/{client_id}/action-items")
+def create_action_item(client_id: int, payload: ActionItemIn, request: Request):
+    workspace_id = _ws(request)
+    row = {
+        "workspace_id": workspace_id,
+        "coaching_client_id": client_id,
+        **payload.dict(exclude_unset=True),
+    }
+    res = _supabase.table("coaching_action_items").insert(row).execute()
+    return res.data[0]
+
+
+@router.patch("/action-items/{item_id}")
+def update_action_item(item_id: int, payload: ActionItemUpdate, request: Request):
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    if data.get("status") == "COMPLETED":
+        data["completed_at"] = datetime.utcnow().isoformat()
+    res = _supabase.table("coaching_action_items").update(data).eq("id", item_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Action item not found")
+    return res.data[0]
+
+
+@router.delete("/action-items/{item_id}")
+def delete_action_item(item_id: int, request: Request):
+    _supabase.table("coaching_action_items").delete().eq("id", item_id).execute()
+    return {"ok": True}
+
+
+# ─── Pre-call brief generator ───
+# Pulls from plan, pipeline, activity logs, last call's action items.
+# Returns structured JSON: every section is a list of named metrics with status flags.
+
+def _build_brief(client_id: int, call_id: int, workspace_id: int) -> dict:
+    today = date.today()
+    yr = today.year
+
+    # Client + plan + computed
+    client = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data or {}
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan = bundle["plan"]
+    em = bundle["economic_model"]
+    bm = bundle["budget_model"]
+    gci_target = float(plan.get("gci_target") or 0)
+    economic = calc_economic(gci_target, em)
+
+    # GCI YTD = sum of gross_commission on closed pipeline entries this year
+    closed_resp = _supabase.table("pipeline_entries").select("gross_commission,closed_date,entry_type").eq("coaching_client_id", client_id).eq("closed", True).execute()
+    gci_ytd = 0
+    listings_closed = 0
+    buyers_closed = 0
+    for r in (closed_resp.data or []):
+        cd = r.get("closed_date")
+        if not cd or not cd.startswith(str(yr)):
+            continue
+        gci_ytd += float(r.get("gross_commission") or 0)
+        if r.get("entry_type") == "LISTING":
+            listings_closed += 1
+        elif r.get("entry_type") == "BUYER":
+            buyers_closed += 1
+
+    # Pace = (YTD ÷ target) vs (days elapsed ÷ 365). Negative = behind; zero = on pace.
+    days_elapsed = (today - date(yr, 1, 1)).days + 1
+    expected_pct = days_elapsed / 365.0
+    actual_pct = (gci_ytd / gci_target) if gci_target > 0 else 0
+    pace_gap_pct = round((actual_pct - expected_pct) * 100, 1)
+    if pace_gap_pct >= 0:
+        pace_status = "ahead"
+    elif pace_gap_pct >= -10:
+        pace_status = "on-pace"
+    else:
+        pace_status = "behind"
+
+    # Pipeline by rating
+    open_pipe = _supabase.table("pipeline_entries").select("entry_type,rating").eq("coaching_client_id", client_id).eq("closed", False).execute().data or []
+    def count_at(et, r):
+        return sum(1 for p in open_pipe if p.get("entry_type") == et and p.get("rating") == r)
+    pipeline = {
+        "listings": {
+            "10s": count_at("LISTING", 10), "9s": count_at("LISTING", 9), "8s": count_at("LISTING", 8),
+            "7s": count_at("LISTING", 7), "6s": count_at("LISTING", 6),
+            "cold": sum(1 for p in open_pipe if p.get("entry_type") == "LISTING" and (p.get("rating") or 0) <= 5),
+            "total": sum(1 for p in open_pipe if p.get("entry_type") == "LISTING"),
+        },
+        "buyers": {
+            "10s": count_at("BUYER", 10), "9s": count_at("BUYER", 9), "8s": count_at("BUYER", 8),
+            "7s": count_at("BUYER", 7), "6s": count_at("BUYER", 6),
+            "cold": sum(1 for p in open_pipe if p.get("entry_type") == "BUYER" and (p.get("rating") or 0) <= 5),
+            "total": sum(1 for p in open_pipe if p.get("entry_type") == "BUYER"),
+        },
+    }
+
+    # Activity (last 14 days)
+    from datetime import timedelta as _td
+    cutoff = (today - _td(days=14)).isoformat()
+    act_resp = _supabase.table("coaching_activity_logs").select("*").eq("coaching_client_id", client_id).gte("log_date", cutoff).execute()
+    acts = act_resp.data or []
+    contacts_14d = sum((a.get("contacts_made") or 0) for a in acts)
+    appts_held_14d = sum((a.get("appts_held") or 0) for a in acts)
+    hours_14d = sum(float(a.get("hours_prospected") or 0) for a in acts)
+    days_logged_14d = len(acts)
+
+    # Streak — consecutive days from today with contacts_made >= 1
+    streak = _activity_streak(client_id, target_contacts=1)
+
+    # Last call's action items + commitment-keep
+    call_row = _supabase.table("coaching_calls").select("prior_call_id").eq("id", call_id).single().execute().data or {}
+    prior_id = call_row.get("prior_call_id")
+    prior_items = []
+    commit_score = None
+    if prior_id:
+        prior_items = _supabase.table("coaching_action_items").select("text,measurement,status,due_date").eq("source_call_id", prior_id).execute().data or []
+        if prior_items:
+            done = sum(1 for it in prior_items if (it.get("status") or "").upper() == "COMPLETED")
+            commit_score = round((done / len(prior_items)) * 100.0, 1)
+
+    # Suggested talking points — heuristic
+    talking = []
+    if pace_status == "behind":
+        talking.append(f"GCI pace is {abs(pace_gap_pct)}% behind. Gap = ${round((expected_pct * gci_target) - gci_ytd):,}.")
+    if pipeline["listings"]["10s"] + pipeline["listings"]["9s"] == 0 and pipeline["listings"]["total"] > 0:
+        talking.append("No 10s or 9s in listing pipeline — no listings expected to close in next 60 days.")
+    if pipeline["listings"]["total"] == 0:
+        talking.append("Listing pipeline is EMPTY — lead-gen problem, not skill problem.")
+    if commit_score is not None and commit_score < 70:
+        talking.append(f"Commitment-keep score = {commit_score}% from last call. Below 70% — coachability check.")
+    if days_logged_14d < 7:
+        talking.append(f"Only {days_logged_14d} of last 14 days logged activity. Daily discipline gap.")
+    if contacts_14d < 50 and days_logged_14d > 0:
+        talking.append(f"Only {contacts_14d} contacts made in 14 days. Way under prospecting target.")
+
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "client_id": client_id,
+        "year": yr,
+
+        "header": {
+            "name": (client.get("notes") or "")[:0] or None,  # placeholder, UI renders from /clients/{id}
+            "comp_plan": client.get("lpt_comp_plan"),
+            "call_cadence": client.get("call_cadence"),
+        },
+
+        "pace": {
+            "gci_target": gci_target,
+            "gci_ytd": round(gci_ytd, 2),
+            "expected_pct": round(expected_pct * 100, 1),
+            "actual_pct": round(actual_pct * 100, 1),
+            "pace_gap_pct": pace_gap_pct,
+            "status": pace_status,            # behind | on-pace | ahead
+            "days_elapsed": days_elapsed,
+        },
+
+        "big_rocks": {
+            "listings_taken_target": economic["listings_taken"]["value"],
+            "listings_closed_ytd":   listings_closed,
+            "buyers_closed_ytd":     buyers_closed,
+            "houses_sold_target":    economic["houses_sold_total"]["value"],
+            "listing_appts_target":  economic["listing_appts_annual"]["value"],
+            "buyer_consults_target": economic["buyer_consults_annual"]["value"],
+        },
+
+        "pipeline": pipeline,
+
+        "activity_14d": {
+            "contacts_made":   contacts_14d,
+            "appts_held":      appts_held_14d,
+            "hours_prospected": round(hours_14d, 1),
+            "days_logged":     days_logged_14d,
+            "streak_days":     streak,
+        },
+
+        "last_call_action_items": prior_items,
+        "commitment_keep_score": commit_score,
+
+        "talking_points": talking,
+    }
+
+
+@router.get("/clients/{client_id}/brief-preview")
+def preview_brief(client_id: int, request: Request):
+    """Build an ad-hoc brief without creating a call. Useful for the dashboard."""
+    workspace_id = _ws(request)
+    # Use a fake call_id of 0 so the prior-call lookup just returns nothing
+    today = date.today()
+    yr = today.year
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    # Build with no call_id (no prior commitment chain)
+    fake_call = {"prior_call_id": None}
+    # We want the full brief output minus prior items — easiest path is to insert a phantom into _build_brief.
+    # Instead just call with the most recent call_id if any, else build manually.
+    last_call = _supabase.table("coaching_calls").select("id").eq("coaching_client_id", client_id).order("scheduled_at", desc=True).limit(1).execute()
+    if last_call.data:
+        return _build_brief(client_id, last_call.data[0]["id"], workspace_id)
+    # No prior call — synthesize by calling _build_brief with -1 and catching the empty prior_id branch
+    # (the function gracefully handles missing prior call rows)
+    # Insert a temporary stub that won't be saved
+    return _build_brief_no_call(client_id, workspace_id)
+
+
+def _build_brief_no_call(client_id: int, workspace_id: int) -> dict:
+    """Same as _build_brief but with no prior-call chain (used for first-ever brief)."""
+    today = date.today()
+    yr = today.year
+    client = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data or {}
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan = bundle["plan"]
+    em = bundle["economic_model"]
+    gci_target = float(plan.get("gci_target") or 0)
+    economic = calc_economic(gci_target, em)
+
+    closed_resp = _supabase.table("pipeline_entries").select("gross_commission,closed_date,entry_type").eq("coaching_client_id", client_id).eq("closed", True).execute()
+    gci_ytd, listings_closed, buyers_closed = 0, 0, 0
+    for r in (closed_resp.data or []):
+        cd = r.get("closed_date")
+        if not cd or not cd.startswith(str(yr)):
+            continue
+        gci_ytd += float(r.get("gross_commission") or 0)
+        if r.get("entry_type") == "LISTING": listings_closed += 1
+        elif r.get("entry_type") == "BUYER": buyers_closed += 1
+
+    days_elapsed = (today - date(yr, 1, 1)).days + 1
+    expected_pct = days_elapsed / 365.0
+    actual_pct = (gci_ytd / gci_target) if gci_target > 0 else 0
+    pace_gap_pct = round((actual_pct - expected_pct) * 100, 1)
+    pace_status = "ahead" if pace_gap_pct >= 0 else ("on-pace" if pace_gap_pct >= -10 else "behind")
+
+    open_pipe = _supabase.table("pipeline_entries").select("entry_type,rating").eq("coaching_client_id", client_id).eq("closed", False).execute().data or []
+    def cnt(et, r):
+        return sum(1 for p in open_pipe if p.get("entry_type") == et and p.get("rating") == r)
+    pipeline = {
+        "listings": {"10s": cnt("LISTING",10), "9s": cnt("LISTING",9), "8s": cnt("LISTING",8),
+                     "7s": cnt("LISTING",7), "6s": cnt("LISTING",6),
+                     "cold": sum(1 for p in open_pipe if p.get("entry_type")=="LISTING" and (p.get("rating") or 0)<=5),
+                     "total": sum(1 for p in open_pipe if p.get("entry_type")=="LISTING")},
+        "buyers":   {"10s": cnt("BUYER",10), "9s": cnt("BUYER",9), "8s": cnt("BUYER",8),
+                     "7s": cnt("BUYER",7), "6s": cnt("BUYER",6),
+                     "cold": sum(1 for p in open_pipe if p.get("entry_type")=="BUYER" and (p.get("rating") or 0)<=5),
+                     "total": sum(1 for p in open_pipe if p.get("entry_type")=="BUYER")},
+    }
+
+    from datetime import timedelta as _td
+    cutoff = (today - _td(days=14)).isoformat()
+    acts = (_supabase.table("coaching_activity_logs").select("*").eq("coaching_client_id", client_id).gte("log_date", cutoff).execute().data) or []
+    streak = _activity_streak(client_id, target_contacts=1)
+
+    talking = []
+    if pace_status == "behind":
+        talking.append(f"GCI pace is {abs(pace_gap_pct)}% behind. Gap = ${round((expected_pct * gci_target) - gci_ytd):,}.")
+    if pipeline["listings"]["total"] == 0:
+        talking.append("Listing pipeline is EMPTY — lead-gen problem.")
+
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "client_id": client_id,
+        "year": yr,
+        "pace": {
+            "gci_target": gci_target, "gci_ytd": round(gci_ytd, 2),
+            "expected_pct": round(expected_pct*100,1), "actual_pct": round(actual_pct*100,1),
+            "pace_gap_pct": pace_gap_pct, "status": pace_status, "days_elapsed": days_elapsed,
+        },
+        "big_rocks": {
+            "listings_taken_target": economic["listings_taken"]["value"],
+            "listings_closed_ytd": listings_closed,
+            "buyers_closed_ytd": buyers_closed,
+            "houses_sold_target": economic["houses_sold_total"]["value"],
+            "listing_appts_target": economic["listing_appts_annual"]["value"],
+            "buyer_consults_target": economic["buyer_consults_annual"]["value"],
+        },
+        "pipeline": pipeline,
+        "activity_14d": {
+            "contacts_made": sum((a.get("contacts_made") or 0) for a in acts),
+            "appts_held": sum((a.get("appts_held") or 0) for a in acts),
+            "hours_prospected": round(sum(float(a.get("hours_prospected") or 0) for a in acts), 1),
+            "days_logged": len(acts),
+            "streak_days": streak,
+        },
+        "last_call_action_items": [],
+        "commitment_keep_score": None,
+        "talking_points": talking,
+    }
