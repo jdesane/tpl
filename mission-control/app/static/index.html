@@ -1244,6 +1244,15 @@ th[onclick]:hover{color:var(--accent)}
       </div>
     </div>
 
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="cg-inv-send-invite" checked style="margin-top:3px" />
+        <div>
+          <div style="font-weight:600">Send portal invite email now</div>
+          <div style="color:var(--muted);font-size:11px;margin-top:2px">Creates a portal login + emails them temp credentials. Uncheck to add silently.</div>
+        </div>
+      </label>
+    </div>
     <div id="cg-inv-error" style="color:#f88;font-size:12px;display:none"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button type="button" class="btn btn-ghost" onclick="cgCloseInviteModal()">Cancel</button>
@@ -4373,11 +4382,12 @@ function cgInviteSearch(){
 async function cgInviteSelect(leadId){
   var btn=document.getElementById('cg-inv-submit');
   btn.disabled=true; btn.textContent='Adding...';
+  var sendInvite = document.getElementById('cg-inv-send-invite').checked;
   try{
     var res = await fetch(API+'/api/coaching/clients',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({lead_id: leadId})
+      body: JSON.stringify({lead_id: leadId, send_portal_invite: sendInvite})
     });
     if(!res.ok){
       var err = await res.json().catch(function(){return{detail:'Failed'}});
@@ -4385,6 +4395,8 @@ async function cgInviteSelect(leadId){
       btn.disabled=false; btn.textContent='Add as Coaching Client';
       return;
     }
+    var data = await res.json();
+    cgInviteHandlePortal(data);
     cgCloseInviteModal();
     await loadCoaching();
   }catch(e){
@@ -4408,6 +4420,7 @@ async function cgInviteSubmit(){
   }
   var btn=document.getElementById('cg-inv-submit');
   btn.disabled=true; btn.textContent='Adding...';
+  var sendInvite = document.getElementById('cg-inv-send-invite').checked;
   try{
     var res = await fetch(API+'/api/coaching/clients',{
       method:'POST',
@@ -4419,7 +4432,8 @@ async function cgInviteSubmit(){
           email: email,
           phone: document.getElementById('cg-inv-phone').value.trim(),
           current_brokerage: document.getElementById('cg-inv-brokerage').value.trim()
-        }
+        },
+        send_portal_invite: sendInvite
       })
     });
     if(!res.ok){
@@ -4428,11 +4442,25 @@ async function cgInviteSubmit(){
       btn.disabled=false; btn.textContent='Add as Coaching Client';
       return;
     }
+    var data = await res.json();
+    cgInviteHandlePortal(data);
     cgCloseInviteModal();
     await loadCoaching();
   }catch(e){
     cgShowInviteError('Network error');
     btn.disabled=false; btn.textContent='Add as Coaching Client';
+  }
+}
+
+function cgInviteHandlePortal(data){
+  var p = data && data.portal_provision;
+  if(!p) return;
+  if(p.error){
+    alert('Coaching client added, but portal provisioning failed:\n\n'+p.error+'\n\nUse the "Portal Access" button on the client detail page to retry.');
+  } else if(p.provisioned){
+    alert('Coaching client added and portal invite sent.\n\nEmail: '+p.email+'\nTemp password: '+p.temp_password+'\n\n(Save this password somewhere — it is shown only once.)\nLogin URL: portal.tplcollective.ai');
+  } else if(p.reused_existing_user){
+    alert('Coaching client added and linked to existing user account (user_id='+p.user_id+'). No invite email sent — they already have a login.');
   }
 }
 

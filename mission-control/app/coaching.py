@@ -49,6 +49,9 @@ class CoachingClientIn(BaseModel):
     call_cadence: Optional[str] = "WEEKLY"
     coaching_start_date: Optional[str] = None
     notes: Optional[str] = None
+    # If True, auto-provision portal login + send invite email immediately after creating the client.
+    # The MC modal defaults this to True so "Invite Client" actually sends an invite.
+    send_portal_invite: Optional[bool] = False
 
 
 class CoachingClientUpdate(BaseModel):
@@ -518,7 +521,18 @@ def create_client(payload: CoachingClientIn, request: Request):
     # Auto-create the current-year business plan + child models so the editor has data to render
     _ensure_business_plan(client["id"], datetime.utcnow().year, workspace_id)
 
-    return _enrich_client(client)
+    # Auto-provision the portal + send invite email if requested
+    portal_result = None
+    if payload.send_portal_invite:
+        try:
+            portal_result = provision_portal(client["id"], ProvisionPortalIn(send_email=True), request)
+        except Exception as e:
+            portal_result = {"error": str(e)}
+
+    enriched = _enrich_client(client)
+    if portal_result is not None:
+        enriched["portal_provision"] = portal_result
+    return enriched
 
 
 @router.patch("/clients/{client_id}")
@@ -1283,7 +1297,7 @@ def provision_portal(client_id: int, payload: ProvisionPortalIn, request: Reques
         try:
             from main import send_email as _send, load_settings as _load_settings
             settings = _load_settings()
-            smtp_cfg = settings.get("resend") or {"pass": settings.get("resend_api_key", "")}
+            smtp_cfg = settings.get("smtp", {})
             html = f"""
             <div style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px'>
               <h2 style='color:#6c63ff'>Welcome to Coaching with TPL Collective</h2>
