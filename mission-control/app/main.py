@@ -5616,7 +5616,15 @@ app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)
-def dashboard():
+def dashboard(request: Request):
+    # Host-based routing so portal.tplcollective.ai/ serves the agent portal,
+    # not the Mission Control admin UI. Without this both subdomains returned
+    # the same MC index.html, which caused the coaching-client redirect to
+    # ping-pong between subdomains.
+    host = (request.headers.get("host") or "").lower()
+    if host.startswith("portal."):
+        with open("/app/static/portal/index.html") as f:
+            return f.read()
     with open("/app/static/index.html") as f:
         return f.read()
 
