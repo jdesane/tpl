@@ -1931,10 +1931,27 @@ async function mcDoLogin(){
     window.MC_TOKEN=data.token;window.MC_USER=data.user;
     localStorage.setItem('mc_token',data.token);
     localStorage.setItem('mc_user',JSON.stringify(data.user));
+    // Coaching clients should use the agent portal, not Mission Control
+    if(await mcShouldRedirectToPortal(data.user)){
+      window.location.href='https://portal.tplcollective.ai';
+      return;
+    }
     mcRenderUser();mcHideLogin();
     btn.disabled=false;btn.textContent='Sign In';
     mcBootstrap();
   }catch(e){err.textContent='Network error — try again';err.style.display='block';btn.disabled=false;btn.textContent='Sign In'}
+}
+
+async function mcShouldRedirectToPortal(user){
+  // Skip the check for admins (Joe) and during impersonation (admin testing as a client).
+  if(!user) return false;
+  if(user.role==='admin') return false;
+  if(user.impersonating) return false;
+  // Probe the coaching /me endpoint — 200 means this user is a coaching client.
+  try{
+    var r=await fetch('/api/coaching/me');
+    return r.ok;
+  }catch(e){ return false; }
 }
 
 async function mcInit(){
@@ -1947,6 +1964,11 @@ async function mcInit(){
     var data=await r.json();
     window.MC_USER=data.user;
     localStorage.setItem('mc_user',JSON.stringify(data.user));
+    // Coaching clients belong on the agent portal, not Mission Control.
+    if(await mcShouldRedirectToPortal(data.user)){
+      window.location.href='https://portal.tplcollective.ai';
+      return;
+    }
     mcRenderUser();
     mcBootstrap();
   }catch(e){

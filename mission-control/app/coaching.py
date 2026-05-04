@@ -1453,6 +1453,52 @@ def my_brief(request: Request):
     return _build_brief_no_call(cc["id"], cc["workspace_id"])
 
 
+class OnboardIn(BaseModel):
+    client: dict   # subset of CoachingClientUpdate fields
+    plan: dict     # {gci_target}
+    seller_pct: Optional[float] = 50  # as 0-100 percent
+
+
+@router.post("/me/onboard")
+def my_onboard(payload: OnboardIn, request: Request):
+    """Agent self-service: fill in their coaching_client metadata + business plan
+    GCI target + economic_model.seller_pct from the first-login wizard.
+    Coach can refine on the first call."""
+    cc = _my_client(request)
+    client_data = dict(payload.client or {})
+    if "avg_commission_rate" in client_data and client_data["avg_commission_rate"] is not None:
+        client_data["avg_commission_rate"] = _normalize_pct(client_data["avg_commission_rate"])
+    if client_data:
+        _supabase.table("coaching_clients").update(client_data).eq("id", cc["id"]).execute()
+
+    yr = datetime.utcnow().year
+    bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
+    plan_id = bundle["plan"]["id"]
+    plan_data = dict(payload.plan or {})
+    if plan_data:
+        _supabase.table("business_plans").update(plan_data).eq("id", plan_id).execute()
+
+    # Seed economic_model with the agent's onboarding inputs (seller_pct + sale prices + comm rate)
+    em_update = {}
+    if payload.seller_pct is not None:
+        em_update["seller_pct"] = _normalize_pct(payload.seller_pct)
+    if client_data.get("avg_sale_price"):
+        em_update["seller_avg_sale_price"] = client_data["avg_sale_price"]
+        em_update["buyer_avg_sale_price"] = client_data["avg_sale_price"]
+    if client_data.get("avg_commission_rate"):
+        em_update["commission_rate"] = client_data["avg_commission_rate"]
+    if em_update:
+        _supabase.table("economic_models").update(em_update).eq("business_plan_id", plan_id).execute()
+
+    # Default the brokerage cap on budget_model
+    if client_data.get("lpt_comp_plan") == "BROKERAGE_PARTNER":
+        _supabase.table("budget_models").update({"paid_to_brokerage": LPT_CAP_BROKERAGE_PARTNER}).eq("business_plan_id", plan_id).execute()
+    elif client_data.get("lpt_comp_plan") == "BUSINESS_BUILDER":
+        _supabase.table("budget_models").update({"paid_to_brokerage": LPT_CAP_BUSINESS_BUILDER}).eq("business_plan_id", plan_id).execute()
+
+    return {"ok": True}
+
+
 # ─── Coaching Dashboard (coach view across all clients) ───
 
 @router.get("/dashboard")

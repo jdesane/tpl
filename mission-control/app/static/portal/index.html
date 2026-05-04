@@ -293,6 +293,69 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
+<!-- ─── COACHING ONBOARDING WIZARD ─── -->
+<div id="ptl-onboard-modal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:640px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:18px">
+    <div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px">Welcome to Coaching</div>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:6px">A few questions to set up your business plan. You can change any of these later — Joe will refine them with you on the first call.</div>
+    </div>
+
+    <div id="ptl-onb-step1">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 1 OF 3 · YOUR INCOME GOAL</div>
+      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Annual GCI Goal ($)</label>
+      <input type="number" id="ptl-onb-gci" placeholder="350000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:16px;margin-bottom:14px" />
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">The dollar number you commit to earning this year. Everything else flows from this.</div>
+      <button class="btn btn-primary" onclick="ptlOnbNext(1)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+    </div>
+
+    <div id="ptl-onb-step2" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 2 OF 3 · YOUR DEALS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Avg Sale Price ($)</label><input type="number" id="ptl-onb-asp" placeholder="400000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Avg Commission %</label><input type="number" id="ptl-onb-comm" placeholder="2.5" step="0.1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Seller Business</label><input type="number" id="ptl-onb-seller" placeholder="50" step="5" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">License Date</label><input type="date" id="ptl-onb-license" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="ptlOnbBack(2)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
+        <button class="btn btn-primary" onclick="ptlOnbNext(2)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+      </div>
+    </div>
+
+    <div id="ptl-onb-step3" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 3 OF 3 · YOUR BROKERAGE &amp; MARKET</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Brokerage</label>
+          <select id="ptl-onb-brokerage" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
+            <option value="">— Select —</option>
+            <option value="LPT">LPT</option><option value="EXP">eXp</option>
+            <option value="KW">Keller Williams</option><option value="REMAX">RE/MAX</option>
+            <option value="C21">Century 21</option><option value="COMPASS">Compass</option>
+            <option value="REAL">Real Brokerage</option><option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">LPT Comp Plan (if LPT)</label>
+          <select id="ptl-onb-comp" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
+            <option value="">— N/A —</option>
+            <option value="BUSINESS_BUILDER">Business Builder</option>
+            <option value="BROKERAGE_PARTNER">Brokerage Partner</option>
+          </select>
+        </div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Market City</label><input type="text" id="ptl-onb-city" placeholder="Boca Raton" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">State</label><input type="text" id="ptl-onb-state" placeholder="FL" maxlength="2" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+      </div>
+      <div id="ptl-onb-error" style="color:var(--red);font-size:12px;display:none;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="ptlOnbBack(3)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
+        <button class="btn btn-primary" id="ptl-onb-finish" onclick="ptlOnbFinish()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Finish Setup ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ─── COACHING: TODAY ─── -->
 <div class="page" id="portal-coachtoday">
   <h2 style="margin-bottom:18px">Today</h2>
@@ -533,8 +596,97 @@ async function ptlInitCoachingNav(){
       ptlState.client = data.client;
       ptlState.plan = data.plan;
       ptlState.computed = data.computed;
+      // First-login wizard: pop up if any essential field is missing
+      ptlMaybeOpenOnboarding();
     }
   }catch(e){}
+}
+
+function ptlMaybeOpenOnboarding(){
+  if(!ptlState.client||!ptlState.plan) return;
+  var c = ptlState.client, p = ptlState.plan;
+  var needsSetup =
+    !p.gci_target || parseFloat(p.gci_target) === 0 ||
+    !c.avg_sale_price || parseFloat(c.avg_sale_price) === 0 ||
+    !c.avg_commission_rate || parseFloat(c.avg_commission_rate) === 0 ||
+    !c.brokerage;
+  if(needsSetup){
+    document.getElementById('ptl-onboard-modal').style.display = 'flex';
+    // Pre-fill anything we already have
+    if(p.gci_target) document.getElementById('ptl-onb-gci').value = p.gci_target;
+    if(c.avg_sale_price) document.getElementById('ptl-onb-asp').value = c.avg_sale_price;
+    if(c.avg_commission_rate) document.getElementById('ptl-onb-comm').value = (parseFloat(c.avg_commission_rate)*100).toFixed(2);
+    if(c.brokerage) document.getElementById('ptl-onb-brokerage').value = c.brokerage;
+    if(c.lpt_comp_plan) document.getElementById('ptl-onb-comp').value = c.lpt_comp_plan;
+    if(c.market_city) document.getElementById('ptl-onb-city').value = c.market_city;
+    if(c.market_state) document.getElementById('ptl-onb-state').value = c.market_state;
+    if(c.license_date) document.getElementById('ptl-onb-license').value = c.license_date;
+  }
+}
+
+function ptlOnbNext(step){
+  if(step===1){
+    var v = parseFloat(document.getElementById('ptl-onb-gci').value);
+    if(!v || v <= 0){ alert('Enter your annual GCI goal.'); return; }
+    document.getElementById('ptl-onb-step1').style.display='none';
+    document.getElementById('ptl-onb-step2').style.display='block';
+  } else if(step===2){
+    var asp = parseFloat(document.getElementById('ptl-onb-asp').value);
+    var comm = parseFloat(document.getElementById('ptl-onb-comm').value);
+    if(!asp || asp <= 0){ alert('Enter your average sale price.'); return; }
+    if(!comm || comm <= 0){ alert('Enter your average commission %.'); return; }
+    document.getElementById('ptl-onb-step2').style.display='none';
+    document.getElementById('ptl-onb-step3').style.display='block';
+  }
+}
+
+function ptlOnbBack(step){
+  if(step===2){ document.getElementById('ptl-onb-step2').style.display='none'; document.getElementById('ptl-onb-step1').style.display='block'; }
+  else if(step===3){ document.getElementById('ptl-onb-step3').style.display='none'; document.getElementById('ptl-onb-step2').style.display='block'; }
+}
+
+async function ptlOnbFinish(){
+  var brokerage = document.getElementById('ptl-onb-brokerage').value;
+  if(!brokerage){
+    document.getElementById('ptl-onb-error').textContent = 'Pick your current brokerage.';
+    document.getElementById('ptl-onb-error').style.display='block';
+    return;
+  }
+  var btn = document.getElementById('ptl-onb-finish');
+  btn.disabled=true; btn.textContent='Saving...';
+  try{
+    var clientPayload = {
+      brokerage: brokerage,
+      lpt_comp_plan: document.getElementById('ptl-onb-comp').value || null,
+      avg_sale_price: parseFloat(document.getElementById('ptl-onb-asp').value),
+      avg_commission_rate: parseFloat(document.getElementById('ptl-onb-comm').value),  // backend normalizes 2.5 → 0.025
+      market_city: document.getElementById('ptl-onb-city').value || null,
+      market_state: document.getElementById('ptl-onb-state').value || null,
+      license_date: document.getElementById('ptl-onb-license').value || null,
+    };
+    Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]===null||clientPayload[k]==='') delete clientPayload[k]; });
+
+    // Update the coaching client (admin route — works because /api/coaching/clients/{id}
+    // doesn't require admin role and the agent owns this client_id via user_id link).
+    // We use a self-service variant since /me/* routes don't include client metadata updates.
+    var ws = ptlState.client.workspace_id;  // unused but illustrative
+    await fetch(API_BASE+'/api/coaching/me/onboard',{
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify({
+        client: clientPayload,
+        plan: { gci_target: parseFloat(document.getElementById('ptl-onb-gci').value) },
+        seller_pct: parseFloat(document.getElementById('ptl-onb-seller').value)||50,
+      })
+    });
+    document.getElementById('ptl-onboard-modal').style.display='none';
+    // Re-fetch state and load Today
+    await ptlInitCoachingNav();
+    portalPage('coachtoday');
+  }catch(e){
+    document.getElementById('ptl-onb-error').textContent = 'Network error. Try again.';
+    document.getElementById('ptl-onb-error').style.display='block';
+    btn.disabled=false; btn.textContent='Finish Setup ✓';
+  }
 }
 
 // Hook into existing showApp flow
