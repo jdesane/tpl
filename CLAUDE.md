@@ -414,6 +414,17 @@
 - Database touch tracker (`contact_touches`) — schema exists, UI deferred
 - Excel imports of legacy worksheets
 
+## Phase 15.4 — Coaching: Invite UX, Surface Isolation, Onboarding Wizard ✅
+Three production fixes after first real-world use:
+
+**Invite email never sent.** `coaching.py` provision_portal() looked up `settings.get("resend")` but every other `send_email()` caller in main.py uses `settings.get("smtp")`. The lookup returned None, `smtp_cfg.get("pass")` was empty, send_email short-circuited with "Resend API key not configured", no email_send_log row written. Plus the "+ Invite Client" modal never actually invited — it only created the coaching_client + lead. The Portal Access button on the detail view was a separate step that was easy to miss. Fix: corrected the settings key to `"smtp"`; added a "Send portal invite email now" checkbox to the modal (default ON); `CoachingClientIn` now accepts `send_portal_invite: bool` which chains `provision_portal()` after creating the client. Temp password shown in confirmation alert. Verified end-to-end: existing Joe CoachingTest provisioned, Resend log shows `status=delivered` with `resend_id=50ff8174-e921-4fb7-ba93-c3be52f3d94b`.
+
+**Coaching clients landed on the admin Mission Control UI.** Logging in as a coaching-client agent showed the full MC dashboard (Funnel Analytics, Recruit Comparison, settings page with Joe's notification email pre-filled — a privacy leak). They belong on portal.tplcollective.ai which has the My Coaching tab. Fix: `mcShouldRedirectToPortal()` probes `/api/coaching/me` after login (`mcDoLogin`) and on cached-token init (`mcInit`). If the user is a coaching client (role != admin, not impersonating, /me returns 200), `window.location` bounces to `https://portal.tplcollective.ai`. Joe's admin session and in-progress impersonations are unaffected.
+
+**Portal subdomain redirect loop.** Both mission.tplcollective.ai and portal.tplcollective.ai resolve to the same FastAPI app (Traefik routes by Host but doesn't change the path). The `/` handler unconditionally returned `static/index.html` (Mission Control), so portal.tplcollective.ai/ served the admin UI. The new coaching-client redirect then bounced any portal visit back to itself, infinite refresh loop. Fix: `dashboard()` now reads the Host header — `host.startswith("portal.")` returns `static/portal/index.html`, everything else returns the MC index. The existing `/portal` path-prefix on mission.* still works as before.
+
+**First-login onboarding wizard.** Coaching clients had nowhere to enter their goals — they'd land on the portal's Today tab with an empty plan. Wizard pops up auto when essentials missing (`gci_target=0`, `avg_sale_price=0`, `avg_commission_rate=0`, or `brokerage` empty). 3 steps: (1) Annual GCI Goal, (2) avg sale price + commission % + seller-business mix + license date, (3) brokerage + LPT comp plan + market city/state. Posts to new endpoint `/api/coaching/me/onboard` which updates coaching_clients + business_plans + economic_models + budget_models (auto-fills the LPT cap from the comp plan). Coach can refine on the first call.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
