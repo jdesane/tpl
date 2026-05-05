@@ -862,6 +862,7 @@ th[onclick]:hover{color:var(--accent)}
         <div class="panel-title" style="font-size:22px;margin:0" id="cg-detail-name">&mdash;</div>
         <div style="color:var(--muted);font-size:12px;margin-top:2px" id="cg-detail-meta">&mdash;</div>
       </div>
+      <button class="btn btn-ghost btn-sm" onclick="cgOpenImportModal()" title="Import an existing CTE / MREA spreadsheet for this client">Import .xlsx</button>
       <button class="btn btn-ghost btn-sm" onclick="cgProvisionPortal()" title="Create a portal login for this client" id="cg-provision-btn">Portal Access</button>
       <select id="cg-detail-status" class="form-input" style="width:auto" onchange="cgUpdateStatus()">
         <option value="ACTIVE">Active</option>
@@ -1363,6 +1364,24 @@ th[onclick]:hover{color:var(--accent)}
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTE / MREA Excel Import modal -->
+<div id="cg-import-modal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);">
+  <div class="panel" style="max-width:640px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="panel-title" style="font-size:16px;margin:0">Import from CTE / MREA Workbook</div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="cgCloseImportModal()">×</button>
+    </div>
+    <div style="color:var(--muted);font-size:12px">Drop in a CTE 2019 or MREA Business Plan spreadsheet. We'll extract agent name, GCI goal, splits, sale prices, commission rates, and any logged daily activity. Review the preview before applying.</div>
+    <input type="file" id="cg-import-file" accept=".xlsx,.xlsm" onchange="cgImportPreview()" style="padding:14px;background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;cursor:pointer" />
+    <div id="cg-import-preview" style="display:none;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;background:var(--surface-2)"></div>
+    <div id="cg-import-error" style="color:#cc7070;font-size:12px;display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn btn-ghost" onclick="cgCloseImportModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="cg-import-apply-btn" onclick="cgImportApply()" disabled>Apply Import</button>
     </div>
   </div>
 </div>
@@ -6134,6 +6153,131 @@ async function cgPwSaveTemplate(){
     method:'PUT', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({template_name: document.getElementById('cg-pw-template').value || null})
   });
+}
+
+// ─────────────────────────────────────────────
+// CTE / MREA EXCEL IMPORT
+// ─────────────────────────────────────────────
+function cgOpenImportModal(){
+  if(!cgState.current){ alert('Open a client first.'); return; }
+  document.getElementById('cg-import-file').value = '';
+  document.getElementById('cg-import-preview').style.display='none';
+  document.getElementById('cg-import-preview').innerHTML='';
+  document.getElementById('cg-import-error').style.display='none';
+  document.getElementById('cg-import-apply-btn').disabled = true;
+  document.getElementById('cg-import-modal').style.display='flex';
+}
+function cgCloseImportModal(){
+  document.getElementById('cg-import-modal').style.display='none';
+}
+
+async function cgImportPreview(){
+  if(!cgState.current) return;
+  var fileEl = document.getElementById('cg-import-file');
+  var f = fileEl.files[0];
+  if(!f) return;
+  var preview = document.getElementById('cg-import-preview');
+  var errEl = document.getElementById('cg-import-error');
+  errEl.style.display='none';
+  preview.style.display='block';
+  preview.innerHTML='<div style="color:var(--muted)">Parsing...</div>';
+  document.getElementById('cg-import-apply-btn').disabled = true;
+  try{
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('apply', 'false');
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/import-cte',{
+      method:'POST', body: fd, headers: {'Authorization':'Bearer '+window.MC_TOKEN}
+    });
+    if(!res.ok){
+      var err = await res.text();
+      errEl.textContent = 'Parse failed: '+err;
+      errEl.style.display='block';
+      preview.style.display='none';
+      return;
+    }
+    var data = await res.json();
+    var p = data.parsed || {};
+    var s = data.summary || {};
+    var html = '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">DETECTED · '+(s.workbook_type||'UNKNOWN')+'</div>';
+    if(s.workbook_type === 'UNKNOWN'){
+      html += '<div style="color:#cc7070">This doesn\'t look like a CTE 2019 or MREA Business Plan workbook. We need a "Business Plan" tab and a "Daily Lead Gen Entry" tab.</div>';
+    } else {
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+      html += '<div><strong>'+(s.client_fields_found||0)+'</strong> client fields found</div>';
+      html += '<div><strong>'+(s.plan_fields_found||0)+'</strong> plan fields found</div>';
+      html += '<div><strong>'+(s.economic_fields_found||0)+'</strong> economic-model fields</div>';
+      html += '<div><strong>'+(s.budget_fields_found||0)+'</strong> budget-model fields</div>';
+      html += '<div style="grid-column:1 / -1"><strong style="color:'+(s.activity_logs_found>0?'#5fcf86':'var(--muted)')+'">'+(s.activity_logs_found||0)+'</strong> daily activity log entries</div>';
+      html += '</div>';
+      // Show what would be set
+      if(p.client && Object.keys(p.client).length){
+        html += '<div style="margin-top:8px"><div style="color:var(--muted);font-size:10px;text-transform:uppercase">Client</div>';
+        for(var k in p.client) html += '<div>'+k+': <strong>'+p.client[k]+'</strong></div>';
+        html += '</div>';
+      }
+      if(p.plan && Object.keys(p.plan).length){
+        html += '<div style="margin-top:8px"><div style="color:var(--muted);font-size:10px;text-transform:uppercase">Plan</div>';
+        for(var k in p.plan){ var v = p.plan[k]; html += '<div>'+k+': <strong>'+(typeof v==='number'?'$'+v.toLocaleString():v)+'</strong></div>'; }
+        html += '</div>';
+      }
+      if(p.economic && Object.keys(p.economic).length){
+        html += '<div style="margin-top:8px"><div style="color:var(--muted);font-size:10px;text-transform:uppercase">Economic Model</div>';
+        for(var k in p.economic){ var v = p.economic[k]; html += '<div>'+k+': <strong>'+(typeof v==='number'?(v<1?(v*100).toFixed(2)+'%':'$'+v.toLocaleString()):v)+'</strong></div>'; }
+        html += '</div>';
+      }
+      if(p.budget && Object.keys(p.budget).length){
+        html += '<div style="margin-top:8px"><div style="color:var(--muted);font-size:10px;text-transform:uppercase">Budget Model</div>';
+        for(var k in p.budget){ var v = p.budget[k]; html += '<div>'+k+': <strong>'+(typeof v==='number'?(v<1?(v*100).toFixed(2)+'%':'$'+v.toLocaleString()):v)+'</strong></div>'; }
+        html += '</div>';
+      }
+      if(p.warnings && p.warnings.length){
+        html += '<div style="margin-top:10px;padding:8px;background:rgba(220,180,80,.1);border-radius:6px;color:#d0b660">⚠ '+p.warnings.join('; ')+'</div>';
+      }
+      document.getElementById('cg-import-apply-btn').disabled = false;
+    }
+    preview.innerHTML = html;
+  }catch(e){
+    errEl.textContent = 'Network error: '+e.message;
+    errEl.style.display='block';
+  }
+}
+
+async function cgImportApply(){
+  if(!cgState.current) return;
+  var fileEl = document.getElementById('cg-import-file');
+  var f = fileEl.files[0];
+  if(!f){ alert('No file selected.'); return; }
+  if(!confirm('Apply this import? It will overwrite the matching fields on the coaching client + plan + add the activity log entries.')) return;
+  var btn = document.getElementById('cg-import-apply-btn');
+  btn.disabled=true; btn.textContent='Applying...';
+  try{
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('apply', 'true');
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/import-cte',{
+      method:'POST', body: fd, headers: {'Authorization':'Bearer '+window.MC_TOKEN}
+    });
+    if(!res.ok){
+      var err = await res.text();
+      alert('Apply failed: '+err);
+      btn.disabled=false; btn.textContent='Apply Import';
+      return;
+    }
+    var data = await res.json();
+    alert('Import complete!\n\n' +
+      'Client fields updated: ' + (data.fields_updated.client||[]).join(', ') + '\n' +
+      'Plan fields updated: ' + (data.fields_updated.plan||[]).join(', ') + '\n' +
+      'Economic fields: ' + (data.fields_updated.economic||[]).join(', ') + '\n' +
+      'Budget fields: ' + (data.fields_updated.budget||[]).join(', ') + '\n' +
+      'Activity logs imported: ' + data.activity_logs_imported);
+    cgCloseImportModal();
+    // Reload everything visible
+    await cgOpenClient(cgState.current.id);
+  }catch(e){
+    alert('Network error: '+e.message);
+    btn.disabled=false; btn.textContent='Apply Import';
+  }
 }
 
 // ─────────────────────────────────────────────

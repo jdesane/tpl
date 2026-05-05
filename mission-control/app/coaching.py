@@ -2369,6 +2369,229 @@ def my_update_financial_month(month: int, payload: FinancialMonthIn, request: Re
     return res.data[0] if res.data else None
 
 
+# ════════════════════════════════════════════════════════════
+# Excel Imports (CTE / MREA legacy workbooks)
+# ════════════════════════════════════════════════════════════
+# Accept an .xlsx upload, detect the workbook type by sheet names, and
+# extract: agent metadata + GCI goal + splits + sale prices/comm rates
+# (from "Business Plan" tab) and daily lead gen entries (from "Daily
+# Lead Gen Entry" tab). Returns a preview; client confirms with
+# apply=true to persist.
+
+from fastapi import UploadFile, File, Form  # noqa: E402
+
+def _safe_num(v):
+    if v is None: return None
+    try:
+        f = float(v)
+        return f if f == f else None  # NaN check
+    except Exception:
+        return None
+
+
+def _parse_cte_workbook(xlsx_bytes: bytes) -> dict:
+    """Parse a CTE 2019-style workbook. Returns extracted-data dict."""
+    import io
+    from openpyxl import load_workbook
+    wb = load_workbook(io.BytesIO(xlsx_bytes), data_only=True, read_only=True)
+    sheets = wb.sheetnames
+
+    out = {
+        "workbook_type": None,
+        "client": {},
+        "plan": {},
+        "economic": {},
+        "budget": {},
+        "activity_logs": [],
+        "warnings": [],
+    }
+
+    is_cte = ("Business Plan" in sheets and "Daily Lead Gen Entry" in sheets)
+    if is_cte:
+        out["workbook_type"] = "CTE_2019"
+    else:
+        out["workbook_type"] = "UNKNOWN"
+        out["warnings"].append("Sheet names don't match a known template — no Business Plan / Daily Lead Gen Entry tabs found.")
+        return out
+
+    # ── Business Plan tab ──
+    try:
+        bp = wb["Business Plan"]
+        # Iterate cells we care about
+        # Row 7: D7 = agent name; H7..L7 = Estimated Taxes label + value
+        # Row 8: D8 = Type (Ind/Team); L8 = Split to Office
+        # Row 9: D9 = Big Why; L9 = Split Cap
+        # Row 16+: Lead agent row. C16=name, E16=GCI goal, H16=ASP listing, I16=ASP buyer, J16=comm listing, K16=comm buyer
+        rowvals = {}
+        for r_idx, row in enumerate(bp.iter_rows(values_only=True), 1):
+            if r_idx > 25: break
+            rowvals[r_idx] = list(row)
+        def cell(r, c):  # 1-indexed columns
+            try: return rowvals.get(r, [])[c-1]
+            except Exception: return None
+
+        team_or_individual = "TEAM" if (cell(8, 4) and "team" in str(cell(8, 4)).lower()) else "INDIVIDUAL"
+        out["client"]["team_or_individual"] = team_or_individual
+        team_name = cell(7, 4)
+        if team_name and team_or_individual == "TEAM":
+            out["client"]["team_name"] = str(team_name)
+        big_why = cell(9, 4)
+        # If big_why cell is blank, the legacy spreadsheets sometimes had a hint instead.
+        if big_why and not str(big_why).startswith("Your Big Why"):
+            out["client"]["big_why"] = str(big_why)
+
+        tax_pct = _safe_num(cell(7, 12))   # L7 — fraction (0.17)
+        split_to_office = _safe_num(cell(8, 12))  # L8 — fraction (0.30)
+        split_cap = _safe_num(cell(9, 12))  # L9 — dollar (21000)
+        if tax_pct is not None and tax_pct < 1: out["budget"]["income_tax_pct"] = tax_pct
+        if split_cap is not None: out["budget"]["split_cap"] = split_cap
+        if split_to_office is not None and split_to_office < 1:
+            # We don't store a percent split — instead infer dollar paid_to_brokerage from cap
+            # Leave unset so the comp-plan default applies on import
+            pass
+
+        # Lead agent row (typically row 16, but find first row with C populated and E populated)
+        lead_name = None
+        lead_gci = None
+        lead_asp_listing = None
+        lead_asp_buyer = None
+        lead_comm_listing = None
+        lead_comm_buyer = None
+        for r in range(15, 22):
+            name = cell(r, 3); gci = _safe_num(cell(r, 5))
+            if name and gci and gci > 1000:
+                lead_name = str(name)
+                lead_gci = gci
+                lead_asp_listing = _safe_num(cell(r, 8))
+                lead_asp_buyer = _safe_num(cell(r, 9))
+                lead_comm_listing = _safe_num(cell(r, 10))
+                lead_comm_buyer = _safe_num(cell(r, 11))
+                break
+        if lead_gci: out["plan"]["gci_target"] = lead_gci
+        if lead_asp_listing: out["economic"]["seller_avg_sale_price"] = lead_asp_listing
+        if lead_asp_buyer: out["economic"]["buyer_avg_sale_price"] = lead_asp_buyer
+        if lead_comm_listing and lead_comm_listing < 1: out["economic"]["commission_rate_listing"] = lead_comm_listing
+        if lead_comm_buyer and lead_comm_buyer < 1: out["economic"]["commission_rate_buyer"] = lead_comm_buyer
+        if lead_name:
+            out["_extracted_lead_name"] = lead_name
+    except Exception as e:
+        out["warnings"].append(f"Error reading Business Plan tab: {e}")
+
+    # ── Daily Lead Gen Entry tab ──
+    try:
+        dle = wb["Daily Lead Gen Entry"]
+        # Headers on R3, data from R4+
+        # Columns: A=row#, B=Name, C=Date, D=Hours, E=Dials, F=Contacts, G=Nurtures,
+        #   H=Listing Appts Set, I=Listing Appts Held, J=*LISTING(s) Signed,
+        #   K=Buyer Appts Set, L=Buyer Appts Held
+        # Some CTE versions also have M=Buyers Signed
+        for r_idx, row in enumerate(dle.iter_rows(values_only=True), 1):
+            if r_idx <= 3: continue
+            if r_idx > 400: break  # safety
+            if not row or len(row) < 12: continue
+            dt = row[2]
+            if not dt: continue
+            # Convert date
+            log_date = None
+            if hasattr(dt, "isoformat"):
+                log_date = dt.date().isoformat() if hasattr(dt, "date") else str(dt)[:10]
+            else:
+                try:
+                    log_date = datetime.strptime(str(dt)[:10], "%Y-%m-%d").date().isoformat()
+                except Exception:
+                    continue
+            entry = {
+                "log_date": log_date,
+                "hours_prospected": _safe_num(row[3]) or 0,
+                "dials": int(_safe_num(row[4]) or 0),
+                "contacts_made": int(_safe_num(row[5]) or 0),
+                "nurtures": int(_safe_num(row[6]) or 0),
+                "listing_appts_set": int(_safe_num(row[7]) or 0),
+                "listing_appts_held": int(_safe_num(row[8]) or 0),
+                "listings_signed": int(_safe_num(row[9]) or 0),
+                "buyer_appts_set": int(_safe_num(row[10]) or 0),
+                "buyer_appts_held": int(_safe_num(row[11]) or 0),
+            }
+            if len(row) > 12 and row[12] is not None:
+                entry["buyers_signed"] = int(_safe_num(row[12]) or 0)
+            # Skip empty rows (date-only with all zeros)
+            non_zero = any(v for k, v in entry.items() if k != "log_date")
+            if non_zero:
+                out["activity_logs"].append(entry)
+    except Exception as e:
+        out["warnings"].append(f"Error reading Daily Lead Gen Entry tab: {e}")
+
+    return out
+
+
+@router.post("/clients/{client_id}/import-cte")
+async def import_cte_workbook(
+    client_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    apply: bool = Form(False),
+):
+    """Upload a CTE / MREA xlsx. With apply=False (default), parses and returns a preview.
+    With apply=True, also persists the extracted data into the coaching_client + plan + activity logs."""
+    workspace_id = _ws(request)
+    if not file.filename.lower().endswith((".xlsx", ".xlsm")):
+        raise HTTPException(400, "Only .xlsx / .xlsm files are supported")
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:  # 10 MB cap
+        raise HTTPException(400, "File too large (10 MB max)")
+    parsed = _parse_cte_workbook(contents)
+
+    if not apply or parsed.get("workbook_type") == "UNKNOWN":
+        return {"preview": True, "parsed": parsed, "summary": {
+            "workbook_type": parsed.get("workbook_type"),
+            "client_fields_found": len(parsed.get("client") or {}),
+            "plan_fields_found": len(parsed.get("plan") or {}),
+            "economic_fields_found": len(parsed.get("economic") or {}),
+            "budget_fields_found": len(parsed.get("budget") or {}),
+            "activity_logs_found": len(parsed.get("activity_logs") or []),
+            "warnings": parsed.get("warnings") or [],
+        }}
+
+    # ── Apply ──
+    yr = datetime.utcnow().year
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan_id = bundle["plan"]["id"]
+
+    if parsed.get("client"):
+        _supabase.table("coaching_clients").update(parsed["client"]).eq("id", client_id).execute()
+    if parsed.get("plan"):
+        _supabase.table("business_plans").update(parsed["plan"]).eq("id", plan_id).execute()
+    if parsed.get("economic"):
+        _supabase.table("economic_models").update(parsed["economic"]).eq("business_plan_id", plan_id).execute()
+    if parsed.get("budget"):
+        _supabase.table("budget_models").update(parsed["budget"]).eq("business_plan_id", plan_id).execute()
+
+    # Activity logs — upsert one at a time
+    inserted = 0
+    skipped = 0
+    for log in parsed.get("activity_logs", []):
+        try:
+            row = {"coaching_client_id": client_id, **log}
+            _supabase.table("coaching_activity_logs").upsert(row, on_conflict="coaching_client_id,log_date").execute()
+            inserted += 1
+        except Exception:
+            skipped += 1
+
+    return {
+        "applied": True,
+        "client_id": client_id,
+        "fields_updated": {
+            "client": list((parsed.get("client") or {}).keys()),
+            "plan": list((parsed.get("plan") or {}).keys()),
+            "economic": list((parsed.get("economic") or {}).keys()),
+            "budget": list((parsed.get("budget") or {}).keys()),
+        },
+        "activity_logs_imported": inserted,
+        "activity_logs_skipped": skipped,
+        "warnings": parsed.get("warnings") or [],
+    }
+
+
 @router.get("/clients/{client_id}/scorecard")
 def coach_scorecard(client_id: int, request: Request, year: Optional[int] = None):
     workspace_id = _ws(request)
