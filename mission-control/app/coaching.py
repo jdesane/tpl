@@ -1454,17 +1454,31 @@ def my_brief(request: Request):
 
 
 class OnboardIn(BaseModel):
-    client: dict   # subset of CoachingClientUpdate fields
-    plan: dict     # {gci_target}
-    seller_pct: Optional[float] = 50  # as 0-100 percent
+    """CTE-style detailed goal-setting form payload.
+    All sections optional so the wizard can save partial progress.
+    """
+    # Identity / Vision (Step 1)
+    client: Optional[dict] = None     # CoachingClientUpdate-shape, plus: big_why, team_or_individual, team_name
+    # Income Goal (Step 2)
+    plan: Optional[dict] = None       # {gci_target}
+    pct_listing_income: Optional[float] = None   # as 0-100 percent — % income from listings
+    # Deal Economics (Step 3)
+    economic: Optional[dict] = None   # {seller_avg_sale_price, buyer_avg_sale_price, commission_rate_listing, commission_rate_buyer, listings_close_pct, buyers_close_pct, listing_appt_to_list_pct, buyer_appt_to_work_pct}
+    # Financial Plan (Step 4)
+    budget: Optional[dict] = None     # {income_tax_pct, charity_pct, retirement_pct, paid_to_brokerage (cap), royalty_pct, royalty_cap, split_cap, avg_net_commission_per_close}
+    # Activity Goals (Step 5)
+    activity_goals: Optional[dict] = None  # see activity_goals table columns
+    # Recruiting / Rev Share (Step 6, LPT only)
+    recruiting: Optional[dict] = None  # {annual_recruit_goal, conversation_to_recruit_ratio, pct_brokerage_partner, expected_recruits_per_recruit, cap_hit_rate}
 
 
 @router.post("/me/onboard")
 def my_onboard(payload: OnboardIn, request: Request):
-    """Agent self-service: fill in their coaching_client metadata + business plan
-    GCI target + economic_model.seller_pct from the first-login wizard.
-    Coach can refine on the first call."""
+    """Agent self-service: fill in the full CTE-style goal-setting form.
+    Saves partial progress safely — every section is optional."""
     cc = _my_client(request)
+
+    # ── Step 1: Identity / Vision ──
     client_data = dict(payload.client or {})
     if "avg_commission_rate" in client_data and client_data["avg_commission_rate"] is not None:
         client_data["avg_commission_rate"] = _normalize_pct(client_data["avg_commission_rate"])
@@ -1474,29 +1488,87 @@ def my_onboard(payload: OnboardIn, request: Request):
     yr = datetime.utcnow().year
     bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
     plan_id = bundle["plan"]["id"]
+
+    # ── Step 2: Income Goal ──
     plan_data = dict(payload.plan or {})
     if plan_data:
         _supabase.table("business_plans").update(plan_data).eq("id", plan_id).execute()
 
-    # Seed economic_model with the agent's onboarding inputs (seller_pct + sale prices + comm rate)
-    em_update = {}
-    if payload.seller_pct is not None:
-        em_update["seller_pct"] = _normalize_pct(payload.seller_pct)
-    if client_data.get("avg_sale_price"):
+    # ── Step 3: Deal Economics ──
+    # If pct_listing_income is set, derive seller_pct from it (CTE thinks in listing %, MREA model thinks in seller %)
+    em_update = dict(payload.economic or {})
+    if payload.pct_listing_income is not None:
+        em_update["seller_pct"] = _normalize_pct(payload.pct_listing_income)
+    # Normalize all percentage fields
+    for k in ("seller_pct", "commission_rate", "commission_rate_listing", "commission_rate_buyer",
+              "listings_close_pct", "buyers_close_pct",
+              "listing_appt_to_list_pct", "buyer_appt_to_work_pct"):
+        if k in em_update and em_update[k] is not None:
+            em_update[k] = _normalize_pct(em_update[k])
+    # Backwards-compat: if listing comm rate set but the legacy commission_rate isn't, copy listing as primary
+    if em_update.get("commission_rate_listing") and not em_update.get("commission_rate"):
+        em_update["commission_rate"] = em_update["commission_rate_listing"]
+    # Fallback: if avg_sale_price was just saved on the client and economic is empty, copy to both sides
+    if not em_update.get("seller_avg_sale_price") and client_data.get("avg_sale_price"):
         em_update["seller_avg_sale_price"] = client_data["avg_sale_price"]
+    if not em_update.get("buyer_avg_sale_price") and client_data.get("avg_sale_price"):
         em_update["buyer_avg_sale_price"] = client_data["avg_sale_price"]
-    if client_data.get("avg_commission_rate"):
-        em_update["commission_rate"] = client_data["avg_commission_rate"]
     if em_update:
         _supabase.table("economic_models").update(em_update).eq("business_plan_id", plan_id).execute()
 
-    # Default the brokerage cap on budget_model
-    if client_data.get("lpt_comp_plan") == "BROKERAGE_PARTNER":
-        _supabase.table("budget_models").update({"paid_to_brokerage": LPT_CAP_BROKERAGE_PARTNER}).eq("business_plan_id", plan_id).execute()
-    elif client_data.get("lpt_comp_plan") == "BUSINESS_BUILDER":
-        _supabase.table("budget_models").update({"paid_to_brokerage": LPT_CAP_BUSINESS_BUILDER}).eq("business_plan_id", plan_id).execute()
+    # ── Step 4: Financial Plan ──
+    bm_update = dict(payload.budget or {})
+    for k in ("income_tax_pct", "charity_pct", "retirement_pct", "royalty_pct"):
+        if k in bm_update and bm_update[k] is not None:
+            bm_update[k] = _normalize_pct(bm_update[k])
+    # Auto-fill brokerage cap from comp plan if not explicitly provided
+    if "paid_to_brokerage" not in bm_update:
+        if client_data.get("lpt_comp_plan") == "BROKERAGE_PARTNER":
+            bm_update["paid_to_brokerage"] = LPT_CAP_BROKERAGE_PARTNER
+        elif client_data.get("lpt_comp_plan") == "BUSINESS_BUILDER":
+            bm_update["paid_to_brokerage"] = LPT_CAP_BUSINESS_BUILDER
+    if bm_update:
+        _supabase.table("budget_models").update(bm_update).eq("business_plan_id", plan_id).execute()
+
+    # ── Step 5: Activity Goals ──
+    ag = dict(payload.activity_goals or {})
+    for k in ("contact_to_appt_pct_target", "set_to_held_pct_target"):
+        if k in ag and ag[k] is not None:
+            ag[k] = _normalize_pct(ag[k])
+    if ag:
+        ag["business_plan_id"] = plan_id
+        _supabase.table("activity_goals").upsert(ag, on_conflict="business_plan_id").execute()
+
+    # ── Step 6: Recruiting / Rev Share ──
+    rp = dict(payload.recruiting or {})
+    for k in ("pct_brokerage_partner", "cap_hit_rate"):
+        if k in rp and rp[k] is not None:
+            rp[k] = _normalize_pct(rp[k])
+    if rp:
+        rp["business_plan_id"] = plan_id
+        _supabase.table("recruiting_plans").upsert(rp, on_conflict="business_plan_id").execute()
 
     return {"ok": True}
+
+
+@router.get("/me/activity-goals")
+def my_activity_goals(request: Request):
+    """Return the agent's per-category activity goals (used for pace calc against actuals)."""
+    cc = _my_client(request)
+    yr = datetime.utcnow().year
+    bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
+    res = _supabase.table("activity_goals").select("*").eq("business_plan_id", bundle["plan"]["id"]).execute()
+    return res.data[0] if res.data else {}
+
+
+@router.get("/clients/{client_id}/activity-goals")
+def coach_activity_goals(client_id: int, request: Request):
+    """Coach view of an agent's activity goals."""
+    workspace_id = _ws(request)
+    yr = datetime.utcnow().year
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    res = _supabase.table("activity_goals").select("*").eq("business_plan_id", bundle["plan"]["id"]).execute()
+    return res.data[0] if res.data else {}
 
 
 # ─── Coaching Dashboard (coach view across all clients) ───

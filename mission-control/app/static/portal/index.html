@@ -293,63 +293,176 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
-<!-- ─── COACHING ONBOARDING WIZARD ─── -->
+<!-- ─── COACHING ONBOARDING WIZARD (CTE-style 6-step goal form) ─── -->
 <div id="ptl-onboard-modal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:640px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:18px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:780px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:18px">
     <div>
-      <div style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px">Welcome to Coaching</div>
-      <div style="color:var(--text-muted);font-size:13px;margin-top:6px">A few questions to set up your business plan. You can change any of these later — Joe will refine them with you on the first call.</div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:26px;letter-spacing:2px">Welcome — Let's Build Your Plan</div>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:6px">Six short steps. Joe will refine the numbers with you on your first call. You can save now and finish later — every step saves as you go.</div>
+      <!-- Progress bar -->
+      <div style="margin-top:14px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden"><div id="ptl-onb-progress" style="height:100%;background:var(--accent);width:16.6%;transition:width .2s"></div></div>
     </div>
 
-    <div id="ptl-onb-step1">
-      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 1 OF 3 · YOUR INCOME GOAL</div>
-      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Annual GCI Goal ($)</label>
-      <input type="number" id="ptl-onb-gci" placeholder="350000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:16px;margin-bottom:14px" />
-      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">The dollar number you commit to earning this year. Everything else flows from this.</div>
-      <button class="btn btn-primary" onclick="ptlOnbNext(1)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
-    </div>
-
-    <div id="ptl-onb-step2" style="display:none">
-      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 2 OF 3 · YOUR DEALS</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Avg Sale Price ($)</label><input type="number" id="ptl-onb-asp" placeholder="400000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Avg Commission %</label><input type="number" id="ptl-onb-comm" placeholder="2.5" step="0.1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Seller Business</label><input type="number" id="ptl-onb-seller" placeholder="50" step="5" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+    <!-- STEP 1 — IDENTITY & VISION -->
+    <div id="ptl-onb-step1" data-onb-step="1">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 1 OF 6 · IDENTITY &amp; VISION</div>
+      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Brokerage *</label>
+      <select id="ptl-onb-brokerage" onchange="ptlOnbToggleLPT()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;margin-bottom:12px">
+        <option value="">— Select —</option>
+        <option value="LPT">LPT</option><option value="EXP">eXp</option>
+        <option value="KW">Keller Williams</option><option value="REMAX">RE/MAX</option>
+        <option value="C21">Century 21</option><option value="COMPASS">Compass</option>
+        <option value="REAL">Real Brokerage</option><option value="OTHER">Other</option>
+      </select>
+      <div id="ptl-onb-comp-wrap" style="display:none;margin-bottom:12px">
+        <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">LPT Comp Plan *</label>
+        <select id="ptl-onb-comp" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
+          <option value="">— Select —</option>
+          <option value="BUSINESS_BUILDER">Business Builder ($500/txn, $5K cap)</option>
+          <option value="BROKERAGE_PARTNER">Brokerage Partner (80/20 split, $15K cap)</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Market City</label><input type="text" id="ptl-onb-city" placeholder="Boca Raton" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">State</label><input type="text" id="ptl-onb-state" placeholder="FL" maxlength="2" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
         <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">License Date</label><input type="date" id="ptl-onb-license" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Solo or Team</label>
+          <select id="ptl-onb-team" onchange="ptlOnbToggleTeam()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
+            <option value="INDIVIDUAL">Solo / Individual</option>
+            <option value="TEAM">Team</option>
+          </select>
+        </div>
+        <div id="ptl-onb-team-name-wrap" style="display:none">
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Team Name</label>
+          <input type="text" id="ptl-onb-team-name" placeholder="DeSane &amp; Associates" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" />
+        </div>
+      </div>
+      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Your Big Why</label>
+      <textarea id="ptl-onb-bigwhy" placeholder="Why this year matters. The thing you're really chasing — financial freedom, time with family, recruit a team, hit Black Badge…" style="width:100%;min-height:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;font-family:inherit;line-height:1.5"></textarea>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="ptlOnbNext(1)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 — INCOME GOAL -->
+    <div id="ptl-onb-step2" data-onb-step="2" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 2 OF 6 · INCOME GOAL</div>
+      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Annual GCI Goal ($) *</label>
+      <input type="number" id="ptl-onb-gci" placeholder="350000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:18px;margin-bottom:6px" />
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:18px">The dollar number you commit to earning this year. Everything else flows from this.</div>
+      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% of Income from Listings (vs Buyers)</label>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <input type="range" id="ptl-onb-listpct" min="0" max="100" value="50" oninput="ptlOnbSyncListPct()" style="flex:1" />
+        <input type="number" id="ptl-onb-listpct-num" min="0" max="100" value="50" oninput="ptlOnbSyncListPctFromNum()" style="width:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:14px;text-align:center" />
+        <span style="color:var(--text-muted);font-size:11px">% Listings</span>
+      </div>
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px"><span id="ptl-onb-mix-preview">— $175,000 from listings · $175,000 from buyers</span></div>
+      <div style="display:flex;gap:8px;justify-content:space-between">
         <button class="btn" onclick="ptlOnbBack(2)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
         <button class="btn btn-primary" onclick="ptlOnbNext(2)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
       </div>
     </div>
 
-    <div id="ptl-onb-step3" style="display:none">
-      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 3 OF 3 · YOUR BROKERAGE &amp; MARKET</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Brokerage</label>
-          <select id="ptl-onb-brokerage" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
-            <option value="">— Select —</option>
-            <option value="LPT">LPT</option><option value="EXP">eXp</option>
-            <option value="KW">Keller Williams</option><option value="REMAX">RE/MAX</option>
-            <option value="C21">Century 21</option><option value="COMPASS">Compass</option>
-            <option value="REAL">Real Brokerage</option><option value="OTHER">Other</option>
-          </select>
-        </div>
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">LPT Comp Plan (if LPT)</label>
-          <select id="ptl-onb-comp" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
-            <option value="">— N/A —</option>
-            <option value="BUSINESS_BUILDER">Business Builder</option>
-            <option value="BROKERAGE_PARTNER">Brokerage Partner</option>
-          </select>
-        </div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Market City</label><input type="text" id="ptl-onb-city" placeholder="Boca Raton" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">State</label><input type="text" id="ptl-onb-state" placeholder="FL" maxlength="2" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+    <!-- STEP 3 — DEAL ECONOMICS -->
+    <div id="ptl-onb-step3" data-onb-step="3" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 3 OF 6 · DEAL ECONOMICS</div>
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Your average deal — separated by listing vs buyer side because they often differ.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Listing Avg Sale Price *</label><input type="number" id="ptl-onb-list-asp" placeholder="400000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Buyer Avg Sale Price *</label><input type="number" id="ptl-onb-buy-asp" placeholder="400000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Listing Commission %</label><input type="number" id="ptl-onb-list-comm" placeholder="2.5" step="0.1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Buyer Commission %</label><input type="number" id="ptl-onb-buy-comm" placeholder="2.5" step="0.1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
       </div>
-      <div id="ptl-onb-error" style="color:var(--red);font-size:12px;display:none;margin-bottom:8px"></div>
-      <div style="display:flex;gap:8px">
+      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px">CONVERSION RATES (defaults are MREA standards — adjust to your reality)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Listings That Close (default 85)</label><input type="number" id="ptl-onb-listclose" placeholder="85" step="1" value="85" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Buyers That Close (default 80)</label><input type="number" id="ptl-onb-buyclose" placeholder="80" step="1" value="80" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Listing Appts → List (default 65)</label><input type="number" id="ptl-onb-listappt" placeholder="65" step="1" value="65" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Buyer Appts → Work (default 75)</label><input type="number" id="ptl-onb-buyappt" placeholder="75" step="1" value="75" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:space-between">
         <button class="btn" onclick="ptlOnbBack(3)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
+        <button class="btn btn-primary" onclick="ptlOnbNext(3)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 — MONEY PLAN -->
+    <div id="ptl-onb-step4" data-onb-step="4" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 4 OF 6 · MONEY PLAN</div>
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Allocation, taxes, brokerage cap. Used to compute your survival number and take-home.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Estimated Tax % (default 30)</label><input type="number" id="ptl-onb-tax" placeholder="30" step="1" value="30" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Charity % (default 10)</label><input type="number" id="ptl-onb-charity" placeholder="10" step="1" value="10" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Retirement / Investment % (default 10)</label><input type="number" id="ptl-onb-retirement" placeholder="10" step="1" value="10" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Brokerage Cap $ (auto-fills for LPT)</label><input type="number" id="ptl-onb-cap" placeholder="15000" step="100" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Royalty % (if applicable)</label><input type="number" id="ptl-onb-royalty" placeholder="0" step="0.5" value="0" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Royalty Cap $</label><input type="number" id="ptl-onb-royaltycap" placeholder="0" step="100" value="0" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+      </div>
+      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Avg Net Commission per Closing $ (after splits/fees)</label>
+      <input type="number" id="ptl-onb-netclose" placeholder="6500" step="100" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;margin-bottom:14px" />
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Used to calculate your survival number — how many closings you need just to cover essentials.</div>
+      <div style="display:flex;gap:8px;justify-content:space-between">
+        <button class="btn" onclick="ptlOnbBack(4)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
+        <button class="btn btn-primary" onclick="ptlOnbNext(4)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5 — ACTIVITY GOALS -->
+    <div id="ptl-onb-step5" data-onb-step="5" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 5 OF 6 · ACTIVITY GOALS</div>
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">What you'll do every day, week, and month to hit the income goal. We'll show you suggested defaults based on your conversion rates above — adjust to your style.</div>
+
+      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px;margin-top:6px">DAILY</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Dials</label><input type="number" id="ptl-onb-dials" placeholder="50" step="5" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Contacts</label><input type="number" id="ptl-onb-contacts" placeholder="10" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Nurtures</label><input type="number" id="ptl-onb-nurtures" placeholder="5" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Hours Prosp.</label><input type="number" id="ptl-onb-hours" placeholder="3" step="0.5" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+      </div>
+
+      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px">WEEKLY</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Listing Appts Set</label><input type="number" id="ptl-onb-lset" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Listing Appts Held</label><input type="number" id="ptl-onb-lheld" placeholder="1" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Open Houses Held</label><input type="number" id="ptl-onb-oh" placeholder="1" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Buyer Appts Set</label><input type="number" id="ptl-onb-bset" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Buyer Appts Held</label><input type="number" id="ptl-onb-bheld" placeholder="1" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Showings</label><input type="number" id="ptl-onb-show" placeholder="3" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+      </div>
+
+      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px">MONTHLY</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Listings Signed</label><input type="number" id="ptl-onb-lsigned" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Buyers Signed</label><input type="number" id="ptl-onb-bsigned" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:space-between">
+        <button class="btn" onclick="ptlOnbBack(5)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
+        <button class="btn btn-primary" onclick="ptlOnbNext(5)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 6 — RECRUITING (LPT only) -->
+    <div id="ptl-onb-step6" data-onb-step="6" style="display:none">
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 6 OF 6 · RECRUITING &amp; REV SHARE</div>
+      <div id="ptl-onb-step6-lpt">
+        <div style="color:var(--text-muted);font-size:12px;margin-bottom:14px">LPT HybridShare lets you build passive income from agents you sponsor. Set realistic recruiting targets — Joe will help you build the playbook on your first call.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Annual Recruit Goal</label><input type="number" id="ptl-onb-recgoal" placeholder="4" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Conversation : Recruit Ratio (default 25)</label><input type="number" id="ptl-onb-recratio" placeholder="25" step="1" value="25" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Brokerage Partner (default 50)</label><input type="number" id="ptl-onb-pctbp" placeholder="50" step="5" value="50" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Cap-Hit Rate % (default 30)</label><input type="number" id="ptl-onb-caphit" placeholder="30" step="5" value="30" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        </div>
+      </div>
+      <div id="ptl-onb-step6-nonlpt" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Recruiting / rev share is LPT-specific. You'll skip this step.</div>
+      <div id="ptl-onb-error" style="color:var(--red);font-size:12px;display:none;margin-bottom:8px;margin-top:8px"></div>
+      <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+        <button class="btn" onclick="ptlOnbBack(6)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
         <button class="btn btn-primary" id="ptl-onb-finish" onclick="ptlOnbFinish()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Finish Setup ✓</button>
       </div>
     </div>
@@ -612,74 +725,220 @@ function ptlMaybeOpenOnboarding(){
     !c.brokerage;
   if(needsSetup){
     document.getElementById('ptl-onboard-modal').style.display = 'flex';
-    // Pre-fill anything we already have
-    if(p.gci_target) document.getElementById('ptl-onb-gci').value = p.gci_target;
-    if(c.avg_sale_price) document.getElementById('ptl-onb-asp').value = c.avg_sale_price;
-    if(c.avg_commission_rate) document.getElementById('ptl-onb-comm').value = (parseFloat(c.avg_commission_rate)*100).toFixed(2);
-    if(c.brokerage) document.getElementById('ptl-onb-brokerage').value = c.brokerage;
-    if(c.lpt_comp_plan) document.getElementById('ptl-onb-comp').value = c.lpt_comp_plan;
-    if(c.market_city) document.getElementById('ptl-onb-city').value = c.market_city;
-    if(c.market_state) document.getElementById('ptl-onb-state').value = c.market_state;
-    if(c.license_date) document.getElementById('ptl-onb-license').value = c.license_date;
+    ptlOnbPrefill();
   }
 }
 
-function ptlOnbNext(step){
-  if(step===1){
-    var v = parseFloat(document.getElementById('ptl-onb-gci').value);
-    if(!v || v <= 0){ alert('Enter your annual GCI goal.'); return; }
-    document.getElementById('ptl-onb-step1').style.display='none';
-    document.getElementById('ptl-onb-step2').style.display='block';
-  } else if(step===2){
-    var asp = parseFloat(document.getElementById('ptl-onb-asp').value);
-    var comm = parseFloat(document.getElementById('ptl-onb-comm').value);
-    if(!asp || asp <= 0){ alert('Enter your average sale price.'); return; }
-    if(!comm || comm <= 0){ alert('Enter your average commission %.'); return; }
-    document.getElementById('ptl-onb-step2').style.display='none';
-    document.getElementById('ptl-onb-step3').style.display='block';
+function ptlOnbPrefill(){
+  var c = ptlState.client || {}, p = ptlState.plan || {};
+  // Step 1 — Identity
+  if(c.brokerage) document.getElementById('ptl-onb-brokerage').value = c.brokerage;
+  if(c.lpt_comp_plan) document.getElementById('ptl-onb-comp').value = c.lpt_comp_plan;
+  if(c.market_city) document.getElementById('ptl-onb-city').value = c.market_city;
+  if(c.market_state) document.getElementById('ptl-onb-state').value = c.market_state;
+  if(c.license_date) document.getElementById('ptl-onb-license').value = c.license_date;
+  if(c.team_or_individual) document.getElementById('ptl-onb-team').value = c.team_or_individual;
+  if(c.team_name) document.getElementById('ptl-onb-team-name').value = c.team_name;
+  if(c.big_why) document.getElementById('ptl-onb-bigwhy').value = c.big_why;
+  // Step 2 — Income
+  if(p.gci_target) document.getElementById('ptl-onb-gci').value = p.gci_target;
+  // Step 3 — Deal economics
+  if(c.avg_sale_price){
+    document.getElementById('ptl-onb-list-asp').value = c.avg_sale_price;
+    document.getElementById('ptl-onb-buy-asp').value = c.avg_sale_price;
   }
+  if(c.avg_commission_rate){
+    var rate = (parseFloat(c.avg_commission_rate)*100).toFixed(2);
+    document.getElementById('ptl-onb-list-comm').value = rate;
+    document.getElementById('ptl-onb-buy-comm').value = rate;
+  }
+  ptlOnbToggleLPT();
+  ptlOnbToggleTeam();
+  ptlOnbSyncListPct();
+  ptlOnbUpdateProgress(1);
+}
+
+function ptlOnbToggleLPT(){
+  var b = document.getElementById('ptl-onb-brokerage').value;
+  document.getElementById('ptl-onb-comp-wrap').style.display = (b==='LPT' ? 'block' : 'none');
+}
+
+function ptlOnbToggleTeam(){
+  var t = document.getElementById('ptl-onb-team').value;
+  document.getElementById('ptl-onb-team-name-wrap').style.display = (t==='TEAM' ? 'block' : 'none');
+}
+
+function ptlOnbSyncListPct(){
+  var v = document.getElementById('ptl-onb-listpct').value;
+  document.getElementById('ptl-onb-listpct-num').value = v;
+  ptlOnbUpdateMixPreview();
+}
+function ptlOnbSyncListPctFromNum(){
+  var v = Math.max(0, Math.min(100, parseInt(document.getElementById('ptl-onb-listpct-num').value)||0));
+  document.getElementById('ptl-onb-listpct').value = v;
+  document.getElementById('ptl-onb-listpct-num').value = v;
+  ptlOnbUpdateMixPreview();
+}
+function ptlOnbUpdateMixPreview(){
+  var gci = parseFloat(document.getElementById('ptl-onb-gci').value)||0;
+  var pct = parseInt(document.getElementById('ptl-onb-listpct').value)||50;
+  var listPart = gci * pct / 100;
+  var buyPart = gci - listPart;
+  document.getElementById('ptl-onb-mix-preview').textContent =
+    '$' + Math.round(listPart).toLocaleString() + ' from listings · $' + Math.round(buyPart).toLocaleString() + ' from buyers';
+}
+
+function ptlOnbUpdateProgress(step){
+  var pct = (step / 6) * 100;
+  document.getElementById('ptl-onb-progress').style.width = pct + '%';
+}
+
+function ptlOnbShow(step){
+  for(var i=1;i<=6;i++){
+    document.getElementById('ptl-onb-step'+i).style.display = (i===step ? 'block' : 'none');
+  }
+  ptlOnbUpdateProgress(step);
+}
+
+async function ptlOnbNext(step){
+  // Validate the current step + persist what we've collected so far, then advance.
+  if(step===1){
+    var b = document.getElementById('ptl-onb-brokerage').value;
+    if(!b){ alert('Pick your brokerage.'); return; }
+    if(b==='LPT' && !document.getElementById('ptl-onb-comp').value){ alert('Pick your LPT comp plan.'); return; }
+    await ptlOnbSaveStep1();
+  } else if(step===2){
+    var gci = parseFloat(document.getElementById('ptl-onb-gci').value);
+    if(!gci || gci <= 0){ alert('Enter your annual GCI goal.'); return; }
+    await ptlOnbSaveStep2();
+    ptlOnbUpdateMixPreview();
+  } else if(step===3){
+    var lasp = parseFloat(document.getElementById('ptl-onb-list-asp').value);
+    var basp = parseFloat(document.getElementById('ptl-onb-buy-asp').value);
+    if(!lasp || lasp <= 0){ alert('Enter your listing avg sale price.'); return; }
+    if(!basp || basp <= 0){ alert('Enter your buyer avg sale price.'); return; }
+    await ptlOnbSaveStep3();
+  } else if(step===4){
+    await ptlOnbSaveStep4();
+  } else if(step===5){
+    await ptlOnbSaveStep5();
+    // If non-LPT, hide the recruiting form on step 6
+    var brokerage = document.getElementById('ptl-onb-brokerage').value;
+    var isLPT = (brokerage === 'LPT');
+    document.getElementById('ptl-onb-step6-lpt').style.display = isLPT ? 'block' : 'none';
+    document.getElementById('ptl-onb-step6-nonlpt').style.display = isLPT ? 'none' : 'block';
+  }
+  if(step < 6) ptlOnbShow(step + 1);
 }
 
 function ptlOnbBack(step){
-  if(step===2){ document.getElementById('ptl-onb-step2').style.display='none'; document.getElementById('ptl-onb-step1').style.display='block'; }
-  else if(step===3){ document.getElementById('ptl-onb-step3').style.display='none'; document.getElementById('ptl-onb-step2').style.display='block'; }
+  if(step > 1) ptlOnbShow(step - 1);
+}
+
+// ── Per-step save helpers ──
+
+async function ptlOnbSaveStep1(){
+  var payload = { client: {
+    brokerage: document.getElementById('ptl-onb-brokerage').value,
+    lpt_comp_plan: document.getElementById('ptl-onb-comp').value || null,
+    market_city: document.getElementById('ptl-onb-city').value || null,
+    market_state: document.getElementById('ptl-onb-state').value || null,
+    license_date: document.getElementById('ptl-onb-license').value || null,
+    team_or_individual: document.getElementById('ptl-onb-team').value || null,
+    team_name: document.getElementById('ptl-onb-team-name').value || null,
+    big_why: document.getElementById('ptl-onb-bigwhy').value || null,
+  }};
+  Object.keys(payload.client).forEach(function(k){ if(payload.client[k]==null||payload.client[k]==='') delete payload.client[k]; });
+  await ptlOnbPost(payload);
+}
+
+async function ptlOnbSaveStep2(){
+  var gci = parseFloat(document.getElementById('ptl-onb-gci').value);
+  var pct = parseInt(document.getElementById('ptl-onb-listpct').value)||50;
+  await ptlOnbPost({
+    plan: { gci_target: gci },
+    pct_listing_income: pct,   // backend converts to seller_pct
+  });
+}
+
+async function ptlOnbSaveStep3(){
+  var econ = {
+    seller_avg_sale_price: parseFloat(document.getElementById('ptl-onb-list-asp').value)||null,
+    buyer_avg_sale_price: parseFloat(document.getElementById('ptl-onb-buy-asp').value)||null,
+    commission_rate_listing: parseFloat(document.getElementById('ptl-onb-list-comm').value)||null,
+    commission_rate_buyer: parseFloat(document.getElementById('ptl-onb-buy-comm').value)||null,
+    listings_close_pct: parseFloat(document.getElementById('ptl-onb-listclose').value)||null,
+    buyers_close_pct: parseFloat(document.getElementById('ptl-onb-buyclose').value)||null,
+    listing_appt_to_list_pct: parseFloat(document.getElementById('ptl-onb-listappt').value)||null,
+    buyer_appt_to_work_pct: parseFloat(document.getElementById('ptl-onb-buyappt').value)||null,
+  };
+  Object.keys(econ).forEach(function(k){ if(econ[k]==null) delete econ[k]; });
+  // Also update legacy avg_sale_price + avg_commission_rate on the client (uses listing as primary)
+  var clientUpdate = {};
+  if(econ.seller_avg_sale_price) clientUpdate.avg_sale_price = econ.seller_avg_sale_price;
+  if(econ.commission_rate_listing) clientUpdate.avg_commission_rate = econ.commission_rate_listing;
+  await ptlOnbPost({ economic: econ, client: clientUpdate });
+}
+
+async function ptlOnbSaveStep4(){
+  var bm = {
+    income_tax_pct: parseFloat(document.getElementById('ptl-onb-tax').value)||null,
+    charity_pct: parseFloat(document.getElementById('ptl-onb-charity').value)||null,
+    retirement_pct: parseFloat(document.getElementById('ptl-onb-retirement').value)||null,
+    paid_to_brokerage: parseFloat(document.getElementById('ptl-onb-cap').value)||null,
+    royalty_pct: parseFloat(document.getElementById('ptl-onb-royalty').value)||null,
+    royalty_cap: parseFloat(document.getElementById('ptl-onb-royaltycap').value)||null,
+    avg_net_commission_per_close: parseFloat(document.getElementById('ptl-onb-netclose').value)||null,
+  };
+  Object.keys(bm).forEach(function(k){ if(bm[k]==null) delete bm[k]; });
+  await ptlOnbPost({ budget: bm });
+}
+
+async function ptlOnbSaveStep5(){
+  var ag = {
+    dials_daily: parseInt(document.getElementById('ptl-onb-dials').value)||null,
+    contacts_daily: parseInt(document.getElementById('ptl-onb-contacts').value)||null,
+    nurtures_daily: parseInt(document.getElementById('ptl-onb-nurtures').value)||null,
+    hours_prospecting_daily: parseFloat(document.getElementById('ptl-onb-hours').value)||null,
+    listing_appts_set_weekly: parseInt(document.getElementById('ptl-onb-lset').value)||null,
+    listing_appts_held_weekly: parseInt(document.getElementById('ptl-onb-lheld').value)||null,
+    open_houses_weekly: parseInt(document.getElementById('ptl-onb-oh').value)||null,
+    buyer_appts_set_weekly: parseInt(document.getElementById('ptl-onb-bset').value)||null,
+    buyer_appts_held_weekly: parseInt(document.getElementById('ptl-onb-bheld').value)||null,
+    showings_weekly: parseInt(document.getElementById('ptl-onb-show').value)||null,
+    listings_signed_monthly: parseInt(document.getElementById('ptl-onb-lsigned').value)||null,
+    buyers_signed_monthly: parseInt(document.getElementById('ptl-onb-bsigned').value)||null,
+  };
+  Object.keys(ag).forEach(function(k){ if(ag[k]==null) delete ag[k]; });
+  await ptlOnbPost({ activity_goals: ag });
+}
+
+async function ptlOnbSaveStep6(){
+  var brokerage = document.getElementById('ptl-onb-brokerage').value;
+  if(brokerage !== 'LPT') return;
+  var rp = {
+    annual_recruit_goal: parseInt(document.getElementById('ptl-onb-recgoal').value)||null,
+    conversation_to_recruit_ratio: parseInt(document.getElementById('ptl-onb-recratio').value)||null,
+    pct_brokerage_partner: parseFloat(document.getElementById('ptl-onb-pctbp').value)||null,
+    cap_hit_rate: parseFloat(document.getElementById('ptl-onb-caphit').value)||null,
+  };
+  Object.keys(rp).forEach(function(k){ if(rp[k]==null) delete rp[k]; });
+  if(Object.keys(rp).length) await ptlOnbPost({ recruiting: rp });
+}
+
+async function ptlOnbPost(payload){
+  return await fetch(API_BASE+'/api/coaching/me/onboard',{
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify(payload)
+  });
 }
 
 async function ptlOnbFinish(){
-  var brokerage = document.getElementById('ptl-onb-brokerage').value;
-  if(!brokerage){
-    document.getElementById('ptl-onb-error').textContent = 'Pick your current brokerage.';
-    document.getElementById('ptl-onb-error').style.display='block';
-    return;
-  }
   var btn = document.getElementById('ptl-onb-finish');
   btn.disabled=true; btn.textContent='Saving...';
   try{
-    var clientPayload = {
-      brokerage: brokerage,
-      lpt_comp_plan: document.getElementById('ptl-onb-comp').value || null,
-      avg_sale_price: parseFloat(document.getElementById('ptl-onb-asp').value),
-      avg_commission_rate: parseFloat(document.getElementById('ptl-onb-comm').value),  // backend normalizes 2.5 → 0.025
-      market_city: document.getElementById('ptl-onb-city').value || null,
-      market_state: document.getElementById('ptl-onb-state').value || null,
-      license_date: document.getElementById('ptl-onb-license').value || null,
-    };
-    Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]===null||clientPayload[k]==='') delete clientPayload[k]; });
-
-    // Update the coaching client (admin route — works because /api/coaching/clients/{id}
-    // doesn't require admin role and the agent owns this client_id via user_id link).
-    // We use a self-service variant since /me/* routes don't include client metadata updates.
-    var ws = ptlState.client.workspace_id;  // unused but illustrative
-    await fetch(API_BASE+'/api/coaching/me/onboard',{
-      method:'POST', headers:authHeaders(),
-      body: JSON.stringify({
-        client: clientPayload,
-        plan: { gci_target: parseFloat(document.getElementById('ptl-onb-gci').value) },
-        seller_pct: parseFloat(document.getElementById('ptl-onb-seller').value)||50,
-      })
-    });
+    await ptlOnbSaveStep6();
     document.getElementById('ptl-onboard-modal').style.display='none';
-    // Re-fetch state and load Today
     await ptlInitCoachingNav();
     portalPage('coachtoday');
   }catch(e){
