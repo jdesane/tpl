@@ -2123,6 +2123,69 @@ def my_delete_touch(touch_id: int, request: Request):
     return {"ok": True}
 
 
+# ════════════════════════════════════════════════════════════
+# Perfect Week scheduler
+# ════════════════════════════════════════════════════════════
+# perfect_weeks.schedule is JSONB: { "MON": { "BEFORE_8": "...", "MORNING": "...", "AFTERNOON": "...", "EVENING": "..." }, ... }
+
+PERFECT_WEEK_DEFAULT_TEMPLATE = {
+    "MON": {"BEFORE_8": "Mindset / workout", "MORNING": "Lead Gen — 50 dials", "AFTERNOON": "Listing appts + Showings", "EVENING": "Buyer consults / family"},
+    "TUE": {"BEFORE_8": "Mindset / workout", "MORNING": "Lead Gen — 50 dials", "AFTERNOON": "Listing appts + Showings", "EVENING": "Buyer consults / family"},
+    "WED": {"BEFORE_8": "Mindset / workout", "MORNING": "Lead Gen — 50 dials", "AFTERNOON": "Listing appts + Showings", "EVENING": "Mid-week review / coaching call"},
+    "THU": {"BEFORE_8": "Mindset / workout", "MORNING": "Lead Gen — 50 dials", "AFTERNOON": "Listing appts + Showings", "EVENING": "Buyer consults / family"},
+    "FRI": {"BEFORE_8": "Mindset / workout", "MORNING": "Lead Gen — 50 dials", "AFTERNOON": "Listing appts + Showings", "EVENING": "Closings / week wrap"},
+    "SAT": {"BEFORE_8": "", "MORNING": "Open House (if listing active)", "AFTERNOON": "Buyer showings", "EVENING": "Personal"},
+    "SUN": {"BEFORE_8": "", "MORNING": "Family / faith", "AFTERNOON": "Plan the week (4-1-1)", "EVENING": "Set tomorrow's intention"},
+}
+
+
+class PerfectWeekIn(BaseModel):
+    schedule: Optional[dict] = None
+    template_name: Optional[str] = None
+
+
+def _ensure_perfect_week(client_id: int) -> dict:
+    res = _supabase.table("perfect_weeks").select("*").eq("coaching_client_id", client_id).execute()
+    if res.data:
+        return res.data[0]
+    ins = _supabase.table("perfect_weeks").insert({
+        "coaching_client_id": client_id,
+        "schedule": PERFECT_WEEK_DEFAULT_TEMPLATE,
+        "template_name": "Default 50-dial week",
+    }).execute()
+    return ins.data[0]
+
+
+@router.get("/clients/{client_id}/perfect-week")
+def get_perfect_week(client_id: int, request: Request):
+    return _ensure_perfect_week(client_id)
+
+
+@router.put("/clients/{client_id}/perfect-week")
+def update_perfect_week(client_id: int, payload: PerfectWeekIn, request: Request):
+    pw = _ensure_perfect_week(client_id)
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    return _supabase.table("perfect_weeks").update(data).eq("id", pw["id"]).execute().data[0]
+
+
+@router.get("/me/perfect-week")
+def my_perfect_week(request: Request):
+    cc = _my_client(request)
+    return _ensure_perfect_week(cc["id"])
+
+
+@router.put("/me/perfect-week")
+def my_update_perfect_week(payload: PerfectWeekIn, request: Request):
+    cc = _my_client(request)
+    pw = _ensure_perfect_week(cc["id"])
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    return _supabase.table("perfect_weeks").update(data).eq("id", pw["id"]).execute().data[0]
+
+
 @router.get("/clients/{client_id}/scorecard")
 def coach_scorecard(client_id: int, request: Request, year: Optional[int] = None):
     workspace_id = _ws(request)

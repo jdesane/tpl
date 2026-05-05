@@ -924,6 +924,7 @@ th[onclick]:hover{color:var(--accent)}
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="pipeline" onclick="cgSwitchTab('pipeline')">Pipeline</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="activity" onclick="cgSwitchTab('activity')">Daily Activity</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')">HybridShare</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="perfectweek" onclick="cgSwitchTab('perfectweek')">Perfect Week</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="database" onclick="cgSwitchTab('database')">Database</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="reviews" onclick="cgSwitchTab('reviews')">Reviews</button>
     </div>
@@ -1251,7 +1252,24 @@ th[onclick]:hover{color:var(--accent)}
       </div>
     </div>
 
-<!-- ─── DATABASE TAB ─── -->
+<!-- ─── PERFECT WEEK TAB ─── -->
+    <div id="cg-tab-perfectweek" style="display:none">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div class="panel-title" style="font-size:16px;margin:0">Perfect Week</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:4px">If it's not on the calendar, it doesn't exist (BOLD Law). 7 days × 4 time blocks. Auto-saves on blur.</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="cg-pw-template" class="form-input" style="width:240px;padding:6px 10px;font-size:12px" placeholder="Template name" onblur="cgPwSaveTemplate()" />
+            <button class="btn btn-ghost btn-sm" onclick="cgPwResetDefault()">Reset to Default</button>
+          </div>
+        </div>
+        <div id="cg-pw-grid" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- ─── DATABASE TAB ─── -->
     <div id="cg-tab-database" style="display:none">
       <div class="metric-row" style="margin-bottom:14px">
         <div class="metric-card"><div class="metric-label">Total in DB</div><div class="metric-value" id="cg-db-total">&mdash;</div></div>
@@ -5414,6 +5432,7 @@ window.cgSwitchTab = function(tab){
   if(tab==='recruiting') cgHsLoad();
   if(tab==='reviews') cgRvLoad();
   if(tab==='database') cgDbLoad();
+  if(tab==='perfectweek') cgPwLoad();
 };
 
 // ─── GPS (1-3-5) ───
@@ -6030,6 +6049,92 @@ async function cgDbLogFor(name, email, type){
     body: JSON.stringify({person_name:name, person_email:email||null, contact_type:type, touch_method:method, notes:notes})
   });
   await cgDbLoad();
+}
+
+// ─────────────────────────────────────────────
+// PERFECT WEEK
+// ─────────────────────────────────────────────
+var cgPwState = { pw: null };
+var CG_PW_DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+var CG_PW_DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var CG_PW_SLOTS = ['BEFORE_8','MORNING','AFTERNOON','EVENING'];
+var CG_PW_SLOT_LABELS = ['Before 8am','Morning','Afternoon','Evening'];
+
+async function cgPwLoad(){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/perfect-week');
+    if(!res.ok) return;
+    cgPwState.pw = await res.json();
+    document.getElementById('cg-pw-template').value = cgPwState.pw.template_name || '';
+    cgPwRender();
+  }catch(e){}
+}
+
+function cgPwRender(){
+  var sched = (cgPwState.pw||{}).schedule || {};
+  var grid = document.getElementById('cg-pw-grid');
+  var html = '<div style="display:grid;grid-template-columns:110px repeat(7,1fr);gap:6px;min-width:920px">';
+  // Header row
+  html += '<div></div>';
+  CG_PW_DAY_LABELS.forEach(function(lbl){
+    html += '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px">'+lbl+'</div>';
+  });
+  // Slot rows
+  CG_PW_SLOTS.forEach(function(slot, sIdx){
+    html += '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:8px 6px;align-self:start">'+CG_PW_SLOT_LABELS[sIdx]+'</div>';
+    CG_PW_DAYS.forEach(function(day){
+      var v = ((sched[day]||{})[slot]) || '';
+      html += '<textarea data-pw-day="'+day+'" data-pw-slot="'+slot+'" onblur="cgPwSaveCell()" style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:11px;min-height:60px;resize:vertical;font-family:inherit;line-height:1.4" placeholder="—">'+(v.replace(/</g,'&lt;'))+'</textarea>';
+    });
+  });
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+async function cgPwSaveCell(){
+  if(!cgState.current||!cgPwState.pw) return;
+  var sched = {};
+  CG_PW_DAYS.forEach(function(day){ sched[day] = {}; });
+  document.querySelectorAll('[data-pw-day]').forEach(function(ta){
+    var day = ta.getAttribute('data-pw-day'), slot = ta.getAttribute('data-pw-slot');
+    sched[day][slot] = ta.value || '';
+  });
+  cgPwState.pw.schedule = sched;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/perfect-week',{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({schedule: sched})
+  });
+}
+
+async function cgPwSaveTemplate(){
+  if(!cgState.current||!cgPwState.pw) return;
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/perfect-week',{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({template_name: document.getElementById('cg-pw-template').value || null})
+  });
+}
+
+async function cgPwResetDefault(){
+  if(!cgState.current) return;
+  if(!confirm('Reset this Perfect Week to the default 50-dial template? Your current schedule will be replaced.')) return;
+  // Re-fetch will give us the default if we delete first; simpler to send the default schedule directly
+  var defaults = {
+    MON:{BEFORE_8:'Mindset / workout',MORNING:'Lead Gen — 50 dials',AFTERNOON:'Listing appts + Showings',EVENING:'Buyer consults / family'},
+    TUE:{BEFORE_8:'Mindset / workout',MORNING:'Lead Gen — 50 dials',AFTERNOON:'Listing appts + Showings',EVENING:'Buyer consults / family'},
+    WED:{BEFORE_8:'Mindset / workout',MORNING:'Lead Gen — 50 dials',AFTERNOON:'Listing appts + Showings',EVENING:'Mid-week review / coaching call'},
+    THU:{BEFORE_8:'Mindset / workout',MORNING:'Lead Gen — 50 dials',AFTERNOON:'Listing appts + Showings',EVENING:'Buyer consults / family'},
+    FRI:{BEFORE_8:'Mindset / workout',MORNING:'Lead Gen — 50 dials',AFTERNOON:'Listing appts + Showings',EVENING:'Closings / week wrap'},
+    SAT:{BEFORE_8:'',MORNING:'Open House (if listing active)',AFTERNOON:'Buyer showings',EVENING:'Personal'},
+    SUN:{BEFORE_8:'',MORNING:'Family / faith',AFTERNOON:'Plan the week (4-1-1)',EVENING:"Set tomorrow's intention"}
+  };
+  cgPwState.pw.schedule = defaults;
+  cgPwRender();
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/perfect-week',{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({schedule: defaults, template_name: 'Default 50-dial week'})
+  });
+  document.getElementById('cg-pw-template').value = 'Default 50-dial week';
 }
 </script>
 </body>

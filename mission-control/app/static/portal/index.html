@@ -140,6 +140,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="nav-item" onclick="portalPage('coachplan')"><span class="icon">&#x25CE;</span>My Plan</div>
     <div class="nav-item" onclick="portalPage('coachpipeline')"><span class="icon">&#x25B7;</span>Pipeline</div>
     <div class="nav-item" onclick="portalPage('coachdatabase')"><span class="icon">&#x25CB;</span>Database</div>
+    <div class="nav-item" onclick="portalPage('coachperfectweek')"><span class="icon">&#x25A6;</span>Perfect Week</div>
     <div class="nav-item" onclick="portalPage('coachcalls')"><span class="icon">&#x260E;</span>Calls &amp; Commitments</div>
   </div>
   <div class="nav-group">
@@ -551,6 +552,13 @@ a{color:var(--accent);text-decoration:none}
   <div class="panel"><div id="ptl-pipe-list"></div></div>
 </div>
 
+<!-- ─── COACHING: PERFECT WEEK ─── -->
+<div class="page" id="portal-coachperfectweek">
+  <h2 style="margin-bottom:8px">Perfect Week</h2>
+  <div style="color:var(--text-muted);font-size:12px;margin-bottom:18px">If it's not on the calendar, it doesn't exist. Auto-saves on blur.</div>
+  <div class="panel"><div id="ptl-pw-grid" style="overflow-x:auto"></div></div>
+</div>
+
 <!-- ─── COACHING: DATABASE ─── -->
 <div class="page" id="portal-coachdatabase">
   <h2 style="margin-bottom:18px">My Database</h2>
@@ -639,6 +647,7 @@ function portalPage(name){
   if(name==='coachplan')ptlLoadPlan();
   if(name==='coachpipeline')ptlLoadPipeline();
   if(name==='coachdatabase')ptlLoadDatabase();
+  if(name==='coachperfectweek')ptlLoadPerfectWeek();
   if(name==='coachcalls')ptlLoadCalls();
 }
 
@@ -1369,6 +1378,56 @@ async function ptlDbLogFor(name, email, type){
     body: JSON.stringify({person_name:name, person_email:email||null, contact_type:type, touch_method:method, notes:notes||null})
   });
   ptlLoadDatabase();
+}
+
+// ─── Perfect Week ───
+var ptlPwState = { pw: null };
+var PTL_PW_DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+var PTL_PW_DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var PTL_PW_SLOTS = ['BEFORE_8','MORNING','AFTERNOON','EVENING'];
+var PTL_PW_SLOT_LABELS = ['Before 8am','Morning','Afternoon','Evening'];
+
+async function ptlLoadPerfectWeek(){
+  if(!ptlState.client) return;
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/me/perfect-week',{headers:authHeaders()});
+    if(!res.ok) return;
+    ptlPwState.pw = await res.json();
+    ptlPwRender();
+  }catch(e){}
+}
+
+function ptlPwRender(){
+  var sched = (ptlPwState.pw||{}).schedule || {};
+  var grid = document.getElementById('ptl-pw-grid');
+  var html = '<div style="display:grid;grid-template-columns:110px repeat(7,1fr);gap:6px;min-width:920px">';
+  html += '<div></div>';
+  PTL_PW_DAY_LABELS.forEach(function(lbl){
+    html += '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);text-align:center;padding:6px">'+lbl+'</div>';
+  });
+  PTL_PW_SLOTS.forEach(function(slot, sIdx){
+    html += '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:8px 6px;align-self:start">'+PTL_PW_SLOT_LABELS[sIdx]+'</div>';
+    PTL_PW_DAYS.forEach(function(day){
+      var v = ((sched[day]||{})[slot]) || '';
+      html += '<textarea data-pw-day="'+day+'" data-pw-slot="'+slot+'" onblur="ptlPwSaveCell()" style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:11px;min-height:60px;resize:vertical;font-family:inherit;line-height:1.4" placeholder="—">'+(v.replace(/</g,'&lt;'))+'</textarea>';
+    });
+  });
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+async function ptlPwSaveCell(){
+  if(!ptlState.client||!ptlPwState.pw) return;
+  var sched = {};
+  PTL_PW_DAYS.forEach(function(day){ sched[day] = {}; });
+  document.querySelectorAll('#ptl-pw-grid [data-pw-day]').forEach(function(ta){
+    sched[ta.getAttribute('data-pw-day')][ta.getAttribute('data-pw-slot')] = ta.value || '';
+  });
+  ptlPwState.pw.schedule = sched;
+  await fetch(API_BASE+'/api/coaching/me/perfect-week',{
+    method:'PUT', headers:authHeaders(),
+    body: JSON.stringify({schedule: sched})
+  });
 }
 
 // ─── Calls & Commitments ───
