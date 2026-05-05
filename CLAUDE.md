@@ -425,6 +425,43 @@ Three production fixes after first real-world use:
 
 **First-login onboarding wizard.** Coaching clients had nowhere to enter their goals — they'd land on the portal's Today tab with an empty plan. Wizard pops up auto when essentials missing (`gci_target=0`, `avg_sale_price=0`, `avg_commission_rate=0`, or `brokerage` empty). 3 steps: (1) Annual GCI Goal, (2) avg sale price + commission % + seller-business mix + license date, (3) brokerage + LPT comp plan + market city/state. Posts to new endpoint `/api/coaching/me/onboard` which updates coaching_clients + business_plans + economic_models + budget_models (auto-fills the LPT cap from the comp plan). Coach can refine on the first call.
 
+## Phase 15.5 — CTE-style Coaching Tools ✅
+Original Phase 15 built the spine (clients, calls, dashboard, GPS, 4-1-1, HybridShare). Real first use revealed the surface was too thin compared to the legacy DeSane CTE 2019 spreadsheet. Phase 15.5 brings the tools up to CTE feature parity in three sessions.
+
+### 15.5a — Detailed goal-setting form (replaces 3-step wizard)
+**Schema (migration `2026-05-04-phase-15-5-cte-goal-form.sql`):**
+- `coaching_clients` adds `big_why`, `team_or_individual`, `team_name`
+- `economic_models` adds `commission_rate_listing` + `commission_rate_buyer` (sale prices already separate)
+- `budget_models` adds `royalty_pct`, `royalty_cap`, `split_cap`
+- New `activity_goals` table with daily/weekly/monthly per-category targets (dials, contacts, nurtures, hours, listing/buyer appts set+held, showings, open houses, listings/buyers signed, conversion benchmarks)
+- `coaching_activity_logs` adds `dials`, `nurtures`, `listing_appts_set`, `listing_appts_held`, `listings_signed`, `buyer_appts_set`, `buyer_appts_held`, `buyers_signed`, `showings`, `open_houses_held`
+
+**Backend:** `/api/coaching/me/onboard` accepts a six-section payload (`client`, `plan + pct_listing_income`, `economic`, `budget`, `activity_goals`, `recruiting`). Each section is optional so the wizard saves partial progress on every Next click. New `GET /me/activity-goals` and `GET /clients/{id}/activity-goals`.
+
+**Frontend (portal):** 6-step modal — (1) Identity & Vision (brokerage, comp plan, market, license date, solo/team, big why); (2) Income Goal (GCI + listing/buyer income split slider with live $ preview); (3) Deal Economics (separate listing/buyer ASP + comm + 4 conversion rates); (4) Money Plan (tax/charity/retirement %, brokerage cap, royalty, avg net commission); (5) Activity Goals (12 fields across daily/weekly/monthly); (6) Recruiting (LPT only — annual goal, conversation ratio, % BP, cap-hit rate). Progress bar tracks completion. LPT comp-plan field auto-shows when brokerage = LPT. Recruiting step auto-skips for non-LPT.
+
+### 15.5b — Daily Lead Gen Entry + Scorecard
+Daily activity entry expanded from 4 fields to the full CTE Daily Lead Gen lineup: Hours, Dials, Contacts, Nurtures, Listing Appts Set/Held + Listings Signed, Buyer Appts Set/Held + Buyers Signed, Showings, Open Houses Held. Both the coach (MC) and the agent portal Today tab get the new entry form. **Bug fix mid-session:** `ActivityLogIn` Pydantic model was silently stripping the new columns until they were added to the model — caught by inspecting the DB row after a smoke test.
+
+New `/api/coaching/me/scorecard` and `/api/coaching/clients/{id}/scorecard` return CTE-style rollups: this week, this month, last 30 days, YTD, plus monthly Jan-Dec grid. Each period includes totals across all 14 activity fields plus computed conversion %s (contact-to-appt, set-to-held, contacts/hour). Coach Activity tab shows a Scorecard panel with this-week/this-month/YTD columns, goal-vs-actual highlights (green ≥100%, amber 70-99%, red <70%). Agent Today tab shows a "This Week vs Goals" panel with progress bars per metric.
+
+### 15.5c — Transaction lifecycle (CTE My Business sheet)
+**Schema (migration `2026-05-04-phase-15-5c-transaction-lifecycle.sql`):**
+- `pipeline_entries` adds `status` enum (PRE_SIGNED → ACTIVE → PENDING → CLOSED → EXPIRED, plus WITHDRAWN, CANCELLED)
+- Adds `list_date`, `expiration_date`, `expected_close_date`, `net_commission`, `mls_number`
+- Existing `closed=true` rows backfilled to `status=CLOSED`
+
+**Backend:** `_ceo_summary()` returns counts by status, listing/buyer active counts, active listing volume + projected GCI, pending volume + GCI, closed YTD units/volume/GCI/net GCI, monthly closed grid Jan-Dec. `_whiteboard()` returns active listings sorted by DOM desc, listings over 90 DOM, listings expiring in the next 30 days. Endpoints: `/api/coaching/me/ceo-summary`, `/me/whiteboard`, `/clients/{id}/ceo-summary`, `/clients/{id}/whiteboard`.
+
+**Coach Pipeline tab redesigned:** 5-card CEO summary at top (Pre-Signed, Active Listings + Vol, Active Buyers, Pending + GCI, Closed YTD + GCI). Yellow alert banner above the table when any listings expire in the next 30 days. Status filter chips (All / Pre-Signed / Active / Pending / Closed) alongside Listings/Buyers toggle. Table rebuilt with Status pill, Rating, Client/Address, List Date, Expiration Date (red if ≤30d), DOM, Price, Next Step. Sort priority: Active → Pending → Pre-Signed (by rating) → Closed → Expired. Add/Edit prompts include status + lifecycle dates + price + GCI.
+
+**Verified end-to-end:** ACTIVE listing with list_date 2026-04-15 / exp 2026-05-25 correctly shows DOM 20d, days_to_expiry 20d, fires the expiring-in-30 alert. CLOSED listing flows into closed YTD totals (1 unit, $380K volume, $9,500 GCI).
+
+**Out of scope (queued for next):**
+- Monthly Financial Statement — full P&L per month with all CTE income/cost-of-sales lines (Listing/Buyer/Referral/Lease/Other/Bonus income; Splits/Royalty/Referral fees/E&O/ISA/Showing/Admin cost lines)
+- Reviews, Perfect Week, contact_touches database tracker
+- Excel imports of legacy CTE workbooks
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
