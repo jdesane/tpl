@@ -295,181 +295,166 @@ a{color:var(--accent);text-decoration:none}
   </div>
 </div>
 
-<!-- ─── COACHING ONBOARDING WIZARD (CTE-style 6-step goal form) ─── -->
+<!-- ─── COACHING ONBOARDING WIZARD (LPT-only, 6 steps, net-income-driven) ─── -->
 <div id="ptl-onboard-modal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:780px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:18px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:820px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:18px">
     <div>
       <div style="font-family:Bebas Neue,sans-serif;font-size:26px;letter-spacing:2px">Welcome — Let's Build Your Plan</div>
       <div style="color:var(--text-muted);font-size:13px;margin-top:6px">Six short steps. Joe will refine the numbers with you on your first call. You can save now and finish later — every step saves as you go.</div>
-      <!-- Progress bar -->
       <div style="margin-top:14px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden"><div id="ptl-onb-progress" style="height:100%;background:var(--accent);width:16.6%;transition:width .2s"></div></div>
     </div>
 
-    <!-- STEP 1 — IDENTITY & VISION -->
+    <!-- STEP 1 — IDENTITY & VISION (LPT-only, no brokerage picker) -->
     <div id="ptl-onb-step1" data-onb-step="1">
       <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 1 OF 6 · IDENTITY &amp; VISION</div>
-      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Brokerage *</label>
-      <select id="ptl-onb-brokerage" onchange="ptlOnbToggleLPT()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;margin-bottom:12px">
-        <option value="">— Select —</option>
-        <option value="LPT">LPT</option><option value="EXP">eXp</option>
-        <option value="KW">Keller Williams</option><option value="REMAX">RE/MAX</option>
-        <option value="C21">Century 21</option><option value="COMPASS">Compass</option>
-        <option value="REAL">Real Brokerage</option><option value="OTHER">Other</option>
-      </select>
-      <div id="ptl-onb-comp-wrap" style="display:none;margin-bottom:12px">
-        <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">LPT Comp Plan *</label>
-        <select id="ptl-onb-comp" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
-          <option value="">— Select —</option>
-          <option value="BUSINESS_BUILDER">Business Builder ($500/txn, $5K cap)</option>
-          <option value="BROKERAGE_PARTNER">Brokerage Partner (80/20 split, $15K cap)</option>
-        </select>
+      <label class="ptl-onb-lbl">LPT Comp Plan <span style="color:var(--red)">*</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div onclick="ptlOnbPickPlan('BUSINESS_BUILDER')" id="ptl-onb-plan-bb" class="ptl-onb-plan-card" style="border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;background:var(--surface-2);transition:all .15s">
+          <div style="font-weight:600;font-size:13px">Business Builder</div>
+          <div style="color:var(--text-muted);font-size:11px;margin-top:4px">$500 per closed transaction · $5,000 annual cap</div>
+          <div style="color:var(--text-muted);font-size:11px;margin-top:2px">Receives 0.5x stock awards · No HybridShare</div>
+        </div>
+        <div onclick="ptlOnbPickPlan('BROKERAGE_PARTNER')" id="ptl-onb-plan-bp" class="ptl-onb-plan-card" style="border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;background:var(--surface-2);transition:all .15s">
+          <div style="font-weight:600;font-size:13px">Brokerage Partner</div>
+          <div style="color:var(--text-muted);font-size:11px;margin-top:4px">80/20 split · $15,000 annual cap</div>
+          <div style="color:var(--text-muted);font-size:11px;margin-top:2px">Full HybridShare · 1.0x stock awards</div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Market City</label><input type="text" id="ptl-onb-city" placeholder="Boca Raton" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">State</label><input type="text" id="ptl-onb-state" placeholder="FL" maxlength="2" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">License Date</label><input type="date" id="ptl-onb-license" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label class="ptl-onb-lbl">Market City <span style="color:var(--red)">*</span></label><input type="text" id="ptl-onb-city" placeholder="Boca Raton" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">State <span style="color:var(--red)">*</span></label><input type="text" id="ptl-onb-state" placeholder="FL" maxlength="2" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">License Date</label><input type="date" id="ptl-onb-license" class="ptl-onb-input" /></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:12px">
         <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Solo or Team</label>
-          <select id="ptl-onb-team" onchange="ptlOnbToggleTeam()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px">
+          <label class="ptl-onb-lbl">Solo or Team</label>
+          <select id="ptl-onb-team" onchange="ptlOnbToggleTeam()" class="ptl-onb-input">
             <option value="INDIVIDUAL">Solo / Individual</option>
             <option value="TEAM">Team</option>
           </select>
         </div>
         <div id="ptl-onb-team-name-wrap" style="display:none">
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Team Name</label>
-          <input type="text" id="ptl-onb-team-name" placeholder="DeSane &amp; Associates" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" />
+          <label class="ptl-onb-lbl">Team Name</label>
+          <input type="text" id="ptl-onb-team-name" placeholder="DeSane &amp; Associates" class="ptl-onb-input" />
         </div>
       </div>
-      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Your Big Why</label>
-      <textarea id="ptl-onb-bigwhy" placeholder="Why this year matters. The thing you're really chasing — financial freedom, time with family, recruit a team, hit Black Badge…" style="width:100%;min-height:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;font-family:inherit;line-height:1.5"></textarea>
+      <label class="ptl-onb-lbl">Your Big Why</label>
+      <textarea id="ptl-onb-bigwhy" placeholder="Why this year matters. The thing you're really chasing — financial freedom, time with family, recruit a team, hit Black Badge…" class="ptl-onb-input" style="min-height:80px;font-family:inherit;line-height:1.5"></textarea>
+      <div id="ptl-onb-error-1" class="ptl-onb-err"></div>
       <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-primary" onclick="ptlOnbNext(1)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+        <button class="ptl-onb-btn-primary" onclick="ptlOnbNext(1)">Next →</button>
       </div>
     </div>
 
-    <!-- STEP 2 — INCOME GOAL -->
+    <!-- STEP 2 — INCOME GOAL (NET INCOME, derives GCI) -->
     <div id="ptl-onb-step2" data-onb-step="2" style="display:none">
       <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 2 OF 6 · INCOME GOAL</div>
-      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Annual GCI Goal ($) *</label>
-      <input type="number" id="ptl-onb-gci" placeholder="350000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:18px;margin-bottom:6px" />
-      <div style="color:var(--text-muted);font-size:11px;margin-bottom:18px">The dollar number you commit to earning this year. Everything else flows from this.</div>
-      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% of Income from Listings (vs Buyers)</label>
+      <label class="ptl-onb-lbl">Net Income Goal — Before Taxes ($) <span style="color:var(--red)">*</span></label>
+      <input type="text" id="ptl-onb-netincome" placeholder="$300,000" class="ptl-onb-input" style="font-size:18px" oninput="ptlOnbDeriveGCI()" />
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:18px;margin-top:6px">The dollar amount you commit to bringing home this year (before income tax). We'll compute the GCI you need to hit it based on your LPT plan + average deal size.</div>
+      <label class="ptl-onb-lbl">% of Income from Listings (vs Buyers)</label>
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
         <input type="range" id="ptl-onb-listpct" min="0" max="100" value="50" oninput="ptlOnbSyncListPct()" style="flex:1" />
         <input type="number" id="ptl-onb-listpct-num" min="0" max="100" value="50" oninput="ptlOnbSyncListPctFromNum()" style="width:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:14px;text-align:center" />
         <span style="color:var(--text-muted);font-size:11px">% Listings</span>
       </div>
-      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px"><span id="ptl-onb-mix-preview">— $175,000 from listings · $175,000 from buyers</span></div>
+      <div id="ptl-onb-derive-preview" style="background:var(--accent-glow);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:12px;display:none;margin-bottom:14px"></div>
+      <div id="ptl-onb-error-2" class="ptl-onb-err"></div>
       <div style="display:flex;gap:8px;justify-content:space-between">
-        <button class="btn" onclick="ptlOnbBack(2)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
-        <button class="btn btn-primary" onclick="ptlOnbNext(2)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+        <button class="ptl-onb-btn-ghost" onclick="ptlOnbBack(2)">← Back</button>
+        <button class="ptl-onb-btn-primary" onclick="ptlOnbNext(2)">Next →</button>
       </div>
     </div>
 
-    <!-- STEP 3 — DEAL ECONOMICS -->
+    <!-- STEP 3 — DEAL ECONOMICS (text inputs accept $ and %) -->
     <div id="ptl-onb-step3" data-onb-step="3" style="display:none">
       <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 3 OF 6 · DEAL ECONOMICS</div>
       <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Your average deal — separated by listing vs buyer side because they often differ.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Listing Avg Sale Price *</label><input type="number" id="ptl-onb-list-asp" placeholder="400000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Buyer Avg Sale Price *</label><input type="number" id="ptl-onb-buy-asp" placeholder="400000" step="1000" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Listing Commission %</label><input type="number" id="ptl-onb-list-comm" placeholder="2.5" step="0.1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Buyer Commission %</label><input type="number" id="ptl-onb-buy-comm" placeholder="2.5" step="0.1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label class="ptl-onb-lbl">Listing Avg Sale Price <span style="color:var(--red)">*</span></label><input type="text" id="ptl-onb-list-asp" placeholder="$400,000" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Buyer Avg Sale Price <span style="color:var(--red)">*</span></label><input type="text" id="ptl-onb-buy-asp" placeholder="$400,000" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Listing Commission % <span style="color:var(--red)">*</span></label><input type="text" id="ptl-onb-list-comm" placeholder="2.5%" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Buyer Commission % <span style="color:var(--red)">*</span></label><input type="text" id="ptl-onb-buy-comm" placeholder="2.5%" class="ptl-onb-input" /></div>
       </div>
       <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px">CONVERSION RATES (defaults are MREA standards — adjust to your reality)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Listings That Close (default 85)</label><input type="number" id="ptl-onb-listclose" placeholder="85" step="1" value="85" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Buyers That Close (default 80)</label><input type="number" id="ptl-onb-buyclose" placeholder="80" step="1" value="80" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Listing Appts → List (default 65)</label><input type="number" id="ptl-onb-listappt" placeholder="65" step="1" value="65" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Buyer Appts → Work (default 75)</label><input type="number" id="ptl-onb-buyappt" placeholder="75" step="1" value="75" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+        <div><label class="ptl-onb-lbl">% Listings That Close (default 85)</label><input type="text" id="ptl-onb-listclose" placeholder="85%" value="85" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">% Buyers That Close (default 80)</label><input type="text" id="ptl-onb-buyclose" placeholder="80%" value="80" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">% Listing Appts → List (default 65)</label><input type="text" id="ptl-onb-listappt" placeholder="65%" value="65" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">% Buyer Appts → Work (default 75)</label><input type="text" id="ptl-onb-buyappt" placeholder="75%" value="75" class="ptl-onb-input" /></div>
       </div>
+      <div id="ptl-onb-error-3" class="ptl-onb-err"></div>
       <div style="display:flex;gap:8px;justify-content:space-between">
-        <button class="btn" onclick="ptlOnbBack(3)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
-        <button class="btn btn-primary" onclick="ptlOnbNext(3)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+        <button class="ptl-onb-btn-ghost" onclick="ptlOnbBack(3)">← Back</button>
+        <button class="ptl-onb-btn-primary" onclick="ptlOnbNext(3)">Next →</button>
       </div>
     </div>
 
-    <!-- STEP 4 — MONEY PLAN -->
+    <!-- STEP 4 — MONEY PLAN (LPT-aware: cap auto-fills, no royalty, derived net) -->
     <div id="ptl-onb-step4" data-onb-step="4" style="display:none">
       <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 4 OF 6 · MONEY PLAN</div>
-      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Allocation, taxes, brokerage cap. Used to compute your survival number and take-home.</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Estimated Tax % (default 30)</label><input type="number" id="ptl-onb-tax" placeholder="30" step="1" value="30" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Charity % (default 10)</label><input type="number" id="ptl-onb-charity" placeholder="10" step="1" value="10" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Retirement / Investment % (default 10)</label><input type="number" id="ptl-onb-retirement" placeholder="10" step="1" value="10" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Brokerage Cap $ (auto-fills for LPT)</label><input type="number" id="ptl-onb-cap" placeholder="15000" step="100" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Royalty % (if applicable)</label><input type="number" id="ptl-onb-royalty" placeholder="0" step="0.5" value="0" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Royalty Cap $</label><input type="number" id="ptl-onb-royaltycap" placeholder="0" step="100" value="0" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
+      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Allocation + taxes. We've already filled in your LPT brokerage cap and TC fee.</div>
+      <div id="ptl-onb-lpt-summary" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label class="ptl-onb-lbl">Estimated Tax %</label><input type="text" id="ptl-onb-tax" placeholder="30%" value="30" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Charity %</label><input type="text" id="ptl-onb-charity" placeholder="10%" value="10" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Retirement / Investment %</label><input type="text" id="ptl-onb-retirement" placeholder="10%" value="10" class="ptl-onb-input" /></div>
       </div>
-      <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Avg Net Commission per Closing $ (after splits/fees)</label>
-      <input type="number" id="ptl-onb-netclose" placeholder="6500" step="100" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;margin-bottom:14px" />
-      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">Used to calculate your survival number — how many closings you need just to cover essentials.</div>
+      <div id="ptl-onb-derived-money" style="background:var(--accent-glow);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:12px;display:none;margin-bottom:14px"></div>
+      <div id="ptl-onb-error-4" class="ptl-onb-err"></div>
       <div style="display:flex;gap:8px;justify-content:space-between">
-        <button class="btn" onclick="ptlOnbBack(4)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
-        <button class="btn btn-primary" onclick="ptlOnbNext(4)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+        <button class="ptl-onb-btn-ghost" onclick="ptlOnbBack(4)">← Back</button>
+        <button class="ptl-onb-btn-primary" onclick="ptlOnbNext(4)">Next →</button>
       </div>
     </div>
 
-    <!-- STEP 5 — ACTIVITY GOALS -->
+    <!-- STEP 5 — LEAD-GEN METHODS (checklist, not numeric goals) -->
     <div id="ptl-onb-step5" data-onb-step="5" style="display:none">
-      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 5 OF 6 · ACTIVITY GOALS</div>
-      <div style="color:var(--text-muted);font-size:11px;margin-bottom:14px">What you'll do every day, week, and month to hit the income goal. We'll show you suggested defaults based on your conversion rates above — adjust to your style.</div>
-
-      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px;margin-top:6px">DAILY</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Dials</label><input type="number" id="ptl-onb-dials" placeholder="50" step="5" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Contacts</label><input type="number" id="ptl-onb-contacts" placeholder="10" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Nurtures</label><input type="number" id="ptl-onb-nurtures" placeholder="5" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Hours Prosp.</label><input type="number" id="ptl-onb-hours" placeholder="3" step="0.5" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-      </div>
-
-      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px">WEEKLY</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Listing Appts Set</label><input type="number" id="ptl-onb-lset" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Listing Appts Held</label><input type="number" id="ptl-onb-lheld" placeholder="1" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Open Houses Held</label><input type="number" id="ptl-onb-oh" placeholder="1" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Buyer Appts Set</label><input type="number" id="ptl-onb-bset" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Buyer Appts Held</label><input type="number" id="ptl-onb-bheld" placeholder="1" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Showings</label><input type="number" id="ptl-onb-show" placeholder="3" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-      </div>
-
-      <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px">MONTHLY</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Listings Signed</label><input type="number" id="ptl-onb-lsigned" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-        <div><label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px">Buyers Signed</label><input type="number" id="ptl-onb-bsigned" placeholder="2" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px" /></div>
-      </div>
-
-      <div style="display:flex;gap:8px;justify-content:space-between">
-        <button class="btn" onclick="ptlOnbBack(5)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
-        <button class="btn btn-primary" onclick="ptlOnbNext(5)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Next →</button>
+      <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 5 OF 6 · LEAD GENERATION</div>
+      <div style="color:var(--text-muted);font-size:12px;margin-bottom:14px">Which lead-gen methods do you currently use or want to use this year? Select all that apply. Joe will help you build daily/weekly activity targets per method on your first call.</div>
+      <div id="ptl-onb-leadgen-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+      <label class="ptl-onb-lbl">Other (custom — comma separated)</label>
+      <input type="text" id="ptl-onb-leadgen-other" placeholder="e.g. radio sponsorship, charity events" class="ptl-onb-input" />
+      <div id="ptl-onb-error-5" class="ptl-onb-err" style="margin-top:10px"></div>
+      <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+        <button class="ptl-onb-btn-ghost" onclick="ptlOnbBack(5)">← Back</button>
+        <button class="ptl-onb-btn-primary" onclick="ptlOnbNext(5)">Next →</button>
       </div>
     </div>
 
     <!-- STEP 6 — RECRUITING (LPT only) -->
     <div id="ptl-onb-step6" data-onb-step="6" style="display:none">
       <div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:14px">STEP 6 OF 6 · RECRUITING &amp; REV SHARE</div>
-      <div id="ptl-onb-step6-lpt">
-        <div style="color:var(--text-muted);font-size:12px;margin-bottom:14px">LPT HybridShare lets you build passive income from agents you sponsor. Set realistic recruiting targets — Joe will help you build the playbook on your first call.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Annual Recruit Goal</label><input type="number" id="ptl-onb-recgoal" placeholder="4" step="1" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Conversation : Recruit Ratio (default 25)</label><input type="number" id="ptl-onb-recratio" placeholder="25" step="1" value="25" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">% Brokerage Partner (default 50)</label><input type="number" id="ptl-onb-pctbp" placeholder="50" step="5" value="50" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-          <div><label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Cap-Hit Rate % (default 30)</label><input type="number" id="ptl-onb-caphit" placeholder="30" step="5" value="30" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px" /></div>
-        </div>
+      <div style="color:var(--text-muted);font-size:12px;margin-bottom:14px">LPT HybridShare lets you build passive income from agents you sponsor. Set realistic recruiting targets — Joe will help you build the playbook on your first call.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div><label class="ptl-onb-lbl">Annual Recruit Goal</label><input type="text" id="ptl-onb-recgoal" placeholder="4" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Conversation : Recruit Ratio</label><input type="text" id="ptl-onb-recratio" placeholder="25" value="25" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">% Brokerage Partner</label><input type="text" id="ptl-onb-pctbp" placeholder="50%" value="50" class="ptl-onb-input" /></div>
+        <div><label class="ptl-onb-lbl">Cap-Hit Rate %</label><input type="text" id="ptl-onb-caphit" placeholder="30%" value="30" class="ptl-onb-input" /></div>
       </div>
-      <div id="ptl-onb-step6-nonlpt" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Recruiting / rev share is LPT-specific. You'll skip this step.</div>
-      <div id="ptl-onb-error" style="color:var(--red);font-size:12px;display:none;margin-bottom:8px;margin-top:8px"></div>
+      <div id="ptl-onb-error-6" class="ptl-onb-err"></div>
       <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
-        <button class="btn" onclick="ptlOnbBack(6)" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer">← Back</button>
-        <button class="btn btn-primary" id="ptl-onb-finish" onclick="ptlOnbFinish()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Finish Setup ✓</button>
+        <button class="ptl-onb-btn-ghost" onclick="ptlOnbBack(6)">← Back</button>
+        <button class="ptl-onb-btn-primary" id="ptl-onb-finish" onclick="ptlOnbFinish()">Finish Setup ✓</button>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  .ptl-onb-lbl{display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px}
+  .ptl-onb-input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px}
+  .ptl-onb-input:focus{outline:none;border-color:var(--accent)}
+  .ptl-onb-err{color:var(--red);font-size:12px;display:none;margin-top:8px}
+  .ptl-onb-btn-primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer}
+  .ptl-onb-btn-primary:hover{opacity:.9}
+  .ptl-onb-btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .ptl-onb-btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:10px 20px;cursor:pointer}
+  .ptl-onb-plan-card.selected{background:var(--accent-glow) !important;border-color:var(--accent) !important;box-shadow:0 0 0 1px var(--accent) inset}
+  .ptl-onb-leadgen-card{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s}
+  .ptl-onb-leadgen-card.selected{background:var(--accent-glow);border-color:var(--accent)}
+  .ptl-onb-leadgen-card:hover{border-color:var(--text-dim)}
+</style>
 
 <!-- ─── COACHING: TODAY ─── -->
 <div class="page" id="portal-coachtoday">
@@ -773,6 +758,27 @@ async function ptlInitCoachingNav(){
   }catch(e){}
 }
 
+// ════════════════════════════════════════════════════════════
+// LPT-only onboarding wizard — net-income-driven, derived GCI
+// ════════════════════════════════════════════════════════════
+
+var PTL_LEAD_GEN_METHODS = [
+  ["PAST_CLIENTS",    "Past Clients / SOI Database",      "Stay in touch with people who've already bought / sold with you"],
+  ["OPEN_HOUSES",     "Open Houses",                       "Saturdays + Sundays at active listings"],
+  ["GEO_FARM",        "Geographic Farm",                   "Mail / drop in a target neighborhood"],
+  ["COLD_CALLING",    "Cold Calling (FSBOs / Expireds)",   "Phone work — owners who haven't listed with you"],
+  ["DOOR_KNOCKING",   "Door Knocking / Circle Prospecting","In-person — usually around new listings"],
+  ["PAID_LEADS",      "Online Paid Leads (Zillow, Realtor, Google)", "Buying inbound leads from portals"],
+  ["SOCIAL_ORGANIC",  "Social Media — Organic",            "Posting + DMs to grow audience"],
+  ["SOCIAL_PAID",     "Social Media — Paid Ads",           "Meta / Instagram / TikTok ad campaigns"],
+  ["NETWORKING",      "Networking Events / BNI",           "In-person business networking groups"],
+  ["REFERRAL_PARTNERS","Referral Partners (out-of-area agents)", "Other agents in other markets sending you leads"],
+  ["DIRECT_MAIL",     "Direct Mail",                       "Postcards / letters to specific lists"],
+  ["BUILDERS",        "Builder Relationships",             "New construction reps + on-site"],
+  ["ALLIED_RESOURCES","Allied Resources (Lender, Title, CPA)","Trade-for-trade with the people in escrow"],
+  ["VIDEO_YOUTUBE",   "Video / YouTube",                   "Long-form video content drawing inbound"],
+];
+
 function ptlMaybeOpenOnboarding(){
   if(!ptlState.client||!ptlState.plan) return;
   var c = ptlState.client, p = ptlState.plan;
@@ -780,45 +786,56 @@ function ptlMaybeOpenOnboarding(){
     !p.gci_target || parseFloat(p.gci_target) === 0 ||
     !c.avg_sale_price || parseFloat(c.avg_sale_price) === 0 ||
     !c.avg_commission_rate || parseFloat(c.avg_commission_rate) === 0 ||
-    !c.brokerage;
+    !c.lpt_comp_plan;
   if(needsSetup){
     document.getElementById('ptl-onboard-modal').style.display = 'flex';
+    ptlOnbRenderLeadGenList();
     ptlOnbPrefill();
   }
 }
 
 function ptlOnbPrefill(){
   var c = ptlState.client || {}, p = ptlState.plan || {};
-  // Step 1 — Identity
-  if(c.brokerage) document.getElementById('ptl-onb-brokerage').value = c.brokerage;
-  if(c.lpt_comp_plan) document.getElementById('ptl-onb-comp').value = c.lpt_comp_plan;
+  if(c.lpt_comp_plan) ptlOnbPickPlan(c.lpt_comp_plan);
   if(c.market_city) document.getElementById('ptl-onb-city').value = c.market_city;
   if(c.market_state) document.getElementById('ptl-onb-state').value = c.market_state;
   if(c.license_date) document.getElementById('ptl-onb-license').value = c.license_date;
   if(c.team_or_individual) document.getElementById('ptl-onb-team').value = c.team_or_individual;
   if(c.team_name) document.getElementById('ptl-onb-team-name').value = c.team_name;
   if(c.big_why) document.getElementById('ptl-onb-bigwhy').value = c.big_why;
-  // Step 2 — Income
-  if(p.gci_target) document.getElementById('ptl-onb-gci').value = p.gci_target;
-  // Step 3 — Deal economics
+  if(p.net_income_goal) document.getElementById('ptl-onb-netincome').value = ptlOnbFmtMoney(p.net_income_goal);
   if(c.avg_sale_price){
-    document.getElementById('ptl-onb-list-asp').value = c.avg_sale_price;
-    document.getElementById('ptl-onb-buy-asp').value = c.avg_sale_price;
+    document.getElementById('ptl-onb-list-asp').value = ptlOnbFmtMoney(c.avg_sale_price);
+    document.getElementById('ptl-onb-buy-asp').value = ptlOnbFmtMoney(c.avg_sale_price);
   }
   if(c.avg_commission_rate){
-    var rate = (parseFloat(c.avg_commission_rate)*100).toFixed(2);
+    var rate = (parseFloat(c.avg_commission_rate)*100).toFixed(2)+'%';
     document.getElementById('ptl-onb-list-comm').value = rate;
     document.getElementById('ptl-onb-buy-comm').value = rate;
   }
-  ptlOnbToggleLPT();
   ptlOnbToggleTeam();
   ptlOnbSyncListPct();
   ptlOnbUpdateProgress(1);
 }
 
-function ptlOnbToggleLPT(){
-  var b = document.getElementById('ptl-onb-brokerage').value;
-  document.getElementById('ptl-onb-comp-wrap').style.display = (b==='LPT' ? 'block' : 'none');
+// ── Number / currency / percent parsers ──
+function ptlOnbParseNum(s){
+  if(s===null||s===undefined) return null;
+  var str = String(s).replace(/[$,\s%]/g,'').trim();
+  if(!str) return null;
+  var n = parseFloat(str);
+  return isNaN(n) ? null : n;
+}
+function ptlOnbFmtMoney(n){
+  if(!isFinite(n)) return '';
+  return '$' + Math.round(parseFloat(n)).toLocaleString();
+}
+
+function ptlOnbPickPlan(plan){
+  document.querySelectorAll('.ptl-onb-plan-card').forEach(function(el){el.classList.remove('selected')});
+  var el = document.getElementById(plan==='BUSINESS_BUILDER'?'ptl-onb-plan-bb':'ptl-onb-plan-bp');
+  if(el) el.classList.add('selected');
+  ptlState._selectedPlan = plan;
 }
 
 function ptlOnbToggleTeam(){
@@ -829,21 +846,43 @@ function ptlOnbToggleTeam(){
 function ptlOnbSyncListPct(){
   var v = document.getElementById('ptl-onb-listpct').value;
   document.getElementById('ptl-onb-listpct-num').value = v;
-  ptlOnbUpdateMixPreview();
+  ptlOnbDeriveGCI();
 }
 function ptlOnbSyncListPctFromNum(){
   var v = Math.max(0, Math.min(100, parseInt(document.getElementById('ptl-onb-listpct-num').value)||0));
   document.getElementById('ptl-onb-listpct').value = v;
   document.getElementById('ptl-onb-listpct-num').value = v;
-  ptlOnbUpdateMixPreview();
+  ptlOnbDeriveGCI();
 }
-function ptlOnbUpdateMixPreview(){
-  var gci = parseFloat(document.getElementById('ptl-onb-gci').value)||0;
-  var pct = parseInt(document.getElementById('ptl-onb-listpct').value)||50;
-  var listPart = gci * pct / 100;
-  var buyPart = gci - listPart;
-  document.getElementById('ptl-onb-mix-preview').textContent =
-    '$' + Math.round(listPart).toLocaleString() + ' from listings · $' + Math.round(buyPart).toLocaleString() + ' from buyers';
+
+var __ptlDeriveTimer = null;
+async function ptlOnbDeriveGCI(){
+  // Live preview of derived GCI from net income goal
+  clearTimeout(__ptlDeriveTimer);
+  __ptlDeriveTimer = setTimeout(async function(){
+    var net = ptlOnbParseNum(document.getElementById('ptl-onb-netincome').value);
+    var pct = parseInt(document.getElementById('ptl-onb-listpct').value)||50;
+    var preview = document.getElementById('ptl-onb-derive-preview');
+    if(!net || net <= 0){ preview.style.display='none'; return; }
+    try{
+      var res = await fetch(API_BASE+'/api/coaching/me/derive-gci?net_income_goal='+net+'&pct_listing_income='+pct,{headers:authHeaders()});
+      if(!res.ok){ preview.style.display='none'; return; }
+      var d = await res.json();
+      if(d.ok === false){
+        preview.style.display='block';
+        preview.innerHTML = '<div style="color:var(--text-muted)">' + d.reason + '</div>';
+        return;
+      }
+      preview.style.display='block';
+      preview.innerHTML =
+        '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:6px">DERIVED — based on your LPT plan + avg deal</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">' +
+        '<div><div style="color:var(--text-muted);font-size:10px">GCI Target</div><div style="font-size:18px;font-weight:600">'+ptlOnbFmtMoney(d.gci_target)+'</div></div>' +
+        '<div><div style="color:var(--text-muted);font-size:10px">Closings Needed</div><div style="font-size:18px;font-weight:600">'+(d.closings||0)+'</div></div>' +
+        '<div><div style="color:var(--text-muted);font-size:10px">Avg Net per Close</div><div style="font-size:18px;font-weight:600">'+ptlOnbFmtMoney(d.avg_net_per_close)+'</div></div>' +
+        '</div>';
+    }catch(e){}
+  }, 250);
 }
 
 function ptlOnbUpdateProgress(step){
@@ -858,35 +897,49 @@ function ptlOnbShow(step){
   ptlOnbUpdateProgress(step);
 }
 
+function ptlOnbErr(step, msg){
+  var el = document.getElementById('ptl-onb-error-'+step);
+  if(!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
 async function ptlOnbNext(step){
-  // Validate the current step + persist what we've collected so far, then advance.
+  ptlOnbErr(step, '');
   if(step===1){
-    var b = document.getElementById('ptl-onb-brokerage').value;
-    if(!b){ alert('Pick your brokerage.'); return; }
-    if(b==='LPT' && !document.getElementById('ptl-onb-comp').value){ alert('Pick your LPT comp plan.'); return; }
+    if(!ptlState._selectedPlan){ ptlOnbErr(1, 'Pick your LPT comp plan.'); return; }
+    if(!document.getElementById('ptl-onb-city').value.trim()){ ptlOnbErr(1, 'Enter your market city.'); return; }
+    if(!document.getElementById('ptl-onb-state').value.trim()){ ptlOnbErr(1, 'Enter your state.'); return; }
     await ptlOnbSaveStep1();
   } else if(step===2){
-    var gci = parseFloat(document.getElementById('ptl-onb-gci').value);
-    if(!gci || gci <= 0){ alert('Enter your annual GCI goal.'); return; }
+    var net = ptlOnbParseNum(document.getElementById('ptl-onb-netincome').value);
+    if(!net || net <= 0){ ptlOnbErr(2, 'Enter your net income goal (e.g. $300,000).'); return; }
     await ptlOnbSaveStep2();
-    ptlOnbUpdateMixPreview();
   } else if(step===3){
-    var lasp = parseFloat(document.getElementById('ptl-onb-list-asp').value);
-    var basp = parseFloat(document.getElementById('ptl-onb-buy-asp').value);
-    if(!lasp || lasp <= 0){ alert('Enter your listing avg sale price.'); return; }
-    if(!basp || basp <= 0){ alert('Enter your buyer avg sale price.'); return; }
+    var lasp = ptlOnbParseNum(document.getElementById('ptl-onb-list-asp').value);
+    var basp = ptlOnbParseNum(document.getElementById('ptl-onb-buy-asp').value);
+    var lcomm = ptlOnbParseNum(document.getElementById('ptl-onb-list-comm').value);
+    var bcomm = ptlOnbParseNum(document.getElementById('ptl-onb-buy-comm').value);
+    if(!lasp || lasp <= 0){ ptlOnbErr(3, 'Enter your listing avg sale price.'); return; }
+    if(!basp || basp <= 0){ ptlOnbErr(3, 'Enter your buyer avg sale price.'); return; }
+    if(!lcomm || lcomm <= 0){ ptlOnbErr(3, 'Enter your listing commission %.'); return; }
+    if(!bcomm || bcomm <= 0){ ptlOnbErr(3, 'Enter your buyer commission %.'); return; }
     await ptlOnbSaveStep3();
+    // Now that economic is saved, re-derive GCI on step 2 in case user goes back
+    setTimeout(ptlOnbDeriveGCI, 100);
   } else if(step===4){
     await ptlOnbSaveStep4();
+    ptlOnbRenderMoneyDerived();
   } else if(step===5){
+    if((ptlState._selectedLeadGen||[]).length === 0 && !document.getElementById('ptl-onb-leadgen-other').value.trim()){
+      ptlOnbErr(5, 'Pick at least one lead-gen method (or enter a custom one).'); return;
+    }
     await ptlOnbSaveStep5();
-    // If non-LPT, hide the recruiting form on step 6
-    var brokerage = document.getElementById('ptl-onb-brokerage').value;
-    var isLPT = (brokerage === 'LPT');
-    document.getElementById('ptl-onb-step6-lpt').style.display = isLPT ? 'block' : 'none';
-    document.getElementById('ptl-onb-step6-nonlpt').style.display = isLPT ? 'none' : 'block';
   }
-  if(step < 6) ptlOnbShow(step + 1);
+  if(step < 6){
+    ptlOnbShow(step + 1);
+    if(step+1 === 4) ptlOnbRenderLPTSummary();
+  }
 }
 
 function ptlOnbBack(step){
@@ -897,8 +950,8 @@ function ptlOnbBack(step){
 
 async function ptlOnbSaveStep1(){
   var payload = { client: {
-    brokerage: document.getElementById('ptl-onb-brokerage').value,
-    lpt_comp_plan: document.getElementById('ptl-onb-comp').value || null,
+    brokerage: 'LPT',  // forced — coaching is LPT-only
+    lpt_comp_plan: ptlState._selectedPlan,
     market_city: document.getElementById('ptl-onb-city').value || null,
     market_state: document.getElementById('ptl-onb-state').value || null,
     license_date: document.getElementById('ptl-onb-license').value || null,
@@ -908,77 +961,66 @@ async function ptlOnbSaveStep1(){
   }};
   Object.keys(payload.client).forEach(function(k){ if(payload.client[k]==null||payload.client[k]==='') delete payload.client[k]; });
   await ptlOnbPost(payload);
+  // Update local state so ptlState.client reflects the comp plan
+  if(ptlState.client) ptlState.client.lpt_comp_plan = ptlState._selectedPlan;
 }
 
 async function ptlOnbSaveStep2(){
-  var gci = parseFloat(document.getElementById('ptl-onb-gci').value);
+  var net = ptlOnbParseNum(document.getElementById('ptl-onb-netincome').value);
   var pct = parseInt(document.getElementById('ptl-onb-listpct').value)||50;
   await ptlOnbPost({
-    plan: { gci_target: gci },
-    pct_listing_income: pct,   // backend converts to seller_pct
+    plan: { net_income_goal: net },
+    pct_listing_income: pct,
   });
 }
 
 async function ptlOnbSaveStep3(){
   var econ = {
-    seller_avg_sale_price: parseFloat(document.getElementById('ptl-onb-list-asp').value)||null,
-    buyer_avg_sale_price: parseFloat(document.getElementById('ptl-onb-buy-asp').value)||null,
-    commission_rate_listing: parseFloat(document.getElementById('ptl-onb-list-comm').value)||null,
-    commission_rate_buyer: parseFloat(document.getElementById('ptl-onb-buy-comm').value)||null,
-    listings_close_pct: parseFloat(document.getElementById('ptl-onb-listclose').value)||null,
-    buyers_close_pct: parseFloat(document.getElementById('ptl-onb-buyclose').value)||null,
-    listing_appt_to_list_pct: parseFloat(document.getElementById('ptl-onb-listappt').value)||null,
-    buyer_appt_to_work_pct: parseFloat(document.getElementById('ptl-onb-buyappt').value)||null,
+    seller_avg_sale_price: ptlOnbParseNum(document.getElementById('ptl-onb-list-asp').value),
+    buyer_avg_sale_price: ptlOnbParseNum(document.getElementById('ptl-onb-buy-asp').value),
+    commission_rate_listing: ptlOnbParseNum(document.getElementById('ptl-onb-list-comm').value),
+    commission_rate_buyer: ptlOnbParseNum(document.getElementById('ptl-onb-buy-comm').value),
+    listings_close_pct: ptlOnbParseNum(document.getElementById('ptl-onb-listclose').value),
+    buyers_close_pct: ptlOnbParseNum(document.getElementById('ptl-onb-buyclose').value),
+    listing_appt_to_list_pct: ptlOnbParseNum(document.getElementById('ptl-onb-listappt').value),
+    buyer_appt_to_work_pct: ptlOnbParseNum(document.getElementById('ptl-onb-buyappt').value),
   };
   Object.keys(econ).forEach(function(k){ if(econ[k]==null) delete econ[k]; });
-  // Also update legacy avg_sale_price + avg_commission_rate on the client (uses listing as primary)
   var clientUpdate = {};
   if(econ.seller_avg_sale_price) clientUpdate.avg_sale_price = econ.seller_avg_sale_price;
   if(econ.commission_rate_listing) clientUpdate.avg_commission_rate = econ.commission_rate_listing;
   await ptlOnbPost({ economic: econ, client: clientUpdate });
+  // Re-trigger Step 2 GCI derivation now that economic is saved (in case user goes back)
+  // The save happens server-side; re-derive
+  await ptlOnbPost({ plan: { net_income_goal: ptlOnbParseNum(document.getElementById('ptl-onb-netincome').value) || 0 } });
 }
 
 async function ptlOnbSaveStep4(){
   var bm = {
-    income_tax_pct: parseFloat(document.getElementById('ptl-onb-tax').value)||null,
-    charity_pct: parseFloat(document.getElementById('ptl-onb-charity').value)||null,
-    retirement_pct: parseFloat(document.getElementById('ptl-onb-retirement').value)||null,
-    paid_to_brokerage: parseFloat(document.getElementById('ptl-onb-cap').value)||null,
-    royalty_pct: parseFloat(document.getElementById('ptl-onb-royalty').value)||null,
-    royalty_cap: parseFloat(document.getElementById('ptl-onb-royaltycap').value)||null,
-    avg_net_commission_per_close: parseFloat(document.getElementById('ptl-onb-netclose').value)||null,
+    income_tax_pct: ptlOnbParseNum(document.getElementById('ptl-onb-tax').value),
+    charity_pct: ptlOnbParseNum(document.getElementById('ptl-onb-charity').value),
+    retirement_pct: ptlOnbParseNum(document.getElementById('ptl-onb-retirement').value),
   };
   Object.keys(bm).forEach(function(k){ if(bm[k]==null) delete bm[k]; });
+  // Backend will auto-set the LPT cap + zero royalty based on comp plan
   await ptlOnbPost({ budget: bm });
 }
 
 async function ptlOnbSaveStep5(){
-  var ag = {
-    dials_daily: parseInt(document.getElementById('ptl-onb-dials').value)||null,
-    contacts_daily: parseInt(document.getElementById('ptl-onb-contacts').value)||null,
-    nurtures_daily: parseInt(document.getElementById('ptl-onb-nurtures').value)||null,
-    hours_prospecting_daily: parseFloat(document.getElementById('ptl-onb-hours').value)||null,
-    listing_appts_set_weekly: parseInt(document.getElementById('ptl-onb-lset').value)||null,
-    listing_appts_held_weekly: parseInt(document.getElementById('ptl-onb-lheld').value)||null,
-    open_houses_weekly: parseInt(document.getElementById('ptl-onb-oh').value)||null,
-    buyer_appts_set_weekly: parseInt(document.getElementById('ptl-onb-bset').value)||null,
-    buyer_appts_held_weekly: parseInt(document.getElementById('ptl-onb-bheld').value)||null,
-    showings_weekly: parseInt(document.getElementById('ptl-onb-show').value)||null,
-    listings_signed_monthly: parseInt(document.getElementById('ptl-onb-lsigned').value)||null,
-    buyers_signed_monthly: parseInt(document.getElementById('ptl-onb-bsigned').value)||null,
-  };
-  Object.keys(ag).forEach(function(k){ if(ag[k]==null) delete ag[k]; });
-  await ptlOnbPost({ activity_goals: ag });
+  var picks = (ptlState._selectedLeadGen||[]).slice();
+  var other = (document.getElementById('ptl-onb-leadgen-other').value||'').trim();
+  if(other){
+    other.split(',').forEach(function(s){ var t=s.trim(); if(t) picks.push('CUSTOM:'+t); });
+  }
+  await ptlOnbPost({ lead_gen_methods: picks });
 }
 
 async function ptlOnbSaveStep6(){
-  var brokerage = document.getElementById('ptl-onb-brokerage').value;
-  if(brokerage !== 'LPT') return;
   var rp = {
-    annual_recruit_goal: parseInt(document.getElementById('ptl-onb-recgoal').value)||null,
-    conversation_to_recruit_ratio: parseInt(document.getElementById('ptl-onb-recratio').value)||null,
-    pct_brokerage_partner: parseFloat(document.getElementById('ptl-onb-pctbp').value)||null,
-    cap_hit_rate: parseFloat(document.getElementById('ptl-onb-caphit').value)||null,
+    annual_recruit_goal: parseInt(ptlOnbParseNum(document.getElementById('ptl-onb-recgoal').value))||null,
+    conversation_to_recruit_ratio: parseInt(ptlOnbParseNum(document.getElementById('ptl-onb-recratio').value))||null,
+    pct_brokerage_partner: ptlOnbParseNum(document.getElementById('ptl-onb-pctbp').value),
+    cap_hit_rate: ptlOnbParseNum(document.getElementById('ptl-onb-caphit').value),
   };
   Object.keys(rp).forEach(function(k){ if(rp[k]==null) delete rp[k]; });
   if(Object.keys(rp).length) await ptlOnbPost({ recruiting: rp });
@@ -991,6 +1033,64 @@ async function ptlOnbPost(payload){
   });
 }
 
+async function ptlOnbRenderLPTSummary(){
+  var plan = ptlState._selectedPlan;
+  if(!plan) return;
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/lpt-plan-details?comp_plan='+plan,{headers:authHeaders()});
+    if(!res.ok) return;
+    var d = await res.json();
+    var summary = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+      '<div><div style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">LPT Plan</div><div style="font-weight:600;margin-top:2px">'+d.label+'</div></div>' +
+      '<div><div style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">Annual Cap</div><div style="font-weight:600;margin-top:2px">$'+d.cap.toLocaleString()+'</div></div>' +
+      '<div><div style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">TC Fee / Closing</div><div style="font-weight:600;margin-top:2px">$'+d.tc_fee_per_txn+'</div></div>' +
+      '</div>';
+    document.getElementById('ptl-onb-lpt-summary').innerHTML = summary;
+  }catch(e){}
+}
+
+async function ptlOnbRenderMoneyDerived(){
+  // Re-derive after user edits tax/charity/retirement so they see the impact
+  var net = ptlOnbParseNum(document.getElementById('ptl-onb-netincome').value);
+  if(!net) return;
+  var pct = parseInt(document.getElementById('ptl-onb-listpct').value)||50;
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/me/derive-gci?net_income_goal='+net+'&pct_listing_income='+pct,{headers:authHeaders()});
+    if(!res.ok) return;
+    var d = await res.json();
+    var el = document.getElementById('ptl-onb-derived-money');
+    el.style.display='block';
+    el.innerHTML =
+      '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:6px">YOUR PATH TO ' + ptlOnbFmtMoney(d.net_income_goal) + ' NET</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px">' +
+      '<div><div style="color:var(--text-muted);font-size:10px">GCI to earn</div><div style="font-size:16px;font-weight:600">'+ptlOnbFmtMoney(d.gci_target)+'</div></div>' +
+      '<div><div style="color:var(--text-muted);font-size:10px">Closings</div><div style="font-size:16px;font-weight:600">'+d.closings+'</div></div>' +
+      '<div><div style="color:var(--text-muted);font-size:10px">LPT Cost</div><div style="font-size:16px;font-weight:600">'+ptlOnbFmtMoney(d.total_cogs)+'</div></div>' +
+      '<div><div style="color:var(--text-muted);font-size:10px">Avg Net / Close</div><div style="font-size:16px;font-weight:600">'+ptlOnbFmtMoney(d.avg_net_per_close)+'</div></div>' +
+      '</div>';
+  }catch(e){}
+}
+
+function ptlOnbRenderLeadGenList(){
+  ptlState._selectedLeadGen = ptlState._selectedLeadGen || [];
+  var el = document.getElementById('ptl-onb-leadgen-list');
+  el.innerHTML = PTL_LEAD_GEN_METHODS.map(function(m){
+    var code=m[0], label=m[1], desc=m[2];
+    var sel = ptlState._selectedLeadGen.indexOf(code) >= 0;
+    return '<div class="ptl-onb-leadgen-card'+(sel?' selected':'')+'" onclick="ptlOnbToggleLeadGen(\''+code+'\')">' +
+      '<input type="checkbox" '+(sel?'checked':'')+' style="margin-top:3px;pointer-events:none" />' +
+      '<div><div style="font-weight:600;font-size:12px">'+label+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px">'+desc+'</div></div>' +
+      '</div>';
+  }).join('');
+}
+function ptlOnbToggleLeadGen(code){
+  ptlState._selectedLeadGen = ptlState._selectedLeadGen || [];
+  var idx = ptlState._selectedLeadGen.indexOf(code);
+  if(idx >= 0) ptlState._selectedLeadGen.splice(idx, 1);
+  else ptlState._selectedLeadGen.push(code);
+  ptlOnbRenderLeadGenList();
+}
+
 async function ptlOnbFinish(){
   var btn = document.getElementById('ptl-onb-finish');
   btn.disabled=true; btn.textContent='Saving...';
@@ -1000,8 +1100,7 @@ async function ptlOnbFinish(){
     await ptlInitCoachingNav();
     portalPage('coachtoday');
   }catch(e){
-    document.getElementById('ptl-onb-error').textContent = 'Network error. Try again.';
-    document.getElementById('ptl-onb-error').style.display='block';
+    ptlOnbErr(6, 'Network error. Try again.');
     btn.disabled=false; btn.textContent='Finish Setup ✓';
   }
 }

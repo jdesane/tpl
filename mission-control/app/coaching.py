@@ -148,6 +148,90 @@ DEFAULT_PERSONAL_EXPENSES = {
 # Default LPT cap based on comp plan
 LPT_CAP_BUSINESS_BUILDER = 5000
 LPT_CAP_BROKERAGE_PARTNER = 15000
+LPT_TC_FEE_PER_TXN = 195       # Transaction-coordinator fee on every closed deal
+LPT_BB_PER_TXN_FEE = 500       # Business Builder per-transaction office fee until cap
+
+
+def lpt_plan_details(comp_plan: str) -> dict:
+    """Returns the LPT comp plan constants. Used to auto-populate the wizard
+    so agents don't have to type splits / caps / fees that are already known."""
+    if comp_plan == "BROKERAGE_PARTNER":
+        return {
+            "comp_plan": "BROKERAGE_PARTNER",
+            "label": "Brokerage Partner",
+            "split_to_office_pct": 0.20,        # 80/20 split
+            "cap": LPT_CAP_BROKERAGE_PARTNER,
+            "per_txn_fee": 0,
+            "tc_fee_per_txn": LPT_TC_FEE_PER_TXN,
+            "royalty_pct": 0,
+        }
+    elif comp_plan == "BUSINESS_BUILDER":
+        return {
+            "comp_plan": "BUSINESS_BUILDER",
+            "label": "Business Builder",
+            "split_to_office_pct": 0,           # Flat-fee model, not split
+            "cap": LPT_CAP_BUSINESS_BUILDER,
+            "per_txn_fee": LPT_BB_PER_TXN_FEE,
+            "tc_fee_per_txn": LPT_TC_FEE_PER_TXN,
+            "royalty_pct": 0,
+        }
+    return None
+
+
+def compute_gci_from_net_income(
+    net_income_goal: float,
+    avg_gci_per_deal: float,
+    comp_plan: str,
+    opex_pct: float = 0.25,
+) -> dict:
+    """Iteratively solve for the GCI target needed to hit a net-income-before-taxes goal,
+    given the agent's avg deal size and LPT comp plan. Returns the implied closings,
+    cost-of-sale breakdown, and operating expense estimate.
+
+    Uses fixed-point iteration because COGS depends on closings (cap behavior + TC fee
+    × txns), and closings depend on GCI = net + COGS + OpEx.
+    """
+    if net_income_goal <= 0 or avg_gci_per_deal <= 0:
+        return None
+    plan = lpt_plan_details(comp_plan) or lpt_plan_details("BROKERAGE_PARTNER")
+    cap = plan["cap"]
+    split_pct = plan["split_to_office_pct"]
+    per_txn_fee = plan["per_txn_fee"]
+    tc_fee = plan["tc_fee_per_txn"]
+
+    # Initial guess
+    closings = max(1, net_income_goal / avg_gci_per_deal)
+    for _ in range(40):
+        # Office split / per-txn fee, capped
+        if split_pct > 0:
+            office_uncapped = avg_gci_per_deal * split_pct * closings
+        else:
+            office_uncapped = per_txn_fee * closings
+        office_total = min(cap, office_uncapped)
+        tc_total = tc_fee * closings
+        cogs = office_total + tc_total
+
+        gci_estimate = closings * avg_gci_per_deal
+        opex_total = opex_pct * gci_estimate
+
+        required_gci = net_income_goal + cogs + opex_total
+        new_closings = required_gci / avg_gci_per_deal
+        if abs(new_closings - closings) < 0.01:
+            closings = new_closings
+            break
+        closings = new_closings
+
+    return {
+        "gci_target": round(closings * avg_gci_per_deal, 2),
+        "closings": round(closings, 1),
+        "office_cogs": round(office_total, 2),
+        "tc_cogs": round(tc_total, 2),
+        "total_cogs": round(office_total + tc_total, 2),
+        "opex_estimate": round(opex_total, 2),
+        "net_income_goal": net_income_goal,
+        "avg_gci_per_deal": avg_gci_per_deal,
+        "avg_net_per_close": round((closings * avg_gci_per_deal - office_total - tc_total - opex_total) / closings, 2) if closings > 0 else 0,
+    }
 
 
 # ════════════════════════════════════════════════════════════
@@ -1598,90 +1682,109 @@ def my_brief(request: Request):
 
 
 class OnboardIn(BaseModel):
-    """CTE-style detailed goal-setting form payload.
+    """CTE-style detailed goal-setting form payload (LPT-only).
     All sections optional so the wizard can save partial progress.
+
+    Drives from net_income_goal (Step 2) and derives GCI via LPT comp-plan math.
+    LPT comp plan in client.lpt_comp_plan auto-populates cap / TC fee / split %
+    so the agent never types broker-specific numbers we already know.
     """
     # Identity / Vision (Step 1)
     client: Optional[dict] = None     # CoachingClientUpdate-shape, plus: big_why, team_or_individual, team_name
-    # Income Goal (Step 2)
-    plan: Optional[dict] = None       # {gci_target}
-    pct_listing_income: Optional[float] = None   # as 0-100 percent — % income from listings
+    # Income Goal (Step 2) — net_income_goal is the primary input; GCI is derived
+    plan: Optional[dict] = None       # {net_income_goal, gci_target (computed), notes}
+    pct_listing_income: Optional[float] = None   # 0-100, % income from listings
     # Deal Economics (Step 3)
     economic: Optional[dict] = None   # {seller_avg_sale_price, buyer_avg_sale_price, commission_rate_listing, commission_rate_buyer, listings_close_pct, buyers_close_pct, listing_appt_to_list_pct, buyer_appt_to_work_pct}
-    # Financial Plan (Step 4)
-    budget: Optional[dict] = None     # {income_tax_pct, charity_pct, retirement_pct, paid_to_brokerage (cap), royalty_pct, royalty_cap, split_cap, avg_net_commission_per_close}
-    # Activity Goals (Step 5)
-    activity_goals: Optional[dict] = None  # see activity_goals table columns
+    # Money Plan (Step 4) — LPT-only, no royalty / non-LPT fields
+    budget: Optional[dict] = None     # {income_tax_pct, charity_pct, retirement_pct, avg_net_commission_per_close (computed)}
+    # Lead-Gen Methods (Step 5) — checklist of how the agent prospects
+    lead_gen_methods: Optional[list] = None
     # Recruiting / Rev Share (Step 6, LPT only)
-    recruiting: Optional[dict] = None  # {annual_recruit_goal, conversation_to_recruit_ratio, pct_brokerage_partner, expected_recruits_per_recruit, cap_hit_rate}
+    recruiting: Optional[dict] = None
 
 
 @router.post("/me/onboard")
 def my_onboard(payload: OnboardIn, request: Request):
-    """Agent self-service: fill in the full CTE-style goal-setting form.
+    """Agent self-service: fill in the LPT-aware goal-setting form.
+    Drives from net_income_goal; derives GCI / closings / cost-of-sale via LPT comp-plan math.
     Saves partial progress safely — every section is optional."""
     cc = _my_client(request)
 
-    # ── Step 1: Identity / Vision ──
+    # ── Step 1: Identity / Vision (LPT-only) ──
     client_data = dict(payload.client or {})
-    if "avg_commission_rate" in client_data and client_data["avg_commission_rate"] is not None:
-        client_data["avg_commission_rate"] = _normalize_pct(client_data["avg_commission_rate"])
+    # Force brokerage = LPT for coaching clients (this platform is LPT-specific)
     if client_data:
+        client_data.setdefault("brokerage", "LPT")
+        if "avg_commission_rate" in client_data and client_data["avg_commission_rate"] is not None:
+            client_data["avg_commission_rate"] = _normalize_pct(client_data["avg_commission_rate"])
         _supabase.table("coaching_clients").update(client_data).eq("id", cc["id"]).execute()
 
     yr = datetime.utcnow().year
     bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
     plan_id = bundle["plan"]["id"]
 
-    # ── Step 2: Income Goal ──
-    plan_data = dict(payload.plan or {})
-    if plan_data:
-        _supabase.table("business_plans").update(plan_data).eq("id", plan_id).execute()
-
-    # ── Step 3: Deal Economics ──
-    # If pct_listing_income is set, derive seller_pct from it (CTE thinks in listing %, MREA model thinks in seller %)
+    # ── Step 3: Deal Economics (saved before Step 2 so we have ASP for derivation) ──
     em_update = dict(payload.economic or {})
     if payload.pct_listing_income is not None:
         em_update["seller_pct"] = _normalize_pct(payload.pct_listing_income)
-    # Normalize all percentage fields
     for k in ("seller_pct", "commission_rate", "commission_rate_listing", "commission_rate_buyer",
               "listings_close_pct", "buyers_close_pct",
               "listing_appt_to_list_pct", "buyer_appt_to_work_pct"):
         if k in em_update and em_update[k] is not None:
             em_update[k] = _normalize_pct(em_update[k])
-    # Backwards-compat: if listing comm rate set but the legacy commission_rate isn't, copy listing as primary
     if em_update.get("commission_rate_listing") and not em_update.get("commission_rate"):
         em_update["commission_rate"] = em_update["commission_rate_listing"]
-    # Fallback: if avg_sale_price was just saved on the client and economic is empty, copy to both sides
-    if not em_update.get("seller_avg_sale_price") and client_data.get("avg_sale_price"):
-        em_update["seller_avg_sale_price"] = client_data["avg_sale_price"]
-    if not em_update.get("buyer_avg_sale_price") and client_data.get("avg_sale_price"):
-        em_update["buyer_avg_sale_price"] = client_data["avg_sale_price"]
     if em_update:
         _supabase.table("economic_models").update(em_update).eq("business_plan_id", plan_id).execute()
 
-    # ── Step 4: Financial Plan ──
+    # ── Step 2: Income Goal — derive GCI from net_income_goal + comp plan + avg deal ──
+    plan_data = dict(payload.plan or {})
+    # Normalize: net_income_goal is the input, gci_target is derived
+    net_goal = plan_data.get("net_income_goal")
+    if net_goal is not None and float(net_goal) > 0:
+        # Pull current avg deal economics + comp plan (whatever's freshest)
+        em = _supabase.table("economic_models").select("*").eq("business_plan_id", plan_id).single().execute().data or {}
+        cc_now = _supabase.table("coaching_clients").select("lpt_comp_plan").eq("id", cc["id"]).single().execute().data or {}
+        comp_plan = cc_now.get("lpt_comp_plan") or "BROKERAGE_PARTNER"
+        # Weighted avg deal GCI = listing_pct × (listing_asp × listing_comm) + buyer_pct × (buyer_asp × buyer_comm)
+        listing_pct = float(em.get("seller_pct") or 0.5)
+        listing_asp = float(em.get("seller_avg_sale_price") or 0)
+        buyer_asp = float(em.get("buyer_avg_sale_price") or 0)
+        listing_comm = float(em.get("commission_rate_listing") or em.get("commission_rate") or 0.025)
+        buyer_comm = float(em.get("commission_rate_buyer") or em.get("commission_rate") or 0.025)
+        avg_gci_per_deal = (listing_pct * listing_asp * listing_comm) + ((1 - listing_pct) * buyer_asp * buyer_comm)
+        if avg_gci_per_deal > 0:
+            derived = compute_gci_from_net_income(float(net_goal), avg_gci_per_deal, comp_plan)
+            if derived:
+                plan_data["gci_target"] = derived["gci_target"]
+                # Also update budget_models.avg_net_commission_per_close so downstream math has it
+                _supabase.table("budget_models").update({
+                    "avg_net_commission_per_close": derived["avg_net_per_close"],
+                }).eq("business_plan_id", plan_id).execute()
+    if plan_data:
+        _supabase.table("business_plans").update(plan_data).eq("id", plan_id).execute()
+
+    # ── Step 4: Money Plan (LPT auto-populates cap + per-txn fee + TC) ──
     bm_update = dict(payload.budget or {})
-    for k in ("income_tax_pct", "charity_pct", "retirement_pct", "royalty_pct"):
+    for k in ("income_tax_pct", "charity_pct", "retirement_pct"):
         if k in bm_update and bm_update[k] is not None:
             bm_update[k] = _normalize_pct(bm_update[k])
-    # Auto-fill brokerage cap from comp plan if not explicitly provided
-    if "paid_to_brokerage" not in bm_update:
-        if client_data.get("lpt_comp_plan") == "BROKERAGE_PARTNER":
-            bm_update["paid_to_brokerage"] = LPT_CAP_BROKERAGE_PARTNER
-        elif client_data.get("lpt_comp_plan") == "BUSINESS_BUILDER":
-            bm_update["paid_to_brokerage"] = LPT_CAP_BUSINESS_BUILDER
+    # LPT-only: auto-set cap, zero out royalty, never let agent type these
+    cc_for_plan = _supabase.table("coaching_clients").select("lpt_comp_plan").eq("id", cc["id"]).single().execute().data or {}
+    plan_details = lpt_plan_details(cc_for_plan.get("lpt_comp_plan"))
+    if plan_details:
+        bm_update["paid_to_brokerage"] = plan_details["cap"]
+        bm_update["royalty_pct"] = 0
+        bm_update["royalty_cap"] = 0
     if bm_update:
         _supabase.table("budget_models").update(bm_update).eq("business_plan_id", plan_id).execute()
 
-    # ── Step 5: Activity Goals ──
-    ag = dict(payload.activity_goals or {})
-    for k in ("contact_to_appt_pct_target", "set_to_held_pct_target"):
-        if k in ag and ag[k] is not None:
-            ag[k] = _normalize_pct(ag[k])
-    if ag:
-        ag["business_plan_id"] = plan_id
-        _supabase.table("activity_goals").upsert(ag, on_conflict="business_plan_id").execute()
+    # ── Step 5: Lead-Gen Methods (replaces old numeric activity goals) ──
+    if payload.lead_gen_methods is not None:
+        _supabase.table("business_plans").update({
+            "lead_gen_methods": payload.lead_gen_methods,
+        }).eq("id", plan_id).execute()
 
     # ── Step 6: Recruiting / Rev Share ──
     rp = dict(payload.recruiting or {})
@@ -1693,6 +1796,37 @@ def my_onboard(payload: OnboardIn, request: Request):
         _supabase.table("recruiting_plans").upsert(rp, on_conflict="business_plan_id").execute()
 
     return {"ok": True}
+
+
+@router.get("/me/derive-gci")
+def my_derive_gci(request: Request, net_income_goal: float, pct_listing_income: float = 50):
+    """Live preview helper for Step 2: returns the GCI that would be needed to hit
+    the entered net-income goal, given the agent's current LPT comp plan + avg deal."""
+    cc = _my_client(request)
+    yr = datetime.utcnow().year
+    bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
+    plan_id = bundle["plan"]["id"]
+    em = _supabase.table("economic_models").select("*").eq("business_plan_id", plan_id).single().execute().data or {}
+    cc_now = _supabase.table("coaching_clients").select("lpt_comp_plan").eq("id", cc["id"]).single().execute().data or {}
+    comp_plan = cc_now.get("lpt_comp_plan") or "BROKERAGE_PARTNER"
+    listing_pct = pct_listing_income / 100.0
+    listing_asp = float(em.get("seller_avg_sale_price") or 0)
+    buyer_asp = float(em.get("buyer_avg_sale_price") or 0)
+    listing_comm = float(em.get("commission_rate_listing") or em.get("commission_rate") or 0.025)
+    buyer_comm = float(em.get("commission_rate_buyer") or em.get("commission_rate") or 0.025)
+    avg_gci = (listing_pct * listing_asp * listing_comm) + ((1 - listing_pct) * buyer_asp * buyer_comm)
+    if avg_gci <= 0:
+        return {"ok": False, "reason": "Need avg sale price + commission % from Step 3 first"}
+    return compute_gci_from_net_income(float(net_income_goal), avg_gci, comp_plan)
+
+
+@router.get("/lpt-plan-details")
+def lpt_plan_details_endpoint(comp_plan: str, request: Request):
+    """Returns the LPT comp plan constants so the frontend can show / preview them."""
+    d = lpt_plan_details(comp_plan)
+    if not d:
+        raise HTTPException(400, "Unknown comp plan — must be BROKERAGE_PARTNER or BUSINESS_BUILDER")
+    return d
 
 
 @router.get("/me/activity-goals")
