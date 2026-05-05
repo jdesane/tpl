@@ -4298,8 +4298,14 @@ function cgSwitchTab(tab){
   document.querySelectorAll('.cg-tab').forEach(function(b){b.classList.remove('cg-tab-active')});
   var btn = document.querySelector('.cg-tab[data-cg-tab="'+tab+'"]');
   if(btn) btn.classList.add('cg-tab-active');
-  ['plan','calls','pipeline','activity','recruiting'].forEach(function(t){
-    document.getElementById('cg-tab-'+t).style.display = (t===tab?'block':'none');
+  // Hide all tab content divs, show only the active one. Iterate via the live
+  // collection of [id^=cg-tab-] elements so newly-added tabs (GPS, 4-1-1,
+  // perfect-week, database, financials, reviews) are picked up automatically
+  // — the previous hard-coded ['plan','calls','pipeline','activity','recruiting']
+  // list left those new tabs forever hidden.
+  ['plan','gps','fouroneone','calls','pipeline','activity','recruiting','perfectweek','database','financials','reviews'].forEach(function(t){
+    var el = document.getElementById('cg-tab-'+t);
+    if(el) el.style.display = (t===tab?'block':'none');
   });
 }
 
