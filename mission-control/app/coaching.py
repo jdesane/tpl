@@ -682,7 +682,7 @@ def search_leads(request: Request, q: Optional[str] = None, limit: int = 15):
 # ─── Pydantic ───
 
 class PipelineEntryIn(BaseModel):
-    entry_type: str  # LISTING | BUYER
+    entry_type: Optional[str] = None  # LISTING | BUYER (only required on create)
     appointment_date: Optional[str] = None
     address: Optional[str] = None
     contact_name: Optional[str] = None
@@ -691,10 +691,17 @@ class PipelineEntryIn(BaseModel):
     next_step: Optional[str] = None
     notes: Optional[str] = None
     rating: Optional[int] = None
+    # Phase 15.5c — transaction lifecycle
+    status: Optional[str] = None  # PRE_SIGNED|ACTIVE|PENDING|CLOSED|EXPIRED|WITHDRAWN|CANCELLED
+    list_date: Optional[str] = None
+    expiration_date: Optional[str] = None
+    expected_close_date: Optional[str] = None
+    mls_number: Optional[str] = None
     closed: Optional[bool] = None
     closed_date: Optional[str] = None
     closing_price: Optional[float] = None
     gross_commission: Optional[float] = None
+    net_commission: Optional[float] = None
 
 
 class ActivityLogIn(BaseModel):
@@ -1671,6 +1678,144 @@ def my_scorecard(request: Request, year: Optional[int] = None):
     cc = _my_client(request)
     yr = year or datetime.utcnow().year
     return _scorecard_full(cc["id"], yr, cc["workspace_id"])
+
+
+# ─── CEO Summary + Whiteboard (transactions by status) ───
+
+def _ceo_summary(client_id: int, year: int) -> dict:
+    """CTE CEO Summary equivalent: pipeline counts by status + closed YTD totals + monthly grid."""
+    today = date.today()
+    rows = _supabase.table("pipeline_entries").select("*").eq("coaching_client_id", client_id).execute().data or []
+
+    # Counts by status
+    by_status = {"PRE_SIGNED":0, "ACTIVE":0, "PENDING":0, "CLOSED":0, "EXPIRED":0, "WITHDRAWN":0, "CANCELLED":0}
+    listing_active = 0; buyer_active = 0
+    listing_pending = 0; buyer_pending = 0
+    closed_ytd = []
+    pending_volume = 0
+    pending_gci = 0
+    active_listings_volume = 0
+    active_listings_gci = 0  # projected GCI on active listings
+
+    for r in rows:
+        st = (r.get("status") or "PRE_SIGNED").upper()
+        by_status[st] = by_status.get(st, 0) + 1
+        et = r.get("entry_type")
+        if st == "ACTIVE":
+            if et == "LISTING":
+                listing_active += 1
+                active_listings_volume += float(r.get("closing_price") or 0)  # price = list price for active
+                active_listings_gci += float(r.get("gross_commission") or 0)
+            elif et == "BUYER":
+                buyer_active += 1
+        elif st == "PENDING":
+            if et == "LISTING": listing_pending += 1
+            else: buyer_pending += 1
+            pending_volume += float(r.get("closing_price") or 0)
+            pending_gci += float(r.get("gross_commission") or 0)
+        elif st == "CLOSED":
+            cd = r.get("closed_date") or ""
+            if cd.startswith(str(year)):
+                closed_ytd.append(r)
+
+    # Closed YTD totals
+    closed_units = len(closed_ytd)
+    closed_volume = sum(float(r.get("closing_price") or 0) for r in closed_ytd)
+    closed_gci = sum(float(r.get("gross_commission") or 0) for r in closed_ytd)
+    closed_net = sum(float(r.get("net_commission") or 0) for r in closed_ytd)
+
+    # Monthly closed grid (Jan-Dec)
+    monthly_closed = []
+    for m in range(1, 13):
+        units = sum(1 for r in closed_ytd if (r.get("closed_date") or "").startswith(f"{year}-{m:02d}"))
+        vol = sum(float(r.get("closing_price") or 0) for r in closed_ytd if (r.get("closed_date") or "").startswith(f"{year}-{m:02d}"))
+        gci = sum(float(r.get("gross_commission") or 0) for r in closed_ytd if (r.get("closed_date") or "").startswith(f"{year}-{m:02d}"))
+        monthly_closed.append({"month": m, "units": units, "volume": round(vol,2), "gci": round(gci,2)})
+
+    return {
+        "year": year,
+        "as_of": today.isoformat(),
+        "by_status": by_status,
+        "listing_active": listing_active,
+        "buyer_active": buyer_active,
+        "listing_pending": listing_pending,
+        "buyer_pending": buyer_pending,
+        "active_listings_volume": round(active_listings_volume, 2),
+        "active_listings_gci": round(active_listings_gci, 2),
+        "pending_volume": round(pending_volume, 2),
+        "pending_gci": round(pending_gci, 2),
+        "closed_ytd_units": closed_units,
+        "closed_ytd_volume": round(closed_volume, 2),
+        "closed_ytd_gci": round(closed_gci, 2),
+        "closed_ytd_net_gci": round(closed_net, 2),
+        "monthly_closed": monthly_closed,
+    }
+
+
+@router.get("/me/ceo-summary")
+def my_ceo_summary(request: Request, year: Optional[int] = None):
+    cc = _my_client(request)
+    return _ceo_summary(cc["id"], year or datetime.utcnow().year)
+
+
+@router.get("/clients/{client_id}/ceo-summary")
+def coach_ceo_summary(client_id: int, request: Request, year: Optional[int] = None):
+    return _ceo_summary(client_id, year or datetime.utcnow().year)
+
+
+def _whiteboard(client_id: int) -> dict:
+    """CTE Whiteboard equivalent: active listings with DOM, expiring soon, expiring next 30 days."""
+    today = date.today()
+    rows = _supabase.table("pipeline_entries").select("*").eq("coaching_client_id", client_id).eq("entry_type", "LISTING").execute().data or []
+    active = []
+    over_90 = []
+    expiring_30 = []
+    for r in rows:
+        st = (r.get("status") or "PRE_SIGNED").upper()
+        if st != "ACTIVE":
+            continue
+        ld = r.get("list_date")
+        ed = r.get("expiration_date")
+        dom = None
+        if ld:
+            try:
+                d = datetime.strptime(ld, "%Y-%m-%d").date()
+                dom = (today - d).days
+            except Exception:
+                pass
+        days_to_expiry = None
+        if ed:
+            try:
+                d = datetime.strptime(ed, "%Y-%m-%d").date()
+                days_to_expiry = (d - today).days
+            except Exception:
+                pass
+        item = {**r, "dom": dom, "days_to_expiry": days_to_expiry}
+        active.append(item)
+        if dom is not None and dom > 90:
+            over_90.append(item)
+        if days_to_expiry is not None and 0 <= days_to_expiry <= 30:
+            expiring_30.append(item)
+    # Sort active by DOM desc (oldest at top — most attention needed)
+    active.sort(key=lambda x: (x.get("dom") or 0), reverse=True)
+    expiring_30.sort(key=lambda x: x.get("days_to_expiry") or 0)
+    return {
+        "as_of": today.isoformat(),
+        "active": active,
+        "over_90_days": over_90,
+        "expiring_in_30_days": expiring_30,
+    }
+
+
+@router.get("/me/whiteboard")
+def my_whiteboard(request: Request):
+    cc = _my_client(request)
+    return _whiteboard(cc["id"])
+
+
+@router.get("/clients/{client_id}/whiteboard")
+def coach_whiteboard(client_id: int, request: Request):
+    return _whiteboard(client_id)
 
 
 @router.get("/clients/{client_id}/scorecard")

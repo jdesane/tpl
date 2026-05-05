@@ -1086,16 +1086,31 @@ th[onclick]:hover{color:var(--accent)}
       </div>
     </div>
 
-    <!-- ─── PIPELINE TAB ─── -->
+    <!-- ─── PIPELINE / TRANSACTIONS TAB ─── -->
     <div id="cg-tab-pipeline" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <!-- CEO Summary cards -->
+      <div id="cg-pipe-ceo" class="metric-row" style="margin-bottom:14px"></div>
+
+      <!-- Expiring-in-30-days alert (only renders if any) -->
+      <div id="cg-pipe-expiring" style="margin-bottom:14px"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm cg-pipe-tab cg-pipe-tab-active" data-pt="LISTING" onclick="cgPipeSwitchType('LISTING')">Listings</button>
           <button class="btn btn-ghost btn-sm cg-pipe-tab" data-pt="BUYER" onclick="cgPipeSwitchType('BUYER')">Buyers</button>
         </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="color:var(--muted);font-size:11px;margin-right:4px">Status:</span>
+          <button class="btn btn-ghost btn-sm cg-pipe-status-tab cg-pipe-status-tab-active" data-st="ALL" onclick="cgPipeSwitchStatus('ALL')">All</button>
+          <button class="btn btn-ghost btn-sm cg-pipe-status-tab" data-st="PRE_SIGNED" onclick="cgPipeSwitchStatus('PRE_SIGNED')">Pre-Signed</button>
+          <button class="btn btn-ghost btn-sm cg-pipe-status-tab" data-st="ACTIVE" onclick="cgPipeSwitchStatus('ACTIVE')">Active</button>
+          <button class="btn btn-ghost btn-sm cg-pipe-status-tab" data-st="PENDING" onclick="cgPipeSwitchStatus('PENDING')">Pending</button>
+          <button class="btn btn-ghost btn-sm cg-pipe-status-tab" data-st="CLOSED" onclick="cgPipeSwitchStatus('CLOSED')">Closed</button>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="cgAddPipelineEntry()">+ Add Entry</button>
       </div>
-      <!-- Rating breakdown -->
+
+      <!-- Rating breakdown (only relevant for pre-signed) -->
       <div id="cg-pipe-summary" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px"></div>
       <div class="panel">
         <div id="cg-pipe-list"></div>
@@ -4851,14 +4866,56 @@ async function cgDeleteActionItem(id){
 // PIPELINE
 // ─────────────────────────────────────────────
 
+var cgPipeState = cgPipeState || {};
+cgPipeState.statusFilter = cgPipeState.statusFilter || 'ALL';
+
 async function cgLoadPipeline(){
   if(!cgState.current) return;
   try{
-    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/pipeline');
-    if(!res.ok) return;
-    cgPipeState.entries = await res.json();
+    var [pipeRes, ceoRes, wbRes] = await Promise.all([
+      fetch(API+'/api/coaching/clients/'+cgState.current.id+'/pipeline'),
+      fetch(API+'/api/coaching/clients/'+cgState.current.id+'/ceo-summary'),
+      fetch(API+'/api/coaching/clients/'+cgState.current.id+'/whiteboard'),
+    ]);
+    cgPipeState.entries = await pipeRes.json();
+    cgPipeState.ceo = ceoRes.ok ? await ceoRes.json() : null;
+    cgPipeState.whiteboard = wbRes.ok ? await wbRes.json() : null;
+    cgRenderPipelineCEO();
+    cgRenderPipelineExpiring();
     cgRenderPipeline();
   }catch(e){}
+}
+
+function cgRenderPipelineCEO(){
+  var c = cgPipeState.ceo || {};
+  var el = document.getElementById('cg-pipe-ceo');
+  if(!el) return;
+  var preSigned = (c.by_status||{}).PRE_SIGNED || 0;
+  var listingActive = c.listing_active || 0;
+  var buyerActive = c.buyer_active || 0;
+  var pendingTotal = (c.listing_pending||0) + (c.buyer_pending||0);
+  el.innerHTML =
+    '<div class="metric-card"><div class="metric-label">Pre-Signed</div><div class="metric-value">'+preSigned+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Active Listings</div><div class="metric-value">'+listingActive+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Vol $'+(c.active_listings_volume||0).toLocaleString()+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Active Buyers</div><div class="metric-value">'+buyerActive+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Pending</div><div class="metric-value">'+pendingTotal+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">GCI $'+(c.pending_gci||0).toLocaleString()+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Closed YTD</div><div class="metric-value">'+(c.closed_ytd_units||0)+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">GCI $'+(c.closed_ytd_gci||0).toLocaleString()+'</div></div>';
+}
+
+function cgRenderPipelineExpiring(){
+  var wb = cgPipeState.whiteboard || {};
+  var exps = wb.expiring_in_30_days || [];
+  var el = document.getElementById('cg-pipe-expiring');
+  if(!exps.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="panel" style="background:rgba(220,180,80,.08);border-left:3px solid #d0b660">' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#d0b660;margin-bottom:8px">⚠ '+exps.length+' Listing'+(exps.length===1?'':'s')+' Expiring in 30 Days</div>' +
+    exps.map(function(e){
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+        '<div>'+(e.address||e.contact_name||'—')+'</div>' +
+        '<div style="color:var(--muted)">expires '+e.expiration_date+' (in '+e.days_to_expiry+' days)</div>' +
+        '</div>';
+    }).join('') +
+    '</div>';
 }
 
 function cgPipeSwitchType(t){
@@ -4868,42 +4925,85 @@ function cgPipeSwitchType(t){
   cgRenderPipeline();
 }
 
-function cgRenderPipeline(){
-  var entries = cgPipeState.entries.filter(function(e){return e.entry_type===cgPipeState.type && !e.closed});
-  // Summary by rating
-  var sum = document.getElementById('cg-pipe-summary');
-  var ratings=[10,9,8,7,6,5,'≤4'];
-  sum.innerHTML = ratings.map(function(r){
-    var count;
-    if(r==='≤4') count = entries.filter(function(e){return (e.rating||0)<=4}).length;
-    else count = entries.filter(function(e){return e.rating===r}).length;
-    var hot = (r===10||r===9);
-    return '<div class="metric-card" style="padding:8px;text-align:center;'+(hot?'border:1px solid var(--accent)':'')+'">' +
-      '<div class="metric-label" style="font-size:9px">'+r+'s</div>' +
-      '<div class="metric-value" style="font-size:18px;color:'+(hot?'var(--accent)':'var(--text)')+'">'+count+'</div>' +
-      '</div>';
-  }).join('');
+function cgPipeSwitchStatus(s){
+  cgPipeState.statusFilter = s;
+  document.querySelectorAll('.cg-pipe-status-tab').forEach(function(b){b.classList.remove('cg-pipe-status-tab-active')});
+  document.querySelector('.cg-pipe-status-tab[data-st="'+s+'"]').classList.add('cg-pipe-status-tab-active');
+  cgRenderPipeline();
+}
 
-  // List
+function cgPipeStatusPill(status){
+  var s = (status||'PRE_SIGNED').toUpperCase();
+  var color, bg;
+  switch(s){
+    case 'ACTIVE': color='#5fcf86'; bg='rgba(80,200,120,.15)'; break;
+    case 'PENDING': color='#d0b660'; bg='rgba(220,180,80,.15)'; break;
+    case 'CLOSED': color='#6c63ff'; bg='rgba(108,99,255,.15)'; break;
+    case 'EXPIRED': case 'WITHDRAWN': case 'CANCELLED': color='#cc7070'; bg='rgba(180,80,80,.15)'; break;
+    default: color='var(--text-dim)'; bg='var(--surface-2)';
+  }
+  return '<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:'+color+';background:'+bg+'">'+s.toLowerCase().replace('_','-')+'</span>';
+}
+
+function cgRenderPipeline(){
+  var entries = cgPipeState.entries.filter(function(e){
+    if(e.entry_type !== cgPipeState.type) return false;
+    var s = (e.status||'PRE_SIGNED').toUpperCase();
+    if(cgPipeState.statusFilter === 'ALL') return true;
+    return s === cgPipeState.statusFilter;
+  });
+
+  // Rating breakdown only meaningful for PRE_SIGNED
+  var sum = document.getElementById('cg-pipe-summary');
+  if(cgPipeState.statusFilter === 'PRE_SIGNED' || cgPipeState.statusFilter === 'ALL'){
+    var ratingPool = entries.filter(function(e){return (e.status||'PRE_SIGNED').toUpperCase()==='PRE_SIGNED'});
+    var ratings=[10,9,8,7,6,5,'≤4'];
+    sum.innerHTML = ratings.map(function(r){
+      var count = r==='≤4' ? ratingPool.filter(function(e){return (e.rating||0)<=4}).length : ratingPool.filter(function(e){return e.rating===r}).length;
+      var hot = (r===10||r===9);
+      return '<div class="metric-card" style="padding:8px;text-align:center;'+(hot?'border:1px solid var(--accent)':'')+'">' +
+        '<div class="metric-label" style="font-size:9px">'+r+'s</div>' +
+        '<div class="metric-value" style="font-size:18px;color:'+(hot?'var(--accent)':'var(--text)')+'">'+count+'</div>' +
+        '</div>';
+    }).join('');
+  } else { sum.innerHTML = ''; }
+
   var list = document.getElementById('cg-pipe-list');
   if(!entries.length){
-    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No '+cgPipeState.type.toLowerCase()+' pipeline entries yet.</div>';
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No '+cgPipeState.type.toLowerCase()+' entries in this status.</div>';
     return;
   }
-  // Sort by rating desc then appointment_date desc
-  entries.sort(function(a,b){return (b.rating||0)-(a.rating||0)});
-  list.innerHTML = '<div style="display:grid;grid-template-columns:60px 2fr 2fr 1fr 1fr 1fr 80px;gap:8px;padding:8px 10px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
-    '<div>Rate</div><div>Contact / Address</div><div>Next Step</div><div>Phone</div><div>Email</div><div>Appt Date</div><div></div>' +
+  // Sort: by status priority, then rating desc
+  var statusPri = {ACTIVE:1, PENDING:2, PRE_SIGNED:3, CLOSED:4, EXPIRED:5};
+  entries.sort(function(a,b){
+    var sa = statusPri[(a.status||'PRE_SIGNED').toUpperCase()] || 99;
+    var sb = statusPri[(b.status||'PRE_SIGNED').toUpperCase()] || 99;
+    if(sa !== sb) return sa - sb;
+    return (b.rating||0)-(a.rating||0);
+  });
+
+  var today = new Date();
+  function daysBetween(d){ if(!d) return null; var a=new Date(d); return Math.floor((today-a)/(1000*60*60*24)); }
+  function daysUntil(d){ if(!d) return null; var a=new Date(d); return Math.floor((a-today)/(1000*60*60*24)); }
+
+  list.innerHTML = '<div style="display:grid;grid-template-columns:90px 50px 2fr 1fr 1fr 80px 80px 1fr 100px;gap:6px;padding:8px 10px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
+    '<div>Status</div><div>Rate</div><div>Client / Address</div><div>List Date</div><div>Exp Date</div><div>DOM</div><div>Price</div><div>Next Step</div><div></div>' +
     '</div>' +
     entries.map(function(e){
       var ratingColor = e.rating>=9?'#5fcf86':(e.rating>=7?'#d0b660':'var(--text-dim)');
-      return '<div style="display:grid;grid-template-columns:60px 2fr 2fr 1fr 1fr 1fr 80px;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">' +
-        '<div><input type="number" min="1" max="10" value="'+(e.rating||'')+'" class="form-input" style="padding:4px;width:50px;font-weight:600;color:'+ratingColor+'" onblur="cgPipeEdit('+e.id+', \'rating\', parseInt(this.value)||null)" /></div>' +
+      var dom = daysBetween(e.list_date);
+      var domText = dom===null?'—':(dom+' d');
+      var expIn = daysUntil(e.expiration_date);
+      var expColor = (expIn!==null && expIn<=30)?'#cc7070':'var(--muted)';
+      return '<div style="display:grid;grid-template-columns:90px 50px 2fr 1fr 1fr 80px 80px 1fr 100px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">' +
+        '<div>'+cgPipeStatusPill(e.status)+'</div>' +
+        '<div><input type="number" min="1" max="10" value="'+(e.rating||'')+'" class="form-input" style="padding:4px;width:42px;font-weight:600;color:'+ratingColor+';text-align:center" onblur="cgPipeEdit('+e.id+', \'rating\', parseInt(this.value)||null)" /></div>' +
         '<div><div style="font-weight:600">'+(e.contact_name||'—')+'</div><div style="color:var(--muted);font-size:11px">'+(e.address||'')+'</div></div>' +
-        '<div><input type="text" value="'+(e.next_step||'').replace(/"/g,'&quot;')+'" class="form-input" style="padding:4px 6px;font-size:12px" onblur="cgPipeEdit('+e.id+', \'next_step\', this.value)" /></div>' +
-        '<div style="color:var(--muted)">'+(e.contact_phone||'')+'</div>' +
-        '<div style="color:var(--muted);font-size:11px">'+(e.contact_email||'')+'</div>' +
-        '<div style="color:var(--muted)">'+(e.appointment_date||'')+'</div>' +
+        '<div style="color:var(--muted);font-size:11px">'+(e.list_date||'—')+'</div>' +
+        '<div style="color:'+expColor+';font-size:11px">'+(e.expiration_date||'—')+(expIn!==null && expIn<=30?(' <span style="font-weight:600">('+expIn+'d)</span>'):'')+'</div>' +
+        '<div style="color:var(--muted);font-size:11px">'+domText+'</div>' +
+        '<div style="color:var(--muted);font-size:11px">'+(e.closing_price?'$'+parseInt(e.closing_price).toLocaleString():'—')+'</div>' +
+        '<div><input type="text" value="'+(e.next_step||'').replace(/"/g,'&quot;')+'" class="form-input" style="padding:4px 6px;font-size:11px" onblur="cgPipeEdit('+e.id+', \'next_step\', this.value)" /></div>' +
         '<div style="text-align:right"><button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px" onclick="cgPipeEditFull('+e.id+')">Edit</button>' +
         '<button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;color:#cc7070" onclick="cgPipeDelete('+e.id+')">×</button></div>' +
         '</div>';
@@ -4912,21 +5012,29 @@ function cgRenderPipeline(){
 
 async function cgAddPipelineEntry(){
   if(!cgState.current) return;
-  var name = prompt('Contact name');
-  if(!name) return;
-  var rating = parseInt(prompt('Rating (1-10): 10=closing this month, 9=next month, 8=in 2 mo, 7=in 3 mo, 6=good meeting, ≤5=cold/dead'));
+  var name = prompt('Contact / client name'); if(!name) return;
+  var status = (prompt('Status: PRE_SIGNED / ACTIVE / PENDING / CLOSED', 'PRE_SIGNED') || 'PRE_SIGNED').toUpperCase();
+  var rating = parseInt(prompt('Rating (1-10): 10=this month, 9=next month, 8=in 2 mo, 7=in 3 mo, 6=good meeting, ≤5=cold'));
   if(isNaN(rating)) rating = null;
   var addr = prompt('Address (optional)') || '';
   var phone = prompt('Phone (optional)') || '';
   var email = prompt('Email (optional)') || '';
   var next = prompt('Next step (optional)') || '';
+  var listDate = (status==='ACTIVE' || status==='PENDING' || status==='CLOSED') ? (prompt('List date (YYYY-MM-DD)') || null) : null;
+  var expDate = (status==='ACTIVE') ? (prompt('Expiration date (YYYY-MM-DD)') || null) : null;
+  var price = (status==='PENDING' || status==='CLOSED' || status==='ACTIVE') ? parseFloat(prompt('Price ($)')||0)||null : null;
+  var gci = (status==='PENDING' || status==='CLOSED' || status==='ACTIVE') ? parseFloat(prompt('Gross commission ($)')||0)||null : null;
+  var closedDate = (status==='CLOSED') ? (prompt('Closed date (YYYY-MM-DD)') || null) : null;
   await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/pipeline',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
-      entry_type: cgPipeState.type,
+      entry_type: cgPipeState.type, status: status,
       contact_name: name, address: addr, contact_phone: phone, contact_email: email,
-      next_step: next, rating: rating
+      next_step: next, rating: rating,
+      list_date: listDate, expiration_date: expDate,
+      closing_price: price, gross_commission: gci,
+      closed: status==='CLOSED', closed_date: closedDate,
     })
   });
   await cgLoadPipeline();
@@ -4947,17 +5055,28 @@ async function cgPipeEdit(id, field, value){
 async function cgPipeEditFull(id){
   var item = cgPipeState.entries.find(function(x){return x.id===id});
   if(!item) return;
-  var name = prompt('Contact name', item.contact_name||'');
+  var status = prompt('Status (PRE_SIGNED/ACTIVE/PENDING/CLOSED/EXPIRED)', item.status||'PRE_SIGNED');
+  if(status===null) return;
+  status = status.toUpperCase();
+  var name = prompt('Client name', item.contact_name||'');
   var addr = prompt('Address', item.address||'');
   var phone = prompt('Phone', item.contact_phone||'');
   var email = prompt('Email', item.contact_email||'');
   var next = prompt('Next step', item.next_step||'');
-  var apptDate = prompt('Appt date (YYYY-MM-DD)', item.appointment_date||'');
+  var listDate = prompt('List date (YYYY-MM-DD)', item.list_date||'');
+  var expDate = prompt('Expiration date (YYYY-MM-DD)', item.expiration_date||'');
+  var price = prompt('Price $', item.closing_price||'');
+  var gci = prompt('Gross commission $', item.gross_commission||'');
+  var closedDate = (status==='CLOSED') ? prompt('Closed date (YYYY-MM-DD)', item.closed_date||new Date().toISOString().substring(0,10)) : item.closed_date;
   await fetch(API+'/api/coaching/pipeline/'+id,{
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
+      status: status,
       contact_name: name, address: addr, contact_phone: phone, contact_email: email,
-      next_step: next, appointment_date: apptDate||null
+      next_step: next,
+      list_date: listDate||null, expiration_date: expDate||null,
+      closing_price: parseFloat(price)||null, gross_commission: parseFloat(gci)||null,
+      closed: status==='CLOSED', closed_date: closedDate||null,
     })
   });
   await cgLoadPipeline();
