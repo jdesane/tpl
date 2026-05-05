@@ -924,6 +924,7 @@ th[onclick]:hover{color:var(--accent)}
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="pipeline" onclick="cgSwitchTab('pipeline')">Pipeline</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="activity" onclick="cgSwitchTab('activity')">Daily Activity</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')">HybridShare</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="reviews" onclick="cgSwitchTab('reviews')">Reviews</button>
     </div>
 
     <!-- PLAN TAB -->
@@ -1245,6 +1246,60 @@ th[onclick]:hover{color:var(--accent)}
             <div><label class="form-label">Children / recruit</label><input type="number" id="cg-hs-cpr" class="form-input" value="1.5" step="0.1" onchange="cgHsLoadProjection()" /></div>
           </div>
           <div id="cg-hs-projection"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── REVIEWS TAB ─── -->
+    <div id="cg-tab-reviews" style="display:none">
+      <!-- Reviews list view -->
+      <div id="cg-rv-list-view">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div>
+            <div class="panel-title" style="font-size:16px;margin:0">Reviews</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:4px">Quarterly / semi-annual / annual checkpoints. Each review snapshots the full plan state plus your reflections + next-period focus.</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="cgRvCreate('QUARTERLY')">+ Quarterly</button>
+            <button class="btn btn-ghost btn-sm" onclick="cgRvCreate('SEMI_ANNUAL')">+ Semi-Annual</button>
+            <button class="btn btn-primary btn-sm" onclick="cgRvCreate('ANNUAL')">+ Annual</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div id="cg-rv-list" style="min-height:80px"></div>
+        </div>
+      </div>
+
+      <!-- Single review view -->
+      <div id="cg-rv-detail-view" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <button class="btn btn-ghost btn-sm" onclick="cgRvBackToList()">&larr; All Reviews</button>
+          <div style="flex:1">
+            <div id="cg-rv-title" style="font-weight:600;font-size:16px">&mdash;</div>
+            <div id="cg-rv-sub" style="color:var(--muted);font-size:11px;margin-top:2px">&mdash;</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="cgRvRecapture()" title="Re-snapshot from current data">↻ Re-snapshot</button>
+          <button class="btn btn-ghost btn-sm" style="color:#cc7070" onclick="cgRvDelete()">Delete</button>
+        </div>
+        <div class="row-2" style="align-items:flex-start">
+          <!-- LEFT: Snapshot + reflections -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="panel">
+              <div class="panel-title" style="font-size:14px;margin-bottom:10px">Snapshot</div>
+              <div id="cg-rv-snapshot" style="font-size:13px"></div>
+            </div>
+          </div>
+          <!-- RIGHT: Coach narrative -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="panel">
+              <div class="panel-title" style="font-size:14px;margin-bottom:8px">Reflections <span style="color:var(--muted);font-weight:normal;font-size:11px;margin-left:6px">what happened this period</span></div>
+              <textarea id="cg-rv-reflections" class="form-input" style="min-height:160px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.55" placeholder="What worked. What broke. What did the agent commit to that didn't happen. What's the story of this period." onblur="cgRvSaveNarrative()"></textarea>
+            </div>
+            <div class="panel">
+              <div class="panel-title" style="font-size:14px;margin-bottom:8px">Focus Areas — Next Period</div>
+              <textarea id="cg-rv-focus" class="form-input" style="min-height:160px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.55" placeholder="The 1-3 things this agent must do differently next quarter / 6 months / year." onblur="cgRvSaveNarrative()"></textarea>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -5334,6 +5389,7 @@ window.cgSwitchTab = function(tab){
   if(tab==='gps') cgGpsLoad();
   if(tab==='fouroneone') cg411Load();
   if(tab==='recruiting') cgHsLoad();
+  if(tab==='reviews') cgRvLoad();
 };
 
 // ─── GPS (1-3-5) ───
@@ -5703,6 +5759,170 @@ window.cgSaveClient = async function(){
   var rt = document.querySelector('.cg-tab-active');
   if(rt && rt.dataset.cgTab==='recruiting') cgHsLoad();
 };
+
+// ─────────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────────
+var cgRvState = { reviews: [], current: null };
+
+async function cgRvLoad(){
+  cgRvShowList();
+  if(!cgState.current) return;
+  var listEl = document.getElementById('cg-rv-list');
+  listEl.innerHTML='<div style="color:var(--muted);font-size:12px;padding:18px;text-align:center">Loading...</div>';
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/reviews');
+    if(!res.ok) return;
+    cgRvState.reviews = await res.json();
+    cgRvRenderList();
+  }catch(e){}
+}
+
+function cgRvShowList(){
+  document.getElementById('cg-rv-list-view').style.display='block';
+  document.getElementById('cg-rv-detail-view').style.display='none';
+}
+
+function cgRvRenderList(){
+  var el = document.getElementById('cg-rv-list');
+  if(!cgRvState.reviews.length){
+    el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No reviews yet. Click <strong>+ Quarterly / Semi-Annual / Annual</strong> at a checkpoint.</div>';
+    return;
+  }
+  el.innerHTML = cgRvState.reviews.map(function(r){
+    var pace = ((r.captured_data||{}).computed_economic||{});
+    var ceo = ((r.captured_data||{}).ceo_summary||{});
+    var typeLabel = r.review_type.replace('_',' ').toLowerCase();
+    var color = r.review_type==='ANNUAL'?'#5fcf86':(r.review_type==='SEMI_ANNUAL'?'#d0b660':'#6c63ff');
+    return '<div onclick="cgRvOpen('+r.id+')" style="padding:12px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="font-weight:600;font-size:13px"><span style="color:'+color+';text-transform:uppercase;font-family:DM Mono,monospace;font-size:10px;letter-spacing:1px">'+typeLabel+'</span> · '+r.review_date+'</div>' +
+        '<div style="color:var(--muted);font-size:11px;margin-top:4px">'+(r.reflections?(r.reflections.substring(0,140)+(r.reflections.length>140?'...':'')):'No reflections yet')+'</div></div>' +
+        '<div style="text-align:right;font-size:11px;color:var(--muted)">'+(ceo.closed_ytd_units||0)+' closed YTD · $'+(ceo.closed_ytd_gci||0).toLocaleString()+' GCI</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+async function cgRvCreate(type){
+  if(!cgState.current) return;
+  if(!confirm('Capture a '+type.replace('_',' ').toLowerCase()+' review snapshot now? This freezes the current plan + numbers + activity into a checkpoint.')) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/reviews',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({review_type: type})
+    });
+    if(!res.ok) return;
+    var r = await res.json();
+    await cgRvLoad();
+    cgRvOpen(r.id);
+  }catch(e){}
+}
+
+async function cgRvOpen(id){
+  try{
+    var res = await fetch(API+'/api/coaching/reviews/'+id);
+    if(!res.ok) return;
+    var r = await res.json();
+    cgRvState.current = r;
+    document.getElementById('cg-rv-list-view').style.display='none';
+    document.getElementById('cg-rv-detail-view').style.display='block';
+    var typeLabel = r.review_type.replace('_',' ');
+    document.getElementById('cg-rv-title').textContent = typeLabel + ' Review · ' + r.review_date;
+    document.getElementById('cg-rv-sub').textContent = 'Snapshot captured on ' + (r.created_at||'').substring(0,10);
+    document.getElementById('cg-rv-reflections').value = r.reflections || '';
+    document.getElementById('cg-rv-focus').value = r.focus_areas_next || '';
+    cgRvRenderSnapshot(r.captured_data);
+  }catch(e){}
+}
+
+function cgRvBackToList(){
+  cgRvState.current=null;
+  cgRvShowList();
+}
+
+function cgRvRenderSnapshot(data){
+  if(!data){ document.getElementById('cg-rv-snapshot').innerHTML='<div style="color:var(--muted)">No snapshot data</div>'; return; }
+  var meta = data.client_meta||{};
+  var plan = data.plan||{};
+  var econ = data.computed_economic||{};
+  var bm = data.computed_budget||{};
+  var ceo = data.ceo_summary||{};
+  var sc = data.scorecard||{};
+  var ytdSc = (sc.ytd||{}).totals || {};
+  function fmtMoney(v){ return '$'+(parseFloat(v)||0).toLocaleString(); }
+  function fmtNum(v, dec){ return (parseFloat(v)||0).toLocaleString(undefined,{maximumFractionDigits: dec===undefined?1:dec}); }
+  var html = '';
+  // Plan + comp plan
+  html += '<div style="margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">PLAN</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">' +
+    '<div>GCI Goal: <strong>'+fmtMoney(plan.gci_target)+'</strong></div>' +
+    '<div>Brokerage: '+(meta.brokerage||'—')+(meta.lpt_comp_plan?(' · '+meta.lpt_comp_plan):'')+'</div>' +
+    '<div>Market: '+(meta.market_city||'')+(meta.market_state?(', '+meta.market_state):'')+'</div>' +
+    '<div>Cadence: '+(meta.call_cadence||'—')+'</div>' +
+    '</div></div>';
+  // CEO Summary
+  html += '<div style="margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">CEO Summary at Checkpoint</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">' +
+    '<div class="cg-derived-card"><div class="cg-derived-label">Active Listings</div><div class="cg-derived-value">'+(ceo.listing_active||0)+'</div></div>' +
+    '<div class="cg-derived-card"><div class="cg-derived-label">Pending</div><div class="cg-derived-value">'+((ceo.listing_pending||0)+(ceo.buyer_pending||0))+'</div></div>' +
+    '<div class="cg-derived-card"><div class="cg-derived-label">Closed YTD</div><div class="cg-derived-value">'+(ceo.closed_ytd_units||0)+' · '+fmtMoney(ceo.closed_ytd_gci)+'</div></div>' +
+    '</div></div>';
+  // Activity YTD
+  html += '<div style="margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">YTD Activity</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;color:var(--muted)">' +
+    '<div>Dials: <strong style="color:var(--text)">'+fmtNum(ytdSc.dials,0)+'</strong></div>' +
+    '<div>Contacts: <strong style="color:var(--text)">'+fmtNum(ytdSc.contacts_made,0)+'</strong></div>' +
+    '<div>Hours: <strong style="color:var(--text)">'+fmtNum(ytdSc.hours_prospected,1)+'</strong></div>' +
+    '<div>Listing Appts Set: <strong style="color:var(--text)">'+fmtNum(ytdSc.listing_appts_set,0)+'</strong></div>' +
+    '<div>Listing Appts Held: <strong style="color:var(--text)">'+fmtNum(ytdSc.listing_appts_held,0)+'</strong></div>' +
+    '<div>Listings Signed: <strong style="color:var(--text)">'+fmtNum(ytdSc.listings_signed,0)+'</strong></div>' +
+    '<div>Buyer Appts Set: <strong style="color:var(--text)">'+fmtNum(ytdSc.buyer_appts_set,0)+'</strong></div>' +
+    '<div>Buyer Appts Held: <strong style="color:var(--text)">'+fmtNum(ytdSc.buyer_appts_held,0)+'</strong></div>' +
+    '<div>Buyers Signed: <strong style="color:var(--text)">'+fmtNum(ytdSc.buyers_signed,0)+'</strong></div>' +
+    '</div></div>';
+  // Money picture
+  html += '<div><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Money</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--muted)">' +
+    '<div>Take Home: <strong style="color:var(--text)">'+fmtMoney((bm.take_home||{}).value)+'</strong></div>' +
+    '<div>Net Income: <strong style="color:var(--text)">'+fmtMoney((bm.net_income||{}).value)+'</strong></div>' +
+    '<div>Survival # of Closings: <strong style="color:var(--text)">'+fmtNum((bm.survival_closings||{}).value,1)+'</strong></div>' +
+    '<div>Surplus: <strong style="color:var(--text)">'+fmtMoney((bm.surplus||{}).value)+'</strong></div>' +
+    '</div></div>';
+  document.getElementById('cg-rv-snapshot').innerHTML = html;
+}
+
+async function cgRvSaveNarrative(){
+  if(!cgRvState.current) return;
+  await fetch(API+'/api/coaching/reviews/'+cgRvState.current.id,{
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      reflections: document.getElementById('cg-rv-reflections').value,
+      focus_areas_next: document.getElementById('cg-rv-focus').value,
+    })
+  });
+  cgRvState.current.reflections = document.getElementById('cg-rv-reflections').value;
+  cgRvState.current.focus_areas_next = document.getElementById('cg-rv-focus').value;
+}
+
+async function cgRvRecapture(){
+  if(!cgRvState.current) return;
+  if(!confirm('Re-snapshot from current data? The previous snapshot will be replaced — reflections + focus areas are preserved.')) return;
+  try{
+    var res = await fetch(API+'/api/coaching/reviews/'+cgRvState.current.id,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({recapture: true})
+    });
+    if(res.ok){ var r = await res.json(); cgRvState.current = r; cgRvRenderSnapshot(r.captured_data); }
+  }catch(e){}
+}
+
+async function cgRvDelete(){
+  if(!cgRvState.current) return;
+  if(!confirm('Delete this review snapshot? Cannot be undone.')) return;
+  await fetch(API+'/api/coaching/reviews/'+cgRvState.current.id,{method:'DELETE'});
+  cgRvBackToList();
+  await cgRvLoad();
+}
 </script>
 </body>
 </html>

@@ -1818,6 +1818,107 @@ def coach_whiteboard(client_id: int, request: Request):
     return _whiteboard(client_id)
 
 
+# ════════════════════════════════════════════════════════════
+# Reviews (quarterly / semi-annual / annual checkpoints)
+# ════════════════════════════════════════════════════════════
+# A "review" snapshots the agent's full state at a point in time:
+# plan + computed numbers + scorecard + CEO summary + recent activity.
+# Plus the coach's narrative (reflections + focus areas for next period).
+
+class ReviewIn(BaseModel):
+    review_type: str            # QUARTERLY | SEMI_ANNUAL | ANNUAL
+    review_date: Optional[str] = None
+    reflections: Optional[str] = None
+    focus_areas_next: Optional[str] = None
+
+
+class ReviewUpdate(BaseModel):
+    review_date: Optional[str] = None
+    reflections: Optional[str] = None
+    focus_areas_next: Optional[str] = None
+    recapture: Optional[bool] = False   # if true, re-snapshot captured_data from current state
+
+
+def _capture_review_data(client_id: int, workspace_id: int, year: int) -> dict:
+    """Build the JSONB snapshot — same data the coach sees on a brief, plus YTD scorecard + CEO summary."""
+    cc = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data or {}
+    bundle = _ensure_business_plan(client_id, year, workspace_id)
+    plan = bundle["plan"]
+    em = bundle["economic_model"]
+    bm = bundle["budget_model"]
+    gci = float(plan.get("gci_target") or 0)
+    economic = calc_economic(gci, em)
+    budget = calc_budget(gci, bm, economic)
+    scorecard = _scorecard_full(client_id, year, workspace_id)
+    ceo = _ceo_summary(client_id, year)
+    return {
+        "client_meta": {k: cc.get(k) for k in ["brokerage", "lpt_comp_plan", "call_cadence", "market_city", "market_state", "big_why"]},
+        "plan": {k: plan.get(k) for k in ["year", "gci_target", "notes"]},
+        "computed_economic": economic,
+        "computed_budget": budget,
+        "scorecard": scorecard,
+        "ceo_summary": ceo,
+    }
+
+
+@router.get("/clients/{client_id}/reviews")
+def list_reviews(client_id: int, request: Request, review_type: Optional[str] = None):
+    qb = _db("review_snapshots").select("*").eq("coaching_client_id", client_id)
+    if review_type:
+        qb = qb.eq("review_type", review_type)
+    return qb.order("review_date", desc=True).execute().data or []
+
+
+@router.get("/reviews/{review_id}")
+def get_review(review_id: int, request: Request):
+    res = _db("review_snapshots").select("*").eq("id", review_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Review not found")
+    return res.data[0]
+
+
+@router.post("/clients/{client_id}/reviews")
+def create_review(client_id: int, payload: ReviewIn, request: Request):
+    """Capture a review snapshot at a checkpoint."""
+    workspace_id = _ws(request)
+    if payload.review_type not in ("QUARTERLY", "SEMI_ANNUAL", "ANNUAL"):
+        raise HTTPException(400, "review_type must be QUARTERLY / SEMI_ANNUAL / ANNUAL")
+    review_date = payload.review_date or date.today().isoformat()
+    yr = int(review_date[:4]) if review_date else datetime.utcnow().year
+    captured = _capture_review_data(client_id, workspace_id, yr)
+    row = {
+        "workspace_id": workspace_id,
+        "coaching_client_id": client_id,
+        "review_type": payload.review_type,
+        "review_date": review_date,
+        "captured_data": captured,
+        "reflections": payload.reflections,
+        "focus_areas_next": payload.focus_areas_next,
+    }
+    return _supabase.table("review_snapshots").insert(row).execute().data[0]
+
+
+@router.patch("/reviews/{review_id}")
+def update_review(review_id: int, payload: ReviewUpdate, request: Request):
+    workspace_id = _ws(request)
+    cur = _supabase.table("review_snapshots").select("*").eq("id", review_id).single().execute().data
+    if not cur:
+        raise HTTPException(404, "Review not found")
+    data = payload.dict(exclude_unset=True)
+    if data.pop("recapture", False):
+        yr = int((cur.get("review_date") or "")[:4] or datetime.utcnow().year)
+        data["captured_data"] = _capture_review_data(cur["coaching_client_id"], workspace_id, yr)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    return _supabase.table("review_snapshots").update(data).eq("id", review_id).execute().data[0]
+
+
+@router.delete("/reviews/{review_id}")
+def delete_review(review_id: int, request: Request):
+    _supabase.table("review_snapshots").delete().eq("id", review_id).execute()
+    return {"ok": True}
+
+
 @router.get("/clients/{client_id}/scorecard")
 def coach_scorecard(client_id: int, request: Request, year: Optional[int] = None):
     workspace_id = _ws(request)
