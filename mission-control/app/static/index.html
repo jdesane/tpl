@@ -1102,20 +1102,44 @@ th[onclick]:hover{color:var(--accent)}
       </div>
     </div>
 
-    <!-- ─── ACTIVITY TAB ─── -->
+    <!-- ─── ACTIVITY TAB (CTE-style daily lead gen entry) ─── -->
     <div id="cg-tab-activity" style="display:none">
       <div class="panel" style="margin-bottom:14px">
-        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Today's Activity Log</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
-          <div><label class="form-label">Contacts Made</label><input type="number" id="cg-act-contacts" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
-          <div><label class="form-label">Appts Set</label><input type="number" id="cg-act-set" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
-          <div><label class="form-label">Appts Held</label><input type="number" id="cg-act-held" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
-          <div><label class="form-label">Hours Prospected</label><input type="number" id="cg-act-hours" class="form-input" step="0.5" onblur="cgSaveActivity()" /></div>
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Today's Lead Gen Entry</div>
+        <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:8px 0 6px">Prospecting</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <div><label class="form-label">Hours</label><input type="number" id="cg-act-hours" class="form-input" step="0.5" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Dials</label><input type="number" id="cg-act-dials" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Contacts</label><input type="number" id="cg-act-contacts" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Nurtures</label><input type="number" id="cg-act-nurtures" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
         </div>
-        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px">Listing Appts</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div><label class="form-label">Set</label><input type="number" id="cg-act-lset" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Held</label><input type="number" id="cg-act-lheld" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Listings Signed</label><input type="number" id="cg-act-lsigned" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+        </div>
+        <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px">Buyer Appts</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div><label class="form-label">Set</label><input type="number" id="cg-act-bset" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Held</label><input type="number" id="cg-act-bheld" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Buyers Signed</label><input type="number" id="cg-act-bsigned" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+        </div>
+        <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px">Field Activity</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label class="form-label">Showings</label><input type="number" id="cg-act-show" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+          <div><label class="form-label">Open Houses Held</label><input type="number" id="cg-act-oh" class="form-input" step="1" onblur="cgSaveActivity()" /></div>
+        </div>
+        <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div><label class="form-label">Wins</label><input type="text" id="cg-act-wins" class="form-input" placeholder="What went well today?" onblur="cgSaveActivity()" /></div>
           <div><label class="form-label">Notes</label><input type="text" id="cg-act-notes" class="form-input" placeholder="Anything else worth capturing" onblur="cgSaveActivity()" /></div>
         </div>
+      </div>
+
+      <!-- Scorecard view (CTE Scorecards equivalent) -->
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title" style="font-size:14px;margin-bottom:10px">Scorecard <span style="color:var(--muted);font-weight:normal;font-size:11px;margin-left:8px">actuals vs goals</span></div>
+        <div id="cg-scorecard"></div>
       </div>
 
       <div class="panel">
@@ -4960,27 +4984,53 @@ async function cgLoadActivity(){
     cgActState.today = todayLog || null;
     cgRenderActivityToday();
     cgRenderActivityHistory();
+    // Load scorecard
+    try{
+      var sRes = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/scorecard');
+      if(sRes.ok){
+        var s = await sRes.json();
+        cgRenderScorecard(s);
+      }
+    }catch(e){}
   }catch(e){}
 }
 
 function cgRenderActivityToday(){
   var t = cgActState.today || {};
-  document.getElementById('cg-act-contacts').value = t.contacts_made || '';
-  document.getElementById('cg-act-set').value = t.appts_set || '';
-  document.getElementById('cg-act-held').value = t.appts_held || '';
-  document.getElementById('cg-act-hours').value = t.hours_prospected || '';
-  document.getElementById('cg-act-wins').value = t.wins || '';
-  document.getElementById('cg-act-notes').value = t.notes || '';
+  function set(id, v){ var el=document.getElementById(id); if(el) el.value = (v||v===0) ? v : ''; }
+  set('cg-act-hours', t.hours_prospected);
+  set('cg-act-dials', t.dials);
+  set('cg-act-contacts', t.contacts_made);
+  set('cg-act-nurtures', t.nurtures);
+  set('cg-act-lset', t.listing_appts_set);
+  set('cg-act-lheld', t.listing_appts_held);
+  set('cg-act-lsigned', t.listings_signed);
+  set('cg-act-bset', t.buyer_appts_set);
+  set('cg-act-bheld', t.buyer_appts_held);
+  set('cg-act-bsigned', t.buyers_signed);
+  set('cg-act-show', t.showings);
+  set('cg-act-oh', t.open_houses_held);
+  set('cg-act-wins', t.wins);
+  set('cg-act-notes', t.notes);
 }
 
 async function cgSaveActivity(){
   if(!cgState.current) return;
+  function num(id){ return parseInt(document.getElementById(id).value)||0; }
   var payload = {
     log_date: new Date().toISOString().substring(0,10),
-    contacts_made: parseInt(document.getElementById('cg-act-contacts').value)||0,
-    appts_set: parseInt(document.getElementById('cg-act-set').value)||0,
-    appts_held: parseInt(document.getElementById('cg-act-held').value)||0,
     hours_prospected: parseFloat(document.getElementById('cg-act-hours').value)||0,
+    dials: num('cg-act-dials'),
+    contacts_made: num('cg-act-contacts'),
+    nurtures: num('cg-act-nurtures'),
+    listing_appts_set: num('cg-act-lset'),
+    listing_appts_held: num('cg-act-lheld'),
+    listings_signed: num('cg-act-lsigned'),
+    buyer_appts_set: num('cg-act-bset'),
+    buyer_appts_held: num('cg-act-bheld'),
+    buyers_signed: num('cg-act-bsigned'),
+    showings: num('cg-act-show'),
+    open_houses_held: num('cg-act-oh'),
     wins: document.getElementById('cg-act-wins').value || null,
     notes: document.getElementById('cg-act-notes').value || null,
   };
@@ -4989,6 +5039,59 @@ async function cgSaveActivity(){
     body: JSON.stringify(payload)
   });
   await cgLoadActivity();
+}
+
+function cgRenderScorecard(s){
+  if(!s) return;
+  var el = document.getElementById('cg-scorecard');
+  if(!el) return;
+  var tw = (s.this_week||{}).totals || {};
+  var tm = (s.this_month||{}).totals || {};
+  var ytd = (s.ytd||{}).totals || {};
+  var g = s.goals || {};
+  var rows = [
+    ['Dials',           tw.dials||0,           (g.dials_daily||0)*5,           tm.dials||0,           (g.dials_daily||0)*22,           ytd.dials||0],
+    ['Contacts',        tw.contacts_made||0,   (g.contacts_daily||0)*5,        tm.contacts_made||0,   (g.contacts_daily||0)*22,        ytd.contacts_made||0],
+    ['Nurtures',        tw.nurtures||0,        (g.nurtures_daily||0)*5,        tm.nurtures||0,        (g.nurtures_daily||0)*22,        ytd.nurtures||0],
+    ['Hours',           (parseFloat(tw.hours_prospected)||0).toFixed(1), (parseFloat(g.hours_prospecting_daily)||0)*5, (parseFloat(tm.hours_prospected)||0).toFixed(1), (parseFloat(g.hours_prospecting_daily)||0)*22, (parseFloat(ytd.hours_prospected)||0).toFixed(0)],
+    ['Listing Appts Set', tw.listing_appts_set||0, g.listing_appts_set_weekly||0, tm.listing_appts_set||0, (g.listing_appts_set_weekly||0)*4, ytd.listing_appts_set||0],
+    ['Listing Appts Held', tw.listing_appts_held||0, g.listing_appts_held_weekly||0, tm.listing_appts_held||0, (g.listing_appts_held_weekly||0)*4, ytd.listing_appts_held||0],
+    ['Listings Signed', tw.listings_signed||0, 0, tm.listings_signed||0, g.listings_signed_monthly||0, ytd.listings_signed||0],
+    ['Buyer Appts Set', tw.buyer_appts_set||0, g.buyer_appts_set_weekly||0, tm.buyer_appts_set||0, (g.buyer_appts_set_weekly||0)*4, ytd.buyer_appts_set||0],
+    ['Buyer Appts Held', tw.buyer_appts_held||0, g.buyer_appts_held_weekly||0, tm.buyer_appts_held||0, (g.buyer_appts_held_weekly||0)*4, ytd.buyer_appts_held||0],
+    ['Buyers Signed', tw.buyers_signed||0, 0, tm.buyers_signed||0, g.buyers_signed_monthly||0, ytd.buyers_signed||0],
+    ['Showings', tw.showings||0, g.showings_weekly||0, tm.showings||0, (g.showings_weekly||0)*4, ytd.showings||0],
+    ['Open Houses', tw.open_houses_held||0, g.open_houses_weekly||0, tm.open_houses_held||0, (g.open_houses_weekly||0)*4, ytd.open_houses_held||0],
+  ];
+  function pctColor(actual, goal){
+    var n = parseFloat(actual)||0, g = parseFloat(goal)||0;
+    if(g === 0) return 'var(--text-dim)';
+    var p = (n/g)*100;
+    return p >= 100 ? '#5fcf86' : (p >= 70 ? '#d0b660' : '#cc7070');
+  }
+  function cell(actual, goal){
+    if(parseFloat(goal)||0){
+      return '<div><span style="font-weight:600;color:'+pctColor(actual,goal)+'">'+actual+'</span> <span style="color:var(--muted);font-size:11px">/ '+goal+'</span></div>';
+    }
+    return '<div>'+actual+'</div>';
+  }
+  var html = '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:6px 8px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">' +
+    '<div>Metric</div><div>This Week</div><div>This Month</div><div>YTD</div></div>';
+  rows.forEach(function(r){
+    html += '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:8px;border-bottom:1px solid var(--border);font-size:13px;align-items:center">' +
+      '<div>'+r[0]+'</div>' +
+      cell(r[1], r[2]) +
+      cell(r[3], r[4]) +
+      '<div>'+r[5]+'</div>' +
+      '</div>';
+  });
+  // Conversion %s
+  var tw2 = s.this_week||{};
+  html += '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:8px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">' +
+    '<div>Contact → Appt %</div><div>'+(tw2.contact_to_appt_pct||0)+'%</div><div>'+((s.this_month||{}).contact_to_appt_pct||0)+'%</div><div>'+((s.ytd||{}).contact_to_appt_pct||0)+'%</div></div>';
+  html += '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:8px;font-size:12px;color:var(--muted)">' +
+    '<div>Set → Held %</div><div>'+(tw2.set_to_held_pct||0)+'%</div><div>'+((s.this_month||{}).set_to_held_pct||0)+'%</div><div>'+((s.ytd||{}).set_to_held_pct||0)+'%</div></div>';
+  el.innerHTML = html;
 }
 
 function cgRenderActivityHistory(){

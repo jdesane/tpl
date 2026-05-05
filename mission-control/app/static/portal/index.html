@@ -472,19 +472,50 @@ a{color:var(--accent);text-decoration:none}
 <!-- ─── COACHING: TODAY ─── -->
 <div class="page" id="portal-coachtoday">
   <h2 style="margin-bottom:18px">Today</h2>
+
+  <!-- CTE-style Daily Lead Gen Entry -->
   <div class="panel" style="margin-bottom:14px">
-    <div class="panel-title">Today's Activity Log</div>
-    <div style="color:var(--text-muted);font-size:11px;margin-bottom:12px">Auto-saves on blur. Coach sees this in your pre-call brief.</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
-      <div><label style="font-size:11px;color:var(--text-muted)">Contacts Made</label><input type="number" id="ptl-act-contacts" class="form-input" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
-      <div><label style="font-size:11px;color:var(--text-muted)">Appts Set</label><input type="number" id="ptl-act-set" class="form-input" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
-      <div><label style="font-size:11px;color:var(--text-muted)">Appts Held</label><input type="number" id="ptl-act-held" class="form-input" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
-      <div><label style="font-size:11px;color:var(--text-muted)">Hours Prospected</label><input type="number" id="ptl-act-hours" class="form-input" step="0.5" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+    <div class="panel-title">Today's Lead Gen Entry</div>
+    <div style="color:var(--text-muted);font-size:11px;margin-bottom:12px">Auto-saves on blur. Joe sees this in your pre-call brief and scorecard.</div>
+
+    <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin:8px 0 6px">PROSPECTING</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Hours</label><input type="number" id="ptl-act-hours" step="0.5" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Dials</label><input type="number" id="ptl-act-dials" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Contacts</label><input type="number" id="ptl-act-contacts" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Nurtures</label><input type="number" id="ptl-act-nurtures" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
     </div>
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div><label style="font-size:11px;color:var(--text-muted)">Wins</label><input type="text" id="ptl-act-wins" placeholder="What went well?" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
-      <div><label style="font-size:11px;color:var(--text-muted)">Notes</label><input type="text" id="ptl-act-notes" placeholder="Anything else" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+
+    <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin:14px 0 6px">LISTING APPTS</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Set</label><input type="number" id="ptl-act-lset" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Held</label><input type="number" id="ptl-act-lheld" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Listings Signed</label><input type="number" id="ptl-act-lsigned" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
     </div>
+
+    <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin:14px 0 6px">BUYER APPTS</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Set</label><input type="number" id="ptl-act-bset" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Held</label><input type="number" id="ptl-act-bheld" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Buyers Signed</label><input type="number" id="ptl-act-bsigned" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+    </div>
+
+    <div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:var(--text-muted);margin:14px 0 6px">FIELD ACTIVITY</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Showings</label><input type="number" id="ptl-act-show" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Open Houses Held</label><input type="number" id="ptl-act-oh" step="1" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+    </div>
+
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label style="font-size:11px;color:var(--text-muted)">Wins</label><input type="text" id="ptl-act-wins" placeholder="What went well today?" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+      <div><label style="font-size:11px;color:var(--text-muted)">Notes</label><input type="text" id="ptl-act-notes" placeholder="Anything else worth capturing" onblur="ptlSaveActivity()" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)" /></div>
+    </div>
+  </div>
+
+  <!-- This-week scorecard (live vs goals) -->
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-title">This Week vs Goals</div>
+    <div id="ptl-week-scorecard"></div>
   </div>
 
   <div class="panel" style="margin-bottom:14px">
@@ -968,12 +999,28 @@ async function ptlLoadToday(){
       var logs = await actRes.json();
       var today = new Date().toISOString().substring(0,10);
       var t = (logs.find(function(l){return l.log_date===today})) || {};
-      document.getElementById('ptl-act-contacts').value = t.contacts_made || '';
-      document.getElementById('ptl-act-set').value = t.appts_set || '';
-      document.getElementById('ptl-act-held').value = t.appts_held || '';
       document.getElementById('ptl-act-hours').value = t.hours_prospected || '';
+      document.getElementById('ptl-act-dials').value = t.dials || '';
+      document.getElementById('ptl-act-contacts').value = t.contacts_made || '';
+      document.getElementById('ptl-act-nurtures').value = t.nurtures || '';
+      document.getElementById('ptl-act-lset').value = t.listing_appts_set || '';
+      document.getElementById('ptl-act-lheld').value = t.listing_appts_held || '';
+      document.getElementById('ptl-act-lsigned').value = t.listings_signed || '';
+      document.getElementById('ptl-act-bset').value = t.buyer_appts_set || '';
+      document.getElementById('ptl-act-bheld').value = t.buyer_appts_held || '';
+      document.getElementById('ptl-act-bsigned').value = t.buyers_signed || '';
+      document.getElementById('ptl-act-show').value = t.showings || '';
+      document.getElementById('ptl-act-oh').value = t.open_houses_held || '';
       document.getElementById('ptl-act-wins').value = t.wins || '';
       document.getElementById('ptl-act-notes').value = t.notes || '';
+    }
+  }catch(e){}
+  // Weekly scorecard vs goals
+  try{
+    var sRes = await fetch(API_BASE+'/api/coaching/me/scorecard',{headers:authHeaders()});
+    if(sRes.ok){
+      var s = await sRes.json();
+      ptlRenderWeekScorecard(s);
     }
   }catch(e){}
   // Brief (read-only — same data the coach sees)
@@ -1037,15 +1084,57 @@ async function ptlSaveActivity(){
     method:'POST', headers:authHeaders(),
     body: JSON.stringify({
       log_date: new Date().toISOString().substring(0,10),
-      contacts_made: parseInt(document.getElementById('ptl-act-contacts').value)||0,
-      appts_set: parseInt(document.getElementById('ptl-act-set').value)||0,
-      appts_held: parseInt(document.getElementById('ptl-act-held').value)||0,
       hours_prospected: parseFloat(document.getElementById('ptl-act-hours').value)||0,
+      dials: parseInt(document.getElementById('ptl-act-dials').value)||0,
+      contacts_made: parseInt(document.getElementById('ptl-act-contacts').value)||0,
+      nurtures: parseInt(document.getElementById('ptl-act-nurtures').value)||0,
+      listing_appts_set: parseInt(document.getElementById('ptl-act-lset').value)||0,
+      listing_appts_held: parseInt(document.getElementById('ptl-act-lheld').value)||0,
+      listings_signed: parseInt(document.getElementById('ptl-act-lsigned').value)||0,
+      buyer_appts_set: parseInt(document.getElementById('ptl-act-bset').value)||0,
+      buyer_appts_held: parseInt(document.getElementById('ptl-act-bheld').value)||0,
+      buyers_signed: parseInt(document.getElementById('ptl-act-bsigned').value)||0,
+      showings: parseInt(document.getElementById('ptl-act-show').value)||0,
+      open_houses_held: parseInt(document.getElementById('ptl-act-oh').value)||0,
       wins: document.getElementById('ptl-act-wins').value||null,
       notes: document.getElementById('ptl-act-notes').value||null,
     })
   });
   ptlLoadToday();
+}
+
+function ptlRenderWeekScorecard(s){
+  if(!s) return;
+  var t = (s.this_week||{}).totals || {};
+  var g = s.goals || {};
+  var rows = [
+    ['Dials', t.dials||0, (g.dials_daily||0)*5],
+    ['Contacts', t.contacts_made||0, (g.contacts_daily||0)*5],
+    ['Nurtures', t.nurtures||0, (g.nurtures_daily||0)*5],
+    ['Hours Prospected', (parseFloat(t.hours_prospected)||0).toFixed(1), (parseFloat(g.hours_prospecting_daily)||0)*5],
+    ['Listing Appts Set', t.listing_appts_set||0, g.listing_appts_set_weekly||0],
+    ['Listing Appts Held', t.listing_appts_held||0, g.listing_appts_held_weekly||0],
+    ['Buyer Appts Set', t.buyer_appts_set||0, g.buyer_appts_set_weekly||0],
+    ['Buyer Appts Held', t.buyer_appts_held||0, g.buyer_appts_held_weekly||0],
+    ['Showings', t.showings||0, g.showings_weekly||0],
+    ['Open Houses', t.open_houses_held||0, g.open_houses_weekly||0],
+  ];
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">';
+  rows.forEach(function(r){
+    var actual = parseFloat(r[1])||0, goal = parseFloat(r[2])||0;
+    var pct = goal > 0 ? Math.round((actual/goal)*100) : 0;
+    var color = pct >= 100 ? 'var(--green)' : (pct >= 70 ? 'var(--amber)' : 'var(--red)');
+    if(goal === 0) color = 'var(--text-muted)';
+    html += '<div style="padding:10px;background:var(--surface-2);border-radius:8px">' +
+      '<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">'+r[0]+'</div>' +
+      '<div style="font-size:18px;font-weight:600;margin-top:4px">'+r[1]+(goal>0?(' <span style="color:var(--text-muted);font-size:12px;font-weight:400">/ '+goal+'</span>'):'')+'</div>' +
+      (goal>0?('<div style="height:4px;background:var(--bg);border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;background:'+color+';width:'+Math.min(100,pct)+'%"></div></div>'):'') +
+      (goal>0?('<div style="font-size:10px;color:'+color+';margin-top:4px">'+pct+'% of weekly goal</div>'):'<div style="font-size:10px;color:var(--text-muted);margin-top:4px">— no goal set —</div>') +
+      '</div>';
+  });
+  html += '</div>';
+  var el = document.getElementById('ptl-week-scorecard');
+  if(el) el.innerHTML = html;
 }
 
 // ─── My Plan (read-only) ───

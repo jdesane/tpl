@@ -699,10 +699,22 @@ class PipelineEntryIn(BaseModel):
 
 class ActivityLogIn(BaseModel):
     log_date: Optional[str] = None
+    # Legacy aggregate fields (kept for backward compat; new UI uses the granular ones below)
     contacts_made: Optional[int] = 0
     appts_set: Optional[int] = 0
     appts_held: Optional[int] = 0
     hours_prospected: Optional[float] = 0
+    # Phase 15.5 — CTE-style granular daily lead gen entry
+    dials: Optional[int] = 0
+    nurtures: Optional[int] = 0
+    listing_appts_set: Optional[int] = 0
+    listing_appts_held: Optional[int] = 0
+    listings_signed: Optional[int] = 0
+    buyer_appts_set: Optional[int] = 0
+    buyer_appts_held: Optional[int] = 0
+    buyers_signed: Optional[int] = 0
+    showings: Optional[int] = 0
+    open_houses_held: Optional[int] = 0
     wins: Optional[str] = None
     notes: Optional[str] = None
 
@@ -1559,6 +1571,113 @@ def my_activity_goals(request: Request):
     bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
     res = _supabase.table("activity_goals").select("*").eq("business_plan_id", bundle["plan"]["id"]).execute()
     return res.data[0] if res.data else {}
+
+
+# ─── Scorecard rollups (CTE Scorecards tab equivalent) ───
+
+def _scorecard_for_period(client_id: int, start_date: date, end_date: date) -> dict:
+    """Sum the activity log fields between two dates (inclusive). Returns the rollup
+    plus computed conversion percentages."""
+    res = _supabase.table("coaching_activity_logs").select("*") \
+        .eq("coaching_client_id", client_id) \
+        .gte("log_date", start_date.isoformat()) \
+        .lte("log_date", end_date.isoformat()) \
+        .execute()
+    rows = res.data or []
+    days_logged = len(rows)
+    fields = [
+        "dials", "contacts_made", "nurtures",
+        "listing_appts_set", "listing_appts_held", "listings_signed",
+        "buyer_appts_set", "buyer_appts_held", "buyers_signed",
+        "showings", "open_houses_held",
+        "appts_set", "appts_held", "hours_prospected",
+    ]
+    totals = {f: 0 for f in fields}
+    for r in rows:
+        for f in fields:
+            v = r.get(f) or 0
+            totals[f] += float(v) if f == "hours_prospected" else int(v)
+    # Derived conversions
+    contact_to_appt = 0
+    if totals["contacts_made"] > 0:
+        all_appts_set = totals["listing_appts_set"] + totals["buyer_appts_set"] + totals["appts_set"]
+        contact_to_appt = round((all_appts_set / totals["contacts_made"]) * 100, 1)
+    set_to_held = 0
+    all_set = totals["listing_appts_set"] + totals["buyer_appts_set"] + totals["appts_set"]
+    all_held = totals["listing_appts_held"] + totals["buyer_appts_held"] + totals["appts_held"]
+    if all_set > 0:
+        set_to_held = round((all_held / all_set) * 100, 1)
+    contacts_per_hour = 0
+    if totals["hours_prospected"] > 0:
+        contacts_per_hour = round(totals["contacts_made"] / totals["hours_prospected"], 1)
+    return {
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "days_logged": days_logged,
+        "totals": totals,
+        "contact_to_appt_pct": contact_to_appt,
+        "set_to_held_pct": set_to_held,
+        "contacts_per_hour": contacts_per_hour,
+    }
+
+
+def _scorecard_full(client_id: int, year: int, workspace_id: int) -> dict:
+    """CTE-style scorecard: this week, this month, last 30 days, YTD, plus monthly grid Jan-Dec."""
+    today = date.today()
+    from datetime import timedelta as _td
+    # This week (Mon-Sun)
+    week_start = today - _td(days=today.weekday())
+    week_end = week_start + _td(days=6)
+    # This month
+    month_start = today.replace(day=1)
+    if today.month == 12:
+        month_end = today.replace(year=today.year+1, month=1, day=1) - _td(days=1)
+    else:
+        month_end = today.replace(month=today.month+1, day=1) - _td(days=1)
+    # Last 30 days
+    last30_start = today - _td(days=29)
+    # YTD
+    ytd_start = date(year, 1, 1)
+    ytd_end = date(year, 12, 31)
+
+    bundle = _ensure_business_plan(client_id, year, workspace_id)
+    plan_id = bundle["plan"]["id"]
+    goals_resp = _supabase.table("activity_goals").select("*").eq("business_plan_id", plan_id).execute()
+    goals = goals_resp.data[0] if goals_resp.data else {}
+
+    # Monthly grid
+    monthly = []
+    for m in range(1, 13):
+        ms = date(year, m, 1)
+        if m == 12:
+            me = date(year, 12, 31)
+        else:
+            me = date(year, m+1, 1) - _td(days=1)
+        monthly.append({"month": m, **_scorecard_for_period(client_id, ms, me)})
+
+    return {
+        "year": year,
+        "this_week": _scorecard_for_period(client_id, week_start, week_end),
+        "this_month": _scorecard_for_period(client_id, month_start, month_end),
+        "last_30_days": _scorecard_for_period(client_id, last30_start, today),
+        "ytd": _scorecard_for_period(client_id, ytd_start, ytd_end),
+        "monthly": monthly,
+        "goals": goals,
+    }
+
+
+@router.get("/me/scorecard")
+def my_scorecard(request: Request, year: Optional[int] = None):
+    cc = _my_client(request)
+    yr = year or datetime.utcnow().year
+    return _scorecard_full(cc["id"], yr, cc["workspace_id"])
+
+
+@router.get("/clients/{client_id}/scorecard")
+def coach_scorecard(client_id: int, request: Request, year: Optional[int] = None):
+    workspace_id = _ws(request)
+    yr = year or datetime.utcnow().year
+    return _scorecard_full(client_id, yr, workspace_id)
 
 
 @router.get("/clients/{client_id}/activity-goals")
