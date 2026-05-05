@@ -457,9 +457,20 @@ New `/api/coaching/me/scorecard` and `/api/coaching/clients/{id}/scorecard` retu
 
 **Verified end-to-end:** ACTIVE listing with list_date 2026-04-15 / exp 2026-05-25 correctly shows DOM 20d, days_to_expiry 20d, fires the expiring-in-30 alert. CLOSED listing flows into closed YTD totals (1 unit, $380K volume, $9,500 GCI).
 
+## Phase 15.6 — Reviews + Database + Perfect Week ✅
+Three deferred features from session 1 (schemas existed, no UI) shipped in one session.
+
+### 15.6a — Reviews (quarterly / semi-annual / annual checkpoints)
+`POST /api/coaching/clients/{id}/reviews` with `{review_type}` captures a JSONB snapshot of the entire current state (client meta, plan, computed economic + budget, scorecard with weekly/monthly/30d/YTD/monthly grid, CEO summary). `PATCH` lets coach edit reflections + focus_areas_next, plus a `recapture` flag that re-snapshots from current data while preserving the narrative. Reviews tab on client detail (last in the row): list view with type pill + date + reflections preview + closed YTD; detail view splits left (formatted snapshot rendering plan/CEO/YTD activity/money) and right (reflections + focus-areas-next textareas, auto-save on blur).
+
+### 15.6b — Database touch tracker (Met / Haven't-Met)
+`_touches_database()` groups `contact_touches` by `(name lower + email lower)`, computes last_touch / ytd_count / days_since / overdue per person. **Overdue rules:** MET = days_since > 30 (off pace for 12/yr cadence); HAVENT_MET = days_since > 90. Endpoints: `/clients/{id}/database` (grouped + overdue), `/clients/{id}/touches` (raw history), POST/PATCH/DELETE on `/touches/{id}`; mirrored at `/me/*`. Database tab on coach side + "My Database" nav on agent portal — both show 4 stat cards (Total / Met / Haven't-Met / Overdue), filter chips (All / Met / Haven't-Met / Overdue), per-person table with type pill, YTD count + "/12" target for Met, last touch date, days_since (red if overdue), inline "+ Touch" quick-log per person. Verified: 3 touches logged → Mark Lee (61d ago) correctly flagged overdue, Sarah (today) and Jen (30d) within tolerance.
+
+### 15.6c — Perfect Week scheduler
+`_ensure_perfect_week()` auto-creates the default 50-dial template on first read (Mon-Fri lead-gen mornings, WED evening reserved for the coaching call, weekend lighter). `/api/coaching/clients/{id}/perfect-week` + `/me/perfect-week` GET / PUT. 7-day × 4-slot (Before 8 / Morning / Afternoon / Evening) grid of textareas with auto-save on blur. Coach can name templates and reset to default; agent edits the same schedule from their portal.
+
 **Out of scope (queued for next):**
 - Monthly Financial Statement — full P&L per month with all CTE income/cost-of-sales lines (Listing/Buyer/Referral/Lease/Other/Bonus income; Splits/Royalty/Referral fees/E&O/ISA/Showing/Admin cost lines)
-- Reviews, Perfect Week, contact_touches database tracker
 - Excel imports of legacy CTE workbooks
 
 ## DNS — Complete ✅
