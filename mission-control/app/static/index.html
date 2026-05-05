@@ -870,6 +870,7 @@ th[onclick]:hover{color:var(--accent)}
         <option value="PAUSED">Paused</option>
         <option value="CHURNED">Churned</option>
       </select>
+      <button class="btn btn-ghost btn-sm" onclick="cgDeleteClient()" title="Permanently delete this coaching client (and optionally their CRM contact + portal user)" style="color:#cc7070">Delete</button>
     </div>
 
     <!-- Client metadata strip -->
@@ -4248,6 +4249,47 @@ async function cgUpdateStatus(){
     body: JSON.stringify({status: newStatus})
   });
   cgState.current.status = newStatus;
+}
+
+async function cgDeleteClient(){
+  if(!cgState.current) return;
+  var lead = cgState.current.lead || {};
+  var name = lead.name || ((lead.first_name||'')+' '+(lead.last_name||'')).trim() || 'this client';
+  var hasPortal = !!cgState.current.user_id;
+  // Two-tier confirm: do you want to also delete the contact / portal user?
+  var msg1 = 'Delete coaching client: ' + name + '\n\n' +
+    'This removes their coaching plan, calls, action items, pipeline, activity logs, reviews, and Perfect Week.\n\n' +
+    (hasPortal ? '⚠ They have a portal login — that user account will be ORPHANED unless you also delete the contact (next prompt).\n\n' : '') +
+    'Continue?';
+  if(!confirm(msg1)) return;
+  var msg2 = 'Also delete the CRM contact' +
+    (hasPortal ? ' + portal login' : '') +
+    ' for ' + name + '?\n\n' +
+    'This is what you want for "delete and re-invite to test" — the email also gets removed from the suppression list so you can re-send to it.\n\n' +
+    '• YES = full cleanup (contact + portal user + workspace + suppression)\n' +
+    '• NO = unflag from coaching only (CRM contact stays)\n' +
+    '• CANCEL = abort';
+  // confirm only returns OK/Cancel; use prompt for tri-state
+  var ans = prompt(msg2 + '\n\nType YES for full cleanup, or NO to keep the CRM contact.', 'YES');
+  if(ans === null) return;
+  var deleteContact = ans.trim().toUpperCase() === 'YES';
+  try{
+    var url = API+'/api/coaching/clients/'+cgState.current.id+(deleteContact?'?delete_contact=true':'');
+    var res = await fetch(url, {method:'DELETE'});
+    if(!res.ok){ alert('Delete failed.'); return; }
+    var data = await res.json();
+    var summary = 'Coaching client deleted.';
+    if(data.deleted_contact){
+      summary += '\n\nFull cleanup:\n  ✓ CRM contact removed' +
+        (data.deleted_user ? '\n  ✓ Portal user removed' : '') +
+        (data.deleted_workspace ? '\n  ✓ Workspace removed' : '') +
+        (data.deleted_suppression ? '\n  ✓ Email suppression cleared' : '');
+    }
+    alert(summary);
+    cgBackToList();
+  }catch(e){
+    alert('Network error: '+e.message);
+  }
 }
 
 // ── Tabs ──

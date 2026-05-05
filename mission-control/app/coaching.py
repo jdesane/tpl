@@ -633,9 +633,97 @@ def update_client(client_id: int, payload: CoachingClientUpdate, request: Reques
 
 
 @router.delete("/clients/{client_id}")
-def delete_client(client_id: int, request: Request):
+def delete_client(client_id: int, request: Request, delete_contact: bool = False):
+    """Delete a coaching client. Coaching child tables (calls, pipeline,
+    activity logs, etc) cascade via FK ON DELETE CASCADE.
+
+    With delete_contact=true (the "delete + re-invite to test" path), also:
+    - Deletes the linked user + their workspace if portal was provisioned
+    - Removes the email from the suppression list
+    - Cleans up lead-related FK records (enrollments, opportunities,
+      activity, notes, drip queue, send log, communications)
+    - Deletes the lead row itself
+    """
+    cc = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data
+    if not cc:
+        raise HTTPException(404, "Coaching client not found")
+
+    user_id = cc.get("user_id")
+    lead_id = cc.get("lead_id")
+
+    # Resolve email + workspace before we start deleting
+    email = None
+    workspace_id = None
+    if lead_id:
+        lead = _supabase.table("leads").select("email").eq("id", lead_id).single().execute().data or {}
+        email = (lead.get("email") or "").lower()
+    if user_id:
+        u = _supabase.table("users").select("workspace_id").eq("id", user_id).single().execute().data or {}
+        workspace_id = u.get("workspace_id")
+
+    # Step 1: delete coaching_client (CASCADE handles all coaching child tables)
     _supabase.table("coaching_clients").delete().eq("id", client_id).execute()
-    return {"ok": True}
+
+    if not delete_contact:
+        return {"ok": True, "deleted_contact": False}
+
+    # Step 2: delete portal user + their dedicated workspace
+    deleted_user = False
+    deleted_workspace = False
+    if user_id:
+        try:
+            _supabase.table("users").delete().eq("id", user_id).execute()
+            deleted_user = True
+        except Exception:
+            pass
+    if workspace_id and workspace_id != 1:  # never delete Joe's workspace
+        try:
+            _supabase.table("workspaces").delete().eq("id", workspace_id).execute()
+            deleted_workspace = True
+        except Exception:
+            pass
+
+    # Step 3: clean up lead-related FK chains (mirrors main.py delete_lead)
+    deleted_lead = False
+    if lead_id:
+        for table, col in [
+            ("email_funnel_enrollments", "lead_id"),
+            ("opportunities", "contact_id"),
+            ("lead_activity", "lead_id"),
+            ("lead_notes", "lead_id"),
+            ("drip_queue", "lead_id"),
+            ("contact_communications", "contact_id"),
+            ("magnet_deliveries", "lead_id"),
+            ("lead_stage_history", "lead_id"),
+        ]:
+            try:
+                _supabase.table(table).delete().eq(col, lead_id).execute()
+            except Exception:
+                pass
+        try:
+            _supabase.table("leads").delete().eq("id", lead_id).execute()
+            deleted_lead = True
+        except Exception:
+            pass
+
+    # Step 4: remove email suppression so a fresh re-invite to the same address works
+    deleted_suppression = False
+    if email:
+        try:
+            _supabase.table("email_suppressions").delete().eq("email", email).execute()
+            deleted_suppression = True
+        except Exception:
+            pass
+
+    return {
+        "ok": True,
+        "deleted_contact": True,
+        "deleted_lead": deleted_lead,
+        "deleted_user": deleted_user,
+        "deleted_workspace": deleted_workspace,
+        "deleted_suppression": deleted_suppression,
+        "email": email,
+    }
 
 
 # ════════════════════════════════════════════════════════════
