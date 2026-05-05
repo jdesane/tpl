@@ -1919,6 +1919,210 @@ def delete_review(review_id: int, request: Request):
     return {"ok": True}
 
 
+# ════════════════════════════════════════════════════════════
+# Database Touch Tracker (contact_touches)
+# ════════════════════════════════════════════════════════════
+# MREA model: agents must touch each Met contact 12x/year and each
+# Haven't-Met contact differently. We track every touch with date +
+# method, then compute who's overdue.
+#
+# Schema (already in place from session 1):
+#   contact_touches: person_name, person_email, person_phone, contact_type
+#                    (MET | HAVENT_MET), touch_date, touch_method, notes
+#
+# We track the *touches*, not the contacts as separate rows. The
+# unique-person dimension comes from grouping by (person_name + email).
+
+class TouchIn(BaseModel):
+    person_name: str
+    person_email: Optional[str] = None
+    person_phone: Optional[str] = None
+    contact_type: Optional[str] = "MET"   # MET | HAVENT_MET
+    touch_date: Optional[str] = None
+    touch_method: Optional[str] = None    # CALL | TEXT | EMAIL | EVENT | MAIL | SOCIAL | IN_PERSON | OTHER
+    notes: Optional[str] = None
+
+
+class TouchUpdate(BaseModel):
+    person_name: Optional[str] = None
+    person_email: Optional[str] = None
+    person_phone: Optional[str] = None
+    contact_type: Optional[str] = None
+    touch_date: Optional[str] = None
+    touch_method: Optional[str] = None
+    notes: Optional[str] = None
+
+
+def _touches_database(client_id: int) -> dict:
+    """Group touches by person + compute overdue status.
+    A "person" is unique on (name lower + email lower) since email may be missing.
+    Met target = 12 touches/year (1/month). Haven't-Met = MREA doesn't fix a cadence,
+    so we use a simpler heuristic: overdue if no touch in last 90 days."""
+    today = date.today()
+    rows = _supabase.table("contact_touches").select("*").eq("coaching_client_id", client_id).order("touch_date", desc=True).execute().data or []
+    by_person = {}
+    for r in rows:
+        key = ((r.get("person_name") or "").strip().lower(), (r.get("person_email") or "").strip().lower())
+        if not key[0] and not key[1]: continue
+        if key not in by_person:
+            by_person[key] = {
+                "person_name": r.get("person_name"),
+                "person_email": r.get("person_email"),
+                "person_phone": r.get("person_phone"),
+                "contact_type": r.get("contact_type") or "MET",
+                "touches": [],
+                "last_touch": None,
+                "ytd_count": 0,
+                "days_since": None,
+                "overdue": False,
+            }
+        person = by_person[key]
+        person["touches"].append(r)
+        # Update aggregates
+        td = r.get("touch_date")
+        if td:
+            try:
+                d = datetime.strptime(td, "%Y-%m-%d").date()
+                if person["last_touch"] is None or d > datetime.strptime(person["last_touch"], "%Y-%m-%d").date():
+                    person["last_touch"] = td
+                if d.year == today.year:
+                    person["ytd_count"] += 1
+            except Exception:
+                pass
+    # Compute days_since + overdue for each person
+    overdue_count = 0
+    for key, p in by_person.items():
+        if p["last_touch"]:
+            try:
+                d = datetime.strptime(p["last_touch"], "%Y-%m-%d").date()
+                p["days_since"] = (today - d).days
+            except Exception:
+                pass
+        # Overdue rules:
+        # MET: <12 YTD AND days_since > 30 (off pace for 12/yr)
+        # HAVENT_MET: days_since > 90
+        if p["contact_type"] == "MET":
+            if p["days_since"] is None or p["days_since"] > 30:
+                p["overdue"] = True
+        else:
+            if p["days_since"] is None or p["days_since"] > 90:
+                p["overdue"] = True
+        if p["overdue"]: overdue_count += 1
+
+    persons = list(by_person.values())
+    # Sort: overdue first (most days_since at top), then by ytd_count desc
+    persons.sort(key=lambda p: (not p["overdue"], -(p["days_since"] or 0)))
+
+    # Summary stats
+    met_count = sum(1 for p in persons if p["contact_type"] == "MET")
+    havent_count = sum(1 for p in persons if p["contact_type"] == "HAVENT_MET")
+    return {
+        "as_of": today.isoformat(),
+        "total_persons": len(persons),
+        "met_count": met_count,
+        "havent_met_count": havent_count,
+        "overdue_count": overdue_count,
+        "persons": persons,
+    }
+
+
+@router.get("/clients/{client_id}/touches")
+def list_touches(client_id: int, request: Request, limit: int = 200):
+    """Raw touch history (most recent first)."""
+    res = _db("contact_touches").select("*").eq("coaching_client_id", client_id).order("touch_date", desc=True).limit(limit).execute()
+    return res.data or []
+
+
+@router.get("/clients/{client_id}/database")
+def coach_database(client_id: int, request: Request):
+    """Grouped-by-person view with overdue computation."""
+    return _touches_database(client_id)
+
+
+@router.post("/clients/{client_id}/touches")
+def create_touch(client_id: int, payload: TouchIn, request: Request):
+    row = {
+        "coaching_client_id": client_id,
+        "person_name": payload.person_name,
+        "person_email": payload.person_email,
+        "person_phone": payload.person_phone,
+        "contact_type": payload.contact_type or "MET",
+        "touch_date": payload.touch_date or date.today().isoformat(),
+        "touch_method": payload.touch_method,
+        "notes": payload.notes,
+    }
+    return _supabase.table("contact_touches").insert(row).execute().data[0]
+
+
+@router.patch("/touches/{touch_id}")
+def update_touch(touch_id: int, payload: TouchUpdate, request: Request):
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    res = _supabase.table("contact_touches").update(data).eq("id", touch_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Touch not found")
+    return res.data[0]
+
+
+@router.delete("/touches/{touch_id}")
+def delete_touch(touch_id: int, request: Request):
+    _supabase.table("contact_touches").delete().eq("id", touch_id).execute()
+    return {"ok": True}
+
+
+# Agent self-service
+@router.get("/me/touches")
+def my_touches(request: Request, limit: int = 200):
+    cc = _my_client(request)
+    res = _supabase.table("contact_touches").select("*").eq("coaching_client_id", cc["id"]).order("touch_date", desc=True).limit(limit).execute()
+    return res.data or []
+
+
+@router.get("/me/database")
+def my_database(request: Request):
+    cc = _my_client(request)
+    return _touches_database(cc["id"])
+
+
+@router.post("/me/touches")
+def my_create_touch(payload: TouchIn, request: Request):
+    cc = _my_client(request)
+    row = {
+        "coaching_client_id": cc["id"],
+        "person_name": payload.person_name,
+        "person_email": payload.person_email,
+        "person_phone": payload.person_phone,
+        "contact_type": payload.contact_type or "MET",
+        "touch_date": payload.touch_date or date.today().isoformat(),
+        "touch_method": payload.touch_method,
+        "notes": payload.notes,
+    }
+    return _supabase.table("contact_touches").insert(row).execute().data[0]
+
+
+@router.patch("/me/touches/{touch_id}")
+def my_update_touch(touch_id: int, payload: TouchUpdate, request: Request):
+    cc = _my_client(request)
+    own = _supabase.table("contact_touches").select("id").eq("id", touch_id).eq("coaching_client_id", cc["id"]).execute().data
+    if not own:
+        raise HTTPException(404, "Not found or not yours")
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    return _supabase.table("contact_touches").update(data).eq("id", touch_id).execute().data[0]
+
+
+@router.delete("/me/touches/{touch_id}")
+def my_delete_touch(touch_id: int, request: Request):
+    cc = _my_client(request)
+    own = _supabase.table("contact_touches").select("id").eq("id", touch_id).eq("coaching_client_id", cc["id"]).execute().data
+    if not own:
+        raise HTTPException(404, "Not found or not yours")
+    _supabase.table("contact_touches").delete().eq("id", touch_id).execute()
+    return {"ok": True}
+
+
 @router.get("/clients/{client_id}/scorecard")
 def coach_scorecard(client_id: int, request: Request, year: Optional[int] = None):
     workspace_id = _ws(request)

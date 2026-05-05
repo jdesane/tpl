@@ -139,6 +139,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="nav-item" onclick="portalPage('coachtoday')"><span class="icon">&#x25C9;</span>Today</div>
     <div class="nav-item" onclick="portalPage('coachplan')"><span class="icon">&#x25CE;</span>My Plan</div>
     <div class="nav-item" onclick="portalPage('coachpipeline')"><span class="icon">&#x25B7;</span>Pipeline</div>
+    <div class="nav-item" onclick="portalPage('coachdatabase')"><span class="icon">&#x25CB;</span>Database</div>
     <div class="nav-item" onclick="portalPage('coachcalls')"><span class="icon">&#x260E;</span>Calls &amp; Commitments</div>
   </div>
   <div class="nav-group">
@@ -550,6 +551,22 @@ a{color:var(--accent);text-decoration:none}
   <div class="panel"><div id="ptl-pipe-list"></div></div>
 </div>
 
+<!-- ─── COACHING: DATABASE ─── -->
+<div class="page" id="portal-coachdatabase">
+  <h2 style="margin-bottom:18px">My Database</h2>
+  <div class="grid-4" id="ptl-db-stats" style="margin-bottom:14px"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm ptl-db-tab" data-dt="ALL" onclick="ptlDbSwitch('ALL')" style="background:var(--accent-glow);color:var(--accent)">All</button>
+      <button class="btn btn-ghost btn-sm ptl-db-tab" data-dt="MET" onclick="ptlDbSwitch('MET')">Met</button>
+      <button class="btn btn-ghost btn-sm ptl-db-tab" data-dt="HAVENT_MET" onclick="ptlDbSwitch('HAVENT_MET')">Haven't-Met</button>
+      <button class="btn btn-ghost btn-sm ptl-db-tab" data-dt="OVERDUE" onclick="ptlDbSwitch('OVERDUE')">Overdue</button>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="ptlDbAdd()">+ Log Touch</button>
+  </div>
+  <div class="panel"><div id="ptl-db-list"></div></div>
+</div>
+
 <!-- ─── COACHING: CALLS ─── -->
 <div class="page" id="portal-coachcalls">
   <h2 style="margin-bottom:18px">Coaching Calls &amp; Commitments</h2>
@@ -621,6 +638,7 @@ function portalPage(name){
   if(name==='coachtoday')ptlLoadToday();
   if(name==='coachplan')ptlLoadPlan();
   if(name==='coachpipeline')ptlLoadPipeline();
+  if(name==='coachdatabase')ptlLoadDatabase();
   if(name==='coachcalls')ptlLoadCalls();
 }
 
@@ -1273,6 +1291,84 @@ async function ptlPipeDelete(id){
   if(!confirm('Delete this entry?')) return;
   await fetch(API_BASE+'/api/coaching/me/pipeline/'+id,{method:'DELETE',headers:authHeaders()});
   ptlLoadPipeline();
+}
+
+// ─── My Database ───
+var ptlDbState = { db: null, filter: 'ALL' };
+
+async function ptlLoadDatabase(){
+  if(!ptlState.client) return;
+  try{
+    var res = await fetch(API_BASE+'/api/coaching/me/database',{headers:authHeaders()});
+    if(!res.ok) return;
+    ptlDbState.db = await res.json();
+    ptlRenderDatabase();
+  }catch(e){}
+}
+
+function ptlDbSwitch(t){
+  ptlDbState.filter = t;
+  document.querySelectorAll('.ptl-db-tab').forEach(function(b){b.style.background='';b.style.color=''});
+  var active = document.querySelector('.ptl-db-tab[data-dt="'+t+'"]');
+  active.style.background='var(--accent-glow)'; active.style.color='var(--accent)';
+  ptlRenderDatabase();
+}
+
+function ptlRenderDatabase(){
+  var d = ptlDbState.db;
+  if(!d) return;
+  var statsEl = document.getElementById('ptl-db-stats');
+  function statCard(label, value, color){
+    return '<div style="background:var(--surface-2);border-radius:8px;padding:14px"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">'+label+'</div><div style="font-size:24px;font-weight:600;color:'+(color||'var(--text)')+';margin-top:4px">'+value+'</div></div>';
+  }
+  statsEl.innerHTML = statCard('Total in DB', d.total_persons) + statCard('Met', d.met_count, 'var(--green)') + statCard("Haven't-Met", d.havent_met_count, 'var(--amber)') + statCard('Overdue', d.overdue_count, 'var(--red)');
+
+  var persons = d.persons || [];
+  if(ptlDbState.filter==='MET') persons = persons.filter(function(p){return p.contact_type==='MET'});
+  else if(ptlDbState.filter==='HAVENT_MET') persons = persons.filter(function(p){return p.contact_type==='HAVENT_MET'});
+  else if(ptlDbState.filter==='OVERDUE') persons = persons.filter(function(p){return p.overdue});
+
+  var el = document.getElementById('ptl-db-list');
+  if(!persons.length){
+    el.innerHTML='<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No contacts in this view. Click <strong>+ Log Touch</strong> to add one.</div>';
+    return;
+  }
+  el.innerHTML = persons.map(function(p){
+    var typeColor = p.contact_type==='MET'?'var(--green)':'var(--amber)';
+    var typeLabel = p.contact_type==='MET'?'MET':'HM';
+    var daysColor = p.overdue?'var(--red)':'var(--text-muted)';
+    return '<div style="display:grid;grid-template-columns:auto 2fr 1fr 1fr auto;gap:10px;padding:10px;border-bottom:1px solid var(--border);align-items:center;'+(p.overdue?'background:rgba(248,113,113,.04)':'')+'">' +
+      '<span style="display:inline-block;padding:2px 6px;border-radius:6px;font-size:10px;color:'+typeColor+';background:rgba(255,255,255,.05);font-weight:600">'+typeLabel+'</span>' +
+      '<div><div style="font-weight:600">'+(p.person_name||'—')+'</div><div style="color:var(--text-muted);font-size:11px">'+(p.person_email||p.person_phone||'')+'</div></div>' +
+      '<div style="font-size:12px;color:var(--text-muted)">YTD: <strong style="color:var(--text)">'+(p.ytd_count||0)+(p.contact_type==='MET'?' / 12':'')+'</strong></div>' +
+      '<div style="font-size:12px;color:'+daysColor+';font-weight:'+(p.overdue?'600':'400')+'">'+(p.days_since===null?'never touched':p.days_since+'d ago'+(p.overdue?' ⚠':''))+'</div>' +
+      '<button class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px" onclick="ptlDbLogFor(\''+(p.person_name||'').replace(/\'/g,"\\\\'")+'\',\''+(p.person_email||'')+'\',\''+p.contact_type+'\')">+ Touch</button>' +
+      '</div>';
+  }).join('');
+}
+
+async function ptlDbAdd(){
+  var name = prompt('Person name'); if(!name) return;
+  var email = prompt('Email (optional)') || '';
+  var phone = prompt('Phone (optional)') || '';
+  var type = (prompt("Contact type — MET (you know them personally) or HAVENT_MET", 'MET') || 'MET').toUpperCase();
+  var method = (prompt('Method (CALL / TEXT / EMAIL / EVENT / MAIL / SOCIAL / IN_PERSON / OTHER)', 'CALL') || 'CALL').toUpperCase();
+  var notes = prompt('Notes (optional)') || '';
+  await fetch(API_BASE+'/api/coaching/me/touches',{
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify({person_name:name, person_email:email||null, person_phone:phone||null, contact_type:type, touch_method:method, notes:notes||null})
+  });
+  ptlLoadDatabase();
+}
+
+async function ptlDbLogFor(name, email, type){
+  var method = (prompt('Method (CALL / TEXT / EMAIL / EVENT / MAIL / SOCIAL / IN_PERSON / OTHER)', 'CALL') || 'CALL').toUpperCase();
+  var notes = prompt('Notes (optional)') || '';
+  await fetch(API_BASE+'/api/coaching/me/touches',{
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify({person_name:name, person_email:email||null, contact_type:type, touch_method:method, notes:notes||null})
+  });
+  ptlLoadDatabase();
 }
 
 // ─── Calls & Commitments ───
