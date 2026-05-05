@@ -2186,6 +2186,189 @@ def my_update_perfect_week(payload: PerfectWeekIn, request: Request):
     return _supabase.table("perfect_weeks").update(data).eq("id", pw["id"]).execute().data[0]
 
 
+# ════════════════════════════════════════════════════════════
+# Monthly Financial Statement (CTE Financial Statement tab)
+# ════════════════════════════════════════════════════════════
+# 12 rows per business plan. JSONB lines for flexibility. Actuals
+# auto-populate income from closed pipeline_entries (Listing Income +
+# Buyer Income); coach/agent enters cost_of_sales + operating_expenses
+# manually. Computed totals returned alongside.
+
+DEFAULT_INCOME_LINES = {
+    "Listing Income": 0,
+    "Buyer Income": 0,
+    "Referral Income": 0,
+    "Lease Income": 0,
+    "Other Income": 0,
+    "Transaction Fee": 0,
+    "Bonus": 0,
+}
+
+DEFAULT_COGS_LINES = {
+    "Split to Office": 0,
+    "Royalty Paid": 0,
+    "Referral Fees Paid": 0,
+    "Listing Agents": 0,
+    "Buyer Agents": 0,
+    "E&O": 0,
+    "ISA": 0,
+    "Showing Assistants": 0,
+    "Admin Fee": 0,
+}
+
+DEFAULT_OPEX_LINES = {
+    "Marketing / Advertising": 0,
+    "Technology / Software": 0,
+    "Phone": 0,
+    "Auto / Gas": 0,
+    "Education / Coaching / Travel": 0,
+    "Office / Rent": 0,
+    "Supplies": 0,
+}
+
+
+class FinancialMonthIn(BaseModel):
+    income: Optional[dict] = None
+    cost_of_sales: Optional[dict] = None
+    operating_expenses: Optional[dict] = None
+    notes: Optional[str] = None
+
+
+def _ensure_financial_months(plan_id: int) -> list:
+    """Returns the 12 monthly_financials rows, auto-creating any missing months with defaults."""
+    rows = _supabase.table("monthly_financials").select("*").eq("business_plan_id", plan_id).order("month").execute().data or []
+    by_month = {r["month"]: r for r in rows}
+    out = []
+    for m in range(1, 13):
+        if m in by_month:
+            out.append(by_month[m])
+        else:
+            ins = _supabase.table("monthly_financials").insert({
+                "business_plan_id": plan_id, "month": m,
+                "income": DEFAULT_INCOME_LINES.copy(),
+                "cost_of_sales": DEFAULT_COGS_LINES.copy(),
+                "operating_expenses": DEFAULT_OPEX_LINES.copy(),
+            }).execute()
+            out.append(ins.data[0])
+    return out
+
+
+def _financials_with_actuals(client_id: int, year: int, workspace_id: int) -> dict:
+    """Return the 12-month grid with auto-populated actuals from closed transactions and computed totals."""
+    bundle = _ensure_business_plan(client_id, year, workspace_id)
+    plan_id = bundle["plan"]["id"]
+    months = _ensure_financial_months(plan_id)
+
+    # Pull all closed pipeline entries for the year, group by month + entry_type
+    closed = _supabase.table("pipeline_entries").select("entry_type,closed_date,gross_commission").eq("coaching_client_id", client_id).eq("closed", True).execute().data or []
+    listing_actual = {m: 0 for m in range(1, 13)}
+    buyer_actual = {m: 0 for m in range(1, 13)}
+    for r in closed:
+        cd = r.get("closed_date") or ""
+        if not cd.startswith(str(year)): continue
+        try:
+            m = int(cd.split("-")[1])
+        except Exception:
+            continue
+        gci = float(r.get("gross_commission") or 0)
+        if r.get("entry_type") == "LISTING": listing_actual[m] += gci
+        elif r.get("entry_type") == "BUYER": buyer_actual[m] += gci
+
+    # Build output: each month with income, cost_of_sales, operating_expenses, plus computed totals + actual_income overlays
+    out_months = []
+    yearly_totals = {"income": 0, "cost_of_sales": 0, "operating_expenses": 0, "gross_profit": 0, "net_profit": 0,
+                     "actual_listing_income": 0, "actual_buyer_income": 0, "actual_total_income": 0}
+    for r in months:
+        m = r["month"]
+        inc = dict(r.get("income") or {})
+        cogs = dict(r.get("cost_of_sales") or {})
+        opex = dict(r.get("operating_expenses") or {})
+        # Overlay actuals from closed deals (only if user hasn't manually set a value > the actual)
+        actual_listing = round(listing_actual.get(m, 0), 2)
+        actual_buyer = round(buyer_actual.get(m, 0), 2)
+        total_income = sum(float(v or 0) for v in inc.values())
+        total_cogs = sum(float(v or 0) for v in cogs.values())
+        total_opex = sum(float(v or 0) for v in opex.values())
+        gross_profit = total_income - total_cogs
+        net_profit = gross_profit - total_opex
+        out_months.append({
+            "id": r["id"],
+            "month": m,
+            "income": inc,
+            "cost_of_sales": cogs,
+            "operating_expenses": opex,
+            "notes": r.get("notes"),
+            "totals": {
+                "income": round(total_income, 2),
+                "cost_of_sales": round(total_cogs, 2),
+                "operating_expenses": round(total_opex, 2),
+                "gross_profit": round(gross_profit, 2),
+                "net_profit": round(net_profit, 2),
+            },
+            "actual_listing_income": actual_listing,
+            "actual_buyer_income": actual_buyer,
+            "actual_total_income": round(actual_listing + actual_buyer, 2),
+        })
+        yearly_totals["income"] += total_income
+        yearly_totals["cost_of_sales"] += total_cogs
+        yearly_totals["operating_expenses"] += total_opex
+        yearly_totals["gross_profit"] += gross_profit
+        yearly_totals["net_profit"] += net_profit
+        yearly_totals["actual_listing_income"] += actual_listing
+        yearly_totals["actual_buyer_income"] += actual_buyer
+        yearly_totals["actual_total_income"] += actual_listing + actual_buyer
+    for k in yearly_totals: yearly_totals[k] = round(yearly_totals[k], 2)
+    return {
+        "year": year,
+        "months": out_months,
+        "yearly_totals": yearly_totals,
+    }
+
+
+@router.get("/clients/{client_id}/financials")
+def get_financials(client_id: int, request: Request, year: Optional[int] = None):
+    workspace_id = _ws(request)
+    return _financials_with_actuals(client_id, year or datetime.utcnow().year, workspace_id)
+
+
+@router.put("/clients/{client_id}/financials/{month}")
+def update_financial_month(client_id: int, month: int, payload: FinancialMonthIn, request: Request, year: Optional[int] = None):
+    workspace_id = _ws(request)
+    yr = year or datetime.utcnow().year
+    if not (1 <= month <= 12):
+        raise HTTPException(400, "month must be 1-12")
+    bundle = _ensure_business_plan(client_id, yr, workspace_id)
+    plan_id = bundle["plan"]["id"]
+    _ensure_financial_months(plan_id)
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    res = _supabase.table("monthly_financials").update(data).eq("business_plan_id", plan_id).eq("month", month).execute()
+    return res.data[0] if res.data else None
+
+
+@router.get("/me/financials")
+def my_financials(request: Request, year: Optional[int] = None):
+    cc = _my_client(request)
+    return _financials_with_actuals(cc["id"], year or datetime.utcnow().year, cc["workspace_id"])
+
+
+@router.put("/me/financials/{month}")
+def my_update_financial_month(month: int, payload: FinancialMonthIn, request: Request, year: Optional[int] = None):
+    cc = _my_client(request)
+    yr = year or datetime.utcnow().year
+    if not (1 <= month <= 12):
+        raise HTTPException(400, "month must be 1-12")
+    bundle = _ensure_business_plan(cc["id"], yr, cc["workspace_id"])
+    plan_id = bundle["plan"]["id"]
+    _ensure_financial_months(plan_id)
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(400, "No fields to update")
+    res = _supabase.table("monthly_financials").update(data).eq("business_plan_id", plan_id).eq("month", month).execute()
+    return res.data[0] if res.data else None
+
+
 @router.get("/clients/{client_id}/scorecard")
 def coach_scorecard(client_id: int, request: Request, year: Optional[int] = None):
     workspace_id = _ws(request)

@@ -926,6 +926,7 @@ th[onclick]:hover{color:var(--accent)}
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="recruiting" onclick="cgSwitchTab('recruiting')">HybridShare</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="perfectweek" onclick="cgSwitchTab('perfectweek')">Perfect Week</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="database" onclick="cgSwitchTab('database')">Database</button>
+      <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="financials" onclick="cgSwitchTab('financials')">Financials</button>
       <button class="btn btn-ghost btn-sm cg-tab" data-cg-tab="reviews" onclick="cgSwitchTab('reviews')">Reviews</button>
     </div>
 
@@ -1288,6 +1289,25 @@ th[onclick]:hover{color:var(--accent)}
       </div>
       <div class="panel">
         <div id="cg-db-list"></div>
+      </div>
+    </div>
+
+<!-- ─── FINANCIALS TAB (CTE Financial Statement) ─── -->
+    <div id="cg-tab-financials" style="display:none">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div class="panel-title" style="font-size:16px;margin:0">Monthly Financial Statement</div>
+            <div style="color:var(--muted);font-size:11px;margin-top:4px">Income (auto-pulled from closed transactions) · Cost of Sales · Operating Expenses · Net Profit. Click any cell to edit.</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="cgFinAddLine('income')">+ Income Line</button>
+            <button class="btn btn-ghost btn-sm" onclick="cgFinAddLine('cost_of_sales')">+ COGS Line</button>
+            <button class="btn btn-ghost btn-sm" onclick="cgFinAddLine('operating_expenses')">+ OpEx Line</button>
+          </div>
+        </div>
+        <div id="cg-fin-totals" class="metric-row" style="margin-bottom:14px"></div>
+        <div id="cg-fin-grid" style="overflow-x:auto"></div>
       </div>
     </div>
 
@@ -5433,6 +5453,7 @@ window.cgSwitchTab = function(tab){
   if(tab==='reviews') cgRvLoad();
   if(tab==='database') cgDbLoad();
   if(tab==='perfectweek') cgPwLoad();
+  if(tab==='financials') cgFinLoad();
 };
 
 // ─── GPS (1-3-5) ───
@@ -6113,6 +6134,173 @@ async function cgPwSaveTemplate(){
     method:'PUT', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({template_name: document.getElementById('cg-pw-template').value || null})
   });
+}
+
+// ─────────────────────────────────────────────
+// FINANCIALS (Monthly P&L)
+// ─────────────────────────────────────────────
+var cgFinState = { data: null };
+var CG_FIN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+async function cgFinLoad(){
+  if(!cgState.current) return;
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/financials');
+    if(!res.ok) return;
+    cgFinState.data = await res.json();
+    cgFinRender();
+  }catch(e){}
+}
+
+function cgFinFmt(n){
+  var v = parseFloat(n) || 0;
+  if(v === 0) return '<span style="color:var(--muted)">—</span>';
+  return '$' + Math.round(v).toLocaleString();
+}
+
+function cgFinUnion(months, key){
+  // Returns the union of all line labels seen in any month's [key] dict, in stable order
+  var labels = [];
+  var seen = {};
+  months.forEach(function(m){
+    Object.keys(m[key] || {}).forEach(function(lbl){
+      if(!seen[lbl]){ seen[lbl] = true; labels.push(lbl); }
+    });
+  });
+  return labels;
+}
+
+function cgFinRender(){
+  var d = cgFinState.data;
+  if(!d) return;
+  var months = d.months || [];
+  var yr = d.yearly_totals || {};
+
+  // Top totals strip
+  document.getElementById('cg-fin-totals').innerHTML =
+    '<div class="metric-card"><div class="metric-label">Total Income</div><div class="metric-value">'+cgFinFmt(yr.income)+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Cost of Sales</div><div class="metric-value">'+cgFinFmt(yr.cost_of_sales)+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Gross Profit</div><div class="metric-value">'+cgFinFmt(yr.gross_profit)+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Operating Exp</div><div class="metric-value">'+cgFinFmt(yr.operating_expenses)+'</div></div>' +
+    '<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:'+(yr.net_profit>=0?'#5fcf86':'#cc7070')+'">'+cgFinFmt(yr.net_profit)+'</div></div>';
+
+  var incomeLabels = cgFinUnion(months, 'income');
+  var cogsLabels = cgFinUnion(months, 'cost_of_sales');
+  var opexLabels = cgFinUnion(months, 'operating_expenses');
+
+  function colWidth(){ return '90px'; }
+
+  // Build grid: row label column + 12 month columns + Total column
+  var html = '<div style="display:grid;grid-template-columns:200px repeat(12,90px) 100px;gap:0;min-width:1380px;font-size:11px">';
+
+  // Header row
+  html += '<div style="padding:8px 10px;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">&nbsp;</div>';
+  CG_FIN_MONTHS.forEach(function(m){
+    html += '<div style="padding:8px 10px;text-align:right;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">'+m+'</div>';
+  });
+  html += '<div style="padding:8px 10px;text-align:right;font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600">Year</div>';
+
+  function renderSection(label, key, lines, totalKey){
+    // Section header
+    html += '<div style="grid-column:1 / -1;padding:10px;background:var(--surface-2);font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border)">'+label+'</div>';
+    lines.forEach(function(lbl){
+      html += '<div style="padding:6px 10px;border-bottom:1px solid var(--border);align-self:center" title="'+lbl.replace(/"/g,'&quot;')+'">'+lbl+'</div>';
+      var rowTotal = 0;
+      months.forEach(function(m){
+        var v = ((m[key] || {})[lbl] || 0);
+        rowTotal += parseFloat(v) || 0;
+        html += '<input type="number" step="0.01" value="'+(v||'')+'" data-fin-month="'+m.month+'" data-fin-section="'+key+'" data-fin-label="'+lbl.replace(/"/g,'&quot;')+'" onblur="cgFinSaveCell(this)" style="padding:4px 6px;background:var(--surface-2);border:1px solid var(--border);border-radius:0;color:var(--text);font-size:11px;text-align:right;border-bottom:1px solid var(--border)" />';
+      });
+      html += '<div style="padding:6px 10px;text-align:right;font-weight:600;border-bottom:1px solid var(--border);align-self:center">'+cgFinFmt(rowTotal)+'</div>';
+    });
+    // Section total row
+    html += '<div style="padding:8px 10px;font-weight:700;border-bottom:2px solid var(--border);align-self:center">'+totalKey.toUpperCase()+'</div>';
+    var grandTotal = 0;
+    months.forEach(function(m){
+      var v = (m.totals||{})[totalKey] || 0;
+      grandTotal += v;
+      html += '<div style="padding:6px 10px;text-align:right;font-weight:600;border-bottom:2px solid var(--border);background:var(--surface-2);align-self:center">'+cgFinFmt(v)+'</div>';
+    });
+    html += '<div style="padding:8px 10px;text-align:right;font-weight:700;border-bottom:2px solid var(--border);background:var(--surface-2);align-self:center">'+cgFinFmt(grandTotal)+'</div>';
+  }
+
+  renderSection('Income', 'income', incomeLabels.length?incomeLabels:Object.keys({"Listing Income":1,"Buyer Income":1,"Referral Income":1,"Lease Income":1,"Other Income":1,"Transaction Fee":1,"Bonus":1}), 'income');
+  // Actuals row (auto-pulled from closed deals)
+  html += '<div style="grid-column:1 / -1;padding:6px 10px;font-style:italic;color:var(--muted);font-size:10px;border-bottom:1px solid var(--border)">↑ Actual closed-deal income (read-only) — overlay below</div>';
+  html += '<div style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;align-self:center">  · Actual Listing</div>';
+  var actListYr = 0;
+  months.forEach(function(m){ actListYr += m.actual_listing_income||0; html += '<div style="padding:6px 10px;text-align:right;color:var(--muted);font-size:11px;border-bottom:1px solid var(--border);align-self:center">'+cgFinFmt(m.actual_listing_income)+'</div>'; });
+  html += '<div style="padding:6px 10px;text-align:right;color:var(--muted);font-size:11px;border-bottom:1px solid var(--border);align-self:center">'+cgFinFmt(actListYr)+'</div>';
+  html += '<div style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;align-self:center">  · Actual Buyer</div>';
+  var actBuyYr = 0;
+  months.forEach(function(m){ actBuyYr += m.actual_buyer_income||0; html += '<div style="padding:6px 10px;text-align:right;color:var(--muted);font-size:11px;border-bottom:1px solid var(--border);align-self:center">'+cgFinFmt(m.actual_buyer_income)+'</div>'; });
+  html += '<div style="padding:6px 10px;text-align:right;color:var(--muted);font-size:11px;border-bottom:1px solid var(--border);align-self:center">'+cgFinFmt(actBuyYr)+'</div>';
+
+  renderSection('Cost of Sales', 'cost_of_sales', cogsLabels.length?cogsLabels:Object.keys({"Split to Office":1,"Royalty Paid":1,"Referral Fees Paid":1}), 'cost_of_sales');
+
+  // Gross profit row
+  html += '<div style="padding:8px 10px;font-weight:700;border-bottom:2px solid var(--border);background:var(--surface-2);align-self:center">GROSS PROFIT</div>';
+  var gpYr = 0;
+  months.forEach(function(m){ var v = (m.totals||{}).gross_profit || 0; gpYr += v; html += '<div style="padding:6px 10px;text-align:right;font-weight:700;border-bottom:2px solid var(--border);background:var(--surface-2);color:'+(v>=0?'#5fcf86':'#cc7070')+'">'+cgFinFmt(v)+'</div>'; });
+  html += '<div style="padding:8px 10px;text-align:right;font-weight:700;border-bottom:2px solid var(--border);background:var(--surface-2);color:'+(gpYr>=0?'#5fcf86':'#cc7070')+'">'+cgFinFmt(gpYr)+'</div>';
+
+  renderSection('Operating Expenses', 'operating_expenses', opexLabels.length?opexLabels:Object.keys({"Marketing / Advertising":1,"Technology / Software":1}), 'operating_expenses');
+
+  // Net profit row
+  html += '<div style="padding:10px;font-weight:700;background:var(--accent-glow);align-self:center">NET PROFIT</div>';
+  var npYr = 0;
+  months.forEach(function(m){ var v = (m.totals||{}).net_profit || 0; npYr += v; html += '<div style="padding:8px 10px;text-align:right;font-weight:700;background:var(--accent-glow);color:'+(v>=0?'#5fcf86':'#cc7070')+'">'+cgFinFmt(v)+'</div>'; });
+  html += '<div style="padding:10px;text-align:right;font-weight:700;background:var(--accent-glow);color:'+(npYr>=0?'#5fcf86':'#cc7070')+';font-size:13px">'+cgFinFmt(npYr)+'</div>';
+
+  html += '</div>';
+  document.getElementById('cg-fin-grid').innerHTML = html;
+}
+
+async function cgFinSaveCell(input){
+  if(!cgState.current||!cgFinState.data) return;
+  var month = parseInt(input.getAttribute('data-fin-month'));
+  var section = input.getAttribute('data-fin-section');
+  var label = input.getAttribute('data-fin-label');
+  var value = parseFloat(input.value) || 0;
+  // Find the month object, mutate locally, send the full section JSONB
+  var mObj = cgFinState.data.months.find(function(m){return m.month===month});
+  if(!mObj) return;
+  mObj[section] = mObj[section] || {};
+  mObj[section][label] = value;
+  // Send the section dict for that month
+  var payload = {};
+  payload[section] = mObj[section];
+  await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/financials/'+month,{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  // Re-fetch totals
+  await cgFinLoad();
+}
+
+async function cgFinAddLine(section){
+  if(!cgState.current||!cgFinState.data) return;
+  var label = prompt('New '+(section==='income'?'income':section==='cost_of_sales'?'cost-of-sale':'operating-expense')+' line label');
+  if(!label||!label.trim()) return;
+  label = label.trim();
+  // Add the empty key to all 12 months in one PUT each
+  for(var m=1; m<=12; m++){
+    var mObj = cgFinState.data.months.find(function(x){return x.month===m});
+    if(!mObj) continue;
+    mObj[section] = mObj[section] || {};
+    if(!(label in mObj[section])) mObj[section][label] = 0;
+  }
+  // Persist month 1 only with the new key (rest will get it on next save) — actually let's persist all months to be safe
+  for(var m=1; m<=12; m++){
+    var mObj = cgFinState.data.months.find(function(x){return x.month===m});
+    if(!mObj) continue;
+    var payload = {}; payload[section] = mObj[section];
+    await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/financials/'+m,{
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+  }
+  await cgFinLoad();
 }
 
 async function cgPwResetDefault(){
