@@ -863,6 +863,7 @@ th[onclick]:hover{color:var(--accent)}
         <div style="color:var(--muted);font-size:12px;margin-top:2px" id="cg-detail-meta">&mdash;</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="cgOpenImportModal()" title="Import an existing CTE / MREA spreadsheet for this client">Import .xlsx</button>
+      <button class="btn btn-ghost btn-sm" onclick="cgResendInvite()" id="cg-resend-btn" title="Re-issue the portal invite (also lets you correct the email if the original bounced)" style="display:none">↻ Resend Invite</button>
       <button class="btn btn-ghost btn-sm" onclick="cgProvisionPortal()" title="Create a portal login for this client" id="cg-provision-btn">Portal Access</button>
       <select id="cg-detail-status" class="form-input" style="width:auto" onchange="cgUpdateStatus()">
         <option value="ACTIVE">Active</option>
@@ -5452,14 +5453,96 @@ async function cgProvisionPortal(){
   }
 }
 
-// Update detail-render to disable provision button if already done
+// Update detail-render to disable provision button if already done + check invite status
 var __cg_origRenderProfile = window.cgRenderProfile;
 window.cgRenderProfile = function(c){
   __cg_origRenderProfile(c);
   var btn = document.getElementById('cg-provision-btn');
-  if(c.user_id){ btn.textContent='✓ Portal Provisioned'; btn.disabled=true; }
-  else { btn.textContent='Portal Access'; btn.disabled=false; }
+  var resendBtn = document.getElementById('cg-resend-btn');
+  if(c.user_id){
+    btn.textContent='✓ Portal Provisioned';
+    btn.disabled=true;
+    resendBtn.style.display='inline-block';
+    cgCheckInviteStatus(c.id);
+  } else {
+    btn.textContent='Portal Access';
+    btn.disabled=false;
+    resendBtn.style.display='none';
+  }
 };
+
+async function cgCheckInviteStatus(clientId){
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+clientId+'/invite-status');
+    if(!res.ok) return;
+    var s = await res.json();
+    var resendBtn = document.getElementById('cg-resend-btn');
+    if(s.is_suppressed){
+      resendBtn.textContent = '⚠ Invite Bounced — Resend';
+      resendBtn.style.color = '#cc7070';
+      resendBtn.title = 'The invite to '+s.email+' bounced ('+(s.suppression_reason||'rejected')+'). Click to correct the address and resend.';
+    } else if(s.last_invite && s.last_invite.status === 'bounced'){
+      resendBtn.textContent = '⚠ Invite Bounced — Resend';
+      resendBtn.style.color = '#cc7070';
+    } else if(s.last_invite && s.last_invite.status === 'sent'){
+      resendBtn.textContent = '↻ Resend Invite';
+      resendBtn.style.color = '';
+      resendBtn.title = 'Last invite sent '+ (s.last_invite.created_at||'').substring(0,10)+'. Click to reissue with a new password.';
+    } else {
+      resendBtn.textContent = '↻ Resend Invite';
+      resendBtn.style.color = '';
+    }
+  }catch(e){}
+}
+
+async function cgResendInvite(){
+  if(!cgState.current) return;
+  var lead = cgState.current.lead || {};
+  var currentEmail = lead.email || '';
+  var newEmail = prompt(
+    "Resend the portal invite.\n\nCurrent email: " + (currentEmail || '(none)') +
+    "\n\nIf the original bounced (typo / wrong address), enter the corrected email below. Leave blank to resend to the current address.",
+    currentEmail
+  );
+  if(newEmail === null) return;  // cancelled
+  newEmail = newEmail.trim().toLowerCase();
+  var payload = { remove_suppression: true };
+  if(newEmail && newEmail !== currentEmail.toLowerCase()){
+    payload.new_email = newEmail;
+  }
+  var btn = document.getElementById('cg-resend-btn');
+  var origText = btn.textContent;
+  btn.disabled=true; btn.textContent='Sending...';
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/resend-invite',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if(!res.ok){
+      alert('Resend failed: ' + (data.detail || 'Unknown error'));
+      btn.disabled=false; btn.textContent=origText;
+      return;
+    }
+    var msg = 'Portal invite reissued.\n\nEmail: '+data.email+'\nTemp password: '+data.temp_password+'\n\nLogin URL: portal.tplcollective.ai';
+    if(data.email_sent){
+      msg += '\n\n✓ Invite email sent.';
+    } else {
+      msg += '\n\n⚠ Email NOT sent. Reason: '+(data.send_error||'unknown')+'\nShare these credentials manually.';
+    }
+    alert(msg);
+    // Refresh the client + invite status
+    var res2 = await fetch(API+'/api/coaching/clients/'+cgState.current.id);
+    if(res2.ok){
+      cgState.current = await res2.json();
+      cgRenderProfile(cgState.current);
+    }
+    btn.disabled=false;
+  }catch(e){
+    alert('Network error: '+e.message);
+    btn.disabled=false; btn.textContent=origText;
+  }
+}
 
 // ─── Tab switch hook for new tabs ───
 var __cg_origSwitchTab2 = window.cgSwitchTab;

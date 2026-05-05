@@ -1255,6 +1255,131 @@ class ProvisionPortalIn(BaseModel):
     send_email: Optional[bool] = True
 
 
+class ResendInviteIn(BaseModel):
+    new_email: Optional[str] = None     # if set, updates the lead + user records first
+    remove_suppression: Optional[bool] = True
+
+
+@router.post("/clients/{client_id}/resend-invite")
+def resend_invite(client_id: int, payload: ResendInviteIn, request: Request):
+    """Re-issue the portal invite — useful when the original bounced or the agent typed the wrong email.
+    Optionally updates the lead + user email first, removes the address from the suppression list, and
+    regenerates a fresh temp password."""
+    import secrets as _secrets
+    from auth import hash_password as _hp
+
+    cc = _supabase.table("coaching_clients").select("*").eq("id", client_id).single().execute().data
+    if not cc:
+        raise HTTPException(404, "Coaching client not found")
+
+    # Step 1: optional email update
+    new_email = (payload.new_email or "").strip().lower()
+    if new_email:
+        if not is_valid_email(new_email):
+            raise HTTPException(400, "Invalid email address")
+        # Update the lead
+        _supabase.table("leads").update({"email": new_email}).eq("id", cc["lead_id"]).execute()
+        # Update the user if one exists
+        if cc.get("user_id"):
+            _supabase.table("users").update({"email": new_email}).eq("id", cc["user_id"]).execute()
+
+    # Resolve the current email (after any update)
+    lead = _supabase.table("leads").select("*").eq("id", cc["lead_id"]).single().execute().data or {}
+    email = (lead.get("email") or "").strip().lower()
+    if not email or not is_valid_email(email):
+        raise HTTPException(400, "Lead has no valid email — provide new_email")
+    name = lead.get("name") or ((lead.get("first_name") or "") + " " + (lead.get("last_name") or "")).strip()
+
+    # Step 2: remove suppression if requested (so Resend's webhook block doesn't kill the send)
+    if payload.remove_suppression:
+        try:
+            _supabase.table("email_suppressions").delete().eq("email", email).execute()
+        except Exception:
+            pass
+
+    # Step 3: ensure user exists (provisions if missing)
+    user_id = cc.get("user_id")
+    if not user_id:
+        # No user yet — fall back to provision-portal logic. Reuse if email already a user.
+        existing = _supabase.table("users").select("id").eq("email", email).execute().data or []
+        if existing:
+            user_id = existing[0]["id"]
+            _supabase.table("coaching_clients").update({"user_id": user_id}).eq("id", client_id).execute()
+        else:
+            # Create user + workspace fresh (mirrors provision_portal)
+            initials = "".join([p[0] for p in name.split()[:2] if p]).upper() or "AG"
+            ins_user = _supabase.table("users").insert({
+                "email": email, "password_hash": "", "name": name, "role": "agent", "avatar_initials": initials[:2],
+            }).execute()
+            user_id = ins_user.data[0]["id"]
+            ws_ins = _supabase.table("workspaces").insert({
+                "owner_user_id": user_id, "name": name + "'s Workspace", "plan": "basic",
+                "settings": {"coaching_only": True},
+            }).execute()
+            _supabase.table("users").update({"workspace_id": ws_ins.data[0]["id"]}).eq("id", user_id).execute()
+            _supabase.table("coaching_clients").update({"user_id": user_id}).eq("id", client_id).execute()
+
+    # Step 4: regenerate temp password and update the user
+    temp_pwd = _secrets.token_urlsafe(8)
+    _supabase.table("users").update({"password_hash": _hp(temp_pwd)}).eq("id", user_id).execute()
+
+    # Step 5: send invite email
+    sent_ok = False
+    send_error = None
+    try:
+        from main import send_email as _send, load_settings as _load_settings
+        settings = _load_settings()
+        smtp_cfg = settings.get("smtp") or {}
+        html = f"""
+        <div style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px'>
+          <h2 style='color:#6c63ff'>Your TPL Coaching Portal is Ready</h2>
+          <p>Hey {name.split(' ')[0]} —</p>
+          <p>Log in here to view your business plan, log daily activity, track your pipeline, and see prep for our calls.</p>
+          <p style='background:#f5f5fa;border-radius:8px;padding:14px;font-family:monospace;font-size:13px'>
+            <strong>Login:</strong> https://portal.tplcollective.ai<br>
+            <strong>Email:</strong> {email}<br>
+            <strong>Temporary password:</strong> {temp_pwd}
+          </p>
+          <p>Change your password after first login. See you on our next call.</p>
+          <p>— Joe</p>
+        </div>
+        """
+        ok, err = _send(smtp_cfg, email, "Your TPL Coaching Portal is Ready", html, from_address="Joe DeSane <joe@tplcollective.co>", campaign="coaching-invite")
+        sent_ok = ok
+        if not ok: send_error = err
+    except Exception as e:
+        send_error = str(e)
+
+    return {
+        "ok": True,
+        "email": email,
+        "user_id": user_id,
+        "temp_password": temp_pwd,
+        "email_sent": sent_ok,
+        "send_error": send_error,
+    }
+
+
+@router.get("/clients/{client_id}/invite-status")
+def invite_status(client_id: int, request: Request):
+    """Returns the most recent invite-email status for this client's email + suppression status."""
+    cc = _supabase.table("coaching_clients").select("user_id,lead_id").eq("id", client_id).single().execute().data
+    if not cc:
+        raise HTTPException(404, "Coaching client not found")
+    lead = _supabase.table("leads").select("email").eq("id", cc["lead_id"]).single().execute().data or {}
+    email = (lead.get("email") or "").lower()
+    out = {"email": email, "user_provisioned": bool(cc.get("user_id")), "last_invite": None, "is_suppressed": False, "suppression_reason": None}
+    if not email:
+        return out
+    last = _supabase.table("email_send_log").select("status,error,created_at,subject").eq("to_address", email).eq("campaign", "coaching-invite").order("created_at", desc=True).limit(1).execute().data or []
+    if last: out["last_invite"] = last[0]
+    sup = _supabase.table("email_suppressions").select("reason,source").eq("email", email).limit(1).execute().data or []
+    if sup:
+        out["is_suppressed"] = True
+        out["suppression_reason"] = sup[0].get("reason")
+    return out
+
+
 @router.post("/clients/{client_id}/provision-portal")
 def provision_portal(client_id: int, payload: ProvisionPortalIn, request: Request):
     """Create a users row + own workspace for a coaching client so they can log in
