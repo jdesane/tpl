@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Wellington Office Snapshot</title>
+<style>
+  :root {
+    --navy: #1F3864;
+    --navy-light: #2c4f8a;
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --border: #e1e5ed;
+    --text: #1a1a26;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+  }
+  .header {
+    background: var(--navy);
+    color: #fff;
+    border-radius: 12px;
+    padding: 28px 22px;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .header .sub {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+  .intro {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 22px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .intro p { margin: 0 0 8px; }
+  .intro .sig { color: var(--muted); margin-top: 12px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  .section-title {
+    color: var(--navy);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .section-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 18px;
+  }
+  .subhead {
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 22px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .subhead:first-child { margin-top: 0; }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #2a2a3a;
+  }
+  .field .hint {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 16px;
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(31, 56, 100, 0.12);
+  }
+  textarea { min-height: 80px; resize: vertical; }
+  .vendor-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 14px;
+  }
+  .vendor-table th {
+    text-align: left;
+    background: #f0f2f7;
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .vendor-table th:first-child { border-radius: 8px 0 0 0; }
+  .vendor-table th:last-child { border-radius: 0 8px 0 0; }
+  .vendor-table td {
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .vendor-table td.vendor-name {
+    font-weight: 600;
+    font-size: 14px;
+    width: 38%;
+  }
+  .vendor-table td.vendor-cat {
+    color: var(--muted);
+    font-size: 13px;
+    width: 30%;
+  }
+  .vendor-table td.vendor-input {
+    width: 32%;
+  }
+  .vendor-table input[type="text"] {
+    padding: 8px 10px;
+    font-size: 15px;
+  }
+  .vendor-table input.vendor-name-input,
+  .vendor-table input.vendor-cat-input {
+    padding: 8px 10px;
+    font-size: 14px;
+    background: #fafbfd;
+  }
+  .vendor-table tr.custom td {
+    background: #fafbfd;
+  }
+  .total-row {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 2px solid var(--navy);
+  }
+  .total-row label {
+    color: var(--navy);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 13px;
+  }
+  .submit-bar {
+    margin-top: 24px;
+    text-align: center;
+  }
+  .submit-bar button {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 16px 38px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    box-shadow: 0 6px 18px rgba(31, 56, 100, 0.25);
+    transition: background 0.15s, transform 0.1s;
+    width: 100%;
+    max-width: 360px;
+  }
+  .submit-bar button:hover:not(:disabled) {
+    background: var(--navy-light);
+  }
+  .submit-bar button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .submit-bar button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+  .submit-note {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+  .thanks {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 28px;
+    text-align: center;
+  }
+  .thanks .check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-size: 32px;
+    margin-bottom: 18px;
+  }
+  .thanks h2 {
+    color: var(--navy);
+    font-size: 22px;
+    margin: 0 0 10px;
+  }
+  .thanks p {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0;
+    line-height: 1.6;
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 16px 12px 60px; }
+    .header { padding: 22px 18px; }
+    .header h1 { font-size: 20px; }
+    .card, .intro { padding: 18px 16px; }
+    .vendor-table th, .vendor-table td { padding: 8px 6px; font-size: 13px; }
+    .vendor-table td.vendor-name { font-size: 13px; }
+    .vendor-table td.vendor-cat { font-size: 12px; }
+    .vendor-table input[type="text"] { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="form-view">
+    <div class="header">
+      <h1>Wellington Office Snapshot</h1>
+      <div class="sub">A quick monthly snapshot for Joe</div>
+    </div>
+
+    <div class="intro">
+      <p>Lily &mdash; to help me put together a plan that actually helps, I just need a quick snapshot of what's coming in and going out each month.</p>
+      <p>Fill in what you know &mdash; estimates are perfectly fine, just put a ~ before any number that's a guess. If something doesn't apply, write "N/A". Thanks!</p>
+      <p class="sig">&mdash; Joe</p>
+    </div>
+
+    <form id="intake-form" autocomplete="on">
+
+      <!-- SECTION 1: AGENTS -->
+      <div class="card">
+        <h2 class="section-title">1. Agents</h2>
+        <p class="section-sub">Headcount and what comes in from agent fees.</p>
+
+        <div class="field">
+          <label>Current monthly fee per agent</label>
+          <input type="text" name="agents_fee_per_agent" inputmode="text" placeholder="e.g. $99/mo">
+        </div>
+        <div class="field">
+          <label>Total agents on Wellington branch roster</label>
+          <input type="number" name="agents_total_roster" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>How many agents currently pay the monthly fee</label>
+          <input type="number" name="agents_paying" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>How many agents use the office but do NOT pay</label>
+          <input type="number" name="agents_using_not_paying" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>How many LPT agents use the Wellington MLS / address only (not physically in office) and do NOT pay</label>
+          <input type="number" name="agents_mls_only_not_paying" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>Total monthly $ collected from agent fees</label>
+          <input type="text" name="agents_total_collected" inputmode="text" placeholder="e.g. $2,400">
+        </div>
+        <div class="field">
+          <label>Other &mdash; anything we missed</label>
+          <textarea name="agents_other" rows="3"></textarea>
+        </div>
+      </div>
+
+      <!-- SECTION 2: VENDORS -->
+      <div class="card">
+        <h2 class="section-title">2. Vendors &mdash; Monthly $</h2>
+        <p class="section-sub">What each vendor pays the office every month.</p>
+
+        <table class="vendor-table">
+          <thead>
+            <tr>
+              <th>Vendor</th>
+              <th>Category</th>
+              <th>Monthly $</th>
+            </tr>
+          </thead>
+          <tbody id="vendor-tbody">
+            <!-- populated by JS -->
+          </tbody>
+        </table>
+
+        <div class="field total-row">
+          <label>Total monthly vendor revenue</label>
+          <input type="text" name="vendors_total" inputmode="text" placeholder="e.g. $3,500">
+        </div>
+        <div class="field">
+          <label>Other vendors or notes</label>
+          <textarea name="vendors_other" rows="3"></textarea>
+        </div>
+      </div>
+
+      <!-- SECTION 3: EXPENSES -->
+      <div class="card">
+        <h2 class="section-title">3. Monthly Expenses</h2>
+        <p class="section-sub">Everything going out each month.</p>
+
+        <div class="subhead">Rent &amp; Utilities</div>
+        <div class="field"><label>Base rent</label><input type="text" name="exp_rent_base"></div>
+        <div class="field"><label>CAM charges</label><input type="text" name="exp_cam"></div>
+        <div class="field"><label>Electric</label><input type="text" name="exp_electric"></div>
+        <div class="field"><label>Water / sewer</label><input type="text" name="exp_water_sewer"></div>
+        <div class="field"><label>Internet / WiFi</label><input type="text" name="exp_internet"></div>
+
+        <div class="subhead">Office Operations</div>
+        <div class="field"><label>Cleaning service</label><input type="text" name="exp_cleaning"></div>
+        <div class="field"><label>Coffee, snacks, kitchen supplies</label><input type="text" name="exp_kitchen"></div>
+        <div class="field"><label>Paper, toner, printer supplies</label><input type="text" name="exp_printer"></div>
+        <div class="field"><label>Office supplies general</label><input type="text" name="exp_supplies_general"></div>
+
+        <div class="subhead">People</div>
+        <div class="field"><label>Molly's monthly pay total</label><input type="text" name="exp_molly_pay"></div>
+        <div class="field"><label>Molly's hours / schedule</label><input type="text" name="exp_molly_hours"></div>
+        <div class="field"><label>Any other staff or contractor cost</label><input type="text" name="exp_other_staff"></div>
+
+        <div class="subhead">Other</div>
+        <div class="field"><label>Office liability / contents insurance</label><input type="text" name="exp_insurance"></div>
+        <div class="field"><label>Calendly + other software</label><input type="text" name="exp_software"></div>
+        <div class="field"><label>Anything else paid monthly</label><textarea name="exp_other_monthly" rows="3"></textarea></div>
+
+        <div class="field total-row">
+          <label>Total monthly expenses</label>
+          <input type="text" name="exp_total" inputmode="text">
+        </div>
+      </div>
+
+      <!-- SECTION 4: SPACE -->
+      <div class="card">
+        <h2 class="section-title">4. Space</h2>
+        <p class="section-sub">Desks and capacity.</p>
+
+        <div class="field"><label>Total open desks in office</label><input type="number" name="space_total_desks" inputmode="numeric" min="0"></div>
+        <div class="field"><label>Of those, how many are currently rented</label><input type="number" name="space_desks_rented" inputmode="numeric" min="0"></div>
+        <div class="field"><label>Of those, how many are available / unrented</label><input type="number" name="space_desks_available" inputmode="numeric" min="0"></div>
+        <div class="field"><label>Other notes about the space</label><textarea name="space_notes" rows="3"></textarea></div>
+      </div>
+
+      <div class="submit-bar">
+        <button type="submit" id="submit-btn">Send to Joe</button>
+        <div class="submit-note">Your responses go straight to Joe. Nothing is shared.</div>
+        <div id="error-box"></div>
+      </div>
+
+    </form>
+  </div>
+
+  <div id="thanks-view" style="display:none;">
+    <div class="thanks">
+      <div class="check">&check;</div>
+      <h2>Thanks Lily &mdash; Joe has received this</h2>
+      <p>He'll be in touch shortly with a plan. You can close this tab now.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const VENDORS = [
+  { name: 'Bell Land Title', category: 'Title' },
+  { name: 'Kim Nichols', category: 'Title' },
+  { name: 'Leah Bunning', category: 'Lender' },
+  { name: 'Kathy Langley', category: 'Lender' },
+  { name: 'Wilson Enriquez', category: 'Lender' },
+  { name: 'Adam Haas', category: 'AC & Heating' },
+  { name: 'Dahlia Armour', category: 'Catering' },
+  { name: 'Christine Wesley', category: 'Cleaning' },
+  { name: 'David Reidy', category: 'Electrician' },
+  { name: 'Dave Gagleard', category: 'Health Insurance' },
+  { name: 'Rudy Bedford', category: 'Insurance' },
+  { name: 'Joel Donoghue', category: 'Inspection' },
+  { name: 'Leanna Billings', category: 'Inspection' },
+  { name: 'Jonathan Lockhart Jr.', category: 'Media (photo/video)' },
+  { name: 'Robert Simpson', category: 'Media (photo/video)' },
+  { name: 'Joseph Pollio Jr.', category: 'Moving' },
+  { name: 'Robert Gornitz', category: 'Pest Control' },
+  { name: 'Tom Coughlin', category: 'Public Adjusting' }
+];
+
+function renderVendors() {
+  const tbody = document.getElementById('vendor-tbody');
+  let html = '';
+  VENDORS.forEach((v, i) => {
+    const slug = 'v' + i;
+    html += `<tr>
+      <td class="vendor-name">${v.name}</td>
+      <td class="vendor-cat">${v.category}</td>
+      <td class="vendor-input"><input type="text" name="vendor_${slug}_amount" inputmode="text" placeholder="$"></td>
+    </tr>`;
+  });
+  // 3 custom rows
+  for (let i = 0; i < 3; i++) {
+    html += `<tr class="custom">
+      <td><input type="text" class="vendor-name-input" name="custom_vendor_${i}_name" placeholder="Vendor name"></td>
+      <td><input type="text" class="vendor-cat-input" name="custom_vendor_${i}_category" placeholder="Category"></td>
+      <td class="vendor-input"><input type="text" name="custom_vendor_${i}_amount" inputmode="text" placeholder="$"></td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function collectFormData() {
+  const form = document.getElementById('intake-form');
+  const fd = new FormData(form);
+  const data = {};
+  for (const [k, v] of fd.entries()) {
+    data[k] = typeof v === 'string' ? v.trim() : v;
+  }
+  // structure vendor data
+  const vendors = VENDORS.map((v, i) => ({
+    name: v.name,
+    category: v.category,
+    amount: data[`vendor_v${i}_amount`] || ''
+  }));
+  const customVendors = [];
+  for (let i = 0; i < 3; i++) {
+    const name = data[`custom_vendor_${i}_name`] || '';
+    const cat = data[`custom_vendor_${i}_category`] || '';
+    const amt = data[`custom_vendor_${i}_amount`] || '';
+    if (name || cat || amt) {
+      customVendors.push({ name, category: cat, amount: amt });
+    }
+  }
+  return {
+    submitted_at: new Date().toISOString(),
+    submitted_by_name: 'Lily Cho',
+    sections: {
+      agents: {
+        fee_per_agent: data.agents_fee_per_agent || '',
+        total_roster: data.agents_total_roster || '',
+        paying: data.agents_paying || '',
+        using_not_paying: data.agents_using_not_paying || '',
+        mls_only_not_paying: data.agents_mls_only_not_paying || '',
+        total_collected: data.agents_total_collected || '',
+        other: data.agents_other || ''
+      },
+      vendors: {
+        rows: vendors,
+        custom_rows: customVendors,
+        total: data.vendors_total || '',
+        other: data.vendors_other || ''
+      },
+      expenses: {
+        rent_utilities: {
+          base_rent: data.exp_rent_base || '',
+          cam: data.exp_cam || '',
+          electric: data.exp_electric || '',
+          water_sewer: data.exp_water_sewer || '',
+          internet: data.exp_internet || ''
+        },
+        office_operations: {
+          cleaning: data.exp_cleaning || '',
+          kitchen: data.exp_kitchen || '',
+          printer: data.exp_printer || '',
+          supplies_general: data.exp_supplies_general || ''
+        },
+        people: {
+          molly_pay: data.exp_molly_pay || '',
+          molly_hours: data.exp_molly_hours || '',
+          other_staff: data.exp_other_staff || ''
+        },
+        other: {
+          insurance: data.exp_insurance || '',
+          software: data.exp_software || '',
+          other_monthly: data.exp_other_monthly || ''
+        },
+        total: data.exp_total || ''
+      },
+      space: {
+        total_desks: data.space_total_desks || '',
+        rented: data.space_desks_rented || '',
+        available: data.space_desks_available || '',
+        notes: data.space_notes || ''
+      },
+    }
+  };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderVendors();
+
+  const form = document.getElementById('intake-form');
+  const btn = document.getElementById('submit-btn');
+  const errBox = document.getElementById('error-box');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errBox.innerHTML = '';
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    const payload = collectFormData();
+
+    try {
+      const res = await fetch('/api/wellington-intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.success) {
+        throw new Error(body.error || `Submission failed (${res.status})`);
+      }
+      document.getElementById('form-view').style.display = 'none';
+      document.getElementById('thanks-view').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      errBox.innerHTML = `<div class="error">Something went wrong sending this. Please try again, or text Joe directly. (${err.message || 'unknown error'})</div>`;
+      btn.disabled = false;
+      btn.textContent = 'Send to Joe';
+    }
+  });
+});
+</script>
+</body>
+</html>
