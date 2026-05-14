@@ -223,29 +223,70 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' })
 
-  const payload = req.body || {}
+  const body = req.body || {}
+  const session_token = body.session_token || null
+  // Allow either { sections, session_token } or { ...payload, session_token }
+  const payload = body.payload || body
   if (!payload.sections) {
     return res.status(400).json({ success: false, error: 'Missing form data' })
   }
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || null
   const ua = req.headers['user-agent'] || null
+  const now = new Date().toISOString()
 
   try {
-    // Store in Supabase
-    const { data: row, error: dbError } = await supabase
-      .from('wellington_intake_submissions')
-      .insert({
-        submitted_by_name: payload.submitted_by_name || 'Lily Cho',
-        payload,
-        ip_address: ip,
-        user_agent: ua
-      })
-      .select()
-      .single()
+    // Upsert: if a draft row already exists for this session_token, flip it to 'submitted'.
+    // Otherwise insert a fresh submitted row.
+    let row = null
+    let dbError = null
+
+    if (session_token) {
+      const { data: existing } = await supabase
+        .from('wellington_intake_submissions')
+        .select('id, status')
+        .eq('session_token', session_token)
+        .maybeSingle()
+
+      if (existing) {
+        const { data: updated, error } = await supabase
+          .from('wellington_intake_submissions')
+          .update({
+            payload,
+            status: 'submitted',
+            submitted_final_at: now,
+            last_updated_at: now,
+            submitted_by_name: payload.submitted_by_name || 'Lily Cho'
+          })
+          .eq('id', existing.id)
+          .select()
+          .single()
+        row = updated
+        dbError = error
+      }
+    }
+
+    if (!row) {
+      const { data: inserted, error } = await supabase
+        .from('wellington_intake_submissions')
+        .insert({
+          submitted_by_name: payload.submitted_by_name || 'Lily Cho',
+          payload,
+          ip_address: ip,
+          user_agent: ua,
+          session_token,
+          status: 'submitted',
+          submitted_final_at: now,
+          last_updated_at: now
+        })
+        .select()
+        .single()
+      row = inserted
+      dbError = error
+    }
 
     if (dbError) {
-      console.error('Supabase insert error:', dbError)
+      console.error('Supabase insert/update error:', dbError)
       // Don't block on storage error — try email anyway
     }
 

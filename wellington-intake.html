@@ -537,12 +537,83 @@ function collectFormData() {
   };
 }
 
+// --- session token + autosave ---
+function getSessionToken() {
+  // 1) Prefer ?u= from URL (so Joe can send a personalized link)
+  const url = new URL(window.location.href);
+  const u = url.searchParams.get('u');
+  if (u && /^[a-zA-Z0-9_-]{2,64}$/.test(u)) {
+    try { sessionStorage.setItem('wi_token', u); } catch (e) {}
+    return u;
+  }
+  // 2) Reuse a token saved in this tab
+  try {
+    const existing = sessionStorage.getItem('wi_token');
+    if (existing) return existing;
+  } catch (e) {}
+  // 3) Generate a fresh one
+  const token = 'anon-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  try { sessionStorage.setItem('wi_token', token); } catch (e) {}
+  return token;
+}
+
+let keystrokeCount = 0;
+let autosaveTimer = null;
+const SESSION_TOKEN = getSessionToken();
+
+function postAutosave(eventType, payload) {
+  const body = {
+    session_token: SESSION_TOKEN,
+    event: eventType,
+    keystroke_count: keystrokeCount
+  };
+  if (payload) body.payload = payload;
+  // Use sendBeacon-style fetch with keepalive so it survives page navigation
+  try {
+    fetch('/api/wellington-intake-autosave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      keepalive: true
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+function scheduleAutosave() {
+  keystrokeCount++;
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    const payload = collectFormData();
+    postAutosave('input', payload);
+  }, 1500); // 1.5s after the last keystroke
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderVendors();
 
   const form = document.getElementById('intake-form');
   const btn = document.getElementById('submit-btn');
   const errBox = document.getElementById('error-box');
+
+  // Fire "open" event so Joe can see she landed on the page
+  postAutosave('open', null);
+
+  // Wire autosave on any input change
+  form.addEventListener('input', scheduleAutosave);
+  // Also flush on field blur (catches mobile users who paste then immediately switch fields)
+  form.addEventListener('change', () => {
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    const payload = collectFormData();
+    postAutosave('input', payload);
+  });
+  // Final flush attempt if the user leaves the page
+  window.addEventListener('beforeunload', () => {
+    if (autosaveTimer) {
+      clearTimeout(autosaveTimer);
+      const payload = collectFormData();
+      postAutosave('input', payload);
+    }
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -556,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/wellington-intake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ ...payload, session_token: SESSION_TOKEN })
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.success) {
