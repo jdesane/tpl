@@ -496,6 +496,34 @@ Joe needed a way to download each coaching client's onboarding-wizard answers of
 
 **Sends to:** `request.state.user.email` (the logged-in coach). No new env vars, no migrations.
 
+## Phase 15.9 — Async Supabase Layer + Circuit Breaker ✅
+The May 18 incident exposed an architectural fragility: every Supabase call in the app is **synchronous and blocking**, but FastAPI is async. When Supabase's PostgREST/Supavisor pooler temporarily wedged for ~48 minutes, every login hung 15s instead of failing fast or retrying. Single bad Supabase moment → org-wide outage. Built a defensive async layer for the user-facing hot paths without rewriting 380+ sync call sites.
+
+**New infrastructure in `main.py`:**
+- `supabase_async: AsyncClient` — lazy singleton via `acreate_client()`, one per worker, reused across all async requests. Lives alongside the existing sync `supabase` client (which 380+ call sites still use).
+- `get_async_supabase()` — initializes on first use, asyncio.Lock guards double-init.
+- `aexecute(builder, route, max_retries=2)` — async retry wrapper with exponential backoff (200ms → 600ms → 1.8s). Detects transient errors by code (`PGRST003`, `522`, `503`, `504`, Postgres `57P03`, `08006`, `08001`) and message fragments ("connection pool", "timed out acquiring connection", "gateway time-out", etc.). Logs successful recoveries to `activity_log` as `supabase_transient_recovered`.
+- **Circuit breaker** — trips OPEN after 5 transient failures in 30s. While OPEN, `aexecute()` raises `SupabaseUnavailable` immediately instead of stacking timeouts (prevents thundering-herd recovery). After 30s cooldown → HALF_OPEN for a probe. Success → CLOSED. Failure → OPEN again.
+- `_is_transient(exc)` — heuristic distinguishes retry-worthy hiccups from real bugs (permanent errors propagate immediately).
+
+**Migrated endpoints (hot paths):**
+- `POST /api/auth/login` — async + retry + circuit breaker. Failed `Authentication service is recovering` 503 instead of 15s hang when pool is wedged.
+- `GET /api/auth/me` — fires on every page load; same treatment so the UI shell doesn't freeze.
+- `GET /api/health/db` — NEW. Fast Supabase round-trip probe with 3s timeout. Returns `{status, latency_ms, circuit, recent_transients}`. Bypasses the breaker so external monitors (UptimeRobot, etc.) can observe recovery state. Wire this into your status page or alerts.
+
+**Left as sync (intentional):**
+The remaining ~380 call sites in `main.py`, `coaching.py`, `extended_routes.py`, `automations.py`, `sync_meta_leads.py` stay on the sync client. FastAPI runs sync `def` routes in a threadpool, which works fine for non-critical paths. The cron + non-request code (e.g., `sync_meta_leads.py`) doesn't benefit from async at all. We migrate further routes only when a specific endpoint becomes a hot path.
+
+**What this fixes:**
+- Login no longer hangs when Supabase pool is wedged — fails fast with a clear 503 + retry hint, or auto-retries and recovers.
+- /api/auth/me no longer locks the whole UI shell during a hiccup.
+- Circuit breaker stops the cascade where every blocked request piles more pressure on the pooler.
+- /api/health/db gives an external signal we can monitor.
+
+**What this does NOT fix:**
+- Sheer call volume — endpoints that fire 10-20 sync Supabase calls per page load still strain the pooler. Long-term: audit hot endpoints for N+1 patterns, batch reads, cache where safe.
+- Supabase-side pooler bugs themselves — we can't fix their internals, just make our app survive them gracefully.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)

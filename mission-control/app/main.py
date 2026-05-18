@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, Plai
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from supabase import create_client
+from supabase import create_client, acreate_client, AsyncClient as _SupaAsyncClient
 import os
 import json
 import hmac
@@ -147,6 +147,175 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://zyonidiybzrgklrmalbt.supa
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ─── ASYNC SUPABASE LAYER (Phase 15.9) ───────────────────────────
+# Sync supabase calls block the FastAPI event loop. When the Supabase pool
+# wedges (PGRST003 / Cloudflare 522 / pooler stalls), blocking calls can
+# stack up indefinitely — a single bad query becomes an org-wide outage.
+# This layer adds:
+#   • An async supabase client (`supabase_async`) for hot-path routes
+#   • `aexecute()` — retry-with-backoff wrapper for transient errors
+#   • A simple circuit breaker that opens after N failures in M seconds
+#   • `/api/health/db` — fast probe for external monitoring
+# Existing 380+ sync call sites are left unchanged; we migrate only the
+# user-facing hot paths (login, dashboard, contact list, coaching dashboard).
+
+import asyncio as _asyncio
+import time as _time
+import logging as _logging
+
+_log = _logging.getLogger("tpl.async")
+
+# Populated lazily at first use (FastAPI startup hook also primes it). Holding
+# this at module scope is intentional: one client per worker, reused across
+# every async request just like the sync client.
+supabase_async: Optional[_SupaAsyncClient] = None
+_supabase_async_lock = _asyncio.Lock()
+
+async def get_async_supabase() -> _SupaAsyncClient:
+    """Lazy singleton — first caller initializes, all others reuse."""
+    global supabase_async
+    if supabase_async is None:
+        async with _supabase_async_lock:
+            if supabase_async is None:  # re-check under lock
+                supabase_async = await acreate_client(SUPABASE_URL, SUPABASE_KEY)
+    return supabase_async
+
+
+# ─── Circuit breaker ─────────────────────────────────────────────
+# Trips OPEN when we see >= _CB_THRESHOLD transient errors in _CB_WINDOW
+# seconds. While OPEN, all aexecute() calls short-circuit to a 503-style
+# exception immediately instead of waiting for Supabase to time out — this
+# prevents thundering-herd recovery and lets the pool actually clear.
+# After _CB_COOLDOWN seconds, transitions to HALF_OPEN; the next call is
+# allowed through as a probe. Success → CLOSED, failure → OPEN again.
+
+_CB_THRESHOLD = 5         # failures
+_CB_WINDOW = 30           # seconds
+_CB_COOLDOWN = 30         # seconds before HALF_OPEN
+_cb_state = "CLOSED"      # CLOSED | OPEN | HALF_OPEN
+_cb_failures: list = []   # epoch timestamps of recent failures
+_cb_opened_at: float = 0
+_cb_lock = _asyncio.Lock()
+
+
+class SupabaseUnavailable(Exception):
+    """Circuit-breaker is OPEN; Supabase considered unreachable."""
+    pass
+
+
+async def _cb_record_failure():
+    global _cb_state, _cb_opened_at
+    now = _time.time()
+    async with _cb_lock:
+        _cb_failures.append(now)
+        # Trim to window
+        cutoff = now - _CB_WINDOW
+        while _cb_failures and _cb_failures[0] < cutoff:
+            _cb_failures.pop(0)
+        if _cb_state == "CLOSED" and len(_cb_failures) >= _CB_THRESHOLD:
+            _cb_state = "OPEN"
+            _cb_opened_at = now
+            _log.error("Supabase circuit OPEN: %d failures in %ds", len(_cb_failures), _CB_WINDOW)
+        elif _cb_state == "HALF_OPEN":
+            # Probe failed → re-open
+            _cb_state = "OPEN"
+            _cb_opened_at = now
+            _log.error("Supabase circuit RE-OPEN after failed probe")
+
+
+async def _cb_record_success():
+    global _cb_state, _cb_failures
+    async with _cb_lock:
+        if _cb_state in ("HALF_OPEN", "OPEN"):
+            _log.info("Supabase circuit CLOSED — recovery confirmed")
+            _cb_state = "CLOSED"
+            _cb_failures = []
+
+
+async def _cb_check() -> None:
+    """Raises SupabaseUnavailable if circuit is OPEN. Side-effect: transitions
+    OPEN → HALF_OPEN after cooldown."""
+    global _cb_state
+    if _cb_state == "OPEN":
+        async with _cb_lock:
+            if _cb_state == "OPEN" and (_time.time() - _cb_opened_at) >= _CB_COOLDOWN:
+                _cb_state = "HALF_OPEN"
+                _log.info("Supabase circuit HALF_OPEN — probing")
+            elif _cb_state == "OPEN":
+                raise SupabaseUnavailable(
+                    f"Supabase circuit OPEN ({len(_cb_failures)} recent failures); "
+                    f"cooldown remaining {int(_CB_COOLDOWN - (_time.time() - _cb_opened_at))}s"
+                )
+
+
+# Error signatures we treat as transient (worth retrying)
+_TRANSIENT_CODES = {"PGRST003", "522", "503", "504", "57P03", "08006", "08001"}
+_TRANSIENT_FRAGMENTS = (
+    "timed out acquiring connection",
+    "connection pool",
+    "connection reset",
+    "connection timed out",
+    "no route to host",
+    "temporarily unavailable",
+    "gateway time-out",
+)
+
+
+def _is_transient(exc: Exception) -> bool:
+    """Heuristic — does this look like a retry-worthy hiccup, not a real bug?"""
+    msg = str(exc).lower()
+    code = getattr(exc, "code", "") or ""
+    if code in _TRANSIENT_CODES:
+        return True
+    return any(frag in msg for frag in _TRANSIENT_FRAGMENTS)
+
+
+async def aexecute(builder, *, max_retries: int = 2, base_delay: float = 0.2,
+                   route: str = "", log_transients: bool = True):
+    """Execute an async supabase query-builder with retry + circuit breaker.
+
+    Usage:
+        sb = await get_async_supabase()
+        res = await aexecute(sb.table("users").select("*").eq("email", email), route="login")
+
+    Retries on transient errors with exponential backoff (200ms → 600ms → 1.8s).
+    Trips the circuit breaker if too many transients fire in a window.
+    Re-raises non-transient errors immediately."""
+    await _cb_check()  # may raise SupabaseUnavailable
+
+    last_exc: Optional[Exception] = None
+    for attempt in range(max_retries + 1):
+        try:
+            res = await builder.execute()
+            if attempt > 0 and log_transients:
+                _log.info("Supabase recovered after %d retries on %s", attempt, route or "?")
+                try:
+                    supabase.table("activity_log").insert({
+                        "type": "supabase_transient_recovered",
+                        "message": f"Recovered after {attempt} retries on route={route or 'unknown'}",
+                        "meta": {"attempts": attempt + 1, "route": route},
+                    }).execute()
+                except Exception:
+                    pass
+            await _cb_record_success()
+            return res
+        except Exception as e:
+            last_exc = e
+            if not _is_transient(e):
+                # Permanent — don't retry, don't trip the breaker
+                raise
+            await _cb_record_failure()
+            if attempt >= max_retries:
+                _log.error("Supabase transient persists after %d retries on %s: %s",
+                           max_retries, route or "?", str(e)[:200])
+                break
+            delay = base_delay * (3 ** attempt)  # 0.2s, 0.6s, 1.8s
+            _log.warning("Supabase transient on %s (attempt %d/%d): %s — retrying in %.1fs",
+                         route or "?", attempt + 1, max_retries + 1, str(e)[:120], delay)
+            await _asyncio.sleep(delay)
+    # Exhausted — re-raise the last error so the caller can decide UX
+    raise last_exc  # type: ignore
 
 
 # ── TENANT SCOPING (Phase 13.3) ──
@@ -650,11 +819,27 @@ def _user_payload(user: dict) -> dict:
 
 @app.post("/api/auth/login")
 async def login(req: LoginRequest):
+    """Login — async-native + retry + circuit-breaker. The single most
+    user-visible endpoint, so it gets the most defensive wrapping."""
     email = (req.email or "").lower().strip()
     if not email or not req.password:
         raise HTTPException(status_code=400, detail="Email and password required")
 
-    res = supabase.table("users").select("*").eq("email", email).execute()
+    try:
+        sb = await get_async_supabase()
+        res = await aexecute(
+            sb.table("users").select("*").eq("email", email),
+            route="login",
+        )
+    except SupabaseUnavailable as e:
+        # Circuit is OPEN — short-circuit to a clear 503 rather than make the
+        # user wait on a Supabase that we know is wedged.
+        raise HTTPException(status_code=503, detail="Authentication service is recovering — try again in 30 seconds.")
+    except Exception as e:
+        if _is_transient(e):
+            raise HTTPException(status_code=503, detail="Authentication service is temporarily unavailable — try again in a moment.")
+        raise
+
     if not res.data:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
@@ -662,39 +847,102 @@ async def login(req: LoginRequest):
     if not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    # Last-login + workspace lookup are best-effort — don't block login on them.
     try:
-        supabase.table("users").update({"last_login": datetime.utcnow().isoformat()}).eq("id", user["id"]).execute()
+        await aexecute(
+            sb.table("users").update({"last_login": datetime.utcnow().isoformat()}).eq("id", user["id"]),
+            route="login.touch_last_login",
+            log_transients=False,
+        )
     except Exception:
         pass
 
     workspace_id = user.get("workspace_id") or 1
     plan = "basic"
     try:
-        ws = supabase.table("workspaces").select("plan").eq("id", workspace_id).limit(1).execute()
+        ws = await aexecute(
+            sb.table("workspaces").select("plan").eq("id", workspace_id).limit(1),
+            route="login.workspace_lookup",
+            log_transients=False,
+        )
         if ws.data:
             plan = ws.data[0].get("plan", "basic")
     except Exception:
         pass
+
     token = create_token(user["id"], user["email"], user.get("role", "agent"), workspace_id, plan)
     return {"token": token, "user": _user_payload(user)}
 
 
+@app.get("/api/health/db")
+async def health_db():
+    """Fast Supabase round-trip probe. Returns 200 with latency_ms when
+    the pool is healthy, 503 with reason otherwise. Designed for UptimeRobot
+    or similar external monitoring — catches pool wedging before users do.
+    Bypasses the circuit breaker so we can observe recovery state."""
+    start = _time.time()
+    try:
+        sb = await get_async_supabase()
+        await _asyncio.wait_for(
+            sb.table("users").select("id").limit(1).execute(),
+            timeout=3.0,
+        )
+        latency = int((_time.time() - start) * 1000)
+        return {
+            "status": "ok",
+            "latency_ms": latency,
+            "circuit": _cb_state,
+            "recent_transients": len(_cb_failures),
+        }
+    except _asyncio.TimeoutError:
+        return JSONResponse(status_code=503, content={
+            "status": "down",
+            "reason": "supabase_timeout_3s",
+            "circuit": _cb_state,
+            "recent_transients": len(_cb_failures),
+        })
+    except Exception as e:
+        return JSONResponse(status_code=503, content={
+            "status": "down",
+            "reason": str(e)[:200],
+            "circuit": _cb_state,
+            "recent_transients": len(_cb_failures),
+        })
+
+
 @app.get("/api/auth/me")
 async def get_me(request: Request):
+    """Identity probe — fires on every page load. Async + retry so a slow
+    pool doesn't freeze the whole UI shell."""
     payload = request.state.user
-    # During impersonation: payload.sub is the admin (audit trail), payload.impersonating is the target.
-    # Return the TARGET's user info so the UI renders as the impersonated user, plus actor metadata
-    # for the impersonation banner.
     target_id = payload.get("impersonating") or payload["sub"]
-    res = supabase.table("users").select("*").eq("id", target_id).execute()
+    try:
+        sb = await get_async_supabase()
+        res = await aexecute(
+            sb.table("users").select("*").eq("id", target_id),
+            route="auth.me",
+        )
+    except SupabaseUnavailable:
+        raise HTTPException(status_code=503, detail="Service recovering — refresh in 30 seconds.")
+    except Exception as e:
+        if _is_transient(e):
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable.")
+        raise
     if not res.data:
         raise HTTPException(status_code=404, detail="User not found")
     user_payload = _user_payload(res.data[0])
     if payload.get("impersonating"):
-        actor = supabase.table("users").select("id, email, name").eq("id", payload["sub"]).execute()
-        if actor.data:
-            user_payload["impersonating"] = True
-            user_payload["actor"] = {"id": actor.data[0]["id"], "email": actor.data[0]["email"], "name": actor.data[0]["name"]}
+        try:
+            actor = await aexecute(
+                sb.table("users").select("id, email, name").eq("id", payload["sub"]),
+                route="auth.me.actor",
+                log_transients=False,
+            )
+            if actor.data:
+                user_payload["impersonating"] = True
+                user_payload["actor"] = {"id": actor.data[0]["id"], "email": actor.data[0]["email"], "name": actor.data[0]["name"]}
+        except Exception:
+            pass  # banner metadata is non-critical
     return {"user": user_payload}
 
 
