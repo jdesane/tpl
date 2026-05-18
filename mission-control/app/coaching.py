@@ -3428,3 +3428,392 @@ def hybridshare_projection(
 def is_valid_email(value):
     from main import is_valid_email as _ive
     return _ive(value)
+
+
+# ════════════════════════════════════════════════════════════
+# Intake Export — email per-agent PDF + master CSV to the coach
+# Surfaces all data captured by the 6-step onboarding wizard:
+# coaching_clients + lead + business_plans + economic_models +
+# budget_models + activity_goals + recruiting_plans
+# ════════════════════════════════════════════════════════════
+
+def _collect_intake_data(client_id: int) -> dict:
+    """Gather every field the onboarding wizard captures for one coaching client."""
+    cc_resp = _supabase.table("coaching_clients").select("*").eq("id", client_id).execute()
+    if not cc_resp.data:
+        raise HTTPException(404, f"Coaching client {client_id} not found")
+    cc = cc_resp.data[0]
+
+    lead = {}
+    if cc.get("lead_id"):
+        lr = _supabase.table("leads").select("*").eq("id", cc["lead_id"]).execute()
+        if lr.data:
+            lead = lr.data[0]
+
+    plan, economic, budget, act_goals, recruiting = {}, {}, {}, {}, {}
+    plans_resp = _supabase.table("business_plans").select("*").eq("coaching_client_id", client_id).order("year", desc=True).limit(1).execute()
+    if plans_resp.data:
+        plan = plans_resp.data[0]
+        plan_id = plan["id"]
+        for tbl, slot in [
+            ("economic_models", "economic"),
+            ("budget_models", "budget"),
+            ("activity_goals", "act_goals"),
+            ("recruiting_plans", "recruiting"),
+        ]:
+            r = _supabase.table(tbl).select("*").eq("business_plan_id", plan_id).limit(1).execute()
+            if r.data:
+                if slot == "economic": economic = r.data[0]
+                elif slot == "budget": budget = r.data[0]
+                elif slot == "act_goals": act_goals = r.data[0]
+                elif slot == "recruiting": recruiting = r.data[0]
+
+    return {
+        "client": cc,
+        "lead": lead,
+        "plan": plan,
+        "economic": economic,
+        "budget": budget,
+        "activity_goals": act_goals,
+        "recruiting": recruiting,
+    }
+
+
+def _safe_name(s: str) -> str:
+    import re
+    return re.sub(r'[^A-Za-z0-9_-]+', '_', (s or 'agent')).strip('_') or 'agent'
+
+
+def _build_intake_pdf(data: dict) -> bytes:
+    """Branded one-agent intake PDF using reportlab. Dark luxe palette."""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    import io
+
+    INK = colors.HexColor("#1a1a2e")
+    ACCENT = colors.HexColor("#6c63ff")
+    MUTED = colors.HexColor("#6b7280")
+    LIGHT = colors.HexColor("#f5f5fa")
+    BORDER = colors.HexColor("#e5e7eb")
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=letter,
+                            leftMargin=0.55*inch, rightMargin=0.55*inch,
+                            topMargin=0.55*inch, bottomMargin=0.55*inch)
+
+    styles = getSampleStyleSheet()
+    h1 = ParagraphStyle("h1", parent=styles["Heading1"], fontName="Helvetica-Bold", fontSize=22, textColor=INK, spaceAfter=4)
+    h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=13, textColor=ACCENT, spaceBefore=14, spaceAfter=6)
+    body = ParagraphStyle("body", parent=styles["BodyText"], fontName="Helvetica", fontSize=10, textColor=INK, leading=14)
+    sub = ParagraphStyle("sub", parent=styles["BodyText"], fontName="Helvetica", fontSize=9, textColor=MUTED, leading=12)
+
+    lead = data.get("lead") or {}
+    cc = data.get("client") or {}
+    plan = data.get("plan") or {}
+    em = data.get("economic") or {}
+    bm = data.get("budget") or {}
+    ag = data.get("activity_goals") or {}
+    rp = data.get("recruiting") or {}
+
+    name = lead.get("name") or ((lead.get("first_name") or "") + " " + (lead.get("last_name") or "")).strip() or f"Agent {cc.get('id')}"
+
+    def fmt_money(v):
+        if v is None or v == "": return "—"
+        try: return f"${float(v):,.0f}"
+        except: return str(v)
+
+    def fmt_pct(v):
+        if v is None or v == "": return "—"
+        try:
+            f = float(v)
+            return f"{f*100:.1f}%" if f <= 1 else f"{f:.1f}%"
+        except: return str(v)
+
+    def fmt_val(v):
+        return "—" if v is None or v == "" else str(v)
+
+    def section_table(rows):
+        tbl = Table(rows, colWidths=[2.1*inch, 4.7*inch])
+        tbl.setStyle(TableStyle([
+            ("FONT", (0,0), (-1,-1), "Helvetica", 9.5),
+            ("TEXTCOLOR", (0,0), (0,-1), MUTED),
+            ("TEXTCOLOR", (1,0), (1,-1), INK),
+            ("ALIGN", (0,0), (0,-1), "LEFT"),
+            ("VALIGN", (0,0), (-1,-1), "TOP"),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+            ("TOPPADDING", (0,0), (-1,-1), 5),
+            ("LINEBELOW", (0,0), (-1,-2), 0.4, BORDER),
+        ]))
+        return tbl
+
+    story = []
+
+    # Header band
+    header = Table([[Paragraph(f"<b>Coaching Intake</b>", h1),
+                     Paragraph(f"<font color='#6b7280'>TPL Collective<br/>{datetime.utcnow().strftime('%B %d, %Y')}</font>", sub)]],
+                   colWidths=[4.6*inch, 2.2*inch])
+    header.setStyle(TableStyle([("ALIGN", (1,0), (1,0), "RIGHT"), ("VALIGN", (0,0), (-1,-1), "TOP")]))
+    story.append(header)
+    story.append(Paragraph(f"<b>{name}</b>", ParagraphStyle("nm", parent=body, fontSize=16, textColor=ACCENT, spaceBefore=2, spaceAfter=2)))
+    story.append(Paragraph(f"{lead.get('email') or ''} &nbsp;&middot;&nbsp; {lead.get('phone') or ''}", sub))
+
+    # Section: Identity & Vision
+    story.append(Paragraph("Identity & Vision", h2))
+    story.append(section_table([
+        ["Brokerage", fmt_val(cc.get("brokerage"))],
+        ["LPT comp plan", fmt_val(cc.get("lpt_comp_plan"))],
+        ["Market", f"{cc.get('market_city') or ''}, {cc.get('market_state') or ''}".strip(", ")],
+        ["License date", fmt_val(cc.get("license_date"))],
+        ["Solo or team", fmt_val(cc.get("team_or_individual"))],
+        ["Team name", fmt_val(cc.get("team_name"))],
+        ["Big why", Paragraph(fmt_val(cc.get("big_why")), body)],
+    ]))
+
+    # Section: Income Goal + Deal Economics
+    story.append(Paragraph("Income Goal & Deal Economics", h2))
+    story.append(section_table([
+        ["GCI target (annual)", fmt_money(plan.get("gci_target"))],
+        ["% listing income", fmt_pct(em.get("pct_listing_income"))],
+        ["Avg sale price — listing", fmt_money(em.get("avg_sale_price_listing"))],
+        ["Avg sale price — buyer", fmt_money(em.get("avg_sale_price_buyer"))],
+        ["Commission % — listing", fmt_pct(em.get("commission_rate_listing"))],
+        ["Commission % — buyer", fmt_pct(em.get("commission_rate_buyer"))],
+        ["Avg net commission per close", fmt_money(em.get("avg_net_commission"))],
+        ["Listing appt → contract", fmt_pct(em.get("listing_appt_to_contract"))],
+        ["Listings taken → sold", fmt_pct(em.get("listings_taken_to_sold"))],
+        ["Buyer consult → contract", fmt_pct(em.get("buyer_consult_to_contract"))],
+        ["Buyers under contract → closed", fmt_pct(em.get("buyer_contract_to_close"))],
+    ]))
+
+    # Section: Money Plan
+    story.append(Paragraph("Money Plan", h2))
+    story.append(section_table([
+        ["Tax %", fmt_pct(bm.get("tax_pct"))],
+        ["Charity %", fmt_pct(bm.get("charity_pct"))],
+        ["Retirement %", fmt_pct(bm.get("retirement_pct"))],
+        ["Brokerage cap (split)", fmt_money(bm.get("split_cap"))],
+        ["Royalty %", fmt_pct(bm.get("royalty_pct"))],
+        ["Royalty cap", fmt_money(bm.get("royalty_cap"))],
+        ["Personal monthly expenses", fmt_money(bm.get("personal_monthly_total"))],
+        ["Operating monthly expenses", fmt_money(bm.get("operating_monthly_total"))],
+    ]))
+
+    # Section: Activity Goals
+    story.append(Paragraph("Activity Goals", h2))
+    story.append(section_table([
+        ["Hours / day (lead gen)", fmt_val(ag.get("hours_per_day"))],
+        ["Dials / day", fmt_val(ag.get("dials_per_day"))],
+        ["Contacts / day", fmt_val(ag.get("contacts_per_day"))],
+        ["Nurtures / day", fmt_val(ag.get("nurtures_per_day"))],
+        ["Listing appts set / week", fmt_val(ag.get("listing_appts_set_per_week"))],
+        ["Listing appts held / week", fmt_val(ag.get("listing_appts_held_per_week"))],
+        ["Buyer appts set / week", fmt_val(ag.get("buyer_appts_set_per_week"))],
+        ["Buyer appts held / week", fmt_val(ag.get("buyer_appts_held_per_week"))],
+        ["Showings / week", fmt_val(ag.get("showings_per_week"))],
+        ["Open houses / month", fmt_val(ag.get("open_houses_per_month"))],
+        ["Listings signed / month (goal)", fmt_val(ag.get("listings_signed_per_month"))],
+        ["Buyers signed / month (goal)", fmt_val(ag.get("buyers_signed_per_month"))],
+    ]))
+
+    # Section: Recruiting (LPT only)
+    if rp:
+        story.append(Paragraph("Recruiting (HybridShare)", h2))
+        story.append(section_table([
+            ["Annual recruit goal", fmt_val(rp.get("annual_recruit_goal"))],
+            ["Conversation : signup ratio", fmt_val(rp.get("conversation_ratio"))],
+            ["% Brokerage Partner", fmt_pct(rp.get("pct_bp"))],
+            ["Cap-hit rate (assumption)", fmt_pct(rp.get("cap_hit_rate"))],
+        ]))
+
+    # Footer note
+    story.append(Spacer(1, 0.25*inch))
+    story.append(Paragraph(
+        f"Captured from the coaching onboarding wizard. Coaching client #{cc.get('id')}. "
+        f"Status: {cc.get('status') or 'ACTIVE'}. Generated for the coach's records.",
+        sub
+    ))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
+# Stable column order for the master CSV
+_INTAKE_CSV_COLS = [
+    ("client_id",                  lambda d: (d["client"] or {}).get("id")),
+    ("name",                       lambda d: (d["lead"] or {}).get("name")),
+    ("email",                      lambda d: (d["lead"] or {}).get("email")),
+    ("phone",                      lambda d: (d["lead"] or {}).get("phone")),
+    ("brokerage",                  lambda d: (d["client"] or {}).get("brokerage")),
+    ("lpt_comp_plan",              lambda d: (d["client"] or {}).get("lpt_comp_plan")),
+    ("market_city",                lambda d: (d["client"] or {}).get("market_city")),
+    ("market_state",               lambda d: (d["client"] or {}).get("market_state")),
+    ("license_date",               lambda d: (d["client"] or {}).get("license_date")),
+    ("team_or_individual",         lambda d: (d["client"] or {}).get("team_or_individual")),
+    ("team_name",                  lambda d: (d["client"] or {}).get("team_name")),
+    ("big_why",                    lambda d: (d["client"] or {}).get("big_why")),
+    ("gci_target",                 lambda d: (d["plan"] or {}).get("gci_target")),
+    ("pct_listing_income",         lambda d: (d["economic"] or {}).get("pct_listing_income")),
+    ("avg_sale_price_listing",     lambda d: (d["economic"] or {}).get("avg_sale_price_listing")),
+    ("avg_sale_price_buyer",       lambda d: (d["economic"] or {}).get("avg_sale_price_buyer")),
+    ("commission_rate_listing",    lambda d: (d["economic"] or {}).get("commission_rate_listing")),
+    ("commission_rate_buyer",      lambda d: (d["economic"] or {}).get("commission_rate_buyer")),
+    ("avg_net_commission",         lambda d: (d["economic"] or {}).get("avg_net_commission")),
+    ("listing_appt_to_contract",   lambda d: (d["economic"] or {}).get("listing_appt_to_contract")),
+    ("listings_taken_to_sold",     lambda d: (d["economic"] or {}).get("listings_taken_to_sold")),
+    ("buyer_consult_to_contract",  lambda d: (d["economic"] or {}).get("buyer_consult_to_contract")),
+    ("buyer_contract_to_close",    lambda d: (d["economic"] or {}).get("buyer_contract_to_close")),
+    ("tax_pct",                    lambda d: (d["budget"] or {}).get("tax_pct")),
+    ("charity_pct",                lambda d: (d["budget"] or {}).get("charity_pct")),
+    ("retirement_pct",             lambda d: (d["budget"] or {}).get("retirement_pct")),
+    ("split_cap",                  lambda d: (d["budget"] or {}).get("split_cap")),
+    ("royalty_pct",                lambda d: (d["budget"] or {}).get("royalty_pct")),
+    ("royalty_cap",                lambda d: (d["budget"] or {}).get("royalty_cap")),
+    ("personal_monthly_total",     lambda d: (d["budget"] or {}).get("personal_monthly_total")),
+    ("operating_monthly_total",    lambda d: (d["budget"] or {}).get("operating_monthly_total")),
+    ("hours_per_day",              lambda d: (d["activity_goals"] or {}).get("hours_per_day")),
+    ("dials_per_day",              lambda d: (d["activity_goals"] or {}).get("dials_per_day")),
+    ("contacts_per_day",           lambda d: (d["activity_goals"] or {}).get("contacts_per_day")),
+    ("nurtures_per_day",           lambda d: (d["activity_goals"] or {}).get("nurtures_per_day")),
+    ("listing_appts_set_per_week", lambda d: (d["activity_goals"] or {}).get("listing_appts_set_per_week")),
+    ("listing_appts_held_per_week",lambda d: (d["activity_goals"] or {}).get("listing_appts_held_per_week")),
+    ("buyer_appts_set_per_week",   lambda d: (d["activity_goals"] or {}).get("buyer_appts_set_per_week")),
+    ("buyer_appts_held_per_week",  lambda d: (d["activity_goals"] or {}).get("buyer_appts_held_per_week")),
+    ("showings_per_week",          lambda d: (d["activity_goals"] or {}).get("showings_per_week")),
+    ("open_houses_per_month",      lambda d: (d["activity_goals"] or {}).get("open_houses_per_month")),
+    ("listings_signed_per_month",  lambda d: (d["activity_goals"] or {}).get("listings_signed_per_month")),
+    ("buyers_signed_per_month",    lambda d: (d["activity_goals"] or {}).get("buyers_signed_per_month")),
+    ("recruit_annual_goal",        lambda d: (d["recruiting"] or {}).get("annual_recruit_goal")),
+    ("recruit_conversation_ratio", lambda d: (d["recruiting"] or {}).get("conversation_ratio")),
+    ("recruit_pct_bp",             lambda d: (d["recruiting"] or {}).get("pct_bp")),
+    ("recruit_cap_hit_rate",       lambda d: (d["recruiting"] or {}).get("cap_hit_rate")),
+    ("status",                     lambda d: (d["client"] or {}).get("status")),
+    ("call_cadence",               lambda d: (d["client"] or {}).get("call_cadence")),
+    ("coaching_start_date",        lambda d: (d["client"] or {}).get("coaching_start_date")),
+]
+
+
+def _build_intake_csv(intakes: list) -> bytes:
+    """Master CSV — one row per agent, stable column order."""
+    import csv, io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow([c[0] for c in _INTAKE_CSV_COLS])
+    for d in intakes:
+        w.writerow([("" if (fn(d) is None) else fn(d)) for _, fn in _INTAKE_CSV_COLS])
+    return buf.getvalue().encode("utf-8")
+
+
+def _email_intakes(user_email: str, intakes: list, subject: str, body_html: str, file_stem: str) -> tuple[bool, str]:
+    """Build attachments + send via main.send_email. Returns (ok, err)."""
+    import base64, io, zipfile
+    from main import send_email as _send, load_settings as _load_settings
+
+    settings = _load_settings()
+    smtp_cfg = settings.get("smtp", {})
+
+    csv_bytes = _build_intake_csv(intakes)
+
+    if len(intakes) == 1:
+        d = intakes[0]
+        pdf = _build_intake_pdf(d)
+        nm = _safe_name((d.get("lead") or {}).get("name") or f"client_{(d.get('client') or {}).get('id')}")
+        attachments = [
+            {"filename": f"intake_{nm}.pdf", "content": base64.b64encode(pdf).decode()},
+            {"filename": f"intake_{nm}.csv", "content": base64.b64encode(csv_bytes).decode()},
+        ]
+    else:
+        # Zip per-agent PDFs
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for d in intakes:
+                nm = _safe_name((d.get("lead") or {}).get("name") or f"client_{(d.get('client') or {}).get('id')}")
+                zf.writestr(f"intake_{nm}.pdf", _build_intake_pdf(d))
+        attachments = [
+            {"filename": f"{file_stem}.zip", "content": base64.b64encode(zip_buf.getvalue()).decode()},
+            {"filename": f"{file_stem}.csv", "content": base64.b64encode(csv_bytes).decode()},
+        ]
+
+    return _send(
+        smtp_cfg, user_email, subject, body_html,
+        from_address="TPL Collective <joe@tplcollective.co>",
+        campaign="coaching-intake-export",
+        attachments=attachments,
+    )
+
+
+@router.post("/clients/{client_id}/email-intake")
+def email_intake_single(client_id: int, request: Request):
+    """Email the coach a PDF + CSV of one coaching client's intake."""
+    user = getattr(request.state, "user", None) or {}
+    user_email = (user.get("email") or "").strip()
+    if not user_email:
+        raise HTTPException(401, "Authentication required")
+
+    data = _collect_intake_data(client_id)
+    name = (data.get("lead") or {}).get("name") or f"Coaching Client {client_id}"
+    subject = f"Coaching Intake — {name}"
+    body = f"""
+    <div style='font-family:Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;color:#1a1a2e'>
+      <h2 style='color:#6c63ff;margin:0 0 10px'>Coaching Intake Export</h2>
+      <p style='font-size:14px;line-height:1.5;color:#1a1a2e'>
+        Attached is the intake form data for <b>{name}</b>, captured from the
+        portal onboarding wizard.
+      </p>
+      <ul style='font-size:13px;line-height:1.7;color:#1a1a2e'>
+        <li><b>PDF</b> — branded one-page summary for the coaching call.</li>
+        <li><b>CSV</b> — flat data row for spreadsheets / record-keeping.</li>
+      </ul>
+      <p style='font-size:12px;color:#6b7280'>Generated by Mission Control on {datetime.utcnow().strftime('%B %d, %Y')}.</p>
+    </div>
+    """
+    ok, err = _email_intakes(user_email, [data], subject, body, _safe_name(name))
+    if not ok:
+        raise HTTPException(500, f"Email send failed: {err}")
+    return {"sent_to": user_email, "client_id": client_id, "name": name}
+
+
+@router.post("/email-all-intakes")
+def email_intake_all(request: Request):
+    """Email the coach a ZIP of per-agent PDFs + master CSV for every coaching client in the workspace."""
+    user = getattr(request.state, "user", None) or {}
+    user_email = (user.get("email") or "").strip()
+    if not user_email:
+        raise HTTPException(401, "Authentication required")
+
+    _ws(request)  # enforce auth
+    rows = _db("coaching_clients").select("*").execute().data or []
+    if not rows:
+        raise HTTPException(404, "No coaching clients found to export.")
+
+    intakes = []
+    for r in rows:
+        try:
+            intakes.append(_collect_intake_data(r["id"]))
+        except Exception:
+            pass  # skip broken rows rather than fail the whole export
+
+    if not intakes:
+        raise HTTPException(500, "No intake data could be assembled.")
+
+    today = date.today().isoformat()
+    subject = f"Coaching Intakes — {len(intakes)} agents — {today}"
+    body = f"""
+    <div style='font-family:Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;color:#1a1a2e'>
+      <h2 style='color:#6c63ff;margin:0 0 10px'>All Coaching Intakes — {today}</h2>
+      <p style='font-size:14px;line-height:1.5;color:#1a1a2e'>
+        Attached: intake exports for <b>{len(intakes)} coaching clients</b>.
+      </p>
+      <ul style='font-size:13px;line-height:1.7;color:#1a1a2e'>
+        <li><b>ZIP</b> — one branded PDF per agent.</li>
+        <li><b>CSV</b> — every agent in one sheet (one row per agent).</li>
+      </ul>
+      <p style='font-size:12px;color:#6b7280'>Generated by Mission Control on {datetime.utcnow().strftime('%B %d, %Y')}.</p>
+    </div>
+    """
+    ok, err = _email_intakes(user_email, intakes, subject, body, f"coaching_intakes_{today}")
+    if not ok:
+        raise HTTPException(500, f"Email send failed: {err}")
+    return {"sent_to": user_email, "agent_count": len(intakes)}

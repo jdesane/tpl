@@ -478,6 +478,24 @@ Adds `openpyxl 3.1.5` to requirements. `_parse_cte_workbook()` detects CTE 2019 
 **Phase 15 / 15.5 / 15.6 — coaching platform feature-complete**
 Coach detail tab bar now: Plan / GPS (1-3-5) / 4-1-1 / Calls / Pipeline / Activity / HybridShare / Perfect Week / Database / Financials / Reviews. Agent portal nav: Today / My Plan / Pipeline / Database / Perfect Week / Calls & Commitments. Client header has Portal Access + Import .xlsx + Status dropdown.
 
+## Phase 15.8 — Coaching Intake Export (PDF + CSV via email) ✅
+Joe needed a way to download each coaching client's onboarding-wizard answers off the system for record-keeping and coaching-call prep. Built per-agent + bulk export that emails attachments straight to the logged-in coach's address (uses the existing send_email() rail, no new infrastructure).
+
+**Backend (`coaching.py`):**
+- `_collect_intake_data(client_id)` — gathers coaching_clients + lead + business_plans + economic_models + budget_models + activity_goals + recruiting_plans into one dict; uses `.get()` everywhere so missing columns degrade gracefully to "—" in output
+- `_build_intake_pdf(data)` — reportlab one-page branded PDF, dark luxe palette (`#1a1a2e` ink, `#6c63ff` accent), 5 sections: Identity & Vision, Income Goal & Deal Economics, Money Plan, Activity Goals, Recruiting (LPT only)
+- `_build_intake_csv(intakes)` — stable 48-column schema, one row per agent
+- `_email_intakes()` — single-agent case attaches `intake_<name>.pdf` + `intake_<name>.csv`; bulk case zips per-agent PDFs into `coaching_intakes_<date>.zip` + master `coaching_intakes_<date>.csv`. Routes through `main.send_email()` so suppression / rate-limit / open-tracking / logging rails all apply
+- `POST /api/coaching/clients/{id}/email-intake` — per-agent export
+- `POST /api/coaching/email-all-intakes` — workspace-wide bulk export (skips broken rows individually rather than failing whole batch)
+
+**Frontend (`static/index.html`):**
+- "📧 Email Intake" button on client detail header (next to Import .xlsx / Portal Access)
+- "📧 Email All Intakes" button on coaching list view header (next to + Invite Client)
+- Both confirm before sending, disable while in-flight, show `sent_to` + agent count on success
+
+**Sends to:** `request.state.user.email` (the logged-in coach). No new env vars, no migrations.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)

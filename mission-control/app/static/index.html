@@ -795,7 +795,10 @@ th[onclick]:hover{color:var(--accent)}
         <div class="panel-title" style="font-size:24px;margin-bottom:6px">Coaching</div>
         <div style="color:var(--muted);font-size:13px">Real-estate agents you actively coach. Plans, pace, calls, accountability.</div>
       </div>
-      <button type="button" class="btn btn-primary" onclick="cgOpenInviteModal()">+ Invite Client</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="cgEmailAllIntakes()" id="cg-email-all-btn" title="Email a ZIP of per-agent PDFs + master CSV of all coaching intakes to your logged-in email">📧 Email All Intakes</button>
+        <button type="button" class="btn btn-primary" onclick="cgOpenInviteModal()">+ Invite Client</button>
+      </div>
     </div>
 
     <!-- Toggle: Dashboard | Clients -->
@@ -863,6 +866,7 @@ th[onclick]:hover{color:var(--accent)}
         <div style="color:var(--muted);font-size:12px;margin-top:2px" id="cg-detail-meta">&mdash;</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="cgOpenImportModal()" title="Import an existing CTE / MREA spreadsheet for this client">Import .xlsx</button>
+      <button class="btn btn-ghost btn-sm" onclick="cgEmailIntake()" id="cg-email-intake-btn" title="Email a PDF + CSV of this agent's onboarding intake to your logged-in email">📧 Email Intake</button>
       <button class="btn btn-ghost btn-sm" onclick="cgResendInvite()" id="cg-resend-btn" title="Re-issue the portal invite (also lets you correct the email if the original bounced)" style="display:none">↻ Resend Invite</button>
       <button class="btn btn-ghost btn-sm" onclick="cgProvisionPortal()" title="Create a portal login for this client" id="cg-provision-btn">Portal Access</button>
       <select id="cg-detail-status" class="form-input" style="width:auto" onchange="cgUpdateStatus()">
@@ -5471,6 +5475,35 @@ async function cgLoadDashboard(){
 }
 
 // ─── Provision Portal ───
+async function cgEmailIntake(){
+  if(!cgState.current){ return; }
+  var btn = document.getElementById('cg-email-intake-btn');
+  var origLabel = btn.textContent;
+  if(!confirm('Email PDF + CSV of '+(cgState.current.name||'this agent')+'\'s intake to your logged-in account?')) return;
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try{
+    var res = await fetch(API+'/api/coaching/clients/'+cgState.current.id+'/email-intake', {method:'POST'});
+    var data = await res.json();
+    if(!res.ok){ alert('Failed: '+(data.detail||'Unknown error')); return; }
+    alert('Sent to '+data.sent_to+' — check your inbox for "'+data.name+'" intake (PDF + CSV).');
+  }catch(e){ alert('Network error.'); }
+  finally{ btn.disabled = false; btn.textContent = origLabel; }
+}
+
+async function cgEmailAllIntakes(){
+  if(!confirm('Email ZIP of all coaching client PDFs + master CSV to your logged-in account?\n\nMay take a few seconds for large lists.')) return;
+  var btn = document.getElementById('cg-email-all-btn');
+  var origLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Generating...';
+  try{
+    var res = await fetch(API+'/api/coaching/email-all-intakes', {method:'POST'});
+    var data = await res.json();
+    if(!res.ok){ alert('Failed: '+(data.detail||'Unknown error')); return; }
+    alert('Sent to '+data.sent_to+' — '+data.agent_count+' agents exported. Check your inbox.');
+  }catch(e){ alert('Network error.'); }
+  finally{ btn.disabled = false; btn.textContent = origLabel; }
+}
+
 async function cgProvisionPortal(){
   if(!cgState.current) return;
   if(cgState.current.user_id){
