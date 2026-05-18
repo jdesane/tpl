@@ -47,6 +47,7 @@ app.add_middleware(
 
 PUBLIC_API_EXACT = {
     "/health",
+    "/api/health/db",  # Phase 15.9: Supabase round-trip probe for external monitors
     "/api/auth/login",
     "/api/auth/signup",
     "/api/email/unsubscribe",
