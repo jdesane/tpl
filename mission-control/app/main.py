@@ -399,12 +399,28 @@ COACHING_TENANT_TABLES = frozenset({
 TENANT_TABLES = TENANT_TABLES | COACHING_TENANT_TABLES
 
 
+# ── PHASE 16: PROSPECT ENGAGEMENT TABLES ──
+PROSPECT_ENGAGEMENT_TENANT_TABLES = frozenset({
+    "prospect_briefs", "prospect_engagement_events",
+})
+TENANT_TABLES = TENANT_TABLES | PROSPECT_ENGAGEMENT_TENANT_TABLES
+
+
 # ── PHASE 15: COACHING ROUTER ──
 # coaching.py needs db() + supabase but can't import them at module load (circular import).
 # We pass them in via setup() after both are defined.
 import coaching as _coaching_mod  # noqa: E402
 _coaching_mod.setup(db, supabase)
 app.include_router(_coaching_mod.router)
+
+
+# ── PHASE 16: PROSPECT ENGAGEMENT ROUTER ──
+# Public ingest mounts under /api/tracking/* (already whitelisted).
+# Read/admin endpoints mount under /api/prospect-engagement/* (JWT-gated).
+import prospect_engagement as _prospect_engagement_mod  # noqa: E402
+_prospect_engagement_mod.setup(db, supabase)
+app.include_router(_prospect_engagement_mod.ingest_router)
+app.include_router(_prospect_engagement_mod.router)
 
 
 # ── PLAN TIERS & PLATFORM GATING (Phase 13.4) ──

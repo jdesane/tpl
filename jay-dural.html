@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>JD Real Estate 757, powered by LPT Realty · For Jay Dural</title>
+<meta name="description" content="A private brief prepared for Jay Dural by Joe DeSane.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ── Reset / Base ── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+html, body {
+  background: #0a0a0f;
+  color: #e8e8f0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img { max-width: 100%; display: block; }
+
+/* ── Layout ── */
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+section { padding: 64px 0; border-bottom: 1px solid #1a1a26; }
+section:last-of-type { border-bottom: none; }
+
+/* ── Typography ── */
+h1, h2, h3, .display { font-family: 'Bebas Neue', Impact, sans-serif; font-weight: 400; letter-spacing: 0.02em; line-height: 1.05; }
+h1 { font-size: clamp(48px, 9vw, 96px); line-height: 0.92; letter-spacing: 0.01em; }
+h2 { font-size: clamp(32px, 5vw, 48px); margin-bottom: 16px; }
+h2 em { color: #6c63ff; font-style: normal; }
+h3 { font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #e8e8f0; margin-bottom: 8px; letter-spacing: 0; }
+p { font-size: 16px; color: #c8c8d8; margin-bottom: 14px; }
+p.small { font-size: 13px; color: #8888aa; }
+strong { color: #e8e8f0; font-weight: 600; }
+.label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #6c63ff;
+  display: inline-block;
+  margin-bottom: 14px;
+}
+.label.gold { color: #f0c040; }
+.label.green { color: #34d399; }
+
+/* ── Nav (sticky top, mobile-friendly) ── */
+nav.topnav {
+  position: sticky;
+  top: 0;
+  background: rgba(10, 10, 15, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #1a1a26;
+  z-index: 100;
+  padding: 14px 24px;
+}
+.topnav-inner {
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.topnav-brand {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8888aa;
+}
+.topnav-brand strong { color: #e8e8f0; font-weight: 600; }
+.topnav-cta {
+  background: #6c63ff;
+  color: white;
+  text-decoration: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.15s;
+}
+.topnav-cta:hover { background: #8b85ff; }
+
+/* ── Hero ── */
+.hero {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(108,99,255,0.22), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(240,192,64,0.12), transparent 50%),
+    #0a0a0f;
+  padding: 80px 0 64px;
+  border-bottom: 1px solid #1a1a26;
+}
+.hero .eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #8888aa;
+  margin-bottom: 24px;
+}
+.hero .eyebrow span { color: #f0c040; }
+.hero h1 { color: #e8e8f0; margin-bottom: 28px; }
+.hero h1 em { color: #6c63ff; font-style: normal; display: block; }
+.hero .sub {
+  font-size: 18px;
+  color: #c8c8d8;
+  max-width: 580px;
+  margin-bottom: 36px;
+}
+.hero .sub strong { color: #e8e8f0; }
+.hero .meta {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  padding-top: 28px;
+  border-top: 1px solid #2a2a3d;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8888aa;
+}
+.hero .meta strong { color: #e8e8f0; font-weight: 600; display: block; font-size: 11px; margin-bottom: 2px; }
+
+/* ── Cards & grids ── */
+.card {
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border: 1px solid #2a2a3d;
+  border-radius: 12px;
+  padding: 24px;
+}
+.card.featured { border-color: #6c63ff; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (min-width: 720px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 680px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Stats ── */
+.stat-val {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 44px;
+  color: #6c63ff;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+.stat-val.gold { color: #f0c040; }
+.stat-val.green { color: #34d399; }
+.stat-val.white { color: #e8e8f0; }
+.stat-label { font-size: 13px; color: #8888aa; line-height: 1.4; }
+
+/* ── Plan cards ── */
+.plan-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #6c63ff;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.plan-tag.gold { color: #f0c040; }
+.plan-name {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 36px;
+  letter-spacing: 0.02em;
+  color: #e8e8f0;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.plan-headline { font-size: 15px; color: #c8c8d8; margin-bottom: 18px; font-weight: 500; }
+.plan-headline strong { color: #34d399; }
+.plan-bullets { list-style: none; padding: 0; margin: 0; }
+.plan-bullets li {
+  font-size: 14px;
+  color: #c8c8d8;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a1a26;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.plan-bullets li:last-child { border-bottom: none; }
+.plan-bullets li .chk { color: #34d399; font-weight: 700; flex-shrink: 0; }
+.plan-bullets li .x { color: #8888aa; flex-shrink: 0; }
+
+/* ── Math rows ── */
+.math-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #1a1a26;
+  font-size: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.math-row.total {
+  border-top: 1px solid #2a2a3d;
+  border-bottom: none;
+  padding-top: 14px;
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.math-row .l { color: #c8c8d8; }
+.math-row .v { color: #e8e8f0; font-family: 'DM Mono', monospace; }
+.math-row .v.green { color: #34d399; }
+.math-row .v.gold { color: #f0c040; font-size: 20px; }
+
+/* ── Highlight callouts ── */
+.highlight {
+  background: linear-gradient(145deg, rgba(108,99,255,0.12), rgba(108,99,255,0.04));
+  border: 1px solid #6c63ff;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-top: 20px;
+}
+.highlight.gold {
+  background: linear-gradient(145deg, rgba(240,192,64,0.12), rgba(240,192,64,0.04));
+  border-color: #f0c040;
+}
+.highlight.green {
+  background: linear-gradient(145deg, rgba(52,211,153,0.10), rgba(52,211,153,0.04));
+  border-color: #34d399;
+}
+.highlight h3 { font-size: 15px; }
+.highlight h3.purple { color: #6c63ff; }
+.highlight h3.gold-t { color: #f0c040; }
+.highlight h3.green-t { color: #34d399; }
+.highlight p:last-child { margin-bottom: 0; }
+
+/* ── Producer rows ── */
+.producer-list { padding: 6px 0; }
+.producer-row {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #1a1a26;
+  align-items: center;
+}
+.producer-row:last-child { border-bottom: none; }
+.producer-rank { font-family: 'DM Mono', monospace; font-size: 12px; color: #6c63ff; }
+.producer-name { font-size: 14px; color: #e8e8f0; font-weight: 500; }
+.producer-city { font-size: 12px; color: #8888aa; margin-top: 2px; }
+.producer-stats { text-align: right; font-family: 'DM Mono', monospace; }
+.producer-stats .vol { color: #f0c040; font-size: 13px; font-weight: 600; }
+.producer-stats .sides { color: #8888aa; font-size: 11px; margin-top: 2px; }
+
+/* ── Pull quote ── */
+.pull {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.18;
+  color: #e8e8f0;
+  letter-spacing: 0.015em;
+  padding: 16px 0 16px 24px;
+  border-left: 4px solid #6c63ff;
+  margin: 24px 0 8px;
+}
+.pull em { color: #6c63ff; font-style: normal; }
+.pull-attr {
+  font-size: 13px;
+  color: #8888aa;
+  margin-left: 28px;
+}
+
+/* ── Steps ── */
+.step {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid #1a1a26;
+}
+.step:last-child { border-bottom: none; }
+.step-num {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 36px;
+  color: #6c63ff;
+  line-height: 1;
+}
+
+/* ── Letter ── */
+.letter p { font-size: 17px; color: #c8c8d8; line-height: 1.7; margin-bottom: 16px; }
+.letter .sig {
+  margin-top: 28px;
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 28px;
+  color: #e8e8f0;
+  letter-spacing: 0.02em;
+}
+.letter .sig-line { font-size: 13px; color: #8888aa; margin-top: 4px; }
+
+/* ── CTAs ── */
+.cta-grid { display: grid; gap: 14px; margin: 28px 0; }
+.cta {
+  background: linear-gradient(145deg, #13132a, #0f0f1f);
+  border: 1px solid #2a2a3d;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 20px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.cta:hover { border-color: #6c63ff; transform: translateY(-1px); }
+.cta-letter {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 44px;
+  color: #6c63ff;
+  line-height: 1;
+}
+.cta h3 { font-size: 17px; margin-bottom: 4px; }
+.cta p { font-size: 14px; color: #c8c8d8; margin: 0; }
+
+/* ── Contact block ── */
+.contact-block {
+  background: linear-gradient(145deg, rgba(108,99,255,0.10), rgba(240,192,64,0.04));
+  border: 1px solid #2a2a3d;
+  border-radius: 12px;
+  padding: 32px;
+  margin-top: 24px;
+  text-align: center;
+}
+.contact-title {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: clamp(28px, 4vw, 40px);
+  color: #e8e8f0;
+  line-height: 1;
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.contact-title em { color: #6c63ff; font-style: normal; }
+.contact-line {
+  font-family: 'DM Mono', monospace;
+  font-size: 16px;
+  color: #f0c040;
+  margin-top: 16px;
+  letter-spacing: 0.04em;
+}
+.contact-line a { color: inherit; text-decoration: none; }
+.contact-line.sm { color: #6c63ff; font-size: 13px; margin-top: 4px; word-break: break-all; }
+
+/* ── Section heading ── */
+.s-head { margin-bottom: 28px; }
+.s-head .label { margin-bottom: 8px; }
+
+/* ── Inline check list ── */
+.checks { list-style: none; padding: 0; margin: 12px 0; }
+.checks li { padding: 8px 0; font-size: 15px; color: #c8c8d8; display: flex; gap: 12px; align-items: flex-start; }
+.checks li .chk { color: #34d399; font-weight: 700; flex-shrink: 0; }
+.checks li strong { color: #e8e8f0; }
+
+/* ── Reveal on scroll ── */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.55s ease, transform 0.55s ease; }
+.reveal.in { opacity: 1; transform: translateY(0); }
+
+/* ── Lonnie highlight bigger ── */
+.lonnie-card {
+  background: linear-gradient(145deg, rgba(240,192,64,0.14), rgba(240,192,64,0.04));
+  border: 1px solid #f0c040;
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+.lonnie-tag { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: #f0c040; text-transform: uppercase; margin-bottom: 10px; }
+.lonnie-name { font-family: 'Bebas Neue', Impact, sans-serif; font-size: clamp(22px, 3.4vw, 32px); color: #e8e8f0; letter-spacing: 0.02em; line-height: 1.05; margin-bottom: 18px; }
+.lonnie-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.lonnie-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: clamp(28px, 4.4vw, 42px); color: #f0c040; line-height: 1; }
+.lonnie-stat-val.white { color: #e8e8f0; }
+.lonnie-stat-label { font-size: 11px; color: #8888aa; margin-top: 4px; }
+@media (max-width: 540px) {
+  .lonnie-stats { grid-template-columns: 1fr; }
+  .lonnie-stats > div { display: flex; align-items: baseline; gap: 12px; }
+  .lonnie-stats .lonnie-stat-label { margin-top: 0; }
+}
+
+/* ── Footer ── */
+footer.foot { padding: 40px 0 60px; background: #08080d; border-top: 1px solid #1a1a26; }
+.foot-inner { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #8888aa; }
+.foot-inner strong { color: #e8e8f0; }
+</style>
+</head>
+<body>
+
+<!-- ════════ NAV ════════ -->
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">For <strong>Jay Dural</strong> · JD Real Estate 757</div>
+    <a href="#next-move" class="topnav-cta" data-cta="nav_book">Book the Call</a>
+  </div>
+</nav>
+
+<!-- ════════ HERO ════════ -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">A Private Brief from <span>Joe DeSane</span></div>
+    <h1>Everything<br><em>you asked for,</em><br>brother.</h1>
+    <p class="sub"><strong>JD Real Estate 757,</strong> powered by LPT Realty. The economics, the tech, the equity, the producers, and the proof. Read it on your time. Ask me anything.</p>
+    <div class="meta">
+      <div><strong>Prepared By</strong>Joe DeSane · LPT Realty · Palm Beach County</div>
+      <div><strong>Prepared For</strong>Jay Dural · VA Lic #0225245291</div>
+    </div>
+  </div>
+</header>
+
+<!-- ════════ LETTER ════════ -->
+<section id="letter" class="letter">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">01 · Letter</span>
+      <h2>Before You Read<br><em>Anything Else.</em></h2>
+    </div>
+    <p>Jay,</p>
+    <p>December 22, 2022. You messaged me after watching some of my LPT YouTube videos. We jumped on a call, talked about your business, your family, what you were building. You told me you almost joined eXp and didn't. I told you the truth that day, I am not a recruiter, you would never hear from me about LPT unless you brought it up first.</p>
+    <p>Three and a half years later, you brought it up.</p>
+    <p>You closed over $70M and 200+ deals in five years. Coastal Virginia named you a Best of 2025 nominee. You built a brand (JD Real Estate 757), partnered with your wife, started a luxury van service named after your three kids, and pulled off the kind of year most agents are chasing. The respect you have earned is real.</p>
+    <p>Here is what I read in your last two messages. You are watching the LPT agents around you in VA and you are not sure if they are real producers or just downline farmers. That is a fair concern. I would be asking the same thing.</p>
+    <p>So I built you this. Everything you asked for. The economics, the technology, what is included, what the equity looks like, and most importantly, who the actual producers are inside LPT. Read it on your time. Pull it apart. Then call me, text me, FaceTime me. Whatever works.</p>
+    <p>One promise. Same as it was in 2022. I am not chasing you. If after all of this the answer is "not yet," that is still a good answer. We are still friends. The next move stays yours.</p>
+    <div class="sig">Joe DeSane</div>
+    <div class="sig-line">(561) 800-4049 · joe@tplcollective.ai</div>
+  </div>
+</section>
+
+<!-- ════════ WHAT LPT IS ════════ -->
+<section id="what-lpt-is">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">02 · The Brokerage</span>
+      <h2>What LPT Realty<br><em>Actually Is.</em></h2>
+    </div>
+    <p>LPT Realty is a cloud-based real estate brokerage built around a simple idea: keep the brokerage lean, give the agent everything, and stop charging for things that should be included. No franchise fee. No desk fee. No "tech fee" stacked on top. One flat structure, the same for everyone.</p>
+
+    <div class="grid-4" style="margin: 28px 0;">
+      <div class="card reveal"><div class="stat-val">21,055</div><div class="stat-label">Active agents nationwide<br>RealTrends 2025</div></div>
+      <div class="card reveal"><div class="stat-val gold">$23.6B</div><div class="stat-label">Volume submitted in 2024<br>Up 502% in two years</div></div>
+      <div class="card reveal"><div class="stat-val green">#2</div><div class="stat-label">Deloitte Fast 500<br>North America, 2025</div></div>
+      <div class="card reveal"><div class="stat-val white">61,041</div><div class="stat-label">Transaction sides<br>Up 462% since 2023</div></div>
+    </div>
+
+    <h3 style="margin-top: 24px; font-size: 18px;">The four pillars LPT was built on</h3>
+    <ul class="checks">
+      <li><span class="chk">✓</span><span><strong>Agent Choice.</strong> Pick your comp plan, pick your CRM, pick your e-sign. Switch once a year if you want.</span></li>
+      <li><span class="chk">✓</span><span><strong>Agent Equity.</strong> Production-based stock awards. Parent company has reserved the LPTA ticker on Nasdaq.</span></li>
+      <li><span class="chk">✓</span><span><strong>Agent Wealth.</strong> Flat-fee economics that scale with you, not against you. Cap once, then keep 100%.</span></li>
+      <li><span class="chk">✓</span><span><strong>Agent Tools.</strong> Lofty CRM, Dezzy AI, Dotloop, brokerage-funded listing marketing kit, all included.</span></li>
+    </ul>
+
+    <div class="highlight reveal">
+      <h3 class="purple">The version most agents miss</h3>
+      <p>LPT is not a discount brokerage. The fees go down, the tools go up. You pay less and you get more. That is the trade most brokerages can't (or won't) make because their cost structure was built in 2005.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ COMP PLANS ════════ -->
+<section id="comp-plans">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">03 · The Economics</span>
+      <h2>Two Comp Plans.<br><em>Both Built To Win.</em></h2>
+    </div>
+    <p>Same brokerage. Same support. Same tools. Only the comp math changes. Switch once per anniversary year if you want.</p>
+
+    <div class="grid-2" style="margin-top: 24px;">
+      <div class="card reveal">
+        <div class="plan-tag gold">Plan 01 · Volume Path</div>
+        <div class="plan-name">Business Builder</div>
+        <div class="plan-headline"><strong>100% of GCI.</strong> LPT keeps a flat $500/closing, capped.</div>
+        <ul class="plan-bullets">
+          <li><span class="chk">✓</span> $500 flat fee per core transaction</li>
+          <li><span class="chk">✓</span> Capped at $5,000/year (10 deals)</li>
+          <li><span class="chk">✓</span> $195 processing fee per closing</li>
+          <li><span class="chk">✓</span> $500 annual fee (deducted first closing)</li>
+          <li><span class="chk">✓</span> Full LPT tools, Dotloop, Lofty</li>
+          <li><span class="chk">✓</span> Recruit a downline (earn stock awards)</li>
+          <li><span class="chk">✓</span> Join a team</li>
+          <li><span class="x">✕</span> Lead a team (requires Brokerage Partner)</li>
+          <li><span class="x">✕</span> HybridShare income (requires Brokerage Partner)</li>
+          <li><span class="chk">✓</span> Stock awards at 0.5x multiplier</li>
+        </ul>
+      </div>
+
+      <div class="card featured reveal">
+        <div class="plan-tag">Plan 02 · Team / Wealth Path</div>
+        <div class="plan-name">Brokerage Partner</div>
+        <div class="plan-headline"><strong>80/20 split.</strong> Capped, then 100% for the rest of the year.</div>
+        <ul class="plan-bullets">
+          <li><span class="chk">✓</span> 80% to you, 20% to LPT per closing</li>
+          <li><span class="chk">✓</span> Capped at $15,000/year</li>
+          <li><span class="chk">✓</span> $195 processing fee per closing</li>
+          <li><span class="chk">✓</span> $500 annual fee</li>
+          <li><span class="chk">✓</span> Full LPT tools, Dotloop, Lofty</li>
+          <li><span class="chk">✓</span> Recruit a downline</li>
+          <li><span class="chk">✓</span> Join OR lead a team</li>
+          <li><span class="chk">✓</span> HybridShare unlocked (7-tier revenue share)</li>
+          <li><span class="chk">✓</span> Stock awards at 1.0x multiplier</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight gold reveal">
+      <h3 class="gold-t">For an agent doing your numbers</h3>
+      <p>Business Builder is almost certainly the better starting point. You hit the $5K cap in your first 10 closings and run the rest of the year at effectively 100%, minus $195 per closing and the $500 annual fee. The math is on the next section.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ YOUR MATH ════════ -->
+<section id="your-math">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label gold">04 · The Math, Your Math</span>
+      <h2>What Your Business Looks<br><em>Like At LPT.</em></h2>
+    </div>
+    <p>Pulling from your Zillow profile and public production data: roughly <strong>40 closings, $20M in volume, ~$500K average price</strong>. Here is what that looks like inside LPT on Business Builder.</p>
+
+    <div class="card reveal" style="margin-top: 24px;">
+      <h3 style="color: #f0c040; font-size: 17px;">Annual Cost of Doing Business at LPT</h3>
+      <div class="math-row"><span class="l">$500 per closing, capped</span><span class="v">$5,000</span></div>
+      <div class="math-row"><span class="l">$195 processing fee × 40 closings</span><span class="v">$7,800</span></div>
+      <div class="math-row"><span class="l">$500 annual brokerage fee</span><span class="v">$500</span></div>
+      <div class="math-row"><span class="l">Desk fee</span><span class="v green">$0</span></div>
+      <div class="math-row"><span class="l">Franchise fee</span><span class="v green">$0</span></div>
+      <div class="math-row"><span class="l">Tech / CRM / e-sign / E&amp;O</span><span class="v green">$0, included</span></div>
+      <div class="math-row total"><span class="l">Total Annual Cost (all-in)</span><span class="v gold">$13,300</span></div>
+    </div>
+
+    <div class="card reveal" style="margin-top: 18px;">
+      <h3 style="font-size: 17px;">What That Means In Real Terms</h3>
+      <p style="font-size: 15px; margin-bottom: 6px;">At a ~2.5% buy-side commission on $20M, you generate roughly <strong>$500K in GCI</strong>. Your $13,300 cost to LPT works out to an effective rate of <strong style="color:#34d399;">~2.7%</strong> to the brokerage.</p>
+      <p class="small" style="margin-bottom: 0;">Approximation. Your real number depends on buy/sell mix, average commission, team splits, and your actual production. We will model it exactly on our call.</p>
+    </div>
+
+    <div class="highlight green reveal">
+      <p><strong style="color:#34d399;">The kicker.</strong> Once you hit the $5K cap (typically by month 4 or 5 for you), every closing for the rest of the year only costs you $195. That is it. Not 30%. Not 20%. $195.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ WHAT'S INCLUDED ════════ -->
+<section id="included">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">05 · The Stack</span>
+      <h2>What's Included<br><em>(Day One).</em></h2>
+    </div>
+    <p>Most brokerages charge for the tools. LPT bundles them. Here is what shows up the day your license transfers.</p>
+
+    <div class="grid-3" style="margin-top: 24px;">
+      <div class="card reveal"><h3 style="color: #6c63ff;">Lofty CRM</h3><p style="font-size:14px;margin-bottom:0;">Full enterprise CRM with IDX website, AI assistant, lead routing, smart drip plans, and marketing automation. Industry alternative to Follow Up Boss / kvCore. Free.</p></div>
+      <div class="card reveal"><h3 style="color: #6c63ff;">Dotloop</h3><p style="font-size:14px;margin-bottom:0;">Transaction management and e-sign. The industry standard for offers, contracts, and broker compliance. Included for every agent, every deal.</p></div>
+      <div class="card reveal"><h3 style="color: #6c63ff;">Dezzy.ai</h3><p style="font-size:14px;margin-bottom:0;">LPT's proprietary AI tool. Listing graphics, social posts, flyers, "just listed" content created in seconds. Exclusive to LPT agents.</p></div>
+    </div>
+
+    <div class="grid-3" style="margin-top: 16px;">
+      <div class="card reveal"><h3 style="color: #f0c040;">Listing Power Pack</h3><p style="font-size:14px;margin-bottom:0;"><strong>188 pieces per listing.</strong> Business cards (45), small flyers (28), large flyers (24), door hangers (42), postcards (16), thank you cards (12), neighborhood reports (20), sign rider. Brokerage funds, you pay shipping.</p></div>
+      <div class="card reveal"><h3 style="color: #f0c040;">E&amp;O Coverage</h3><p style="font-size:14px;margin-bottom:0;">Errors and omissions insurance is bundled. No separate per-deal E&amp;O charge. No annual E&amp;O renewal nickel-and-diming.</p></div>
+      <div class="card reveal"><h3 style="color: #f0c040;">Agent Portal</h3><p style="font-size:14px;margin-bottom:0;">Single login. Training library, prompt libraries, transaction docs, marketing assets, HybridShare tracker, and your dashboard. Everything lives in one place.</p></div>
+    </div>
+
+    <div class="highlight reveal">
+      <h3 class="purple">For JD Real Estate 757 specifically</h3>
+      <p>Your brand stays yours. The JD Real Estate 757 logo, the 757 identity, the husband-and-wife marketing, the MCJ luxury van side business, none of it changes.</p>
+      <p style="margin-bottom: 0;">Your business cards and signage become <strong>"JD Real Estate 757, powered by LPT Realty."</strong> Same brand. Different brokerage label underneath.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ EQUITY ════════ -->
+<section id="equity">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label gold">06 · The Equity Story</span>
+      <h2>Stock In The Brokerage<br><em>That Owns You.</em></h2>
+    </div>
+    <p>Most agents will spend 20+ years building their brokerage's brand and walk away with nothing but a final commission check. LPT was built different. Production earns ownership.</p>
+
+    <div class="card reveal" style="margin-top: 20px;">
+      <h3 style="color: #f0c040;">How LPT Equity Works</h3>
+      <p style="font-size: 15px;">Every year, LPT awards Restricted Stock Units (RSUs) based on your annual core transaction count. The awards <strong>stack</strong>: hit the Silver tier and you also get White. Hit Gold and you get White + Silver + Gold. Hit Black, you get all four. Each award vests over 3 years.</p>
+      <p style="font-size: 15px; margin-bottom: 0;">LPT Realty's parent company, Aperture Holdings, has reserved the ticker <strong style="color:#f0c040; font-family:'DM Mono',monospace;">LPTA</strong> on Nasdaq. Liquidity depends on a future IPO, acquisition, or internal buyback. Not currently publicly traded.</p>
+    </div>
+
+    <div class="pull reveal">
+      Twenty years from now, your franchise<br>
+      will not send you a thank-you check.<br>
+      <em>LPT might send you shares.</em>
+    </div>
+
+    <p>I am not making promises about future stock price or IPO timing. Nobody can. What I can tell you is that you either are or are not building equity in your brokerage. At LPT, you are. Everywhere else you have been, you weren't. That is the difference.</p>
+  </div>
+</section>
+
+<!-- ════════ PROOF (Real Trends) ════════ -->
+<section id="proof">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label green">07 · The Proof</span>
+      <h2>Real Producers.<br><em>Real Teams. Real Trends.</em></h2>
+    </div>
+    <p>You said it yourself: "I don't hear much of the LPT agents here... or some I know, but I guess they're the ones who are just focused on recruiting." Fair question. Here is the answer.</p>
+    <p><strong>99 LPT-branded teams</strong> made the RealTrends 2025 rankings (the industry standard, verified production data). Not 99 recruiters. 99 production teams with real closings on real transactions. Selected highlights:</p>
+
+    <div class="card reveal producer-list" style="margin-top: 20px; padding: 8px 0;">
+      <div class="producer-row"><div class="producer-rank">01</div><div><div class="producer-name">Big Block LPT Realty</div><div class="producer-city">San Diego, CA</div></div><div class="producer-stats"><div class="vol">$1.94B</div><div class="sides">2,322 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">02</div><div><div class="producer-name">SPACE LPT Realty</div><div class="producer-city">Chandler, AZ</div></div><div class="producer-stats"><div class="vol">$452M</div><div class="sides">1,123 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">03</div><div><div class="producer-name">Vybe Realty Group LPT Realty</div><div class="producer-city">Towson, MD</div></div><div class="producer-stats"><div class="vol">$437M</div><div class="sides">1,133 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">04</div><div><div class="producer-name">Agentcor LPT Realty</div><div class="producer-city">Bakersfield, CA</div></div><div class="producer-stats"><div class="vol">$381M</div><div class="sides">1,015 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">05</div><div><div class="producer-name">Jeff Cook Real Estate LPT Realty</div><div class="producer-city">Ladson, SC</div></div><div class="producer-stats"><div class="vol">$292M</div><div class="sides">705 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">06</div><div><div class="producer-name">Paramount Home Group LPT Realty</div><div class="producer-city">Tampa, FL</div></div><div class="producer-stats"><div class="vol">$260M</div><div class="sides">645 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">07</div><div><div class="producer-name">Jay Day &amp; The Day Home Team LPT Realty</div><div class="producer-city">Frederick, MD</div></div><div class="producer-stats"><div class="vol">$264M</div><div class="sides">477 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">08</div><div><div class="producer-name">Best Sac Homes Group LPT Realty</div><div class="producer-city">Sacramento, CA</div></div><div class="producer-stats"><div class="vol">$264M</div><div class="sides">494 sides</div></div></div>
+    </div>
+
+    <p class="small" style="margin-top: 14px;">Source: RealTrends 2025 (T3 Sixty), team rankings by closed sides. The list continues 91 teams deep.</p>
+
+    <div class="highlight gold reveal">
+      <p style="margin-bottom: 0;"><strong style="color:#f0c040;">Read that again.</strong> Big Block alone did almost $2B in volume at LPT. These are not recruiters. They are the top-producing teams in America, and they picked LPT.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ VA PICTURE (KILL SHOT) ════════ -->
+<section id="va-picture">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label green">08 · The VA Picture</span>
+      <h2>The LPT Producers<br><em>In Your Backyard.</em></h2>
+    </div>
+    <p>This was the question that mattered most to you, so it gets its own section. Here are the LPT teams operating inside Virginia, ranked by production. Not theory, RealTrends 2025 verified.</p>
+
+    <div class="lonnie-card reveal">
+      <div class="lonnie-tag">Your Exact Market</div>
+      <div class="lonnie-name">Lonnie Bush Real Estate · LPT Realty</div>
+      <div class="lonnie-stats">
+        <div><div class="lonnie-stat-val">$98.23M</div><div class="lonnie-stat-label">Volume, last 12 mo</div></div>
+        <div><div class="lonnie-stat-val">286</div><div class="lonnie-stat-label">Closed sides</div></div>
+        <div><div class="lonnie-stat-val white">VA BEACH</div><div class="lonnie-stat-label">Same market as you</div></div>
+      </div>
+      <p style="font-size: 15px; margin-bottom: 0;">Lonnie individually also ranks <strong>#1 in the RealTrends Individual Agent Top 500</strong> with 338 sales in the last 12 months and 3,747 career sales. The biggest single-agent production engine at LPT lives in Virginia Beach. Same MLS as you. Same buyers. Same Navy housing market.</p>
+    </div>
+
+    <h3 style="font-size: 17px; margin: 24px 0 8px;">Other LPT teams in VA</h3>
+    <div class="card producer-list" style="padding: 8px 0;">
+      <div class="producer-row"><div class="producer-rank">VA</div><div><div class="producer-name">Jacobs &amp; Co · LPT Realty</div><div class="producer-city">Nokesville, VA (Northern VA)</div></div><div class="producer-stats"><div class="vol">$94.42M</div><div class="sides">146 sides</div></div></div>
+      <div class="producer-row"><div class="producer-rank">VA</div><div><div class="producer-name">Amanda Downs · LPT Realty</div><div class="producer-city">Luray, VA</div></div><div class="producer-stats"><div class="vol">$19.79M</div><div class="sides">57 sides</div></div></div>
+    </div>
+
+    <div class="highlight reveal">
+      <h3 class="purple">The honest version</h3>
+      <p style="font-size:15px;">Are there LPT agents in VA who are mostly focused on recruiting? Yes, the same way that is true at eXp, KW, RE/MAX, and every other shop with a revenue share component. Recruiters exist everywhere.</p>
+      <p style="font-size:15px; margin-bottom:0;">But the real production lives at the top of the ranking. <strong>$98M, 286 closings in Virginia Beach. Same market. Same brokerage you are looking at.</strong> The question is not "are there real producers." It is "are you going to be one of them."</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ YOUR BRAND ════════ -->
+<section id="brand">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">09 · Your Brand</span>
+      <h2>JD Real Estate 757<br><em>Stays JD Real Estate 757.</em></h2>
+    </div>
+    <p>You spent five years building a team brand that means something in the 757. Coastal Virginia named you a Best of 2025 nominee. Your Zillow profile, your reviews, your reputation, all of it is yours. None of that is on the table.</p>
+
+    <div class="grid-2" style="margin-top: 22px;">
+      <div class="card reveal">
+        <h3 style="color: #6c63ff; font-size: 17px; margin-bottom: 12px;">What changes when you move</h3>
+        <ul class="checks" style="margin: 0;">
+          <li><span class="chk">✓</span><span>Your business card adds one line: "powered by LPT Realty"</span></li>
+          <li><span class="chk">✓</span><span>Your sign riders pick up the LPT mark in a corner</span></li>
+          <li><span class="chk">✓</span><span>Your DBA stays "JD Real Estate 757" on file with the state</span></li>
+          <li><span class="chk">✓</span><span>Your team brand, logo, website, and social handles stay yours</span></li>
+          <li><span class="chk">✓</span><span>Your Zillow profile, reviews, and rankings transfer with you</span></li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <h3 style="color: #6c63ff; font-size: 17px; margin-bottom: 12px;">What does NOT change</h3>
+        <ul class="checks" style="margin: 0;">
+          <li><span class="chk">✓</span><span>The way your clients see your brand</span></li>
+          <li><span class="chk">✓</span><span>The way your past clients refer you</span></li>
+          <li><span class="chk">✓</span><span>Your relationships with title companies, photographers, vendors</span></li>
+          <li><span class="chk">✓</span><span>Your husband-and-wife marketing story</span></li>
+          <li><span class="chk">✓</span><span>Your side ventures (MCJ luxury van service, etc.)</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pull reveal">
+      "In real estate, YOU are the brand.<br>
+      <em>LPT is just the period at the end of YOUR brand."</em>
+    </div>
+    <div class="pull-attr">Robert Palmer, Founder &amp; CEO, LPT Realty</div>
+  </div>
+</section>
+
+<!-- ════════ THE MOVE ════════ -->
+<section id="the-move">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">10 · The Move</span>
+      <h2>How The Switch<br><em>Actually Works.</em></h2>
+    </div>
+    <p>Roughly two weeks, end to end.</p>
+
+    <div class="card reveal" style="margin-top: 22px;">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div>
+          <h3>Strategy Call</h3>
+          <p style="font-size:14px; margin-bottom:0;">You and I get on Zoom. We run your real numbers, side-by-side, with your current brokerage's actual fee structure (you tell me, I won't guess). Roughly 30 minutes. No pitch deck.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div>
+          <h3>License Transfer Application</h3>
+          <p style="font-size:14px; margin-bottom:0;">Roughly 10 minutes online. You complete LPT's application using your link, upload your VA license, sign the ICA. State board change happens behind the scenes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div>
+          <h3>License Activates</h3>
+          <p style="font-size:14px; margin-bottom:0;">Once the state approves the transfer (typically 24-72 hours), you are live at LPT. Active deals: we coordinate with United Atlantic so your in-flight transactions close clean.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div>
+          <h3>Tools Go Live</h3>
+          <p style="font-size:14px; margin-bottom:0;">Lofty CRM, Dotloop, Dezzy.ai, agent portal, marketing kit. All provisioned within the first week. Joe is your direct line by text, phone, or Zoom for anything that comes up.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight reveal">
+      <h3 class="purple">On HybridShare (LPT's revenue share)</h3>
+      <p style="font-size:15px;">I am intentionally not making this brief about revenue share. You said it yourself, some LPT agents are "just focused on recruiting" and I do not want to be one of them with you.</p>
+      <p style="font-size:15px;">What I will tell you is this. LPT's official policy is called <strong>"Real Estate First."</strong> It is not a slogan, it is structural. Agents cannot earn HybridShare income for their first 90 days at the brokerage. HybridShare earnings apply to your annual cap before they hit your pocket. And the Policies and Procedures explicitly prohibit agents from offering "anything of value" to be named as a sponsor. The brokerage built guardrails against the exact thing you are worried about.</p>
+      <p style="font-size:15px; margin-bottom:0;">If you join, get settled, run your business, and at some point you want to learn how the 7-tier HybridShare model works for agents who want to build passive income on top of production, ask me. The production has to come first.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ NEXT MOVE ════════ -->
+<section id="next-move">
+  <div class="wrap">
+    <div class="s-head">
+      <span class="label">11 · Next Move</span>
+      <h2>That's Everything.<br><em>Your Move, Brother.</em></h2>
+    </div>
+    <p>You wanted everything. You have it. Three ways this goes from here:</p>
+
+    <div class="cta-grid">
+      <a href="https://calendly.com/discovertpl" target="_blank" rel="noopener" class="cta reveal" data-cta="book_call">
+        <div class="cta-letter">A</div>
+        <div>
+          <h3>Book the call</h3>
+          <p>Zoom, 30 minutes. We model your numbers against United Atlantic's actual fee structure. You walk away knowing the exact dollar gap. Honest answer either way.</p>
+        </div>
+      </a>
+      <a href="sms:+15618004049" class="cta reveal" data-cta="send_questions">
+        <div class="cta-letter">B</div>
+        <div>
+          <h3>Send me your questions</h3>
+          <p>Read this through, write down everything you want clarified, text or email me. I will get you written answers before any call happens.</p>
+        </div>
+      </a>
+      <a href="#" class="cta reveal" data-cta="not_now" onclick="event.preventDefault(); alert('Got it, brother. Door is open whenever it makes sense. -Joe');">
+        <div class="cta-letter">C</div>
+        <div>
+          <h3>Not now</h3>
+          <p>Totally fair. The timing has to be right. I park this, we keep talking the way we have for three years, and the door is open whenever.</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="contact-block reveal">
+      <div class="contact-title">When You're Ready,<br><em>You Know Where I Am.</em></div>
+      <p style="color:#c8c8d8;">Direct line. No gatekeeper. No recruiter team in between.</p>
+      <div class="contact-line"><a href="tel:+15618004049" data-cta="phone_tap">JOE DESANE · (561) 800-4049</a></div>
+      <div class="contact-line sm"><a href="mailto:joe@tplcollective.ai" data-cta="email_tap">joe@tplcollective.ai</a></div>
+      <div class="contact-line sm" style="color:#f0c040;"><a href="https://jdesane.lpt.com" target="_blank" rel="noopener" data-cta="join_link">JOIN LINK · jdesane.lpt.com</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ FOOTER ════════ -->
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <strong>JD Real Estate 757</strong> · powered by LPT Realty · A private brief for Jay Dural by Joe DeSane
+  </div>
+</footer>
+
+<!-- ════════ TRACKING ════════ -->
+<script>
+(function() {
+  // ──────────────────────────────────────────────────────────
+  // CONFIG (edit the endpoint URL after deploying the backend)
+  // ──────────────────────────────────────────────────────────
+  const CONFIG = {
+    PROSPECT_ID: 'jay-dural',
+    ENDPOINT: 'https://mission.tplcollective.ai/api/tracking/prospect-engagement',
+    HEARTBEAT_INTERVAL_MS: 15000,
+    GA4_ID: 'G-X6WMCMBJ9R'   // already on tplcollective.ai
+  };
+
+  // ── Visitor identity (persistent) ──
+  function getOrCreate(key, factory) {
+    try {
+      let v = localStorage.getItem(key);
+      if (!v) { v = factory(); localStorage.setItem(key, v); }
+      return v;
+    } catch(e) { return factory(); }
+  }
+  function uid(p) { return p + '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+  const VISITOR_ID = getOrCreate('tpl_vid', () => uid('v'));
+
+  // ── Visit count (per prospect, per visitor) ──
+  const VISIT_KEY = 'tpl_visits_' + CONFIG.PROSPECT_ID;
+  let visitCount = 0;
+  try { visitCount = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10) || 0; } catch(e) {}
+  visitCount += 1;
+  try { localStorage.setItem(VISIT_KEY, String(visitCount)); } catch(e) {}
+
+  // ── Session identity (new each load) ──
+  const SESSION_ID = uid('s');
+  const SESSION_START = Date.now();
+
+  // ── State ──
+  let activeMs = 0;
+  let lastActiveTick = Date.now();
+  let isVisible = (document.visibilityState === 'visible');
+  let maxScroll = 0;
+  const viewedSections = new Set();
+  const scrollMarks = { 25:false, 50:false, 75:false, 100:false };
+
+  // ── Send event ──
+  function send(eventName, extra) {
+    const payload = {
+      event: eventName,
+      prospect_id: CONFIG.PROSPECT_ID,
+      visitor_id: VISITOR_ID,
+      session_id: SESSION_ID,
+      visit_number: visitCount,
+      timestamp: new Date().toISOString(),
+      url: location.href,
+      referrer: document.referrer || null,
+      user_agent: navigator.userAgent,
+      screen: { w: screen.width, h: screen.height, dpr: window.devicePixelRatio || 1 },
+      viewport: { w: innerWidth, h: innerHeight },
+      ...(extra || {})
+    };
+
+    // GA4 (if loaded)
+    if (typeof gtag === 'function') {
+      gtag('event', eventName, {
+        prospect_id: CONFIG.PROSPECT_ID,
+        visitor_id: VISITOR_ID,
+        session_id: SESSION_ID,
+        visit_number: visitCount,
+        ...(extra || {})
+      });
+    }
+
+    // Custom endpoint (keepalive ensures unload events still send)
+    if (CONFIG.ENDPOINT) {
+      try {
+        const body = JSON.stringify(payload);
+        if (navigator.sendBeacon && (eventName === 'session_end' || eventName === 'visibility_hidden')) {
+          navigator.sendBeacon(CONFIG.ENDPOINT, new Blob([body], { type: 'application/json' }));
+        } else {
+          fetch(CONFIG.ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+            keepalive: true,
+            mode: 'cors',
+            credentials: 'omit'
+          }).catch(()=>{});
+        }
+      } catch(e) {}
+    }
+  }
+
+  // ── Page open ──
+  send('page_open', {
+    is_return_visit: visitCount > 1,
+    visit_count: visitCount
+  });
+
+  // ── Heartbeat: accumulate active time ──
+  setInterval(function() {
+    if (isVisible) {
+      const now = Date.now();
+      activeMs += (now - lastActiveTick);
+      lastActiveTick = now;
+      send('heartbeat', {
+        active_seconds: Math.round(activeMs / 1000),
+        max_scroll_pct: maxScroll,
+        sections_viewed: Array.from(viewedSections)
+      });
+    }
+  }, CONFIG.HEARTBEAT_INTERVAL_MS);
+
+  // ── Visibility change ──
+  document.addEventListener('visibilitychange', function() {
+    const wasVisible = isVisible;
+    isVisible = (document.visibilityState === 'visible');
+    if (wasVisible && !isVisible) {
+      // tab going hidden -> accumulate active time + send
+      const now = Date.now();
+      activeMs += (now - lastActiveTick);
+      send('visibility_hidden', {
+        active_seconds: Math.round(activeMs / 1000),
+        max_scroll_pct: maxScroll
+      });
+    } else if (!wasVisible && isVisible) {
+      lastActiveTick = Date.now();
+      send('visibility_visible', {});
+    }
+  });
+
+  // ── Scroll depth ──
+  function getScrollPct() {
+    const docH = document.documentElement.scrollHeight - innerHeight;
+    if (docH <= 0) return 100;
+    return Math.min(100, Math.max(0, Math.round((scrollY / docH) * 100)));
+  }
+  let scrollRaf;
+  window.addEventListener('scroll', function() {
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(function() {
+      scrollRaf = null;
+      const pct = getScrollPct();
+      if (pct > maxScroll) {
+        maxScroll = pct;
+        [25, 50, 75, 100].forEach(function(t) {
+          if (maxScroll >= t && !scrollMarks[t]) {
+            scrollMarks[t] = true;
+            send('scroll_depth', { depth: t });
+          }
+        });
+      }
+    });
+  }, { passive: true });
+
+  // ── Section view tracking via IntersectionObserver ──
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+          const id = entry.target.id;
+          if (id && !viewedSections.has(id)) {
+            viewedSections.add(id);
+            send('section_view', {
+              section: id,
+              time_to_view_ms: Date.now() - SESSION_START
+            });
+          }
+        }
+      });
+    }, { threshold: [0.4] });
+    document.querySelectorAll('section[id]').forEach(function(s) { io.observe(s); });
+  }
+
+  // ── CTA click tracking ──
+  document.querySelectorAll('[data-cta]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      send('cta_click', {
+        cta: el.getAttribute('data-cta'),
+        href: el.getAttribute('href') || null,
+        active_seconds_at_click: Math.round(activeMs / 1000),
+        max_scroll_pct: maxScroll
+      });
+    });
+  });
+
+  // ── Session end ──
+  function finalize() {
+    if (isVisible) {
+      const now = Date.now();
+      activeMs += (now - lastActiveTick);
+      lastActiveTick = now;
+    }
+    send('session_end', {
+      total_active_seconds: Math.round(activeMs / 1000),
+      session_duration_seconds: Math.round((Date.now() - SESSION_START) / 1000),
+      max_scroll_pct: maxScroll,
+      sections_viewed: Array.from(viewedSections),
+      visit_number: visitCount
+    });
+  }
+  window.addEventListener('pagehide', finalize);
+  window.addEventListener('beforeunload', finalize);
+
+  // ── Reveal-on-scroll for visual polish ──
+  if ('IntersectionObserver' in window) {
+    const rio = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          rio.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(function(el) { rio.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('in'); });
+  }
+})();
+</script>
+
+<!-- ════════ GA4 (matches existing tplcollective.ai setup) ════════ -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R', { 'send_page_view': true });
+</script>
+
+</body>
+</html>

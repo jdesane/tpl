@@ -207,6 +207,7 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-item" data-min-plan="mid" onclick="showPage('content')"><span class="icon">&#x260E;</span>Content Hub</div>
     <div class="nav-item" data-platform-only="true" onclick="showPage('links')"><span class="icon">&#x2693;</span>Recruiting Links</div>
     <div class="nav-item" onclick="showPage('recruit-compare')"><span class="icon">&#x25EB;</span>Recruit Comparison</div>
+    <div class="nav-item" data-platform-only="true" onclick="showPage('engagement')"><span class="icon">&#x25C9;</span>Prospect Engagement</div>
   </div>
   <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Coaching</div>
@@ -785,6 +786,244 @@ th[onclick]:hover{color:var(--accent)}
     <div id="rcc-error" style="color:#f88;font-size:12px;display:none"></div>
   </div>
 </div>
+
+<!-- ═══ PROSPECT ENGAGEMENT PAGE (Phase 16) ═══ -->
+<div class="page" id="page-engagement">
+  <div class="panel-title" style="font-size:24px;margin-bottom:6px">Prospect Engagement</div>
+  <div style="color:var(--muted);font-size:13px;margin-bottom:18px">
+    Live tracking for private prospect briefs (tplcollective.ai/&lt;slug&gt;). Opens, time on page, scroll, sections, CTAs.
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="engagement-list-view">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="panel-title" style="font-size:14px">Briefs</div>
+      <button class="btn" onclick="engagementOpenCreate()">+ Add Prospect Brief</button>
+    </div>
+    <div id="engagement-prospects" class="panel" style="padding:0">
+      <div style="padding:18px;color:var(--muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="engagement-detail-view" style="display:none">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <button class="btn btn-ghost" onclick="engagementBackToList()">&larr; Back</button>
+      <div id="engagement-detail-title" class="panel-title" style="font-size:20px;flex:1"></div>
+      <button class="btn btn-ghost" onclick="engagementLoadDetail()" id="engagement-refresh-btn">&#x21bb; Refresh</button>
+    </div>
+
+    <div class="row" id="engagement-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px">
+      <div class="panel"><div style="font-size:28px;color:var(--accent);font-weight:700" id="es-sessions">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Sessions</div></div>
+      <div class="panel"><div style="font-size:28px;color:#f0c040;font-weight:700" id="es-active">0s</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Total Active</div></div>
+      <div class="panel"><div style="font-size:28px;color:#34d399;font-weight:700" id="es-scroll">0%</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Max Scroll</div></div>
+      <div class="panel"><div style="font-size:28px;font-weight:700" id="es-sections">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Sections Viewed</div></div>
+      <div class="panel"><div style="font-size:28px;font-weight:700" id="es-visits">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Visit Count</div></div>
+    </div>
+
+    <div id="engagement-ctas-panel" class="panel" style="margin-bottom:18px;display:none">
+      <div class="panel-title" style="font-size:14px;margin-bottom:10px">CTA Clicks</div>
+      <div id="engagement-ctas"></div>
+    </div>
+
+    <div id="engagement-sections-panel" class="panel" style="margin-bottom:18px;display:none">
+      <div class="panel-title" style="font-size:14px;margin-bottom:10px">Sections Viewed</div>
+      <div id="engagement-sections"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-title" style="font-size:14px;margin-bottom:10px">Event Timeline</div>
+      <div id="engagement-timeline" style="font-size:13px;max-height:600px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────── Prospect Engagement (Phase 16) ─────────
+let engagementCurrentSlug = null;
+
+function fmtSecs(s) {
+  s = parseInt(s) || 0;
+  if (!s) return '0s';
+  const m = Math.floor(s / 60), sec = s % 60;
+  return m > 0 ? (m + 'm ' + sec + 's') : (sec + 's');
+}
+function fmtTime(iso) {
+  if (!iso) return '-';
+  try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+}
+
+async function engagementLoadList() {
+  const root = document.getElementById('engagement-prospects');
+  try {
+    const r = await fetch('/api/prospect-engagement/_prospects');
+    if (!r.ok) throw new Error(await r.text());
+    const json = await r.json();
+    const items = json.prospects || [];
+    if (!items.length) {
+      root.innerHTML = '<div style="padding:32px;color:var(--muted);font-size:13px;text-align:center">No prospect briefs yet. Click "+ Add Prospect Brief" to seed one.</div>';
+      return;
+    }
+    let html = '<table class="data-table" style="width:100%"><thead><tr>'
+      + '<th>Name</th><th>Slug</th><th>Sessions</th><th>Last seen</th><th>Notify</th><th></th>'
+      + '</tr></thead><tbody>';
+    items.forEach(p => {
+      const url = 'https://tplcollective.ai/' + p.slug;
+      html += '<tr>'
+        + '<td><strong>' + (p.display_name || p.slug) + '</strong></td>'
+        + '<td><code style="font-size:11px;color:var(--muted)">' + p.slug + '</code></td>'
+        + '<td>' + (p.session_count || 0) + '</td>'
+        + '<td style="font-size:12px;color:var(--muted)">' + (p.last_seen ? fmtTime(p.last_seen) : 'never') + '</td>'
+        + '<td style="font-size:12px;color:var(--muted)">' + (p.notify_email || '(default)') + '</td>'
+        + '<td style="text-align:right">'
+        + '<button class="btn btn-sm" onclick="engagementOpenDetail(\'' + p.slug + '\')">View</button> '
+        + '<a class="btn btn-sm btn-ghost" href="' + url + '" target="_blank">Open page</a> '
+        + '<button class="btn btn-sm btn-ghost" onclick="engagementDelete(\'' + p.slug + '\')">Delete</button>'
+        + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    root.innerHTML = html;
+  } catch (e) {
+    root.innerHTML = '<div style="padding:18px;color:#ef4444;font-size:13px">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+async function engagementOpenCreate() {
+  const slug = prompt('Slug (e.g. jay-dural — lowercase, hyphens):');
+  if (!slug) return;
+  const display_name = prompt('Display name (e.g. Jay Dural):') || slug;
+  const notify_email = prompt('Notify email (blank for default):') || null;
+  try {
+    const r = await fetch('/api/prospect-engagement/_prospects', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: slug.trim().toLowerCase(), display_name, notify_email })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    engagementLoadList();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+async function engagementDelete(slug) {
+  if (!confirm('Delete brief "' + slug + '"? Events stay in the database.')) return;
+  try {
+    const r = await fetch('/api/prospect-engagement/_prospects/' + encodeURIComponent(slug), { method: 'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    engagementLoadList();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+function engagementBackToList() {
+  engagementCurrentSlug = null;
+  document.getElementById('engagement-list-view').style.display = '';
+  document.getElementById('engagement-detail-view').style.display = 'none';
+  engagementLoadList();
+}
+
+function engagementOpenDetail(slug) {
+  engagementCurrentSlug = slug;
+  document.getElementById('engagement-list-view').style.display = 'none';
+  document.getElementById('engagement-detail-view').style.display = '';
+  document.getElementById('engagement-detail-title').textContent = slug;
+  engagementLoadDetail();
+}
+
+async function engagementLoadDetail() {
+  if (!engagementCurrentSlug) return;
+  try {
+    const r = await fetch('/api/prospect-engagement/' + encodeURIComponent(engagementCurrentSlug));
+    if (!r.ok) throw new Error(await r.text());
+    const json = await r.json();
+    const s = json.summary || {};
+    const events = json.events || [];
+
+    document.getElementById('es-sessions').textContent = s.sessions || 0;
+    document.getElementById('es-active').textContent = fmtSecs(s.total_active_seconds);
+    document.getElementById('es-scroll').textContent = (s.max_scroll_pct || 0) + '%';
+    document.getElementById('es-sections').textContent = (s.sections_viewed || []).length;
+    document.getElementById('es-visits').textContent = s.max_visit || 0;
+
+    const ctas = s.cta_clicks || [];
+    const ctaPanel = document.getElementById('engagement-ctas-panel');
+    if (ctas.length) {
+      ctaPanel.style.display = '';
+      document.getElementById('engagement-ctas').innerHTML = ctas.map(c =>
+        '<span class="badge" style="background:rgba(240,192,64,0.15);color:#f0c040;padding:4px 10px;border-radius:4px;font-size:11px;margin-right:6px;text-transform:uppercase;letter-spacing:.1em">' + c.cta + ': ' + c.n + '</span>'
+      ).join('');
+    } else {
+      ctaPanel.style.display = 'none';
+    }
+
+    const secs = s.sections_viewed || [];
+    const secPanel = document.getElementById('engagement-sections-panel');
+    if (secs.length) {
+      secPanel.style.display = '';
+      document.getElementById('engagement-sections').innerHTML = secs.map(x =>
+        '<span class="badge" style="background:rgba(52,211,153,0.15);color:#34d399;padding:4px 10px;border-radius:4px;font-size:11px;margin-right:6px;text-transform:uppercase;letter-spacing:.1em">' + x + '</span>'
+      ).join('');
+    } else {
+      secPanel.style.display = 'none';
+    }
+
+    const tl = document.getElementById('engagement-timeline');
+    if (!events.length) {
+      tl.innerHTML = '<div style="padding:18px;color:var(--muted);font-style:italic">No events yet. Send the link.</div>';
+    } else {
+      tl.innerHTML = events.map(e => {
+        const d = e.data || {};
+        let detail = '';
+        if (e.event === 'page_open') detail = 'Visit #' + (e.visit_number || 1) + ' ' + (d.is_return_visit ? '(return)' : '(new)');
+        else if (e.event === 'section_view') detail = 'Section: ' + (d.section || '?');
+        else if (e.event === 'scroll_depth') detail = 'Reached ' + (d.depth || 0) + '%';
+        else if (e.event === 'cta_click') detail = 'Clicked: ' + (d.cta || '?') + ' (at ' + (d.active_seconds_at_click || 0) + 's)';
+        else if (e.event === 'heartbeat') detail = (d.active_seconds || 0) + 's active, ' + (d.max_scroll_pct || 0) + '% scroll';
+        else if (e.event === 'session_end') detail = 'Total: ' + (d.total_active_seconds || 0) + 's, ' + (d.max_scroll_pct || 0) + '% scroll';
+        else if (e.event === 'visibility_hidden') detail = 'Tab hidden at ' + (d.active_seconds || 0) + 's';
+        else detail = '';
+        return '<div style="display:grid;grid-template-columns:160px 130px 1fr;gap:12px;padding:6px 0;border-bottom:1px solid var(--surf2);font-size:12px">'
+          + '<div style="color:var(--muted);font-family:monospace">' + fmtTime(e.created_at) + '</div>'
+          + '<div style="color:var(--accent);font-family:monospace;text-transform:uppercase;letter-spacing:.08em;font-size:11px">' + e.event + '</div>'
+          + '<div>' + detail + '</div>'
+          + '</div>';
+      }).join('');
+    }
+  } catch (e) {
+    document.getElementById('engagement-timeline').innerHTML = '<div style="padding:18px;color:#ef4444">Failed: ' + e.message + '</div>';
+  }
+}
+
+// Hook into showPage so the page loads when navigated to.
+(function() {
+  const _origShow = window.showPage;
+  if (typeof _origShow === 'function') {
+    window.showPage = function(name) {
+      _origShow(name);
+      if (name === 'engagement') {
+        if (engagementCurrentSlug) {
+          engagementLoadDetail();
+        } else {
+          engagementLoadList();
+        }
+      }
+    };
+  }
+  // Allow hash deep-link: #engagement/<slug>
+  function handleHash() {
+    const h = (location.hash || '').replace(/^#/, '');
+    const m = h.match(/^engagement\/([a-z0-9-]+)$/);
+    if (m) {
+      if (typeof window.showPage === 'function') window.showPage('engagement');
+      engagementOpenDetail(m[1]);
+    }
+  }
+  window.addEventListener('hashchange', handleHash);
+  window.addEventListener('load', handleHash);
+})();
+</script>
 
 <!-- ═══ COACHING PAGE (Phase 15) ═══ -->
 <div class="page" id="page-coaching">
