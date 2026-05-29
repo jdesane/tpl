@@ -524,6 +524,49 @@ The remaining ~380 call sites in `main.py`, `coaching.py`, `extended_routes.py`,
 - Sheer call volume — endpoints that fire 10-20 sync Supabase calls per page load still strain the pooler. Long-term: audit hot endpoints for N+1 patterns, batch reads, cache where safe.
 - Supabase-side pooler bugs themselves — we can't fix their internals, just make our app survive them gracefully.
 
+## Phase 16 — Prospect Engagement (private brief tracking) ✅
+Reusable per-prospect engagement tracking for private brief pages hosted on `tplcollective.ai/<slug>` (first prospect: Jay Dural). Joe sends one URL, sees opens / time on page / scroll depth / section views / CTA clicks in a live MC dashboard, and gets an email the moment the prospect opens it.
+
+**Schema (`migrations/2026-05-29-phase-16-prospect-engagement.sql`):**
+- `prospect_briefs` — registry of briefs, keyed by slug, with `display_name` and `notify_email` override. (Distinct from the existing uuid-keyed `prospects` table used by the recruiting pipeline — different concept, intentionally separate table.)
+- `prospect_engagement_events` — event firehose (JSONB `data`, indexed by prospect_id + visitor_id + session_id + event)
+- Both workspace-scoped via `db()` wrapper (added to `TENANT_TABLES`)
+- Jay seeded with `notify_email = joe@tplcollective.ai`
+
+**Backend (`mission-control/app/prospect_engagement.py` — new module, wired via `setup(db, supabase)` mirroring `coaching.py`):**
+- `POST /api/tracking/prospect-engagement` — **public ingest**. Mounted under `/api/tracking/*` so it inherits the existing public-prefix whitelist. Validates slug, looks up workspace_id from `prospect_briefs`, inserts the event, mirrors high-signal events (`page_open` / `cta_click` / `session_end`) to `activity_log`.
+- `GET /api/prospect-engagement/{slug}` — JWT-gated roll-up: sessions, total active seconds, max scroll, sections viewed, CTA tally, per-session active time, full event timeline (last 300).
+- `GET/POST/PATCH/DELETE /api/prospect-engagement/_prospects` — brief registry CRUD.
+- **Open notifications go through `main.send_email()`** so suppression / rate limits / `email_send_log` all apply (no raw Resend calls). Notify-once-per-session de-dupe via a COUNT(session_id, event=page_open) probe — first event of a fresh session fires the email, subsequent page_opens in that session do not.
+
+**Mission Control SPA (`static/index.html`):**
+- New "Prospect Engagement" nav item under Marketing (platform-only).
+- List view: briefs table with display name, slug, session count, last seen, notify email, View / Open page / Delete actions.
+- Detail view: 5-card summary strip (Sessions / Total Active / Max Scroll / Sections Viewed / Visit Count), CTA tally pills, sections viewed pills, event timeline with humanized descriptions.
+- Hash deep-link: `#engagement/<slug>` jumps straight to a brief.
+
+**Frontend (`jay-dural.html` at repo root):**
+- Verbatim copy of the approved brief — Joe rule, do not edit.
+- Tracking endpoint set to `https://mission.tplcollective.ai/api/tracking/prospect-engagement`.
+- Includes its own GA4 + custom tracking script. Does NOT include the site-wide `tpl-tracking.js` (would double-track).
+- Live at `https://tplcollective.ai/jay-dural` via Vercel `cleanUrls: true` (no route changes needed).
+
+**Verified on deploy:**
+- POST ingest returns `{ok: true, id: <int>}`
+- Unauth GET returns 401
+- Same-session re-open does NOT fire a second notification
+- New session DOES fire a fresh notification (visit #2)
+- Notification email delivered via Resend through `send_email()` rail, logged in `email_send_log` with `campaign=prospect-open-jay-dural`
+- `activity_log` mirror inserted for high-signal events
+
+**Backups on VPS:** `main.py.pre-phase16-20260529-140829`, `static/index.html.pre-phase16-20260529-140829`.
+
+**Adding a new prospect:**
+1. In MC → Prospect Engagement → "+ Add Prospect Brief" (slug + display name + notify email override)
+2. Drop a new HTML file at repo root: `<slug>.html`, set `PROSPECT_ID` to the slug, leave ENDPOINT alone
+3. Commit + push (Vercel auto-deploys)
+4. Send the URL. Done.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
