@@ -997,21 +997,38 @@ async function engagementLoadDetail() {
 }
 
 // Hook into showPage so the page loads when navigated to.
-(function() {
-  const _origShow = window.showPage;
-  if (typeof _origShow === 'function') {
-    window.showPage = function(name) {
-      _origShow(name);
-      if (name === 'engagement') {
-        if (engagementCurrentSlug) {
-          engagementLoadDetail();
-        } else {
-          engagementLoadList();
-        }
-      }
-    };
+// Polls until window.showPage is defined (script-block order in this SPA
+// is fragile: this <script> may run before the main SPA's showPage exists).
+function _engagementInstallHook() {
+  if (window._engagementHookInstalled) return;
+  if (typeof window.showPage !== 'function') {
+    setTimeout(_engagementInstallHook, 100);
+    return;
   }
-  // Allow hash deep-link: #engagement/<slug>
+  window._engagementHookInstalled = true;
+  const _origShow = window.showPage;
+  window.showPage = function(name) {
+    _origShow(name);
+    if (name === 'engagement') {
+      if (engagementCurrentSlug) {
+        engagementLoadDetail();
+      } else {
+        engagementLoadList();
+      }
+    }
+  };
+  // If the engagement page is already the visible one at install time
+  // (e.g. user clicked it before the hook landed), kick the load now.
+  const pg = document.getElementById('page-engagement');
+  if (pg && pg.style.display !== 'none' && pg.offsetParent !== null) {
+    if (engagementCurrentSlug) engagementLoadDetail();
+    else engagementLoadList();
+  }
+}
+_engagementInstallHook();
+
+// Allow hash deep-link: #engagement/<slug>
+(function() {
   function handleHash() {
     const h = (location.hash || '').replace(/^#/, '');
     const m = h.match(/^engagement\/([a-z0-9-]+)$/);
