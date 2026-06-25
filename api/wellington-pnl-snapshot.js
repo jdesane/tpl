@@ -10,16 +10,21 @@ const supabase = createClient(
 // contains the two allowed categories.
 const ALLOWED_INCOME_KEYS = new Set(['desk_fees', 'vendor_fees'])
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 async function verifyToken(token) {
-  if (!token || typeof token !== 'string') return false
-  const { data: row } = await supabase
-    .from('wellington_access_tokens')
-    .select('token, expires_at')
-    .eq('token', token)
-    .maybeSingle()
-  if (!row) return false
-  if (row.expires_at && new Date(row.expires_at) < new Date()) return false
-  return true
+  if (!token || typeof token !== 'string' || !UUID_RE.test(token)) return false
+  try {
+    const { data: row, error } = await supabase
+      .from('wellington_access_tokens')
+      .select('token, expires_at')
+      .eq('token', token)
+      .maybeSingle()
+    if (error || !row) return false
+    if (row.expires_at && new Date(row.expires_at) < new Date()) return false
+    return true
+  } catch (e) {
+    return false
+  }
 }
 
 export default async function handler(req, res) {

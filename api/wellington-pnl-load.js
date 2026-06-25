@@ -63,8 +63,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false })
 
   const { token } = req.body || {}
-  if (!token || typeof token !== 'string') {
-    return res.status(401).json({ ok: false, error: 'Token required' })
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!token || typeof token !== 'string' || !UUID_RE.test(token)) {
+    return res.status(401).json({ ok: false, error: 'Invalid token' })
   }
 
   try {
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('Token lookup error:', error)
-      return res.status(500).json({ ok: false })
+      return res.status(401).json({ ok: false, error: 'Invalid token' })
     }
     if (!row) {
       return res.status(401).json({ ok: false, error: 'Invalid token' })
