@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Wellington P&L Model</title>
+<!--
+  PRODUCTION VOLUME IS NOT INCOME.
+  See Wellington_Claude_Code_Handoff.md §1.
+  Income = desk_fees + vendor_fees only. Always.
+-->
+<style>
+  :root {
+    --navy: #1F3864;
+    --navy-dark: #13244A;
+    --gold: #C9A86A;
+    --cream: #F7F4EE;
+    --paper: #FBFAF7;
+    --ink: #1A1A26;
+    --slate: #5A6478;
+    --mist: #E8EEF7;
+    --success: #2F7A4E;
+    --alert: #B14242;
+    --border: #E5E1D6;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .gate {
+    max-width: 480px;
+    margin: 160px auto;
+    text-align: center;
+    padding: 40px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .gate h1 {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    color: var(--navy);
+    margin: 0 0 8px;
+  }
+  .gate p { color: var(--slate); margin: 0; }
+
+  .app { max-width: 1340px; margin: 0 auto; padding: 24px 28px 80px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .header-left .eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 6px;
+  }
+  .header-left h1 {
+    font-family: Georgia, serif;
+    font-size: 30px;
+    color: var(--navy);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .header-left .subtitle {
+    color: var(--slate); font-size: 13px; margin-top: 4px;
+  }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    background: var(--navy); color: #fff; border: none;
+    padding: 9px 14px; border-radius: 6px; font-size: 13px;
+    font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { background: var(--navy-dark); }
+  .btn.ghost { background: #fff; color: var(--navy); border: 1px solid var(--border); }
+  .btn.ghost:hover { background: var(--cream); }
+
+  /* Delta callout (rent discrepancy) */
+  .callout {
+    background: #FFF8E5;
+    border: 1px solid #E6CC7A;
+    border-left: 4px solid var(--gold);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #5A4515;
+  }
+  .callout b { color: var(--navy); }
+
+  /* Audience strip */
+  .audience-strip {
+    background: var(--mist);
+    border: 1px solid #C7D0E0;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .audience-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--navy); white-space: nowrap;
+  }
+  .audience-label small {
+    display: block; color: var(--slate); font-weight: 500; letter-spacing: 0.02em;
+    font-size: 10px; text-transform: none; margin-top: 2px;
+  }
+  .audience-stats { display: flex; gap: 28px; flex: 1; }
+  .audience-stat .val {
+    font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: var(--navy);
+  }
+  .audience-stat .lbl {
+    font-size: 11px; color: var(--slate); margin-top: 1px;
+  }
+  .audience-warn {
+    font-size: 11px; color: var(--slate); font-style: italic;
+    max-width: 200px; text-align: right;
+  }
+
+  /* 3-column layout */
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 24px;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .panel-head {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 18px;
+  }
+  .panel-head .eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--gold);
+  }
+  .panel-head h2 {
+    font-family: Georgia, serif; font-size: 20px; margin: 2px 0 0; letter-spacing: -0.01em;
+  }
+  .panel-head .sub {
+    font-size: 11px; color: var(--mist); margin-top: 2px; font-style: italic;
+  }
+
+  .panel-body { padding: 16px 18px; }
+
+  .group-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gold); margin: 14px 0 8px;
+    border-bottom: 1px solid var(--border); padding-bottom: 4px;
+  }
+  .group-title:first-of-type { margin-top: 0; }
+
+  .line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 6px 0;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .line label { color: var(--ink); }
+  .line label .hint { color: var(--slate); font-size: 11px; display: block; }
+  .line input[type=number] {
+    width: 100px;
+    text-align: right;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 6px;
+    font-family: Georgia, serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    border-radius: 4px;
+    -moz-appearance: textfield;
+  }
+  .line input[type=number]:hover { border-color: var(--border); background: var(--paper); }
+  .line input[type=number]:focus {
+    outline: none; border-color: var(--navy); background: #fff;
+    box-shadow: 0 0 0 3px rgba(31,56,100,0.10);
+  }
+  .line.lever input[type=number] { font-family: -apple-system, sans-serif; font-size: 13px; width: 80px; }
+  .line input::-webkit-outer-spin-button,
+  .line input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .subtotal, .total {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 8px 0; border-top: 1px solid var(--border);
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .subtotal { color: var(--slate); }
+  .total {
+    border-top: 2px solid var(--navy);
+    margin-top: 10px;
+    padding-top: 10px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .total .v, .subtotal .v {
+    font-family: Georgia, serif; font-weight: 700; font-size: 14px;
+  }
+
+  .net-strip {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .net-strip .label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--gold);
+  }
+  .net-strip .val {
+    font-family: Georgia, serif; font-size: 26px; font-weight: 700;
+  }
+  .net-strip.alert { background: var(--alert); }
+  .net-strip.success { background: var(--success); }
+  .net-strip .ann {
+    grid-column: 1 / -1;
+    font-size: 11px; color: var(--mist); font-style: italic;
+    margin-top: -4px;
+  }
+
+  /* Delta panel (3rd column) */
+  .delta-summary {
+    padding: 18px;
+  }
+  .delta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .delta-row.head {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--slate); text-transform: uppercase;
+    border-bottom: 2px solid var(--navy);
+  }
+  .delta-row .lbl {
+    grid-column: 1 / -1;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--slate); margin-bottom: 4px;
+  }
+  .delta-row .a, .delta-row .b, .delta-row .d {
+    font-family: Georgia, serif; font-size: 16px; font-weight: 700;
+    text-align: right; padding: 0 4px;
+  }
+  .delta-row .a { color: var(--slate); }
+  .delta-row .b { color: var(--navy); }
+  .delta-row .d { color: var(--success); }
+  .delta-row .d.neg { color: var(--alert); }
+
+  .delta-headline {
+    background: var(--cream);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 18px;
+    text-align: center;
+  }
+  .delta-headline .eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--gold); text-transform: uppercase;
+  }
+  .delta-headline .v {
+    font-family: Georgia, serif; font-size: 44px; font-weight: 700;
+    color: var(--navy); line-height: 1.05; margin: 6px 0 2px;
+  }
+  .delta-headline .sub {
+    font-size: 12px; color: var(--slate);
+  }
+
+  /* Snapshots list */
+  .snapshots {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 24px;
+  }
+  .snapshots h3 {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--gold); margin: 0 0 8px;
+  }
+  .snap-list { display: flex; flex-direction: column; gap: 4px; }
+  .snap-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 8px;
+    padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border);
+  }
+  .snap-row:last-child { border-bottom: none; }
+  .snap-row time { color: var(--slate); font-size: 11px; }
+
+  /* Save dialog */
+  .save-row {
+    display: flex; gap: 8px; align-items: center;
+    margin-top: 10px;
+  }
+  .save-row input[type=text] {
+    flex: 1; padding: 7px 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 13px;
+  }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--navy); color: #fff;
+    padding: 12px 18px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .footer-note {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--slate);
+    font-style: italic;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h1>Wellington P&amp;L Model</h1>
+  <p>Access required.</p>
+</div>
+
+<div id="app" class="app" style="display:none;">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="eyebrow">Wellington Office</div>
+      <h1>Monthly P&amp;L Model</h1>
+      <div class="subtitle">Today vs. Restructured  ·  Income = desk fees + vendor fees only  ·  <span id="user-label"></span></div>
+    </div>
+    <div class="header-right">
+      <button id="reset-btn" class="btn ghost">Reset to defaults</button>
+      <button id="save-btn" class="btn">Save snapshot</button>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>Delta to verify.</b> Lily's intake reported <b>$6,100/mo</b> for rent — $1,616 above the lease Year 5 base of $4,484.58. Likely CAM, escalations, or bundled charges. <b>Default uses the lease base.</b> Toggle <a href="#" id="rent-toggle" style="color:var(--navy);">"use Lily's figure"</a> to model the high case.
+  </div>
+
+  <!-- AUDIENCE VALUE — explicitly NOT income -->
+  <div class="audience-strip">
+    <div class="audience-label">
+      Vendor audience value
+      <small>NOT income</small>
+    </div>
+    <div class="audience-stats">
+      <div class="audience-stat">
+        <div class="val" id="aud-agents">88</div>
+        <div class="lbl">Branch agents</div>
+      </div>
+      <div class="audience-stat">
+        <div class="val" id="aud-active">57</div>
+        <div class="lbl">Active producers</div>
+      </div>
+      <div class="audience-stat">
+        <div class="val" id="aud-volume">$180.6M</div>
+        <div class="lbl">12-mo sales volume</div>
+      </div>
+      <div class="audience-stat">
+        <div class="val" id="aud-tx">179</div>
+        <div class="lbl">Closed transactions (97 L + 82 B)</div>
+      </div>
+    </div>
+    <div class="audience-warn">
+      Agent commissions belong to agents. None of this flows to the office. It's the audience vendors are paying to access.
+    </div>
+  </div>
+
+  <div class="columns">
+
+    <!-- TODAY -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">SCENARIO A</div>
+        <h2>Today</h2>
+        <div class="sub">As-is. Numbers pre-loaded from June reports + Lily's intake.</div>
+      </div>
+      <div class="panel-body">
+        <div class="group-title">Income</div>
+        <div class="line">
+          <label>Desk fees<span class="hint">paying agents × monthly rate</span></label>
+          <div>
+            <input type="number" id="t_desk_count" step="1" />
+            <span style="color:var(--slate);">×</span>
+            $<input type="number" id="t_desk_rate" step="1" style="width:60px;" />
+          </div>
+        </div>
+        <div class="subtotal">
+          <div>Desk fees subtotal</div>
+          <div class="v" id="t_desk_subtotal">$0</div>
+        </div>
+        <div class="line">
+          <label>Vendor revenue<span class="hint">Bell + lenders + 12 small (Lily's form)</span></label>
+          <div>$<input type="number" id="t_vendor" step="1" /></div>
+        </div>
+        <div class="total">
+          <div>Total income</div>
+          <div class="v" id="t_income">$0</div>
+        </div>
+
+        <div class="group-title">Expenses</div>
+        <div class="line">
+          <label>Rent<span class="hint" id="t_rent_hint">Year 5 lease base</span></label>
+          <div>$<input type="number" id="t_rent" step="0.01" /></div>
+        </div>
+        <div class="line"><label>Electric</label><div>$<input type="number" id="t_electric" step="1" /></div></div>
+        <div class="line"><label>Internet / WiFi</label><div>$<input type="number" id="t_internet" step="1" /></div></div>
+        <div class="line"><label>Water / sewer</label><div>$<input type="number" id="t_water" step="1" /></div></div>
+        <div class="line"><label>Cleaning</label><div>$<input type="number" id="t_cleaning" step="1" /></div></div>
+        <div class="line"><label>Kitchen / snacks</label><div>$<input type="number" id="t_kitchen" step="1" /></div></div>
+        <div class="line"><label>Printer / toner</label><div>$<input type="number" id="t_printer" step="1" /></div></div>
+        <div class="line"><label>Office supplies</label><div>$<input type="number" id="t_supplies" step="1" /></div></div>
+        <div class="line"><label>Office insurance</label><div>$<input type="number" id="t_insurance" step="1" /></div></div>
+        <div class="line"><label>Molly (payroll)</label><div>$<input type="number" id="t_molly" step="1" /></div></div>
+        <div class="line"><label>Bookkeeping (Melissa)</label><div>$<input type="number" id="t_book" step="1" /></div></div>
+
+        <div class="total">
+          <div>Total expenses</div>
+          <div class="v" id="t_expenses">$0</div>
+        </div>
+      </div>
+      <div class="net-strip" id="t_net_strip">
+        <div>
+          <div class="label">NET TODAY</div>
+        </div>
+        <div class="val" id="t_net">$0</div>
+        <div class="ann" id="t_net_ann">—</div>
+      </div>
+    </div>
+
+    <!-- RESTRUCTURED -->
+    <div class="panel">
+      <div class="panel-head" style="background:var(--gold); color:var(--navy-dark);">
+        <div class="eyebrow" style="color:var(--navy-dark);">SCENARIO B</div>
+        <h2>Restructured</h2>
+        <div class="sub" style="color:var(--navy-dark);">Apply the 5 moves. Each lever live-calculates.</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="group-title">Move 1 + 2 + 3 — Desk income</div>
+        <div class="line lever">
+          <label>Dedicated desks<span class="hint">premium tier (4 desks available)</span></label>
+          <div><input type="number" id="r_desk_d_count" step="1" min="0" max="4" /> × $<input type="number" id="r_desk_d_rate" step="1" style="width:60px;" /></div>
+        </div>
+        <div class="line lever">
+          <label>Affiliation members<span class="hint">flat fee, all members</span></label>
+          <div><input type="number" id="r_desk_a_count" step="1" /> × $<input type="number" id="r_desk_a_rate" step="1" style="width:60px;" /></div>
+        </div>
+        <div class="line lever">
+          <label>Recovered producers<span class="hint">of 15 known non-paying producers</span></label>
+          <div><input type="number" id="r_recovered" step="1" min="0" max="15" /> × $35</div>
+        </div>
+        <div class="line lever">
+          <label>Ghost producers captured<span class="hint">of 38 known ghosts using office, paying $0</span></label>
+          <div><input type="number" id="r_ghosts" step="1" min="0" max="38" /> × $35</div>
+        </div>
+        <div class="subtotal">
+          <div>Desk income subtotal</div>
+          <div class="v" id="r_desk_subtotal">$0</div>
+        </div>
+
+        <div class="group-title">Move 4 — Vendor reprice</div>
+        <div class="line lever">
+          <label>Bell Land Title<span class="hint">currently $2,500</span></label>
+          <div>$<input type="number" id="r_v_bell" step="50" /></div>
+        </div>
+        <div class="line lever">
+          <label>Lenders<span class="hint">currently $1,000 each, 3 partners</span></label>
+          <div>$<input type="number" id="r_v_lender" step="50" /> × <input type="number" id="r_v_lender_n" step="1" style="width:50px;" /></div>
+        </div>
+        <div class="line lever">
+          <label>Small vendors (12 × $35)<span class="hint">unchanged</span></label>
+          <div>$<input type="number" id="r_v_small" step="1" /></div>
+        </div>
+        <div class="line lever">
+          <label>New vendor slots<span class="hint">at average rate</span></label>
+          <div><input type="number" id="r_v_new_n" step="1" /> × $<input type="number" id="r_v_new_rate" step="50" style="width:70px;" /></div>
+        </div>
+        <div class="subtotal">
+          <div>Vendor income subtotal</div>
+          <div class="v" id="r_vendor_subtotal">$0</div>
+        </div>
+        <div class="total">
+          <div>Total income (restructured)</div>
+          <div class="v" id="r_income">$0</div>
+        </div>
+
+        <div class="group-title">Move 5 — Expenses (mostly unchanged)</div>
+        <div class="line lever">
+          <label>Total operating expenses<span class="hint">from Today minus Molly</span></label>
+          <div>$<span id="r_ops_ex"></span></div>
+        </div>
+        <div class="line lever">
+          <label>Molly (expanded role)<span class="hint">small bump for new responsibilities</span></label>
+          <div>$<input type="number" id="r_molly" step="25" /></div>
+        </div>
+        <div class="total">
+          <div>Total expenses</div>
+          <div class="v" id="r_expenses">$0</div>
+        </div>
+
+        <div class="callout" style="margin-top:14px;margin-bottom:0;font-size:11px;">
+          <b>Info-only:</b> cut count = <input type="number" id="r_cuts" step="1" min="0" max="50" style="width:50px;border:1px solid var(--border);padding:2px 4px;border-radius:3px;" /> non-producing agents removed from the roster. No revenue impact (they weren't paying).
+        </div>
+      </div>
+      <div class="net-strip success" id="r_net_strip">
+        <div>
+          <div class="label">NET RESTRUCTURED</div>
+        </div>
+        <div class="val" id="r_net">$0</div>
+        <div class="ann" id="r_net_ann">—</div>
+      </div>
+    </div>
+
+    <!-- DELTA -->
+    <div class="panel">
+      <div class="panel-head" style="background:var(--navy-dark);">
+        <div class="eyebrow">SCENARIO Δ</div>
+        <h2>The Delta</h2>
+        <div class="sub">Today vs. Restructured.</div>
+      </div>
+      <div class="delta-summary">
+        <div class="delta-row head">
+          <div></div>
+          <div style="text-align:right;">Today</div>
+          <div style="text-align:right;">Restructured</div>
+        </div>
+        <div class="delta-row">
+          <div class="lbl">Income</div>
+          <div></div><div></div>
+          <div class="a" id="d_income_a">$0</div>
+          <div class="b" id="d_income_b">$0</div>
+          <div class="d" id="d_income_d">+$0</div>
+        </div>
+        <div class="delta-row">
+          <div class="lbl">Expenses</div>
+          <div></div><div></div>
+          <div class="a" id="d_expenses_a">$0</div>
+          <div class="b" id="d_expenses_b">$0</div>
+          <div class="d" id="d_expenses_d">+$0</div>
+        </div>
+        <div class="delta-row">
+          <div class="lbl">Monthly net</div>
+          <div></div><div></div>
+          <div class="a" id="d_net_a">$0</div>
+          <div class="b" id="d_net_b">$0</div>
+          <div class="d" id="d_net_d">+$0</div>
+        </div>
+        <div class="delta-row">
+          <div class="lbl">Annualized</div>
+          <div></div><div></div>
+          <div class="a" id="d_ann_a">$0</div>
+          <div class="b" id="d_ann_b">$0</div>
+          <div class="d" id="d_ann_d">+$0</div>
+        </div>
+
+        <div class="delta-headline">
+          <div class="eyebrow">Monthly improvement</div>
+          <div class="v" id="delta_headline">+$0</div>
+          <div class="sub" id="delta_sub">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Snapshots -->
+  <div class="snapshots">
+    <h3>Saved snapshots</h3>
+    <div id="snap-list" class="snap-list">
+      <div style="color:var(--slate);font-size:13px;">No snapshots yet.</div>
+    </div>
+    <div class="save-row">
+      <input type="text" id="save-label" placeholder="Snapshot label — e.g. 'pre-Lily-call'" />
+      <button class="btn" onclick="saveSnapshot()">Save</button>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Wellington Office P&amp;L Model  ·  Confidential  ·  Income limited to desk fees + vendor fees per project rule.
+  </div>
+</div>
+
+<div id="toast" class="toast">Saved.</div>
+
+<script>
+const TOKEN = new URLSearchParams(window.location.search).get('t');
+let DEFAULTS = null;
+let useRentDelta = false;
+
+// --- Gate ---
+async function boot() {
+  if (!TOKEN) {
+    document.getElementById('gate').innerHTML = '<h1>Wellington P&L Model</h1><p>Access token required.</p>';
+    return;
+  }
+  try {
+    const res = await fetch('/api/wellington-pnl-load', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN })
+    });
+    const body = await res.json();
+    if (!res.ok || !body.ok) {
+      document.getElementById('gate').innerHTML = '<h1>Access denied</h1><p>' + (body.error || 'Invalid token.') + '</p>';
+      return;
+    }
+    DEFAULTS = body.defaults;
+    document.getElementById('user-label').textContent = body.label || '';
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadDefaults();
+    renderSnapshots(body.snapshots || []);
+    wireListeners();
+    recompute();
+  } catch (e) {
+    document.getElementById('gate').innerHTML = '<h1>Error</h1><p>Could not load. Try again later.</p>';
+  }
+}
+
+function loadDefaults() {
+  const t = DEFAULTS.today;
+  setVal('t_desk_count', t.income.desk_fees_count);
+  setVal('t_desk_rate', t.income.desk_fees_rate);
+  setVal('t_vendor', t.income.vendor_revenue);
+  setVal('t_rent', useRentDelta ? t.expenses.rent_delta_lily : t.expenses.rent);
+  document.getElementById('t_rent_hint').textContent = useRentDelta
+    ? "Lily's reported figure (verify breakdown)"
+    : "Year 5 lease base";
+  setVal('t_electric', t.expenses.electric);
+  setVal('t_internet', t.expenses.internet);
+  setVal('t_water', t.expenses.water_sewer);
+  setVal('t_cleaning', t.expenses.cleaning);
+  setVal('t_kitchen', t.expenses.kitchen);
+  setVal('t_printer', t.expenses.printer);
+  setVal('t_supplies', t.expenses.supplies);
+  setVal('t_insurance', t.expenses.insurance);
+  setVal('t_molly', t.expenses.molly);
+  setVal('t_book', t.expenses.bookkeeping);
+
+  const r = DEFAULTS.restructured;
+  setVal('r_desk_d_count', r.desk_dedicated_count);
+  setVal('r_desk_d_rate', r.desk_dedicated_rate);
+  setVal('r_desk_a_count', r.desk_affiliation_count);
+  setVal('r_desk_a_rate', r.desk_affiliation_rate);
+  setVal('r_recovered', r.producers_recovered);
+  setVal('r_ghosts', r.ghost_producers_captured);
+  setVal('r_v_bell', r.vendor_bell);
+  setVal('r_v_lender', r.vendor_lender_rate);
+  setVal('r_v_lender_n', r.vendor_lender_count);
+  setVal('r_v_small', r.vendor_small_total);
+  setVal('r_v_new_n', r.vendor_new_slots);
+  setVal('r_v_new_rate', r.vendor_new_slot_rate);
+  setVal('r_molly', r.molly_new);
+  setVal('r_cuts', r.cut_count);
+}
+
+function setVal(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.value = v;
+}
+function num(id) {
+  const el = document.getElementById(id);
+  return el ? parseFloat(el.value) || 0 : 0;
+}
+function fmt(n, options = {}) {
+  const sign = n < 0 ? '-' : (options.forceSign ? '+' : '');
+  const abs = Math.abs(n);
+  const str = abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return sign + '$' + str;
+}
+function fmtNet(n) {
+  if (n < 0) return '(' + fmt(Math.abs(n)) + ')';
+  return fmt(n);
+}
+
+function wireListeners() {
+  document.querySelectorAll('input[type=number]').forEach(el => {
+    el.addEventListener('input', recompute);
+  });
+  document.getElementById('rent-toggle').addEventListener('click', (e) => {
+    e.preventDefault();
+    useRentDelta = !useRentDelta;
+    const t = DEFAULTS.today;
+    setVal('t_rent', useRentDelta ? t.expenses.rent_delta_lily : t.expenses.rent);
+    document.getElementById('t_rent_hint').textContent = useRentDelta
+      ? "Lily's reported figure (verify breakdown)"
+      : "Year 5 lease base";
+    e.target.textContent = useRentDelta ? '"use lease base"' : '"use Lily\'s figure"';
+    recompute();
+  });
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (confirm('Reset all values to handoff defaults?')) {
+      useRentDelta = false;
+      loadDefaults();
+      recompute();
+    }
+  });
+  document.getElementById('save-btn').addEventListener('click', () => {
+    document.getElementById('save-label').focus();
+  });
+}
+
+function recompute() {
+  // --- TODAY ---
+  const t_desk = num('t_desk_count') * num('t_desk_rate');
+  document.getElementById('t_desk_subtotal').textContent = fmt(t_desk);
+
+  const t_income = t_desk + num('t_vendor');
+  document.getElementById('t_income').textContent = fmt(t_income);
+
+  const t_expenses =
+    num('t_rent') + num('t_electric') + num('t_internet') + num('t_water') +
+    num('t_cleaning') + num('t_kitchen') + num('t_printer') + num('t_supplies') +
+    num('t_insurance') + num('t_molly') + num('t_book');
+  document.getElementById('t_expenses').textContent = fmt(t_expenses);
+
+  const t_net = t_income - t_expenses;
+  const t_strip = document.getElementById('t_net_strip');
+  t_strip.classList.remove('alert', 'success');
+  t_strip.classList.add(t_net < 0 ? 'alert' : 'success');
+  document.getElementById('t_net').textContent = fmtNet(t_net);
+  document.getElementById('t_net_ann').textContent = (t_net < 0 ? 'Annual shortfall: ' : 'Annualized: ') + fmtNet(t_net * 12);
+
+  // --- RESTRUCTURED ---
+  const r_desk =
+    num('r_desk_d_count') * num('r_desk_d_rate') +
+    num('r_desk_a_count') * num('r_desk_a_rate') +
+    num('r_recovered') * 35 +
+    num('r_ghosts') * 35;
+  document.getElementById('r_desk_subtotal').textContent = fmt(r_desk);
+
+  const r_vendor =
+    num('r_v_bell') +
+    num('r_v_lender') * num('r_v_lender_n') +
+    num('r_v_small') +
+    num('r_v_new_n') * num('r_v_new_rate');
+  document.getElementById('r_vendor_subtotal').textContent = fmt(r_vendor);
+
+  const r_income = r_desk + r_vendor;
+  document.getElementById('r_income').textContent = fmt(r_income);
+
+  // Ops expenses (everything except Molly, since Molly has her own restructured input)
+  const r_ops = t_expenses - num('t_molly');
+  document.getElementById('r_ops_ex').textContent = r_ops.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+  const r_expenses = r_ops + num('r_molly');
+  document.getElementById('r_expenses').textContent = fmt(r_expenses);
+
+  const r_net = r_income - r_expenses;
+  const r_strip = document.getElementById('r_net_strip');
+  r_strip.classList.remove('alert', 'success');
+  r_strip.classList.add(r_net < 0 ? 'alert' : 'success');
+  document.getElementById('r_net').textContent = fmtNet(r_net);
+  document.getElementById('r_net_ann').textContent = (r_net < 0 ? 'Annual: ' : 'Annualized: ') + fmtNet(r_net * 12);
+
+  // --- DELTA ---
+  document.getElementById('d_income_a').textContent = fmt(t_income);
+  document.getElementById('d_income_b').textContent = fmt(r_income);
+  document.getElementById('d_income_d').textContent = fmt(r_income - t_income, { forceSign: true });
+
+  document.getElementById('d_expenses_a').textContent = fmt(t_expenses);
+  document.getElementById('d_expenses_b').textContent = fmt(r_expenses);
+  const exp_delta = r_expenses - t_expenses;
+  document.getElementById('d_expenses_d').textContent = fmt(exp_delta, { forceSign: true });
+  document.getElementById('d_expenses_d').classList.toggle('neg', exp_delta > 0);
+
+  document.getElementById('d_net_a').textContent = fmtNet(t_net);
+  document.getElementById('d_net_b').textContent = fmtNet(r_net);
+  document.getElementById('d_net_d').textContent = fmt(r_net - t_net, { forceSign: true });
+
+  document.getElementById('d_ann_a').textContent = fmtNet(t_net * 12);
+  document.getElementById('d_ann_b').textContent = fmtNet(r_net * 12);
+  document.getElementById('d_ann_d').textContent = fmt((r_net - t_net) * 12, { forceSign: true });
+
+  document.getElementById('delta_headline').textContent = fmt(r_net - t_net, { forceSign: true });
+  document.getElementById('delta_sub').textContent = 'Annualized: ' + fmt((r_net - t_net) * 12, { forceSign: true });
+}
+
+function currentPayload() {
+  return {
+    today: {
+      income: {
+        desk_fees_count: num('t_desk_count'),
+        desk_fees_rate: num('t_desk_rate'),
+        vendor_revenue: num('t_vendor')
+      },
+      expenses: {
+        rent: num('t_rent'),
+        electric: num('t_electric'),
+        internet: num('t_internet'),
+        water_sewer: num('t_water'),
+        cleaning: num('t_cleaning'),
+        kitchen: num('t_kitchen'),
+        printer: num('t_printer'),
+        supplies: num('t_supplies'),
+        insurance: num('t_insurance'),
+        molly: num('t_molly'),
+        bookkeeping: num('t_book')
+      },
+      use_rent_delta: useRentDelta
+    },
+    restructured: {
+      desk_dedicated_count: num('r_desk_d_count'),
+      desk_dedicated_rate: num('r_desk_d_rate'),
+      desk_affiliation_count: num('r_desk_a_count'),
+      desk_affiliation_rate: num('r_desk_a_rate'),
+      producers_recovered: num('r_recovered'),
+      ghost_producers_captured: num('r_ghosts'),
+      cut_count: num('r_cuts'),
+      vendor_bell: num('r_v_bell'),
+      vendor_lender_rate: num('r_v_lender'),
+      vendor_lender_count: num('r_v_lender_n'),
+      vendor_small_total: num('r_v_small'),
+      vendor_new_slots: num('r_v_new_n'),
+      vendor_new_slot_rate: num('r_v_new_rate'),
+      molly_new: num('r_molly')
+    },
+    timestamp: new Date().toISOString()
+  };
+}
+
+async function saveSnapshot() {
+  const labelEl = document.getElementById('save-label');
+  const label = labelEl.value.trim() || ('Snapshot ' + new Date().toLocaleString());
+  try {
+    const res = await fetch('/api/wellington-pnl-snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, label, payload: currentPayload() })
+    });
+    const body = await res.json();
+    if (!res.ok || !body.ok) throw new Error(body.error || 'save failed');
+    labelEl.value = '';
+    toast('Saved.');
+    // Reload snapshots list
+    const reload = await fetch('/api/wellington-pnl-load', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN })
+    });
+    const rb = await reload.json();
+    if (rb.ok) renderSnapshots(rb.snapshots || []);
+  } catch (e) {
+    toast('Save failed: ' + e.message);
+  }
+}
+
+function renderSnapshots(snapshots) {
+  const el = document.getElementById('snap-list');
+  if (!snapshots.length) {
+    el.innerHTML = '<div style="color:var(--slate);font-size:13px;">No snapshots yet.</div>';
+    return;
+  }
+  el.innerHTML = snapshots.map(s => {
+    const t = new Date(s.created_at);
+    return `<div class="snap-row">
+      <div><b>${escapeHtml(s.label || 'Untitled')}</b></div>
+      <time>${t.toLocaleString()}</time>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+boot();
+</script>
+</body>
+</html>
