@@ -76,7 +76,7 @@
 - `tpl-tracking.js` — custom visitor tracking script loaded on all pages
 - `downloads/` — 8 PDF resources (20-questions, tax-deductions, buyer-checklist, listing-checklist, 90-day-plan, open-house-sign-in, soi-tracker, 27k-worksheet)
 - `social-graphics/` — Puppeteer-based social media graphics generator
-- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, revshare, two-lanes, franchise-fees, brokerage-fees, privacy-policy, 404, fb-post-scheduler, ideas/index
+- Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, join-lpt-realty, revshare, two-lanes, franchise-fees, brokerage-fees, privacy-policy, 404, fb-post-scheduler, ideas/index
 - Comparison pages: vs/keller-williams, vs/exp-realty, vs/exp-switch, vs/coldwell-banker, vs/century-21, vs/real-brokerage, vs/remax, vs/epique-realty, vs/compass, vs/homesmart, vs/berkshire-hathaway, vs/index (hub) — 11 comparison pages total
 - Blog articles (blog/): lpt-vs-exp-realty, lpt-vs-keller-williams, lpt-vs-real-brokerage, lpt-vs-coldwell-banker, lpt-vs-epique-realty, lpt-vs-century-21, how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees — 11 blog posts total
 - Blog index (blog.html) with filter tabs, comparison + guide categories
@@ -566,6 +566,19 @@ Reusable per-prospect engagement tracking for private brief pages hosted on `tpl
 2. Drop a new HTML file at repo root: `<slug>.html`, set `PROSPECT_ID` to the slug, leave ENDPOINT alone
 3. Commit + push (Vercel auto-deploys)
 4. Send the URL. Done.
+
+## Phase 17 — Sponsored Join Page (/join-lpt-realty) ✅
+New high-intent capture page for agents who already know they want to join LPT through TPL — distinct from Phase 9's research-stage /joining-lpt-realty (now 302→/).
+
+- **Page** (`join-lpt-realty.html`): 4-step process explainer (submit → we prep → walkthrough video → finish), single form (legal first + last name, email, cell phone, all required), success view with two placeholder video slots Joe will paste embeds into when recorded, FAQ + HowTo & FAQPage JSON-LD. Phone formatter auto-formats to `(XXX) XXX-XXXX`. Honeypot field for bots.
+- **Submission**: form POSTs to `/api/leads` (Vercel function, NOT Mission Control). Payload includes `first_name`, `last_name`, `email`, `phone`, `source: join-lpt-realty`, `magnet: lpt-walkthrough-video`, `stage: ready-to-join`, `tags: [join-lpt-realty, walkthrough-requested, high-intent]`.
+- **api/leads.js patches** (this is where the work landed, NOT mission-control):
+  - Now persists `first_name`, `last_name`, and `tags` to discrete columns (previously destructured but dropped — name field had concatenated full name but discrete columns stayed empty)
+  - `sendInternalNotification()` is now AWAITED before the response. Was fire-and-forget; Vercel's Node runtime freezes the lambda the instant `res.status(200).json()` returns, so the un-awaited Resend fetch was being killed mid-flight and Joe never got the new-lead email. Adds ~300-800ms latency, fine for a form submit. Failure path now logs Resend status + body explicitly.
+  - Mission Control FastAPI `POST /api/leads` is a SEPARATE endpoint with the same name — patch deferred. Handoff doc at `.claude/handoffs/HANDOFF_2026-06-30_0310.md` for that side if any caller starts posting `last_name`/`phone` to the MC endpoint directly.
+- **vercel.json**: 302 retire `/joining-lpt-realty` → `/`, repoint `/private-assets/*` fallback from the retired page to `/`.
+- **Site nav**: `Join LPT Realty` added across all 36 nav-bearing pages (desktop nav + mobile menu + footer), inserted right after `Compare`. Funnel reads Explore → Why → Fees → Compare → Join → Resources → Blog.
+- **sitemap.xml**: `/joining-lpt-realty` swapped for `/join-lpt-realty`.
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
