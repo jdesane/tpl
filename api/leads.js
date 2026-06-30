@@ -75,7 +75,10 @@ async function sendResend({ to, from, replyTo, subject, html, text }) {
 
 async function sendInternalNotification(lead) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
+  if (!apiKey) {
+    console.error('sendInternalNotification: RESEND_API_KEY not set');
+    return { ok: false, error: 'RESEND_API_KEY missing' };
+  }
   const rows = [
     ['Name', lead.name || (lead.first_name || '') + ' ' + (lead.last_name || '')],
     ['Email', lead.email],
@@ -87,7 +90,7 @@ async function sendInternalNotification(lead) {
     ['Stage', lead.stage || '-'],
     ['Magnet', lead.magnet || '-'],
   ].map(([k, v]) => `<tr><td style="padding:8px 0;color:#888;">${k}</td><td style="padding:8px 0;">${v}</td></tr>`).join('');
-  await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -101,6 +104,11 @@ async function sendInternalNotification(lead) {
       </div>`
     })
   });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    console.error('sendInternalNotification failed:', res.status, body);
+  }
+  return { ok: res.ok, status: res.status, body };
 }
 
 export default async function handler(req, res) {
@@ -240,8 +248,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // Internal notification
-    sendInternalNotification({ ...lead, name: fullName, stage: derivedStage, magnet }).catch(e => console.error('notify failed:', e));
+    // Internal notification — awaited so Vercel doesn't freeze the lambda
+    // before the Resend fetch resolves.
+    try {
+      await sendInternalNotification({ ...lead, name: fullName, stage: derivedStage, magnet });
+    } catch (e) {
+      console.error('notify failed:', e);
+    }
 
     return res.status(200).json({
       success: true,
