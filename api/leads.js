@@ -128,21 +128,26 @@ export default async function handler(req, res) {
 
   try {
     // Insert lead
+    const insertRow = {
+      name: fullName,
+      email,
+      phone: phone || '',
+      brokerage: brokerage || '',
+      deals_per_year: deals_per_year || '',
+      avg_price: avg_price || '',
+      source: source || 'Web',
+      notes: notes || '',
+      status: 'new',
+      stage: derivedStage,
+      magnet: magnet || null,
+    };
+    if (first_name) insertRow.first_name = first_name;
+    if (last_name) insertRow.last_name = last_name;
+    if (Array.isArray(tags) && tags.length) insertRow.tags = tags;
+
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .insert({
-        name: fullName,
-        email,
-        phone: phone || '',
-        brokerage: brokerage || '',
-        deals_per_year: deals_per_year || '',
-        avg_price: avg_price || '',
-        source: source || 'Web',
-        notes: notes || '',
-        status: 'new',
-        stage: derivedStage,
-        magnet: magnet || null,
-      })
+      .insert(insertRow)
       .select()
       .single();
 
