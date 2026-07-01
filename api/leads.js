@@ -8,13 +8,23 @@ const supabase = createClient(
 
 const SITE_ORIGIN = 'https://tplcollective.ai'
 
-// Map magnet slug -> { filename, title, funnel_id for research-stage enrollment }
+// Map magnet slug -> config. type='download' uses signed token + PDF flow.
+// type='video' skips tokens and links straight to the hosted video.
+// funnel_id is optional — omit to skip drip enrollment (e.g. high-intent leads).
 const MAGNETS = {
   'sponsor-checklist': {
+    type: 'download',
     filename: 'lpt-sponsor-checklist.pdf',
     title: 'The LPT Sponsor Checklist',
     funnel_id: 22, // "Research Stage - Sponsor Checklist"
     first_email_subject: 'Your LPT Sponsor Checklist (download inside)',
+  },
+  'lpt-walkthrough-video': {
+    type: 'video',
+    video_url: 'https://youtu.be/rvapYIFg-W4',
+    title: 'Your LPT Realty Walkthrough',
+    first_email_subject: 'Your LPT Realty walkthrough (video inside)',
+    // no funnel_id — /join-lpt-realty leads are ready-to-join, not research-stage.
   },
 }
 
@@ -49,6 +59,47 @@ Quick note on how to use it. Don't hand the list to a sponsor and ask them to fi
 I built this after watching too many agents pick a sponsor on vibes, then spend year two wishing they'd asked better questions.
 
 If anything on the checklist sparks a question, just reply to this email. It comes straight to me.
+
+Joe
+
+Joe DeSane
+TPL Collective
+joe@tplcollective.co`,
+  };
+}
+
+function buildWalkthroughEmail({ firstName, videoUrl }) {
+  const name = firstName || 'there';
+  return {
+    subject: 'Your LPT Realty walkthrough (video inside)',
+    html: `<div style="font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a26;line-height:1.6;">
+  <p>Hey ${name},</p>
+  <p>Here's your LPT Realty walkthrough. Same video that plays on the page you just filled out, now in your inbox so you can come back to it whenever.</p>
+  <p style="margin:24px 0;">
+    <a href="${videoUrl}" style="display:inline-block;background:#6c63ff;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;">Watch the walkthrough</a>
+  </p>
+  <p>Or paste this into your browser:<br><span style="color:#6c63ff;word-break:break-all;">${videoUrl}</span></p>
+  <p>A few things worth knowing:</p>
+  <ul style="padding-left:20px;">
+    <li>We've already started your onboarding on our end. When you finish the steps in the video, your side and ours will line up.</li>
+    <li>Most agents finish the move in under a week.</li>
+    <li>If anything in the video is unclear, reply to this email. It comes straight to me.</li>
+  </ul>
+  <p>If you'd rather walk through it together, grab a slot on my calendar: <a href="https://calendly.com/discovertpl" style="color:#6c63ff;">calendly.com/discovertpl</a></p>
+  <p>Joe<br><span style="color:#8888aa;font-size:13px;">Joe DeSane / TPL Collective / joe@tplcollective.co</span></p>
+</div>`,
+    text: `Hey ${name},
+
+Here's your LPT Realty walkthrough. Same video that plays on the page you just filled out, now in your inbox so you can come back to it whenever.
+
+Watch it here: ${videoUrl}
+
+A few things worth knowing:
+- We've already started your onboarding on our end. When you finish the steps in the video, your side and ours will line up.
+- Most agents finish the move in under a week.
+- If anything in the video is unclear, reply to this email. It comes straight to me.
+
+If you'd rather walk through it together, grab a slot on my calendar: https://calendly.com/discovertpl
 
 Joe
 
@@ -187,26 +238,33 @@ export default async function handler(req, res) {
       }).then(() => {}, () => {});
     }
 
-    // Magnet flow
-    let downloadUrl = null;
+    // Magnet flow — download (signed token → PDF) or video (direct URL)
+    let deliveryUrl = null;
+    let mail = null;
     if (magnetConfig) {
-      const downloadToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomBytes(6).toString('hex');
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      if (magnetConfig.type === 'video') {
+        deliveryUrl = magnetConfig.video_url;
+        mail = buildWalkthroughEmail({ firstName: derivedFirstName, videoUrl: deliveryUrl });
+      } else {
+        // default: download flow
+        const downloadToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomBytes(6).toString('hex');
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      const { error: dError } = await supabase
-        .from('magnet_deliveries')
-        .insert({
-          lead_id: lead.id,
-          magnet,
-          download_token: downloadToken,
-          expires_at: expiresAt,
-        });
-      if (dError) console.error('magnet_deliveries insert error:', dError);
+        const { error: dError } = await supabase
+          .from('magnet_deliveries')
+          .insert({
+            lead_id: lead.id,
+            magnet,
+            download_token: downloadToken,
+            expires_at: expiresAt,
+          });
+        if (dError) console.error('magnet_deliveries insert error:', dError);
 
-      downloadUrl = `${SITE_ORIGIN}/api/download?t=${downloadToken}`;
+        deliveryUrl = `${SITE_ORIGIN}/api/download?t=${downloadToken}`;
+        mail = buildMagnetEmail({ firstName: derivedFirstName, magnet: magnetConfig, downloadUrl: deliveryUrl });
+      }
 
       // Send delivery email
-      const mail = buildMagnetEmail({ firstName: derivedFirstName, magnet: magnetConfig, downloadUrl });
       const sendRes = await sendResend({
         to: email,
         from: 'Joe DeSane <joe@tplcollective.co>',
@@ -222,29 +280,31 @@ export default async function handler(req, res) {
         lead_id: lead.id,
         to_email: email,
         subject: mail.subject,
-        funnel_id: magnetConfig.funnel_id,
+        funnel_id: magnetConfig.funnel_id || null,
         step_order: 0,
         status: sendRes.ok ? 'sent' : 'failed',
       }).then(() => {}, () => {}); // non-fatal if schema differs
 
-      // Enroll in research-stage drip funnel
-      const { error: eError } = await supabase
-        .from('email_funnel_enrollments')
-        .insert({
-          lead_id: lead.id,
-          funnel_id: magnetConfig.funnel_id,
-          current_step: 0,
-          status: 'active',
-          last_sent_at: new Date().toISOString(),
-        });
-      if (eError) {
-        console.error('Funnel enrollment error:', eError);
-      } else {
-        await supabase.from('lead_activity').insert({
-          lead_id: lead.id,
-          activity_type: 'funnel_enrolled',
-          description: `Enrolled in email sequence: ${magnetConfig.title}`
-        }).then(() => {}, () => {});
+      // Enroll in drip funnel only if the magnet is wired to one
+      if (magnetConfig.funnel_id) {
+        const { error: eError } = await supabase
+          .from('email_funnel_enrollments')
+          .insert({
+            lead_id: lead.id,
+            funnel_id: magnetConfig.funnel_id,
+            current_step: 0,
+            status: 'active',
+            last_sent_at: new Date().toISOString(),
+          });
+        if (eError) {
+          console.error('Funnel enrollment error:', eError);
+        } else {
+          await supabase.from('lead_activity').insert({
+            lead_id: lead.id,
+            activity_type: 'funnel_enrolled',
+            description: `Enrolled in email sequence: ${magnetConfig.title}`
+          }).then(() => {}, () => {});
+        }
       }
     }
 
@@ -259,7 +319,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       id: lead.id,
-      ...(downloadUrl ? { download_url: downloadUrl } : {}),
+      ...(deliveryUrl ? { download_url: deliveryUrl } : {}),
     });
   } catch (e) {
     console.error('Failed to save lead:', e);

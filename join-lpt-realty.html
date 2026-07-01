@@ -632,27 +632,10 @@ footer {
     <div class="success-check">&#10003;</div>
     <div class="success-eyebrow">You're In</div>
     <h2>Here's Your <em>Walkthrough</em></h2>
-    <p class="success-sub" id="success-sub">Watch the videos below for every step to finish signing up. We'll send copies to your inbox shortly so you can revisit them anytime.</p>
+    <p class="success-sub" id="success-sub">Watch the walkthrough below for every step to finish signing up. We also sent a copy to your inbox so you can revisit it anytime.</p>
 
-    <!-- ============================================================
-         WALKTHROUGH VIDEOS (two parts)
-         Joe: paste each embed into its own .video-wrap once recorded,
-         then delete that block's .video-placeholder div.
-
-         YouTube (unlisted is fine):
-           <iframe src="https://www.youtube.com/embed/VIDEO_ID" title="LPT Realty Walkthrough"
-             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-             allowfullscreen></iframe>
-         Loom:
-           <iframe src="https://www.loom.com/embed/VIDEO_ID" allowfullscreen></iframe>
-         Self-hosted MP4:
-           <video controls poster="/og/walkthrough-poster.jpg">
-             <source src="/video/lpt-walkthrough-1.mp4" type="video/mp4">
-           </video>
-         ============================================================ -->
-
-    <!-- VIDEO #1 -->
-    <div class="video-label">Walkthrough &middot; #1</div>
+    <!-- WALKTHROUGH VIDEO -->
+    <div class="video-label">Walkthrough</div>
     <div class="video-wrap">
       <iframe src="https://www.youtube.com/embed/rvapYIFg-W4?rel=0"
         title="How to Join LPT Realty | TPL Collective Walkthrough"
@@ -660,18 +643,6 @@ footer {
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         referrerpolicy="strict-origin-when-cross-origin"
         allowfullscreen></iframe>
-    </div>
-
-    <!-- VIDEO #2 -->
-    <div class="video-label">Walkthrough &middot; #2</div>
-    <div class="video-wrap">
-      <div class="video-placeholder">
-        <div class="vp-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-        </div>
-        <div class="vp-title">Walkthrough Video #2</div>
-        <div class="vp-sub">Part two of your walkthrough is on the way as well. Watch both to complete every step.</div>
-      </div>
     </div>
 
     <div class="success-cta">
@@ -796,7 +767,7 @@ form.addEventListener('submit', async function(e) {
     document.getElementById('apply-view').style.display = 'none';
     const success = document.getElementById('success-view');
     const sub = document.getElementById('success-sub');
-    sub.textContent = 'Thanks ' + firstName + '. Watch the videos below for every step to finish signing up. We\'ll send copies to ' + email + ' shortly so you can revisit them anytime.';
+    sub.textContent = 'Thanks ' + firstName + '. Watch the walkthrough below for every step to finish signing up. We also sent a copy to ' + email + ' so you can revisit it anytime.';
     success.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     document.querySelectorAll('#success-view .fade-in').forEach(el => el.classList.add('visible'));
