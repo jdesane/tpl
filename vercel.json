@@ -14,6 +14,10 @@
     { "source": "/vs-coldwell-banker", "destination": "/vs/coldwell-banker", "permanent": true },
     { "source": "/vs-century-21", "destination": "/vs/century-21", "permanent": true },
     { "source": "/vs-real-brokerage", "destination": "/vs/real-brokerage", "permanent": true },
+    { "source": "/kw", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=video&utm_medium=verbal&utm_campaign=kw-video", "permanent": false },
+    { "source": "/kw-yt", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=youtube&utm_medium=description&utm_campaign=kw-video", "permanent": false },
+    { "source": "/kw-fb", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=facebook&utm_medium=post&utm_campaign=kw-video", "permanent": false },
+    { "source": "/kw-dm", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=dm&utm_medium=direct&utm_campaign=kw-video", "permanent": false },
     { "source": "/private-assets/:path*", "destination": "/", "permanent": false }
   ],
   "rewrites": [
