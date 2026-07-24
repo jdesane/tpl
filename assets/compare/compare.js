@@ -858,6 +858,16 @@
     grid.innerHTML = '';
     const cols = getColumnsForMatrix();
 
+    // Best LPT net across any selected LPT plan(s), used as the baseline
+    // for "you'd keep $X more at LPT" on each non-LPT card.
+    let lptBestNet = null;
+    cols.forEach(col => {
+      if (col.brokerage.slug === LPT_SLUG && col.plan) {
+        const r = calcTotalCost(col.brokerage, col.plan, state.gci, state.txns, state.avgGci, state.lptPlus);
+        if (lptBestNet === null || r.net > lptBestNet) lptBestNet = r.net;
+      }
+    });
+
     cols.forEach(col => {
       const b = col.brokerage;
       const plan = col.plan;
@@ -910,6 +920,20 @@
       const isLpt = b.slug === LPT_SLUG;
       const isLptWithPerTxn = isLpt && plan.per_txn_brokerage_fee;
 
+      // Non-LPT cards: show delta vs LPT's best net (if LPT is in the mix)
+      const diffHtml = (!isLpt && lptBestNet !== null)
+        ? (function () {
+            const d = lptBestNet - r.net;
+            if (d > 0) {
+              return '<div class="breakdown-diff positive">You would keep <strong>' + fmtMoney(d) + '/yr</strong> more at LPT Realty</div>';
+            }
+            if (d < 0) {
+              return '<div class="breakdown-diff negative">You would keep <strong>' + fmtMoney(-d) + '/yr</strong> less at LPT Realty</div>';
+            }
+            return '<div class="breakdown-diff neutral">Same net as LPT Realty</div>';
+          })()
+        : '';
+
       card.innerHTML =
         '<div class="breakdown-header">' +
           logoHtml(b, 'breakdown') +
@@ -928,6 +952,7 @@
             '<span class="breakdown-total-val net">' + fmtMoney(r.net) + '</span>' +
           '</div>' +
           '<div class="breakdown-retained">' + fmtPct(r.retainedPct) + ' retained</div>' +
+          diffHtml +
         '</div>' +
         (isLptWithPerTxn
           ? '<div class="breakdown-note gold">The $' + plan.per_txn_brokerage_fee + ' per-txn fee is typically passed through to the client at closing, so the agent\'s out-of-pocket is often lower than the total above. It is still counted here so the math matches apples-to-apples against other brokerages.</div>'
@@ -1291,7 +1316,10 @@
   function renderHybridshare() {
     const panel = $('hybridshare-panel');
     const lpt = state.selected.find(b => b.slug === LPT_SLUG);
-    if (!lpt || !lpt.revshare || !lpt.revshare.tier_breakdown) {
+    // BB agents can recruit a downline but HybridShare earnings do not
+    // activate until upgrading to Brokerage Partner — hide the ladder
+    // entirely when the user is comparing BB only.
+    if (!lpt || !lpt.revshare || !lpt.revshare.tier_breakdown || state.lptPlan === 'bb') {
       panel.hidden = true; return;
     }
     panel.hidden = false;

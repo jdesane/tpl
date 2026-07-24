@@ -1113,6 +1113,15 @@ nav {
   font-size: 11px; color: var(--accent-hi);
   letter-spacing: 0.08em; margin-top: 2px;
 }
+.breakdown-diff {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed rgba(255,255,255,0.1);
+  font-size: 13px; text-align: center; line-height: 1.5;
+}
+.breakdown-diff strong { font-weight: 700; }
+.breakdown-diff.positive { color: var(--green); }
+.breakdown-diff.negative { color: var(--red); }
+.breakdown-diff.neutral  { color: var(--muted); }
 .breakdown-note {
   margin-top: 14px; padding: 12px 14px;
   background: var(--accent-bg);
