@@ -582,6 +582,25 @@ New high-intent capture page for agents who already know they want to join LPT t
 - **Site nav**: `Join LPT Realty` added across all 36 nav-bearing pages (desktop nav + mobile menu + footer), inserted right after `Compare`. Funnel reads Explore → Why → Fees → Compare → Join → Resources → Blog.
 - **sitemap.xml**: `/joining-lpt-realty` swapped for `/join-lpt-realty`.
 
+## Phase 18 — /compare polish + KW → LPT BB recruiting outreach ✅
+
+**Comparator (`/compare`) fixes:**
+- `data/brokerages.json`: LPT Realty founded year corrected 2018 → 2022
+- Breakdown cards on every non-LPT card show a "You would keep $X/yr more at LPT Realty" row (green when LPT wins, red when it loses, neutral when identical). Baseline is best LPT net across whichever LPT plans are selected in the view.
+- HybridShare 7-tier ladder panel hidden when `state.lptPlan === 'bb'` (BB agents can recruit a downline but cannot unlock HybridShare earnings until upgrading to Brokerage Partner).
+- Column order rewrite: competitors first in selection order, LPT last (matrix + breakdown cards + cap break-even + 3-year projection). Reads left-to-right as "your current brokerage → LPT alternative".
+- Per-brokerage fee override: every non-LPT chip gets an inline ✎ edit button. Modal prefills from the brokerage's published plan via new `planToFormValues()`. On save, `buildCustomBrokerage()` detects "editing a published entry" and spreads the original object (logo, plan_name label, revshare tiers, technology, training, source citations, tier, category, markets, tpl_callout) then replaces only the plan numbers. Result renders under the original brand and plan name; only the math changes. Chip gets a gold "MODIFIED" pill. LPT chip has NO edit button — LPT numbers stay verified against the official flyer per project rules.
+
+**Known follow-up (not blocking):** the server-side PDF generator (`api/generate-comparison-pdf.js` + `api/_lib/comparison-pdf.js`) still renders the HybridShare 7-tier section even when `plan=bb`. The JS/live compare page hides it correctly. Same guard needs porting to the PDF path.
+
+**Active outreach campaign (July 2026, KW Palm Beach + Treasure Coast → LPT BB):**
+- Source data: KW production export (LTM through 2026-07-24)
+- 16 BB-target agents (10+ LTM txns, KW GCI ≤ $110K, would keep $7,500-$19,500 more/yr at LPT BB). Files in `outbound/kw-bb-target/` (untracked, working drafts): `run-these-analysis.csv`, `run-these-bb-targets.csv`, `messages-run-these.md`.
+- Broader pool: 68 "past KW cap" agents (GCI ≥ $110K) still keep ~$18-19K/yr more on LPT BB, just a different pitch angle.
+- Delivery mechanic: personalized YouTube-unlisted video (~8 min screen recording using `/compare?report=<token>`) + email from `Joe DeSane <joe@tplcollective.co>` via Resend + attached branded PDF from the comparator.
+- **Sent:** Heather Suarez (KW Jupiter, 9 txns, $2.5M vol, delta $17,500) — id `3ddbd7df-ea19-461e-b7c3-465d52beef73`, 2026-06-30.
+- **Scheduled:** Stephanie Hays (KW Wellington, 12 deals, $7M vol, delta $17,720, PDF attached) — id `dc3a0bfa-3e58-43cd-8655-3320a8b6b849`, fires 2026-07-27 6:00 PM EDT via Resend `scheduled_at`. Cancel/reschedule via `DELETE`/`PATCH https://api.resend.com/emails/dc3a0bfa-3e58-43cd-8655-3320a8b6b849`.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
