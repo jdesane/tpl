@@ -434,15 +434,17 @@
   }
 
   function getColumnsForMatrix() {
+    // Competitor brokerages first (in selection order), LPT last so users
+    // read left-to-right from "your current brokerage" → "LPT alternative".
     const cols = [];
-    state.selected.forEach(b => {
-      if (b.slug === LPT_SLUG) {
-        getLptPlansForView(b).forEach(plan => cols.push({ brokerage: b, plan }));
-      } else {
-        const firstPlan = (b.plans && b.plans[0]) || null;
-        cols.push({ brokerage: b, plan: firstPlan });
-      }
+    const lpt = state.selected.find(b => b.slug === LPT_SLUG);
+    state.selected.filter(b => b.slug !== LPT_SLUG).forEach(b => {
+      const firstPlan = (b.plans && b.plans[0]) || null;
+      cols.push({ brokerage: b, plan: firstPlan });
     });
+    if (lpt) {
+      getLptPlansForView(lpt).forEach(plan => cols.push({ brokerage: lpt, plan }));
+    }
     return cols;
   }
 
@@ -455,14 +457,20 @@
     } else {
       state.selected.forEach(b => {
         const chip = document.createElement('span');
-        chip.className = 'chip' + (b.slug === LPT_SLUG ? ' lpt' : '') + (b.isCustom ? ' chip-custom' : '');
+        chip.className = 'chip'
+          + (b.slug === LPT_SLUG ? ' lpt' : '')
+          + (b.isCustom ? ' chip-custom' : '')
+          + (b._userEdited ? ' chip-edited' : '');
         chip.innerHTML = logoHtml(b, 'chip') + '<span>' + escapeHtml(b.short_name || b.name) + '</span>';
-        if (b.isCustom) {
+        // LPT numbers are official (verified against the lpt.com flyer) - not user-editable.
+        // Every other selected brokerage (published or custom) gets an inline edit button
+        // so the user can override fees, cap, split, etc. to match their specific office.
+        if (b.slug !== LPT_SLUG) {
           const editBtn = document.createElement('button');
           editBtn.type = 'button';
           editBtn.className = 'chip-edit-btn';
-          editBtn.setAttribute('aria-label', 'Edit ' + b.name);
-          editBtn.title = 'Edit';
+          editBtn.setAttribute('aria-label', 'Edit ' + b.name + ' numbers');
+          editBtn.title = b._userEdited ? 'Edit numbers (modified)' : 'Override fees for your specific office';
           editBtn.textContent = '✎';
           editBtn.addEventListener('click', (e) => { e.stopPropagation(); openCustomModal(b); });
           chip.appendChild(editBtn);
@@ -534,9 +542,16 @@
   /* ────────── CUSTOM BROKERAGE ────────── */
   let customEditingSlug = null;
 
-  function buildCustomBrokerage(formValues) {
-    // Build a brokerage object that calcTotalCost understands
-    const slug = formValues.editingSlug || ('custom-' + Date.now());
+  function buildCustomBrokerage(formValues, existingPublished) {
+    // Build a brokerage object that calcTotalCost understands.
+    // If existingPublished is provided (editing a real KW/eXp/etc. entry),
+    // preserve its identity (slug, logo, tier, category, revshare tiers,
+    // technology / training / culture, source citations) and only replace
+    // the plan numbers. Otherwise this is a from-scratch custom entry.
+    const isEditingPublished = !!(existingPublished && !existingPublished.isCustom);
+    const slug = isEditingPublished
+      ? existingPublished.slug
+      : (formValues.editingSlug || ('custom-' + Date.now()));
     const model = formValues.model;
     const splitPct = parseFloat(formValues.split);
     const cap = parseFloat(formValues.cap);
@@ -575,6 +590,24 @@
       plan.annual_cap = !isNaN(flatCap) ? flatCap : 0;
     }
 
+    if (isEditingPublished) {
+      // Keep the original brokerage identity + everything the UI reads
+      // (logo, revshare tiers, technology, training, source citations,
+      // founded year, tpl_callout, markets, tier, category, etc.).
+      // Preserve the original plan_name so the card header still reads
+      // "Standard" / "Brokerage Partner (80/20)" instead of "Your Numbers".
+      const origPlan = (existingPublished.plans && existingPublished.plans[0]) || {};
+      plan.plan_name = origPlan.plan_name || plan.plan_name;
+      return {
+        ...existingPublished,
+        name: formValues.name,
+        short_name: formValues.name.length > 18 ? formValues.name.slice(0, 16) + '…' : formValues.name,
+        plans: [plan],
+        _userEdited: true,     // flag for chip indicator + telemetry
+        _customForm: formValues,
+      };
+    }
+
     return {
       slug,
       name: formValues.name,
@@ -588,13 +621,44 @@
     };
   }
 
+  function planToFormValues(existing) {
+    // Extract editable form values from a published brokerage's first plan
+    // so the custom modal can be reused as an "override fees" editor.
+    if (!existing || !existing.plans || !existing.plans[0]) return {};
+    const p = existing.plans[0];
+    let model = 'split-cap';
+    if (p.flat_fee_per_txn) model = 'flat-fee';
+    else if (!p.annual_cap) model = 'no-cap';
+    const splitMatch = p.split_structure && String(p.split_structure).match(/^(\d+)/);
+    return {
+      name: existing.name || '',
+      model,
+      split: splitMatch ? splitMatch[1] : '',
+      cap: (!p.flat_fee_per_txn && p.annual_cap) ? p.annual_cap : '',
+      flat: p.flat_fee_per_txn || '',
+      flatCap: (p.flat_fee_per_txn && p.annual_cap) ? p.annual_cap : '',
+      perTxn: p.per_txn_brokerage_fee || '',
+      monthly: p.monthly_fee || '',
+      annual: p.annual_fee || '',
+      royalty: p.franchise_fee_pct || '',
+      royaltyCap: p.franchise_fee_cap_annual || '',
+    };
+  }
+
   function openCustomModal(existing) {
     const modal = $('custom-modal');
     const err = $('custom-modal-error');
     err.hidden = true;
     customEditingSlug = existing ? existing.slug : null;
-    const f = existing && existing._customForm ? existing._customForm : {};
-    $('custom-modal-title').textContent = existing ? 'Edit ' + (existing.name || 'brokerage') : 'Enter your brokerage';
+    // Prefill priority: raw form from a prior custom edit → derived from the
+    // published plan → empty for a new custom brokerage.
+    const f = existing
+      ? (existing._customForm || planToFormValues(existing))
+      : {};
+    const isEditPublished = !!(existing && !existing.isCustom);
+    $('custom-modal-title').textContent = existing
+      ? (isEditPublished ? 'Edit ' + (existing.name || 'brokerage') + ' numbers' : 'Edit ' + (existing.name || 'brokerage'))
+      : 'Enter your brokerage';
     $('custom-name').value = f.name || (existing ? existing.name : '') || '';
     const model = f.model || 'split-cap';
     document.querySelectorAll('input[name="custom-model"]').forEach(r => { r.checked = (r.value === model); });
@@ -670,7 +734,10 @@
       }
     }
 
-    const brokerage = buildCustomBrokerage(formValues);
+    const existingRef = customEditingSlug
+      ? state.selected.find(b => b.slug === customEditingSlug)
+      : null;
+    const brokerage = buildCustomBrokerage(formValues, existingRef);
     if (customEditingSlug) {
       const idx = state.selected.findIndex(b => b.slug === customEditingSlug);
       if (idx >= 0) {
