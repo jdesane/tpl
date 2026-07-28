@@ -601,6 +601,35 @@ New high-intent capture page for agents who already know they want to join LPT t
 - **Sent:** Heather Suarez (KW Jupiter, 9 txns, $2.5M vol, delta $17,500) — id `3ddbd7df-ea19-461e-b7c3-465d52beef73`, 2026-06-30.
 - **Scheduled:** Stephanie Hays (KW Wellington, 12 deals, $7M vol, delta $17,720, PDF attached) — id `dc3a0bfa-3e58-43cd-8655-3320a8b6b849`, fires 2026-07-27 6:00 PM EDT via Resend `scheduled_at`. Cancel/reschedule via `DELETE`/`PATCH https://api.resend.com/emails/dc3a0bfa-3e58-43cd-8655-3320a8b6b849`.
 
+## Phase 19 — KW hypothetical outreach, Round 1 (July 2026) ✅
+
+First scale test moving from 1v1 personalized video → templated hypothetical email. Goal: find messaging that converts often enough to justify sending to more agents at once instead of custom-per-agent.
+
+**Campaign shape.** Single templated email, `{{first_name}}` merge only. Hypothetical (15 deals × $400K × 2.5% = $150K GCI) instead of the recipient's actual production. Compares KW cost stack ($27,225 with $21K office cap, $3K royalty cap, $175/txn, $50/mo — noted as market-center averages for the area) vs LPT Business Builder cost stack ($8,425 with $5K cap, $500 annual, $195/txn). Both per-txn fees shown as agent cost with note that both are typically passed to client at closing. **Delta ≈ $18,800/yr.** CTA is a soft ask: reply with actual closings / avg price / current split / fees and Joe recuts the comparison against real numbers. P.S. + inline KW awards image (`/Users/desane/Desktop/kw/KW Awards.png`, resized to 720×899 JPG, 156KB) as the credibility punch — "I paid roughly half a million dollars to operate my business at KW. This is what I have to show for it."
+
+**List filtering.** Source: 21 KW agents from Beaches MLS export (10-11 LTM txns, Broward/PB/Martin/Indian River/St. Lucie). ASP calculated from LTM $ ÷ LTM txns. Dropped 4 outliers so the $400K/15-deal hypothetical resonates:
+- 3 low-ASP ($200-240K): Cynthia Cupo, Jacqueline Mogavero, Avis Swenson → queued for a low-ASP variant
+- 1 luxury ($1.18M ASP, $11.8M vol): Nader Hamdan → queued for a luxury variant
+- Shipped: **17 agents** in the $320K-$573K ASP sweet spot
+
+**Delivery.** Scheduled Tue 2026-07-29 at 7:30 AM ET (`2026-07-29T11:30:00Z`) via Resend from `Joe DeSane <joe@tplcollective.co>`, reply-to `joe@desaneteam.com`. All 17 accepted, IDs saved in `outbound/kw-round-1-hypothetical/sent-log.csv` for cancel/reschedule handles. Campaign tag `kw-hypothetical-round-1`.
+
+**Files at `outbound/kw-round-1-hypothetical/`** (untracked per Phase 18 pattern):
+- `send.py` — Resend sender with `--test`, `--dry`, `--live`, `--schedule <ISO>` modes; includes User-Agent header (Resend edge Cloudflare 1010's default `Python-urllib` UA); posts scheduled_at if flag set; 3s API spacing (does not affect delivery time)
+- `email-body.html` — HTML template with `<img src="cid:awards">` reference
+- `email-body.txt` — plain-text fallback
+- `kw-awards-email.jpg` — resized inline image
+- `recipients-17.csv` — merge list
+- `sent-log.csv` — 17 Resend IDs + scheduled_at
+- `PREVIEW.html` — browser-openable preview with base64-embedded image (sample merged with first_name=Sharon)
+
+**Success gates for round 1.** Reply rate ≥15%, "3-item reply" rate (real leads submitting closings + ASP + split) ≥10%, calls booked ≥5%. Anything above those = green light to scale to more KW agents in the same production band. Below = iterate copy/subject before scaling. 4-day silent → single-line bump (drafted separately when we're closer).
+
+**Queued after round 1 reads:**
+- Low-ASP variant ($250K/12 deals) for the 3 held-back agents
+- Luxury variant for Nader ($1M+/10 deals)
+- Round 2 iteration based on reply themes
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
