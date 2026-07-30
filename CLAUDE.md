@@ -630,6 +630,53 @@ First scale test moving from 1v1 personalized video → templated hypothetical e
 - Luxury variant for Nader ($1M+/10 deals)
 - Round 2 iteration based on reply themes
 
+## Phase 20 — KW hypothetical outreach, Round 2 (July 2026) ✅
+
+**Round 1 read.** 17 emails delivered Tue 7/29 7:30am ET. 100% delivery, 0 bounces, 0 complaints, 0 replies at 12+ hours. Zero engagement signal — could be the copy (long, ~350 words), could be the CTA (reply with closings + avg price + split = 3-item ask with too much friction), could just be the segment.
+
+**Round 2 pivot.** Same audience type (10-15 LTM KW txns, $300-600K ASP), completely different email + CTA mechanic.
+
+**New email shape.** Half the length (~150 words). Single-click CTA replaces the reply-with-3-things ask. Kept the credibility punch (P.S. + KW awards image) intact — it was the strongest part of round 1. Opener rewritten from "Skipping the long email this time" (which broke on a fresh audience who never got a long email) to "Been running numbers on the KW cost stack lately and wanted to share what I found."
+
+**Per-agent tracked URLs via existing Phase 14 infrastructure.** Every recipient gets a unique `https://tplcollective.ai/compare?report=<share_token>` URL that:
+- Loads `/compare` in report mode with KW + LPT Realty pre-selected
+- Pins `gci=150000`, `txns=15`, `lpt_plan=bb` (Business Builder)
+- Shows "Comparison prepared for [First] by Joe DeSane" banner
+- Auto-increments `view_count` on the `recruit_comparisons` row
+- Logs `comparison_viewed` to `lead_activity` on every click
+- Surfaces in MC → Recruit Comparison right-side panel as views land
+
+**Lead-first send flow.** For each of 20 recipients, `send.py` does 3 Supabase writes BEFORE calling Resend:
+1. Upserts lead in `leads` table (dedup on email within workspace 1). Source `kw-hypothetical-round-2`, `current_brokerage=Keller Williams`, tags `[kw-target, round-2, hypothetical-15-400k, kw-hypothetical-round-2]`, `stage=research`, `lead_temperature=warm`, `assigned_to=Joe (user_id=1)`.
+2. Inserts `recruit_comparisons` row with `created_by_user_id=1`, `selection=[keller-williams, lpt-realty]`, `gci=150000`, `txns=15`, `lpt_plan=bb`. Returns `share_token` UUID.
+3. Sends Resend email with per-recipient `share_url` merged in + inline awards image.
+4. Logs `comparison_sent` to `lead_activity` (column is `activity_type` not `type`, no `meta` column — embed metadata into `description` string).
+
+**Ships without external deps.** Rewrote Supabase calls to use REST via `urllib` after macOS PEP 668 blocked `pip install supabase`. `send.py` has zero non-stdlib imports now, same style as round 1.
+
+**Delivery.** 20 emails scheduled Wed 2026-07-30 at 7:30 AM ET (`2026-07-30T11:30:00Z`) via Resend from `Joe DeSane <joe@tplcollective.co>`, reply-to `joe@desaneteam.com`. 15 new leads created (ids 530-544), 5 existing leads warmed (ids 193, 206, 208, 222, 228 — pre-existing from Phase 11 PBC list or earlier imports). All 20 Resend IDs and share_tokens in `outbound/kw-round-2-hypothetical/sent-log.csv` for cancel/reschedule.
+
+**Files at `outbound/kw-round-2-hypothetical/`** (untracked per Phase 18/19 pattern):
+- `send.py` — zero-dep sender: Supabase REST upsert → recruit_comparisons insert → Resend send → lead_activity log. `--test` creates a real lead+token for `joe@tplcollective.co` so Joe can click through the actual `/compare?report=<token>` flow before batch. Env: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (new `sb_secret_...` format works), `RESEND_API_KEY`.
+- `email-body.html` — HTML template with `{{first_name}}` + `{{share_url}}` merges, purple button-styled CTA
+- `email-body.txt` — plain-text fallback
+- `kw-awards-email.jpg` — same inline image as round 1
+- `recipients-20.csv` — 20 target agents (15 deals×$400K sweet spot, dedupe against round 1)
+- `sent-log.csv` — 20 rows: first_name, last_name, email, lead_id, share_token, share_url, resend_id, scheduled_at, campaign
+- `PREVIEW.html` — browser-openable preview with sample merge
+
+**Success gates for round 2.**
+- Click rate on `share_url` ≥ 20% (higher expected than round 1 reply rate since click = lower friction)
+- View count ≥ 4 unique agents visiting `/compare?report=<token>` in first 48 hours
+- Replies to `joe@desaneteam.com` ≥ 2
+
+Below those gates → iterate again before scaling to next 20 (agents 21-40 from the 88+ pool). Above → batch the next 20 with same mechanic.
+
+**Queued.**
+- `check-r2.py` for tomorrow: pulls Resend open/click states + Supabase `view_count`/`comparison_viewed` counts across all 20 tokens in one report
+- Low-ASP variant ($250K/12 deals) for held-back agents from round 1 (Cupo, Mogavero, Swenson)
+- Luxury variant for Nader Hamdan ($1M+ ASP)
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
