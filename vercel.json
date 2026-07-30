@@ -18,6 +18,11 @@
     { "source": "/kw-yt", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=youtube&utm_medium=description&utm_campaign=kw-video", "permanent": false },
     { "source": "/kw-fb", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=facebook&utm_medium=post&utm_campaign=kw-video", "permanent": false },
     { "source": "/kw-dm", "destination": "/compare?brokerages=lpt-realty%2Ckeller-williams&utm_source=dm&utm_medium=direct&utm_campaign=kw-video", "permanent": false },
+    { "source": "/inman", "destination": "/compare?utm_source=direct&utm_medium=shortlink&utm_campaign=inman-2026&utm_content=generic", "permanent": false },
+    { "source": "/inman-fb", "destination": "/compare?utm_source=facebook&utm_medium=social&utm_campaign=inman-2026&utm_content=feed", "permanent": false },
+    { "source": "/inman-ig", "destination": "/compare?utm_source=instagram&utm_medium=social&utm_campaign=inman-2026&utm_content=bio", "permanent": false },
+    { "source": "/inman-st", "destination": "/compare?utm_source=instagram&utm_medium=story&utm_campaign=inman-2026&utm_content=story", "permanent": false },
+    { "source": "/inman-dm", "destination": "/compare?utm_source=direct&utm_medium=dm&utm_campaign=inman-2026&utm_content=outreach", "permanent": false },
     { "source": "/private-assets/:path*", "destination": "/", "permanent": false }
   ],
   "rewrites": [
