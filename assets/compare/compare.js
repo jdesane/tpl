@@ -964,11 +964,20 @@
 
       const rows = [];
       if (bd.splitCost > 0) {
-        const label = plan.flat_fee_per_txn ? 'Flat fees to cap' : 'Split to cap';
-        rows.push(rowHtml(label, plan.flat_fee_per_txn
-            ? Math.min(state.txns, Math.floor((plan.annual_cap || 0) / plan.flat_fee_per_txn)) + ' × ' + fmtMoney(plan.flat_fee_per_txn)
-            : plan.split_structure + ' until ' + fmtMoney(plan.annual_cap || 0) + ' cap',
-          bd.splitCost));
+        const isFlat = !!plan.flat_fee_per_txn;
+        const hasCap = !!plan.annual_cap;
+        const label = isFlat ? (hasCap ? 'Flat fees to cap' : 'Broker sales fee') : 'Split to cap';
+        let sublabel;
+        if (isFlat) {
+          // Mirror calcTotalCost's cap-fallback logic (line ~244) so the label
+          // shows the actual number of billed txns even when annual_cap is null.
+          const rawTxnsToCap = hasCap ? Math.floor(plan.annual_cap / plan.flat_fee_per_txn) : 0;
+          const feeTxns = rawTxnsToCap > 0 ? Math.min(state.txns, rawTxnsToCap) : state.txns;
+          sublabel = feeTxns + ' × ' + fmtMoney(plan.flat_fee_per_txn);
+        } else {
+          sublabel = plan.split_structure + ' until ' + fmtMoney(plan.annual_cap || 0) + ' cap';
+        }
+        rows.push(rowHtml(label, sublabel, bd.splitCost));
       }
       if (bd.txnBrokerageFees > 0) {
         rows.push(rowHtml('Per-txn brokerage fee',
@@ -1730,11 +1739,20 @@
           plan_name: plan ? plan.plan_name : null,
           rows: [
             (bd.splitCost > 0
-              ? { label: plan && plan.flat_fee_per_txn ? 'Flat fees to cap' : 'Split to cap',
-                  sub: plan && plan.flat_fee_per_txn
-                    ? Math.min(state.txns, Math.floor((plan.annual_cap || 0) / plan.flat_fee_per_txn)) + ' x ' + fmtMoney(plan.flat_fee_per_txn)
-                    : (plan ? plan.split_structure + ' until ' + fmtMoney(plan.annual_cap || 0) + ' cap' : ''),
-                  value: bd.splitCost }
+              ? (function () {
+                  const isFlat = !!(plan && plan.flat_fee_per_txn);
+                  const hasCap = !!(plan && plan.annual_cap);
+                  const label = isFlat ? (hasCap ? 'Flat fees to cap' : 'Broker sales fee') : 'Split to cap';
+                  let sub;
+                  if (isFlat) {
+                    const rawTxnsToCap = hasCap ? Math.floor(plan.annual_cap / plan.flat_fee_per_txn) : 0;
+                    const feeTxns = rawTxnsToCap > 0 ? Math.min(state.txns, rawTxnsToCap) : state.txns;
+                    sub = feeTxns + ' x ' + fmtMoney(plan.flat_fee_per_txn);
+                  } else {
+                    sub = plan ? plan.split_structure + ' until ' + fmtMoney(plan.annual_cap || 0) + ' cap' : '';
+                  }
+                  return { label, sub, value: bd.splitCost };
+                })()
               : null),
             (bd.txnBrokerageFees > 0
               ? { label: 'Per-txn brokerage fee',

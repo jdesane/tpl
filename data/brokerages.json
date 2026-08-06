@@ -1635,6 +1635,72 @@
         "office_based": false,
         "community_style": "Flat-fee independent, multi-state, cost-conscious agent focus"
       }
+    },
+    {
+      "slug": "agent-group-realty",
+      "name": "Agent Group Realty",
+      "short_name": "AGR",
+      "aliases": [
+        "AGR",
+        "Agent Group"
+      ],
+      "logo": "/assets/logos/agr.png",
+      "color": "#8b85ff",
+      "status": "published",
+      "tier": 2,
+      "category": "independent",
+      "model_type": "100% Commission (Flat Fee)",
+      "founded": null,
+      "public_ticker": null,
+      "agent_count_note": "",
+      "source_url": "https://www.agentgrouprealty.com/100-percent-commission-real-estate-brokerage-florida",
+      "data_asof": "2026-07-27",
+      "markets": [
+        "FL"
+      ],
+      "citations": [
+        "Agent Group Realty website - AGR 100% Commission Plan for Florida Office"
+      ],
+      "plans": [
+        {
+          "plan_name": "AGR 100% Commission Plan",
+          "split_structure": "100/0",
+          "annual_cap": null,
+          "cap_note": "100% commission - flat per-txn fee, no cap",
+          "flat_fee_per_txn": 390,
+          "per_txn_brokerage_fee": null,
+          "per_txn_fee_applies_to": "every_transaction",
+          "monthly_fee": 59,
+          "annual_fee": 0,
+          "eo_insurance_annual": 0,
+          "eo_note": "Included",
+          "franchise_fee_pct": 0,
+          "franchise_fee_cap_annual": null,
+          "notes": "$390 broker sales fee per transaction (no cap). $59/month membership fee. E&O included. dotloop business included for individual agents. Teams pay optional $79/month for dotloop. Both buyer and seller sides count as a single transaction fee - no dual transaction fees when double-ending."
+        }
+      ],
+      "revshare": {
+        "offered": false
+      },
+      "equity": {
+        "offered": false,
+        "publicly_traded": false
+      },
+      "technology": {
+        "included_tools": [
+          "dotloop business (individual agents)"
+        ],
+        "optional_package": "dotloop for teams: $79/mo",
+        "crm_included": false
+      },
+      "training": {
+        "on_demand_library": false,
+        "mentorship_program": false
+      },
+      "culture": {
+        "office_based": false,
+        "community_style": "Independent Florida-only 100% commission brokerage"
+      }
     }
   ]
 }
