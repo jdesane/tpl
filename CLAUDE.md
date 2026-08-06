@@ -677,6 +677,18 @@ Below those gates → iterate again before scaling to next 20 (agents 21-40 from
 - Low-ASP variant ($250K/12 deals) for held-back agents from round 1 (Cupo, Mogavero, Swenson)
 - Luxury variant for Nader Hamdan ($1M+ ASP)
 
+## Phase 21 — Comparator additions: AGR + LPT ticker + no-cap flat-fee fix ✅
+
+**Agent Group Realty added to `/compare`** (`data/brokerages.json` + `assets/logos/agr.png`):
+- Tier 2, category `independent`, markets `["FL"]` (state-filtered like LoKation and Samson)
+- Plan: $390 flat per-txn (no cap), $59/mo membership, E&O + dotloop business included for individuals, dotloop-for-teams $79/mo optional. Both sides of a double-end count as one txn fee.
+- Founded 2016; brand color `#1e3a8a` (deep navy matching the wordmark)
+- Crossover math: AGR wins on cost vs LPT BB below ~25 txns/yr (both are 100% commission models but AGR's $390/txn beats LPT BB's $500/txn until you hit BB's $5K cap). Above ~25 txns/yr, LPT BB wins because its split cap holds while AGR keeps billing every txn. For agents comparing these two, the LPT pitch has to lean on non-cost value (HybridShare, equity, brand pipeline, TPL Collective layer).
+
+**LPT public ticker:** `LPTA (Reserved)` — was `null`, now surfaces in the Overview row so LPT differentiates from other cloud brokerages that are already private.
+
+**Bug fix (`assets/compare/compare.js`):** any 100%-commission plan with `annual_cap: null` was rendering the breakdown row as `0 × $fee` because both render paths (renderBreakdown and the report/PDF data builder) computed the label multiplier as `Math.min(txns, Math.floor(annual_cap / flat_fee))` which collapses to 0 when cap is null. The calc itself was correct (falls back to `txns` when `txnsToCap` is 0) — only the display was wrong. Both paths now mirror the calc's cap-fallback and use the label "Broker sales fee" instead of "Flat fees to cap" when there's no cap.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
