@@ -197,5 +197,57 @@ no_close = compute_net_sheet(300_000, FL, {"commission_pct": "0.05",
                                            "annual_property_taxes": "3000"})
 check("no closing date -> no proration", lines_of(no_close)["prorated_taxes"]["amount"], 0.00)
 
-print(f"\n{'='*78}\n{P} passed, {F} failed\n{'='*78}")
+
+
+# ── Appended: agent-owned rates + the seller-facing guard ──────────────
+print("\n=== 11. Agent owns the rates; unconfirmed profiles cannot reach a seller ===")
+from net_sheet import assert_sendable
+
+tmpl = compute_net_sheet(500_000, FL, {"commission_pct": "0.05"},
+                         profile_meta={"is_template": True, "name": "FL starter template"})
+check_bool("template profile is BLOCKING", tmpl["blocking"])
+check_bool("...and says to replace the numbers",
+           any("replace every number" in b for b in tmpl["blockers"]))
+check_bool("...but still computes so setup is visible",
+           tmpl["totals"]["total_closing_costs"] > 0)
+
+unconf = compute_net_sheet(500_000, FL, {"commission_pct": "0.05"},
+                           profile_meta={"is_template": False, "confirmed_at": None,
+                                         "name": "My costs"})
+check_bool("unconfirmed profile is BLOCKING", unconf["blocking"])
+check_bool("...and points at the settlement statement",
+           any("settlement statement" in b for b in unconf["blockers"]))
+
+conf = compute_net_sheet(500_000, FL, {"commission_pct": "0.05"},
+                         profile_meta={"is_template": False,
+                                       "confirmed_at": "2026-08-18T00:00:00Z",
+                                       "name": "My costs"})
+check_bool("confirmed profile is NOT blocking", conf["blocking"] is False)
+check_bool("confirmation timestamp surfaces",
+           conf["meta"]["fee_profile_confirmed_at"] == "2026-08-18T00:00:00Z")
+check_bool("output attributes rates to the agent",
+           conf["meta"]["rates_provided_by"] == "agent")
+check_bool("disclaimer names the agent as the source",
+           "entered by the listing agent" in conf["meta"]["disclaimer"])
+
+empty_profile = compute_net_sheet(500_000, {}, {"commission_pct": "0.05"},
+                                  profile_meta={"confirmed_at": "2026-08-18T00:00:00Z"})
+check_bool("missing profile is BLOCKING", empty_profile["blocking"])
+
+# The guard itself
+blocked = False
+try:
+    assert_sendable(tmpl)
+except ValueError:
+    blocked = True
+check_bool("assert_sendable() refuses a template", blocked)
+
+passed_through = True
+try:
+    assert_sendable(conf)
+except ValueError:
+    passed_through = False
+check_bool("assert_sendable() allows a confirmed profile", passed_through)
+
+print(f"\n{'='*78}\nFINAL: {P} passed, {F} failed\n{'='*78}")
 sys.exit(1 if F else 0)

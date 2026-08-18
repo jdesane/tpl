@@ -210,16 +210,19 @@ def compute_net_sheet(sale_price, profile_config: dict, inputs: Optional[dict] =
                       county: Optional[str] = None,
                       closing_date=None,
                       property_type: Optional[str] = None,
-                      mortgage_payoffs: Optional[List[dict]] = None) -> dict:
+                      mortgage_payoffs: Optional[List[dict]] = None,
+                      profile_meta: Optional[dict] = None) -> dict:
     """
     Produce a full seller net sheet.
 
     sale_price      the price this scenario is based on (list price, or an offer)
-    profile_config  fee_profiles.config for the listing's state/county
+    profile_config  fee_profiles.config - the AGENT'S OWN numbers, not ours
     inputs          agent overrides, keyed to match the line keys below
     mortgage_payoffs  [{lender_name, estimated_payoff}] from listing_mortgages
+    profile_meta    {is_template, confirmed_at, name} - drives the blocking check
 
-    Returns sections of labelled lines, each with its formula, plus totals.
+    Returns sections of labelled lines each with its formula, totals, and a
+    `blocking` flag. We supply arithmetic; the agent supplies and owns the rates.
     """
     inputs = dict(inputs or {})
     cfg = dict(profile_config or {})
@@ -227,6 +230,27 @@ def compute_net_sheet(sale_price, profile_config: dict, inputs: Optional[dict] =
     price = _d(sale_price)
     closing = _as_date(closing_date)
     corrections: List[str] = []
+
+    # ── Is this profile safe to put in front of a seller? ───
+    # A net sheet is what a seller uses to decide whether to accept an offer. It must
+    # never be produced from a starter template or from numbers nobody confirmed.
+    # The figures still compute (the agent needs to see their setup working) but the
+    # result is marked blocking, and callers must refuse to render or send it.
+    meta = dict(profile_meta or {})
+    blockers: List[str] = []
+    if not cfg:
+        blockers.append("No fee profile is set for this listing. Add your closing costs first.")
+    if meta.get("is_template"):
+        blockers.append(
+            "This is a starter template, not your rates. Copy it to your workspace and "
+            "replace every number with your own title company quote or your last "
+            "settlement statement."
+        )
+    if not meta.get("confirmed_at") and not meta.get("is_template"):
+        blockers.append(
+            "These closing costs have not been confirmed yet. Review each line against "
+            "your last settlement statement and confirm before sending this to a seller."
+        )
 
     # ── Brokerage ───────────────────────────────────────────
     commission_pct = _d(inputs.get("commission_pct", "0"))
@@ -388,13 +412,36 @@ def compute_net_sheet(sale_price, profile_config: dict, inputs: Optional[dict] =
             "proceeds_to_seller": "sale price - closing costs - reductions + credits",
             "amount_realized": "proceeds + estimated post-closing escrow refund",
         },
+        # Callers MUST check this before rendering a PDF, emailing, or printing.
+        # True means the numbers came from a template or from an unconfirmed profile.
+        "blocking": bool(blockers),
+        "blockers": blockers,
         "meta": {
             "county": county,
             "property_type": property_type,
             "closing_date": closing.isoformat() if closing else None,
             "title_paid_by": pays,
             "corrections_applied": corrections,
-            "disclaimer": ("All amounts are estimates based on information provided by third "
-                           "parties and are not a guarantee of final figures."),
+            "fee_profile_name": meta.get("name"),
+            "fee_profile_confirmed_at": meta.get("confirmed_at"),
+            "rates_provided_by": "agent",
+            "disclaimer": ("All amounts are estimates based on closing costs entered by the "
+                           "listing agent and information provided by third parties. They are "
+                           "not a guarantee of final figures."),
         },
     }
+
+
+def assert_sendable(result: dict) -> None:
+    """
+    Guard for any seller-facing path - PDF, email, print, share link.
+
+    Raises ValueError when the net sheet was computed from a template or from rates
+    nobody confirmed. Call this at the boundary rather than trusting the caller to
+    read `blocking`; a wrong net sheet is worse than no net sheet.
+    """
+    if result.get("blocking"):
+        raise ValueError(
+            "This net sheet cannot be sent to a seller yet: "
+            + " ".join(result.get("blockers") or ["fee profile not confirmed"])
+        )
