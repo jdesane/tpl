@@ -415,6 +415,24 @@ CMA_TENANT_TABLES = frozenset({
 TENANT_TABLES = TENANT_TABLES | CMA_TENANT_TABLES
 
 
+# ── LISTING DASHBOARD TABLES ──
+# Every one of these carries its own workspace_id, so db() scopes them directly
+# rather than relying on the FK chain up to listings. Defence in depth: a bug in a
+# child-table query cannot leak another workspace's listing data.
+#
+# fee_profiles is deliberately NOT in this set. System-provided profiles are stored
+# with workspace_id IS NULL so every tenant can use them; db() would filter those to
+# the caller's workspace and make the Florida default invisible to everyone. Fee
+# profile queries pass workspace_id explicitly instead (same reasoning as the
+# Phase 23 entitlement tables).
+LISTING_TENANT_TABLES = frozenset({
+    "listings", "listing_sellers", "listing_mortgages", "offers", "net_sheets",
+    "transaction_milestones", "listing_price_changes", "listing_showings",
+    "listing_weekly_reports",
+})
+TENANT_TABLES = TENANT_TABLES | LISTING_TENANT_TABLES
+
+
 # ── PHASE 23: ENTITLEMENT LAYER ──
 # Must be wired BEFORE any router it gates, since require_entitlement() is used
 # in the include_router() calls below.
