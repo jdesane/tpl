@@ -761,6 +761,66 @@ code against a database without the entitlement tables 403s every gated tool.
 **Not built yet:** admin toggle UI in Mission Control, nav gating from `/api/me/entitlements`,
 Stripe, RETechbox marketing site, and the Listing Dashboard itself.
 
+## Listing Dashboard — per-listing operating system ✅ (2026-08-18)
+
+Replaces Joe's 14-tab "Blank Dashboard" workbook. Sold as the `listing-dashboard`
+product; the net sheet is additionally sellable standalone as `net-sheet`.
+**Deployed and verified end to end in production.**
+
+**Migrations:** `2026-08-18-listing-dashboard-foundation.sql`,
+`2026-08-18-fee-profiles-agent-owned.sql`
+
+**11 tables:** listings (spine; intake sections as JSONB - ~150 pure form fields),
+listing_sellers, listing_mortgages, offers, net_sheets, transaction_milestones,
+listing_price_changes, listing_showings, listing_weekly_reports, fee_profiles.
+Nine are in `TENANT_TABLES`; **fee_profiles is deliberately excluded** because
+system templates have `workspace_id IS NULL` and `db()` would hide them from everyone.
+
+**NO SSN COLUMNS ANYWHERE, AND NONE MAY BE ADDED.** The workbook collected full
+SSNs in three places. In a multi-tenant product that is GLBA and state breach
+exposure and the highest-value target in the database. Lenders need only the last
+four to pull a payoff: `listing_mortgages.account_number_last4`, CHECK-capped at 4
+characters, with the API returning a clear 400 rather than a constraint violation.
+
+**Rates belong to the agent, not us.** Shipping rate tables would make TPL the
+authority on title insurance and doc stamps in every state sold into: liability on
+a document sellers decide from, perpetual 50-state maintenance, and guessing at
+numbers the agent reads off their own closing statement. So `fee_profiles` holds
+the agent's numbers. The Florida row is an inert **template** (CHECK constraint:
+templates belong to no workspace and can never be default). An agent copies its
+structure, replaces every number, and confirms. Editing a confirmed profile
+unconfirms it. Setup is keyed to their last settlement statement.
+
+**Nothing unconfirmed can reach a seller.** `compute_net_sheet()` returns
+`blocking` + `blockers`; `assert_sendable()` raises on every seller-facing path.
+Figures still compute so the agent can watch setup working, but no PDF exists.
+
+**Four defects in the original workbook, corrected and disclosed in the output:**
+- Misc credits were SUBTRACTED despite being labelled "(Additions)" (`=F9-F33-F37-F39`)
+- Title insurance charged a flat $575 on the first $100k regardless of price
+- Only two title tiers - correct to $1M, overstated a $2M sale by $2,500
+- Doc stamps as `price*0.007`; Florida charges per $100 "or fraction thereof"
+
+**Modules:** `net_sheet.py` (pure calc, no framework, every line carries its formula
+string, Decimal throughout), `net_sheet_pdf.py` (reportlab, **agent's branding not
+ours**, up to 3 scenarios side by side with a Difference row, ASCII-only because
+bundled Helvetica renders em dashes and checkmarks as black boxes),
+`listings.py` (35 endpoints, two routers gated separately).
+
+**Tests:** `tests/test_net_sheet.py` - 57 assertions including exact parity with the
+workbook's own arithmetic at $500,000 and a case proving each correction.
+
+**UI:** Mission Control "Listings" nav group. Closing Costs (setup + confirm) and
+Listings (list leads with what is DUE across all files - the query the workbook
+structurally could not answer). Detail has 5 tabs; net sheets preview live with
+formula tooltips and produce single or side-by-side PDFs.
+
+**Not built yet:** the Interview / HOA / Property Notes intake forms (currently
+prompt-based), showings UI, price-change history UI, Stripe, RETechbox site.
+Deliberately dropped from the workbook: Estimated Mortgage, Reverse Prospecting,
+"Old offer" (merged into `offers`), MixBook and DISC fields. The CMA tab is not
+rebuilt - `listings.cma_id` links to the Phase 22 CMA Builder.
+
 ## Security — hardening + weekly monitoring (2026-08-17)
 
 **Fixed: `execute_readonly_sql()` was a full database read for anyone.** Found by the
@@ -822,6 +882,14 @@ expose trigger functions as RPC, so it is not callable from outside);
   revoked product usable for a week. JWT entitlement snapshots are for rendering nav only —
   every gated route re-checks against the DB. Hiding a nav item is not gating.
 - RETechbox marketing never mentions LPT, sponsorship, or joining anything. It sells software.
+- **Never store Social Security numbers.** No SSN column exists in any table and none
+  may be added. Lenders need only the last four to pull a payoff. See Listing Dashboard.
+- **Never ship fee/rate tables to agents.** Title insurance, doc stamps and settlement
+  fees vary by state, county and title company. Shipping them makes TPL the authority
+  on numbers a seller decides from, and a stale table silently prints wrong figures.
+  Agents enter and confirm their own; we do the arithmetic and show our work.
+- Client-facing documents carry the AGENT's branding, never RETechbox's. Agents pay
+  for tools that make them look good.
 - Keep POST /api/leads backward compatible (live website uses it)
 - Always confirm before deploying to the VPS
 - Comparator PDFs use ASCII-only labels (Helvetica bundled with pdfkit can't render Δ, em-dashes, U+2713 checkmark, etc.). Use "vs LPT BP:" not "Δ vs LPT BP:" and avoid em-dashes in PDF body text.
