@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Research Bot — Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#111118;--surface-2:#1a1a24;--surface-3:#222230;--border:#2a2a3a;--accent:#6c63ff;--accent-glow:rgba(108,99,255,.15);--green:#34d399;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--gold:#f0c040;--text:#e8e8ed;--text-dim:#8888a0;--text-muted:#55556a;--cyan:#22d3ee}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.topbar{position:fixed;top:0;left:0;right:0;height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100}
+.topbar .logo{font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:3px;color:var(--text)}.logo span{color:var(--accent)}
+.topbar .subtitle{font-family:"DM Mono",monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-left:12px}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.status-pill{display:flex;align-items:center;gap:6px;background:var(--surface-2);padding:4px 12px;border-radius:20px;font-size:11px;color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.clock{font-family:"DM Mono",monospace;font-size:12px;color:var(--text-dim)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.sidebar{position:fixed;top:52px;left:0;width:200px;height:calc(100vh - 52px);background:var(--surface);border-right:1px solid var(--border);padding:16px 0;overflow-y:auto;z-index:90}
+.nav-group{margin-bottom:16px}
+.nav-group-label{padding:4px 20px;font-family:"DM Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;color:var(--text-dim);font-size:13px;transition:all .15s;text-decoration:none}
+.nav-item:hover{color:var(--text);background:var(--surface-2)}
+.nav-item.active{color:var(--accent);background:var(--accent-glow);border-right:2px solid var(--accent)}
+.nav-item .icon{width:18px;text-align:center;font-size:14px}
+.main{margin-left:200px;margin-top:52px;padding:24px;min-height:calc(100vh - 52px)}
+.page-title{font-family:"Bebas Neue",sans-serif;font-size:28px;letter-spacing:2px;margin-bottom:2px}
+.page-subtitle{font-family:"DM Mono",monospace;font-size:11px;color:var(--text-muted);letter-spacing:1px;margin-bottom:24px}
+.input-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px}
+.question-input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;color:var(--text);font-size:14px;font-family:"DM Sans",sans-serif;resize:vertical;outline:none;min-height:60px}
+.question-input:focus{border-color:var(--accent)}
+.question-input::placeholder{color:var(--text-muted)}
+.ask-btn{width:100%;margin-top:12px;padding:12px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:"DM Sans",sans-serif;transition:opacity .15s}
+.ask-btn:hover{opacity:.9}
+.ask-btn:disabled{opacity:.5;cursor:not-allowed}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{padding:6px 14px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);font-size:12px;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.results-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px}
+.results-panel.show{display:block}
+.loading{display:none;text-align:center;padding:40px}
+.loading.show{display:block}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:"DM Mono",monospace;font-size:12px;color:var(--text-muted);letter-spacing:1px}
+.answer-text{font-size:18px;font-weight:600;line-height:1.5;color:var(--text);margin-bottom:16px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.collapsible{margin-bottom:12px}
+.collapsible-header{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-family:"DM Mono",monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);user-select:none}
+.collapsible-header:hover{color:var(--text)}
+.collapsible-arrow{transition:transform .2s;font-size:10px}
+.collapsible-arrow.open{transform:rotate(90deg)}
+.collapsible-body{display:none;padding:8px 0}
+.collapsible-body.open{display:block}
+.sql-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:"DM Mono",monospace;font-size:12px;color:var(--cyan);overflow-x:auto;white-space:pre-wrap;line-height:1.6}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{text-align:left;padding:8px 10px;font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0}
+.data-table td{padding:8px 10px;border-bottom:1px solid rgba(42,42,58,.3);color:var(--text-dim)}
+.data-table tr:hover{background:var(--surface-2)}
+.data-scroll{max-height:300px;overflow:auto;border-radius:8px;border:1px solid var(--border)}
+.meta-text{font-family:"DM Mono",monospace;font-size:10px;color:var(--text-muted);margin-top:8px;letter-spacing:.5px}
+.error-msg{color:var(--red);font-size:14px;padding:16px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:8px}
+@media(max-width:800px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center">
+    <a href="/" style="text-decoration:none"><div class="logo">MISSION<span> CONTROL</span></div></a>
+    <div class="subtitle">TPL Collective</div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill"><div class="dot"></div><span>Systems Online</span></div>
+    <div class="clock" id="clock"></div>
+    <div class="avatar">JD</div>
+  </div>
+</div>
+<div class="sidebar">
+  <div class="nav-group">
+    <div class="nav-group-label">Command</div>
+    <a class="nav-item" href="/"><span class="icon">&#x2B21;</span>Dashboard</a>
+    <a class="nav-item" href="/#contacts"><span class="icon">&#x25CE;</span>Contacts</a>
+    <a class="nav-item" href="/#opportunities"><span class="icon">&#x25B7;</span>Opportunities</a>
+    <a class="nav-item" href="/#agents"><span class="icon">&#x2606;</span>Agents</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Performance</div>
+    <a class="nav-item" href="/#analytics"><span class="icon">&#x2261;</span>Funnel Analytics</a>
+    <a class="nav-item" href="/#revshare"><span class="icon">&#x2191;</span>Rev Share</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Marketing</div>
+    <a class="nav-item" href="/#drips"><span class="icon">&#x2709;</span>Email Drips</a>
+    <a class="nav-item" href="/#content"><span class="icon">&#x260E;</span>Content Hub</a>
+    <a class="nav-item" href="/#links"><span class="icon">&#x2693;</span>Recruiting Links</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Systems</div>
+    <a class="nav-item active" href="/static/research.html"><span class="icon">&#x2318;</span>Research Bot</a>
+    <a class="nav-item" href="/#openclaw"><span class="icon">&#x2699;</span>Automations</a>
+    <a class="nav-item" href="/#settings"><span class="icon">&#x2638;</span>Settings</a>
+  </div>
+</div>
+<div class="main">
+  <div class="page-title">Research Bot</div>
+  <div class="page-subtitle">Ask anything about your leads, emails, and pipeline</div>
+
+  <div class="input-panel">
+    <textarea class="question-input" id="questionInput" rows="3" placeholder="e.g. How many new leads came in this week?"></textarea>
+    <button class="ask-btn" id="askBtn" onclick="askQuestion()">Ask</button>
+    <div class="chips">
+      <div class="chip" onclick="setQuestion(this)">How many leads came in this week?</div>
+      <div class="chip" onclick="setQuestion(this)">What's our total lead count?</div>
+      <div class="chip" onclick="setQuestion(this)">Which lead source is performing best?</div>
+      <div class="chip" onclick="setQuestion(this)">How many emails have been sent this month?</div>
+      <div class="chip" onclick="setQuestion(this)">Show me leads with appointment status</div>
+      <div class="chip" onclick="setQuestion(this)">How many drip emails are pending?</div>
+      <div class="chip" onclick="setQuestion(this)">What leads came in today?</div>
+      <div class="chip" onclick="setQuestion(this)">Show me the most recent 10 leads</div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Thinking...</div>
+  </div>
+
+  <div class="results-panel" id="results">
+    <div class="answer-text" id="answerText"></div>
+    <div class="divider"></div>
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <span class="collapsible-arrow">&#x25B6;</span> View SQL
+      </div>
+      <div class="collapsible-body">
+        <div class="sql-block" id="sqlBlock"></div>
+      </div>
+    </div>
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <span class="collapsible-arrow">&#x25B6;</span> Raw Data
+      </div>
+      <div class="collapsible-body">
+        <div class="data-scroll" id="dataScroll">
+          <table class="data-table" id="dataTable"></table>
+        </div>
+      </div>
+    </div>
+    <div class="meta-text" id="metaText"></div>
+  </div>
+
+  <div class="results-panel" id="errorPanel" style="display:none">
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+</div>
+
+<script>
+function updateClock(){var d=new Date();document.getElementById("clock").textContent=d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",second:"2-digit"})}
+setInterval(updateClock,1000);updateClock();
+
+function setQuestion(el){
+  document.getElementById("questionInput").value=el.textContent;
+  document.getElementById("questionInput").focus();
+}
+
+function toggleCollapsible(header){
+  var arrow=header.querySelector(".collapsible-arrow");
+  var body=header.nextElementSibling;
+  arrow.classList.toggle("open");
+  body.classList.toggle("open");
+}
+
+document.getElementById("questionInput").addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askQuestion();}
+});
+
+async function askQuestion(){
+  var q=document.getElementById("questionInput").value.trim();
+  if(!q)return;
+
+  var btn=document.getElementById("askBtn");
+  btn.disabled=true;btn.textContent="Thinking...";
+  document.getElementById("loading").classList.add("show");
+  document.getElementById("results").classList.remove("show");
+  document.getElementById("errorPanel").style.display="none";
+
+  try{
+    var resp=await fetch("/api/research",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({question:q})
+    });
+
+    if(!resp.ok){
+      var err=await resp.json().catch(function(){return{detail:"Request failed"}});
+      throw new Error(err.detail||"Request failed");
+    }
+
+    var data=await resp.json();
+
+    document.getElementById("answerText").textContent=data.answer;
+    document.getElementById("sqlBlock").textContent=data.sql||"No SQL generated";
+
+    // Build data table
+    var table=document.getElementById("dataTable");
+    table.innerHTML="";
+    if(data.data&&data.data.length>0){
+      var thead=document.createElement("thead");
+      var headerRow=document.createElement("tr");
+      Object.keys(data.data[0]).forEach(function(k){
+        var th=document.createElement("th");th.textContent=k;headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);table.appendChild(thead);
+
+      var tbody=document.createElement("tbody");
+      data.data.forEach(function(row){
+        var tr=document.createElement("tr");
+        Object.values(row).forEach(function(v){
+          var td=document.createElement("td");td.textContent=v===null?"":v;tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+    } else {
+      table.innerHTML="<tbody><tr><td style='color:var(--text-muted);padding:16px'>No rows returned</td></tr></tbody>";
+    }
+
+    var rowCount=data.data?data.data.length:0;
+    var meta=rowCount+" row"+(rowCount!==1?"s":"")+" returned";
+    if(data.explanation)meta+=" - "+data.explanation;
+    document.getElementById("metaText").textContent=meta;
+
+    document.getElementById("results").classList.add("show");
+
+  }catch(e){
+    document.getElementById("errorMsg").textContent=e.message||"Something went wrong. Try again.";
+    document.getElementById("errorPanel").style.display="block";
+  }finally{
+    document.getElementById("loading").classList.remove("show");
+    btn.disabled=false;btn.textContent="Ask";
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Activate Your Workspace — TPL Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--surface-2:#1d1d24;--border:#26262e;
+  --text:#fff;--text-muted:#888;--accent:#ff5800;--green:#10b981;--red:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'DM Sans',Helvetica,Arial,sans-serif;min-height:100vh}
+body{display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:420px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;text-align:center;margin-bottom:6px}
+.logo span{color:var(--accent)}
+.subtitle{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);text-align:center;margin-bottom:32px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;font-weight:600}
+.field input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;font-family:inherit}
+.field input:focus{border-color:var(--accent)}
+.field input:disabled{opacity:0.5;cursor:not-allowed}
+.btn{width:100%;padding:14px;border-radius:8px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:inherit;margin-top:8px}
+.btn:hover{opacity:.92}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.error{color:var(--red);font-size:12px;margin-top:12px;text-align:center;display:none}
+.success{color:var(--green);font-size:12px;margin-top:12px;text-align:center;display:none}
+.plan-badge{display:inline-block;background:var(--surface-2);border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;padding:4px 10px;border-radius:4px;font-weight:600;margin-left:6px}
+.intro{font-size:13px;line-height:1.6;color:var(--text-muted);text-align:center;margin-bottom:24px}
+.intro strong{color:var(--text)}
+.loader{text-align:center;color:var(--text-muted);font-size:14px;padding:20px 0}
+.center{text-align:center;margin-top:16px}
+.center a{color:var(--accent);text-decoration:none;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">MISSION<span> CONTROL</span></div>
+  <div class="subtitle">TPL Collective</div>
+
+  <div id="loading" class="loader">Validating invitation...</div>
+
+  <div id="invalid" style="display:none">
+    <div class="intro" id="invalid-msg" style="color:var(--red)"></div>
+    <div class="center"><a href="/">Back to sign-in</a></div>
+  </div>
+
+  <form id="signup-form" style="display:none" onsubmit="doSignup(event)">
+    <div class="intro" id="welcome">You're invited as <strong id="invite-email"></strong> on the <span class="plan-badge" id="invite-plan">BASIC</span> plan.<br>Set a password to activate your workspace.</div>
+
+    <div class="field">
+      <label>Your Name</label>
+      <input id="name" type="text" required autocomplete="name" minlength="2">
+    </div>
+    <div class="field">
+      <label>Choose a Password (8+ chars)</label>
+      <input id="password" type="password" required autocomplete="new-password" minlength="8">
+    </div>
+    <div class="field">
+      <label>Confirm Password</label>
+      <input id="password2" type="password" required autocomplete="new-password" minlength="8">
+    </div>
+
+    <button class="btn" type="submit" id="submit-btn">Activate Workspace</button>
+    <div class="error" id="err"></div>
+    <div class="success" id="ok"></div>
+  </form>
+</div>
+
+<script>
+var token=new URLSearchParams(window.location.search).get('token')||'';
+
+async function init(){
+  if(!token){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('invalid').style.display='block';
+    document.getElementById('invalid-msg').textContent='No invitation token in the URL.';
+    return;
+  }
+  try{
+    var r=await fetch('/api/auth/invite/'+encodeURIComponent(token));
+    var data=await r.json();
+    document.getElementById('loading').style.display='none';
+    if(!r.ok){
+      document.getElementById('invalid').style.display='block';
+      document.getElementById('invalid-msg').textContent=data.detail||'This invitation is not valid.';
+      return;
+    }
+    document.getElementById('invite-email').textContent=data.email;
+    document.getElementById('invite-plan').textContent=(data.plan||'basic').toUpperCase();
+    if(data.name)document.getElementById('name').value=data.name;
+    document.getElementById('signup-form').style.display='block';
+    document.getElementById('name').focus();
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('invalid').style.display='block';
+    document.getElementById('invalid-msg').textContent='Network error. Please try again.';
+  }
+}
+
+async function doSignup(e){
+  e.preventDefault();
+  var name=document.getElementById('name').value.trim();
+  var pw=document.getElementById('password').value;
+  var pw2=document.getElementById('password2').value;
+  var err=document.getElementById('err');
+  var ok=document.getElementById('ok');
+  var btn=document.getElementById('submit-btn');
+  err.style.display='none';ok.style.display='none';
+  if(pw!==pw2){err.textContent='Passwords do not match';err.style.display='block';return}
+  if(pw.length<8){err.textContent='Password must be at least 8 characters';err.style.display='block';return}
+  btn.disabled=true;btn.textContent='Activating...';
+  try{
+    var r=await fetch('/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,name:name,password:pw})});
+    var data=await r.json();
+    if(!r.ok){
+      err.textContent=data.detail||'Signup failed';err.style.display='block';
+      btn.disabled=false;btn.textContent='Activate Workspace';
+      return;
+    }
+    // Persist auth + redirect to dashboard (Mission Control init will pick up the token)
+    localStorage.setItem('mc_token',data.token);
+    localStorage.setItem('mc_user',JSON.stringify(data.user));
+    ok.textContent='Workspace activated. Redirecting...';ok.style.display='block';
+    setTimeout(function(){window.location.href='/'},800);
+  }catch(e){
+    err.textContent='Network error. Please try again.';err.style.display='block';
+    btn.disabled=false;btn.textContent='Activate Workspace';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

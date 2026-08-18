@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Comparative Market Analysis</title>
+<style>
+  :root {
+    --bg:#0f0f1a; --surf:#181828; --surf2:#22223a; --surf3:#2f2f4a;
+    --ink:#e8e8f0; --muted:#8888a8; --accent:#6c63ff; --green:#34d399; --amber:#f0c040; --violet:#a78bfa;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.55; }
+  .container { max-width:1180px; margin:0 auto; padding:32px 24px 80px; }
+  .cover { text-align:center; padding:48px 0 40px; border-bottom:1px solid var(--surf3); }
+  .eyebrow { text-transform:uppercase; letter-spacing:.2em; color:var(--accent); font-size:11px; font-weight:600; }
+  h1 { font-size:36px; font-weight:700; margin:14px 0 6px; letter-spacing:-.01em; }
+  h2 { font-size:20px; font-weight:600; margin:0 0 18px; color:var(--accent); text-transform:uppercase; letter-spacing:.1em; }
+  .addr { font-size:18px; color:var(--muted); }
+  .prep { margin-top:16px; font-size:14px; color:var(--muted); }
+  .prep strong { color:var(--ink); }
+  section { padding:40px 0; border-bottom:1px solid var(--surf3); }
+  .grid { display:grid; gap:14px; }
+  .grid-4 { grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+  .grid-3 { grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+  .stat { background:var(--surf); padding:20px; border-radius:8px; border:1px solid var(--surf3); }
+  .stat .label { font-size:10px; text-transform:uppercase; letter-spacing:.15em; color:var(--muted); margin-bottom:6px; }
+  .stat .value { font-size:24px; font-weight:700; color:var(--ink); }
+  .stat.accent .value { color:var(--accent); }
+  .stat.green .value  { color:var(--green); }
+  .stat.amber .value  { color:var(--amber); }
+  .stat.violet .value { color:var(--violet); }
+  .band { display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:0; background:var(--surf); border:1px solid var(--surf3); border-radius:12px; overflow:hidden; margin:12px 0 18px; }
+  .band > div { text-align:center; padding:26px 12px; }
+  .band .middle { background:linear-gradient(180deg, rgba(108,99,255,0.14), rgba(108,99,255,0.04)); border-left:1px solid var(--surf3); border-right:1px solid var(--surf3); }
+  .band .num { font-size:28px; font-weight:700; }
+  .band .middle .num { font-size:44px; color:var(--accent); }
+  .band .cap { font-size:10px; letter-spacing:.2em; color:var(--muted); text-transform:uppercase; margin-top:6px; }
+  .formula { color:var(--muted); font-size:13px; font-style:italic; }
+  .seg-header { display:flex; align-items:center; gap:10px; margin:24px 0 12px; }
+  .seg-header .dot { width:10px; height:10px; border-radius:50%; }
+  .seg-header .name { font-weight:700; font-size:14px; letter-spacing:.05em; text-transform:uppercase; }
+  .seg-header .count { color:var(--muted); font-size:12px; }
+  .comp-grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
+  .comp { background:var(--surf); border:1px solid var(--surf3); border-radius:10px; overflow:hidden; }
+  .comp img { width:100%; height:150px; object-fit:cover; background:var(--surf2); display:block; }
+  .comp .body { padding:14px; }
+  .comp .price { font-size:20px; font-weight:700; color:var(--accent); }
+  .comp .addr { font-size:13px; color:var(--ink); margin-top:4px; }
+  .comp .meta { font-size:11px; color:var(--muted); margin-top:8px; display:flex; justify-content:space-between; }
+  .agent { display:flex; gap:16px; align-items:center; padding:24px; background:var(--surf); border-radius:12px; border:1px solid var(--surf3); }
+  .agent-name { font-size:18px; font-weight:600; }
+  .agent-meta { color:var(--muted); font-size:13px; margin-top:4px; }
+  .agent-badge { padding:4px 12px; background:rgba(108,99,255,0.15); color:var(--accent); border-radius:20px; font-size:10px; text-transform:uppercase; letter-spacing:.15em; font-weight:600; }
+  .empty { padding:60px 20px; text-align:center; color:var(--muted); }
+  @media (max-width:640px) {
+    h1 { font-size:26px; }
+    .band { grid-template-columns:1fr; }
+    .band .middle { border:none; border-top:1px solid var(--surf3); border-bottom:1px solid var(--surf3); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="loading" class="empty">Loading report…</div>
+  <div id="report" style="display:none">
+
+    <div class="cover">
+      <div class="eyebrow">Comparative Market Analysis</div>
+      <h1 id="cover-address">—</h1>
+      <div class="addr" id="cover-citystate"></div>
+      <div class="prep" id="cover-prep"></div>
+    </div>
+
+    <section id="section-subject">
+      <h2>Subject Property</h2>
+      <div class="grid grid-4" id="subject-grid"></div>
+      <div id="subject-notes" style="margin-top:18px; color:var(--muted); font-size:14px"></div>
+    </section>
+
+    <section id="section-price">
+      <h2>Suggested List Price</h2>
+      <div id="price-band-wrap"></div>
+    </section>
+
+    <section id="section-snapshot">
+      <h2>Market Snapshot</h2>
+      <div class="grid grid-3" id="snapshot-grid"></div>
+    </section>
+
+    <section id="section-comps">
+      <h2>Comparable Properties</h2>
+      <div id="comps-body"></div>
+    </section>
+
+    <section id="section-agent">
+      <h2>Prepared By</h2>
+      <div class="agent" id="agent-block"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const TOKEN = window.location.pathname.split('/').pop();
+
+function fmtMoney(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return '$' + Math.round(n).toLocaleString();
+}
+function fmtInt(n) { return (n === null || n === undefined || n === '') ? '—' : Number(n).toLocaleString(); }
+function fmtNum(n, d) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toFixed(d || 0);
+}
+function adjustedPrice(c) {
+  const base = parseFloat(c.current_price || c.list_price || 0) || 0;
+  const adj = (c.adjustments || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+  return base + adj;
+}
+function preparedFor(cma) {
+  const names = [];
+  const p = ((cma.client_first_name || '') + ' ' + (cma.client_last_name || '')).trim();
+  if (p) names.push(p);
+  (cma.additional_clients || []).forEach(c => {
+    const n = ((c.first_name || '') + ' ' + (c.last_name || '')).trim();
+    if (n) names.push(n);
+  });
+  if (!names.length) return '';
+  if (names.length === 1) return 'Prepared for <strong>' + names[0] + '</strong>';
+  if (names.length === 2) return 'Prepared for <strong>' + names[0] + '</strong> and <strong>' + names[1] + '</strong>';
+  const last = names.pop();
+  return 'Prepared for <strong>' + names.join('</strong>, <strong>') + '</strong>, and <strong>' + last + '</strong>';
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/cma-public/' + encodeURIComponent(TOKEN));
+    if (!r.ok) throw new Error('Report not found');
+    const { cma, comps, agent } = await r.json();
+    render(cma, comps || [], agent);
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Sorry — this report is not available.';
+  }
+}
+
+function render(cma, comps, agent) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('report').style.display = '';
+
+  // Cover
+  document.getElementById('cover-address').textContent = cma.subject_address || 'Your Property';
+  const cityLine = [cma.subject_city, cma.subject_state].filter(Boolean).join(', ') + (cma.subject_zip ? ' ' + cma.subject_zip : '');
+  document.getElementById('cover-citystate').textContent = cityLine.trim();
+  const prep = preparedFor(cma);
+  document.getElementById('cover-prep').innerHTML = prep;
+
+  // Subject grid
+  const s = cma.subject || {};
+  const cells = [
+    ['Beds', s.beds || '—'],
+    ['Baths', s.baths_total || '—'],
+    ['Sq Ft Living', fmtInt(s.sqft_living)],
+    ['Lot Size', fmtInt(s.lot_size)],
+    ['Year Built', s.year_built || '—'],
+    ['Garage', s.garage_spaces || '—'],
+    ['Pool', s.pool ? 'Yes' : 'No'],
+    ['Waterfront', s.waterfront ? 'Yes' : 'No'],
+  ];
+  document.getElementById('subject-grid').innerHTML = cells.map(([label, val]) =>
+    `<div class="stat"><div class="label">${label}</div><div class="value">${val}</div></div>`
+  ).join('');
+  const notes = (s.condition_notes || '').trim();
+  document.getElementById('subject-notes').innerHTML = notes ? '<strong>Notes / Upgrades:</strong> ' + notes : '';
+
+  // Suggested price band
+  const pricing = cma.pricing || {};
+  const suggested = pricing.suggested || {};
+  const bandWrap = document.getElementById('price-band-wrap');
+  if (suggested.target) {
+    bandWrap.innerHTML = `
+      <div class="band">
+        <div><div class="num">${fmtMoney(suggested.low)}</div><div class="cap">Low</div></div>
+        <div class="middle"><div class="num">${fmtMoney(suggested.target)}</div><div class="cap">Target</div></div>
+        <div><div class="num">${fmtMoney(suggested.high)}</div><div class="cap">High</div></div>
+      </div>
+      <div class="formula">${suggested.formula || ''}</div>
+    `;
+  } else {
+    bandWrap.innerHTML = `<div class="empty">${suggested.error || 'Pricing analysis not yet computed.'}</div>`;
+  }
+
+  // Snapshot
+  const seg = (k) => (pricing[k] || {});
+  const active = seg('active'), pending = seg('pending'), closed = seg('closed');
+  document.getElementById('snapshot-grid').innerHTML = [
+    { label: 'Active (Competition)', count: active.count || 0, ppsf: active.ppsf_median, cls: 'green' },
+    { label: 'Pending (Trending)', count: pending.count || 0, ppsf: pending.ppsf_median, cls: 'amber' },
+    { label: 'Closed (Sold)', count: closed.count || 0, ppsf: closed.ppsf_median, dom: closed.dom_median, cls: 'violet' },
+  ].map(x => `
+    <div class="stat ${x.cls}">
+      <div class="label">${x.label}</div>
+      <div class="value">${x.count}</div>
+      ${x.ppsf ? `<div style="margin-top:8px;font-size:12px;color:var(--muted)">Median $${Math.round(x.ppsf)}/sqft${x.dom ? ' · ' + Math.round(x.dom) + ' days on market' : ''}</div>` : ''}
+    </div>
+  `).join('');
+
+  // Comps
+  const groups = [
+    { label: 'Active (Competition)', dot: 'var(--green)', comps: comps.filter(c => (c.status || '').toLowerCase() === 'active') },
+    { label: 'Pending (Trending)', dot: 'var(--amber)', comps: comps.filter(c => (c.status || '').toLowerCase() === 'pending') },
+    { label: 'Closed (Sold)', dot: 'var(--violet)', comps: comps.filter(c => (c.status || '').toLowerCase() === 'closed') },
+  ];
+  let compsHtml = '';
+  groups.forEach(g => {
+    if (!g.comps.length) return;
+    compsHtml += `
+      <div class="seg-header">
+        <span class="dot" style="background:${g.dot}"></span>
+        <span class="name">${g.label}</span>
+        <span class="count">· ${g.comps.length} propert${g.comps.length === 1 ? 'y' : 'ies'}</span>
+      </div>
+      <div class="comp-grid">
+        ${g.comps.map(c => {
+          const price = adjustedPrice(c);
+          const ppsf = (price && c.sqft_living) ? '$' + Math.round(price / c.sqft_living) + '/sqft' : '';
+          return `
+            <div class="comp">
+              ${c.primary_photo_url ? `<img src="${c.primary_photo_url}" alt="" onerror="this.style.display='none'">` : '<div style="height:150px;background:var(--surf2)"></div>'}
+              <div class="body">
+                <div class="price">${fmtMoney(price)}</div>
+                <div class="addr">${c.address || '—'}</div>
+                <div class="meta">
+                  <span>${c.beds || '—'} bd · ${c.baths_total || '—'} ba · ${fmtInt(c.sqft_living)} sqft</span>
+                  ${ppsf ? '<span>' + ppsf + '</span>' : ''}
+                </div>
+                ${c.dom !== null && c.dom !== undefined ? `<div class="meta"><span>DOM: ${c.dom}</span><span>MLS# ${c.mls_number || '—'}</span></div>` : `<div class="meta"><span>MLS# ${c.mls_number || '—'}</span></div>`}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  });
+  if (!compsHtml) compsHtml = '<div class="empty">No comps in this report yet.</div>';
+  document.getElementById('comps-body').innerHTML = compsHtml;
+
+  // Agent
+  const agentBlock = document.getElementById('agent-block');
+  if (agent) {
+    agentBlock.innerHTML = `
+      <div style="flex:1">
+        <div class="agent-name">${agent.name || 'Your Agent'}</div>
+        <div class="agent-meta">${[agent.email, agent.phone].filter(Boolean).join(' · ') || ''}</div>
+        <div class="agent-meta" style="margin-top:8px">TPL Collective · LPT Realty</div>
+      </div>
+      <div class="agent-badge">Your Agent</div>
+    `;
+  } else {
+    document.getElementById('section-agent').style.display = 'none';
+  }
+}
+
+load();
+</script>
+</body>
+</html>
