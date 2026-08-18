@@ -633,6 +633,128 @@ def delete_net_sheet(net_sheet_id: int, request: Request):
     return {"deleted": True}
 
 
+# ── PDF ─────────────────────────────────────────────────────
+
+def _agent_branding(workspace_id: int, request: Request) -> dict:
+    """
+    The AGENT's identity for the seller-facing document, never ours. Agents pay for
+    tools that make them look good; a vendor logo on a client document cheapens it.
+
+    Reads workspaces.settings.branding, falling back to the logged-in user's own
+    name and email so a brand-new account still produces something presentable.
+    """
+    rows = (_supabase.table("workspaces").select("name,settings")
+            .eq("id", workspace_id).limit(1).execute().data)
+    ws_row = rows[0] if rows else {}
+    brand = dict(((ws_row.get("settings") or {}).get("branding")) or {})
+
+    user = getattr(request.state, "user", None) or {}
+    brand.setdefault("email", user.get("email"))
+    if not brand.get("agent_name"):
+        uid = user.get("sub")
+        if uid:
+            u = (_supabase.table("users").select("name").eq("id", uid).limit(1).execute().data)
+            if u and u[0].get("name"):
+                brand["agent_name"] = u[0]["name"]
+    brand.setdefault("agent_name", ws_row.get("name") or "Listing Agent")
+    return brand
+
+
+class ComparePdfIn(BaseModel):
+    net_sheet_ids: List[int]
+    show_formulas: Optional[bool] = False
+
+
+def _pdf_response(pdf_bytes: bytes, filename: str):
+    from fastapi.responses import Response
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
+
+
+def _safe_filename(text: str) -> str:
+    keep = "".join(c if (c.isalnum() or c in " -_") else "" for c in (text or "net-sheet"))
+    return ("-".join(keep.split()) or "net-sheet")[:60]
+
+
+@net_sheet_router.get("/net-sheets/{net_sheet_id}/pdf")
+def net_sheet_pdf(net_sheet_id: int, request: Request, show_formulas: bool = False):
+    """
+    Render one saved net sheet. Refuses when the snapshot was computed from a
+    template or from unconfirmed rates - assert_sendable() raises inside the builder,
+    and it is translated to a 409 with the reason rather than a 500.
+
+    show_formulas produces the agent's working copy, showing how every line was
+    derived. Never send that version to a seller.
+    """
+    import net_sheet_pdf as _pdf
+
+    sheet = _row_or_404("net_sheets", net_sheet_id, "Net sheet")
+    listing = _listing_or_404(sheet["listing_id"])
+    sellers = (_db("listing_sellers").select("*")
+               .eq("listing_id", listing["id"]).execute().data) or []
+
+    try:
+        pdf = _pdf.build_net_sheet_pdf(
+            [{"label": sheet.get("label") or "Estimate", "computed": sheet.get("computed") or {}}],
+            branding=_agent_branding(_ws(request), request),
+            listing=listing, sellers=sellers, show_formulas=show_formulas,
+        )
+    except ValueError as e:
+        raise HTTPException(409, {
+            "detail": str(e),
+            "error": "net_sheet_not_sendable",
+            "hint": "Confirm your closing costs before producing a seller document.",
+        })
+    return _pdf_response(pdf, f"net-sheet-{_safe_filename(listing.get('address_line1'))}.pdf")
+
+
+@net_sheet_router.post("/listings/{listing_id}/net-sheets/compare-pdf")
+def compare_net_sheets_pdf(listing_id: int, body: ComparePdfIn, request: Request):
+    """
+    Two or three scenarios side by side - list price vs an offer, or two offers.
+
+    This is the conversation an agent actually has with a seller, and it is why the
+    workbook carried "Option 1 / Option 2" and "Current List Price / Offer" columns.
+    A single-column net sheet answers "what do I net"; this one answers "which is
+    better, and by how much".
+    """
+    import net_sheet_pdf as _pdf
+
+    listing = _listing_or_404(listing_id)
+    if not body.net_sheet_ids:
+        raise HTTPException(400, "Pick at least one net sheet")
+    if len(body.net_sheet_ids) > _pdf.MAX_SCENARIOS:
+        raise HTTPException(400, f"At most {_pdf.MAX_SCENARIOS} scenarios fit side by side")
+
+    scenarios = []
+    for sid in body.net_sheet_ids:
+        rows = (_db("net_sheets").select("*")
+                .eq("id", sid).eq("listing_id", listing_id).limit(1).execute().data)
+        if not rows:
+            raise HTTPException(404, f"Net sheet {sid} not found on this listing")
+        scenarios.append({"label": rows[0].get("label") or "Scenario",
+                          "computed": rows[0].get("computed") or {}})
+
+    sellers = (_db("listing_sellers").select("*")
+               .eq("listing_id", listing_id).execute().data) or []
+    try:
+        pdf = _pdf.build_net_sheet_pdf(
+            scenarios,
+            branding=_agent_branding(_ws(request), request),
+            listing=listing, sellers=sellers, show_formulas=bool(body.show_formulas),
+        )
+    except ValueError as e:
+        raise HTTPException(409, {
+            "detail": str(e),
+            "error": "net_sheet_not_sendable",
+            "hint": "Every scenario must use confirmed closing costs.",
+        })
+    return _pdf_response(pdf, f"net-sheet-comparison-{_safe_filename(listing.get('address_line1'))}.pdf")
+
+
 # ════════════════════════════════════════════════════════════
 # Offers
 
