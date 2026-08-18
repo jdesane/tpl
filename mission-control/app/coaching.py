@@ -29,6 +29,28 @@ def setup(db_callable, supabase_client):
     _supabase = supabase_client
 
 
+def _grant_coaching_entitlement(workspace_id: int, actor_user_id=None):
+    """
+    Phase 23: a freshly provisioned coaching client gets their own workspace, which
+    starts with no entitlements — so without this their portal would 403 on every
+    /api/coaching/me/* call.
+
+    Source is 'comp', not 'team_member': this is administrative provisioning tied to
+    a coaching engagement, not a team benefit, so no team agreement is involved.
+    Never let a failure here block provisioning — the admin UI can grant manually.
+    """
+    try:
+        import entitlements as _ent
+        _ent.grant(workspace_id, "coaching", "comp",
+                   actor_user_id=actor_user_id, actor_type="system",
+                   notes="Auto-granted on coaching portal provisioning",
+                   reason="Coaching client portal provisioned")
+    except Exception as e:  # noqa: BLE001
+        import logging
+        logging.getLogger("tpl.coaching").error(
+            "Failed to auto-grant coaching entitlement to workspace %s: %s", workspace_id, e)
+
+
 # ════════════════════════════════════════════════════════════
 # Pydantic models
 # ════════════════════════════════════════════════════════════
@@ -1490,6 +1512,7 @@ def resend_invite(client_id: int, payload: ResendInviteIn, request: Request):
             }).execute()
             _supabase.table("users").update({"workspace_id": ws_ins.data[0]["id"]}).eq("id", user_id).execute()
             _supabase.table("coaching_clients").update({"user_id": user_id}).eq("id", client_id).execute()
+            _grant_coaching_entitlement(ws_ins.data[0]["id"])
 
     # Step 4: regenerate temp password and update the user
     temp_pwd = _secrets.token_urlsafe(8)
@@ -1607,6 +1630,7 @@ def provision_portal(client_id: int, payload: ProvisionPortalIn, request: Reques
     # Update user.workspace_id, link coaching_client.user_id
     _supabase.table("users").update({"workspace_id": ws_id}).eq("id", user_id).execute()
     _supabase.table("coaching_clients").update({"user_id": user_id}).eq("id", client_id).execute()
+    _grant_coaching_entitlement(ws_id)
 
     # Send invite email with temp password
     if payload.send_email:

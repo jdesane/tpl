@@ -2,7 +2,11 @@
 
 ## Infrastructure
 - **Database**: Supabase (Postgres) — project `zyonidiybzrgklrmalbt`, region us-west-2
-  - 37 tables including: leads (187), activity_log, emails_sent, drip_queue, users, agents, tasks (1,588), onboarding_steps, resources, email_queue, referrals, recruiting_links (40), content_posts, lead_stage_history, revshare_entries, automation_runs, automation_settings, goals, lead_notes, lead_activity, email_funnels, email_funnel_steps, email_funnel_enrollments (239), pipelines, opportunities (188), smart_lists, contact_communications, email_suppressions, email_send_log (24,804), email_daily_limits, buyer_intake_submissions, ideas, prospects, activities, recruiting_tasks, newsletter_subscribers, newsletter_issues
+  - **99 tables** (counts verified 2026-08-17 — the earlier "37 tables" figure predated Phases 15-23). Core CRM: leads (476), activity_log (15,765), tasks (18,050), email_send_log (171,716), lead_activity (3,034), opportunities (312), email_funnel_enrollments (744), lead_notes (115), recruiting_links (40), plus emails_sent, drip_queue, users, agents, onboarding_steps, resources, email_queue, referrals, content_posts, lead_stage_history, revshare_entries, automation_runs, automation_settings, goals, email_funnels, email_funnel_steps, pipelines, smart_lists, contact_communications, email_suppressions, email_daily_limits, buyer_intake_submissions, ideas, prospects, activities, recruiting_tasks, newsletter_subscribers, newsletter_issues
+  - Phase 15 coaching: 21 tables (coaching_clients — 6 live clients, business_plans, budget/economic/lead_gen models, gps_*, four_one_ones, pipeline_entries, coaching_calls, monthly_financials, etc.)
+  - Phase 22 CMA: cmas, cma_comps. Phase 23 entitlements: products, bundles, bundle_products, team_agreements, workspace_entitlements, entitlement_events
+  - Wellington project: wellington_intake_submissions, wellington_access_tokens, wellington_pnl_snapshots (backs wellington-intake.html + wellington-pnl.html; undocumented until 2026-08-17)
+  - FK indexes added 2026-08-17 on email_send_log.contact_id, tasks.lead_id, tasks.agent_id, lead_activity.lead_id, leads.assigned_to — Postgres does not index the referencing side of an FK automatically, and these were full-scanning on hot Mission Control paths
   - RLS enabled on all tables, service role policies for backend access
 - VPS at 187.77.213.230 runs Mission Control in Docker (`/docker/mission-control/`)
 - FastAPI backend — modular: `main.py`, `auth.py`, `models.py`, `extended_routes.py`, `report_generator_v2.py`, `coaching.py`
@@ -689,6 +693,115 @@ Below those gates → iterate again before scaling to next 20 (agents 21-40 from
 
 **Bug fix (`assets/compare/compare.js`):** any 100%-commission plan with `annual_cap: null` was rendering the breakdown row as `0 × $fee` because both render paths (renderBreakdown and the report/PDF data builder) computed the label multiplier as `Math.min(txns, Math.floor(annual_cap / flat_fee))` which collapses to 0 when cap is null. The calc itself was correct (falls back to `txns` when `txnsToCap` is 0) — only the display was wrong. Both paths now mirror the calc's cap-fallback and use the label "Broker sales fee" instead of "Flat fees to cap" when there's no cap.
 
+## Phase 23 — Entitlement Layer (two brands, one backend) 🚧 BUILT, NOT DEPLOYED
+
+Foundation for selling tools commercially while also providing them as a team benefit.
+Spec: [PHASE-23-ENTITLEMENTS-SPEC.md](PHASE-23-ENTITLEMENTS-SPEC.md)
+
+**Two brands, one backend:**
+- **TPL Collective** (`portal.tplcollective.ai`) — team members, arrive via recruiting
+- **RETechbox** (`retechbox.com`, domain purchased 2026-08-17) — any agent, any brokerage, paid software
+
+Access to a tool is one `workspace_entitlements` row regardless of which door the customer
+came through. Plans (basic/mid/elite) stay for legacy CRM gating; **entitlements are the
+source of truth for TOOL access**.
+
+**Compliance constraint baked into the schema.** LPT prohibits offering items of value in
+exchange for being named sponsor; team benefits are permitted. Therefore:
+- No entitlement `source` value references sponsorship or recruiting. Valid sources:
+  `purchased | trial | team_member | comp | internal`
+- `source='team_member'` requires a `team_agreement_id` — enforced by a DB CHECK constraint
+  (`team_member_requires_agreement`), not just application code
+- `_assert_team_agreement()` additionally verifies the agreement exists, is active, and
+  belongs to that workspace
+- Sponsorship status may live on the CRM contact but is **never** read by an access decision
+- Selling the tools commercially is what makes the team benefit defensible — a product with
+  a real public price and outside customers is a product, not an inducement
+
+**Migration `2026-08-17-phase-23-entitlements.sql`** — 6 tables:
+`products` (registry — tools are data, adding one is an INSERT), `bundles` + `bundle_products`,
+`team_agreements` (with `obligations` JSONB documenting what the member commits to),
+`workspace_entitlements` (the toggle, UNIQUE on workspace × product), `entitlement_events`
+(append-only audit). Adds `account_type` / `brand` / `lead_id` to `workspaces`.
+Seeds 5 products (listing-dashboard, net-sheet, cma-builder, comparator, coaching) with
+prices NULL until set. Backfills workspace 1 as `internal` with everything, and every other
+existing workspace with `comp` grants for already-live tools so nothing breaks.
+
+**`mission-control/app/entitlements.py`** — wired via `setup(db, supabase)` like coaching.py:
+- `has_entitlement()` / `get_entitlement()` / `get_entitlements()` — only ACTIVE rows surface
+- `require_entitlement(slug)` — FastAPI dependency factory, deliberately **sync** so FastAPI
+  runs it in a threadpool and the blocking Supabase read never stalls the event loop (Phase 15.9)
+- `check_limit(ws, slug, key, current)` — free-tier caps enforced at the API
+- `grant()` / `revoke()` / `grant_bundle()` / `expire_due()` — revoke never deletes, flips
+  `status='revoked'` and keeps history
+- Per-worker TTL caches (entitlements 60s, product registry 300s); grant/revoke invalidate
+  the acting worker immediately, others catch up within TTL
+- Entitlement tables are deliberately **NOT** in `TENANT_TABLES` — `db()` would auto-filter to
+  the caller's workspace and silently break every admin endpoint acting on another workspace.
+  Every query passes `workspace_id` explicitly.
+
+**Endpoints:** `/api/admin/products`, `/api/admin/workspaces/{id}/entitlements` (GET grid /
+POST grant / DELETE revoke, reason required), `/api/admin/workspaces/{id}/entitlement-events`,
+`/api/admin/team-agreements`, `/api/me/entitlements` (drives nav on both brands),
+`/api/public/products` (RETechbox pricing page — added `/api/public/` to `PUBLIC_API_PREFIXES`).
+
+**Gated so far:** `coaching.py` router behind `coaching`, `cma.py` router behind `cma-builder`.
+CMA's `public_router` (share_token report viewer) intentionally NOT gated.
+`coaching.py` now auto-grants a `comp` coaching entitlement at both workspace-creation sites in
+`provision_portal()` — without it a newly provisioned client would 403 on their own portal.
+
+**Tests:** `mission-control/app/tests/test_entitlements.py` — 34 assertions against an in-memory
+fake Supabase covering the active-window evaluation, the gate, free-tier caps, the compliance
+guard (4 rejection paths), source/tier validation, revoke + cache invalidation, and the audit
+trail. Run with any venv that has fastapi installed.
+
+**DEPLOY ORDER:** apply the migration BEFORE shipping the code. Gates fail closed by design, so
+code against a database without the entitlement tables 403s every gated tool.
+
+**Not built yet:** admin toggle UI in Mission Control, nav gating from `/api/me/entitlements`,
+Stripe, RETechbox marketing site, and the Listing Dashboard itself.
+
+## Security — hardening + weekly monitoring (2026-08-17)
+
+**Fixed: `execute_readonly_sql()` was a full database read for anyone.** Found by the
+Supabase security advisor during Phase 23 verification. The function was `SECURITY DEFINER`
+(so it ran as owner and **bypassed RLS**) with `EXECUTE` reachable by `anon`, callable at
+`POST /rest/v1/rpc/execute_readonly_sql`. Its only guard was `query LIKE 'SELECT%'`, which
+permits the attack rather than preventing it — reading the data *is* the attack. Since the
+anon key is embedded client-side in `static/recruiting/supabase-client.js` (correct on its
+own — anon keys are public by design and RLS is what makes them safe), anyone who viewed
+that file could have read every table, including `users.password_hash`.
+- Zero callers in the repo, zero calls in 24h of edge logs
+- Revoked from `PUBLIC`, `anon`, `authenticated`, then **dropped entirely**
+- Migrations: `2026-08-17-security-revoke-execute-readonly-sql.sql`, then
+  `2026-08-17-security-drop-execute-readonly-sql.sql` (which preserves the original
+  definition in comments for recovery)
+- **Revoking from `anon` alone would NOT have worked** — Postgres grants EXECUTE to
+  `PUBLIC` by default and `anon` inherits through it. Revoking `PUBLIC` is the operative line.
+- Dropped rather than left revoked because a revoke is a grant *state*: any future
+  DROP+CREATE (redeploy, restore, migration replay) resets grants to default, which
+  includes `PUBLIC`, silently reopening the hole.
+- The anon key did NOT need rotating. The function was the bypass, not the key.
+
+**Weekly monitoring:** cloud routine `trig_01TqYY9HxNdKYigZ6qonzRwZ`, Mondays 13:00 UTC
+(9am ET), https://claude.ai/code/routines/trig_01TqYY9HxNdKYigZ6qonzRwZ
+- Calls `get_advisors` (security + performance), diffs against an accepted baseline carried
+  in the prompt, pushes a mobile notification. Reports only genuine drift.
+- Scoped to read-only Supabase tools (`get_advisors`, `list_tables`, `list_migrations`) —
+  no `execute_sql`, no `apply_migration`. An unattended weekly agent should not hold write
+  access to production.
+- Escalates loudly on: any SECURITY DEFINER function reachable by anon/authenticated that
+  returns something other than `trigger`; `execute_readonly_sql` existing at all; RLS
+  disabled or an anon policy on any table; any ERROR-level lint.
+- **When changing the baseline, update the routine prompt too**, or it reports resolved
+  items as noise every week.
+
+**Accepted (deliberately not fixed):** `function_search_path_mutable` on notify_buyer_intake
+/ set_updated_at / coaching_set_updated_at; `pg_net` in the public schema;
+`notify_buyer_intake` being anon-executable (it returns `trigger`, and PostgREST does not
+expose trigger functions as RPC, so it is not callable from outside);
+`auth_rls_initplan` on the three tiny `wellington_*` tables.
+
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
 - `mission` → 187.77.213.230 (Mission Control)
@@ -700,6 +813,15 @@ Below those gates → iterate again before scaling to next 20 (agents 21-40 from
 ## Rules
 - TPL Collective ≠ LPT Realty — never conflate the two
 - Never fabricate LPT financial figures
+- **Sponsorship must never gate tool access.** LPT prohibits offering items of value in
+  exchange for being named sponsor. No entitlement `source` may reference sponsorship or
+  recruiting, and no access decision may read sponsorship status. Team benefits attach to a
+  signed team agreement (`source='team_member'` + `team_agreement_id`), never to sponsor
+  designation. See Phase 23.
+- **Never authorize from the JWT.** Tokens live 7 days; entitlements in a token would keep a
+  revoked product usable for a week. JWT entitlement snapshots are for rendering nav only —
+  every gated route re-checks against the DB. Hiding a nav item is not gating.
+- RETechbox marketing never mentions LPT, sponsorship, or joining anything. It sells software.
 - Keep POST /api/leads backward compatible (live website uses it)
 - Always confirm before deploying to the VPS
 - Comparator PDFs use ASCII-only labels (Helvetica bundled with pdfkit can't render Δ, em-dashes, U+2713 checkmark, etc.). Use "vs LPT BP:" not "Δ vs LPT BP:" and avoid em-dashes in PDF body text.

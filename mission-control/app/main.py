@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, PlainTextResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -59,6 +59,8 @@ PUBLIC_API_PREFIXES = (
     "/api/email/open/",
     "/api/auth/invite/",  # Phase 13.5: public invite-token validation
     "/api/recruit-comparisons/by-token/",  # Phase 14: public report viewer
+    "/api/cma-public/",  # Phase 22: public CMA report viewer (share_token)
+    "/api/public/",  # Phase 23: product registry for the RETechbox marketing site
 )
 
 
@@ -406,12 +408,54 @@ PROSPECT_ENGAGEMENT_TENANT_TABLES = frozenset({
 TENANT_TABLES = TENANT_TABLES | PROSPECT_ENGAGEMENT_TENANT_TABLES
 
 
+# ── PHASE 22: CMA TOOL TABLES ──
+CMA_TENANT_TABLES = frozenset({
+    "cmas", "cma_comps",
+})
+TENANT_TABLES = TENANT_TABLES | CMA_TENANT_TABLES
+
+
+# ── LISTING DASHBOARD TABLES ──
+# Every one of these carries its own workspace_id, so db() scopes them directly
+# rather than relying on the FK chain up to listings. Defence in depth: a bug in a
+# child-table query cannot leak another workspace's listing data.
+#
+# fee_profiles is deliberately NOT in this set. System-provided profiles are stored
+# with workspace_id IS NULL so every tenant can use them; db() would filter those to
+# the caller's workspace and make the Florida default invisible to everyone. Fee
+# profile queries pass workspace_id explicitly instead (same reasoning as the
+# Phase 23 entitlement tables).
+LISTING_TENANT_TABLES = frozenset({
+    "listings", "listing_sellers", "listing_mortgages", "offers", "net_sheets",
+    "transaction_milestones", "listing_price_changes", "listing_showings",
+    "listing_weekly_reports",
+})
+TENANT_TABLES = TENANT_TABLES | LISTING_TENANT_TABLES
+
+
+# ── PHASE 23: ENTITLEMENT LAYER ──
+# Must be wired BEFORE any router it gates, since require_entitlement() is used
+# in the include_router() calls below.
+#
+# DEPLOY ORDER MATTERS: apply migrations/2026-08-17-phase-23-entitlements.sql
+# BEFORE shipping this code. The gates fail closed by design, so deploying the
+# code against a database without the entitlement tables 403s every gated tool.
+import entitlements as _ent_mod  # noqa: E402
+_ent_mod.setup(db, supabase)
+app.include_router(_ent_mod.router)          # /api/admin/*  (platform-only)
+app.include_router(_ent_mod.me_router)       # /api/me/entitlements
+app.include_router(_ent_mod.public_router)   # /api/public/products
+
+
 # ── PHASE 15: COACHING ROUTER ──
 # coaching.py needs db() + supabase but can't import them at module load (circular import).
 # We pass them in via setup() after both are defined.
 import coaching as _coaching_mod  # noqa: E402
 _coaching_mod.setup(db, supabase)
-app.include_router(_coaching_mod.router)
+app.include_router(
+    _coaching_mod.router,
+    dependencies=[Depends(_ent_mod.require_entitlement("coaching"))],
+)
 
 
 # ── PHASE 16: PROSPECT ENGAGEMENT ROUTER ──
@@ -421,6 +465,35 @@ import prospect_engagement as _prospect_engagement_mod  # noqa: E402
 _prospect_engagement_mod.setup(db, supabase)
 app.include_router(_prospect_engagement_mod.ingest_router)
 app.include_router(_prospect_engagement_mod.router)
+
+
+# ── PHASE 22: CMA TOOL ROUTER ──
+# JWT-gated CRUD on cmas + cma_comps + ZIP import from MLS Flex export.
+# Session 2 will add a public /cma-public/<share_token> router for the shareable report.
+import cma as _cma_mod  # noqa: E402
+_cma_mod.setup(db, supabase)
+app.include_router(
+    _cma_mod.router,
+    dependencies=[Depends(_ent_mod.require_entitlement("cma-builder"))],
+)
+# public_router is the share_token report viewer - intentionally NOT gated.
+app.include_router(_cma_mod.public_router)
+
+
+# ── LISTING DASHBOARD ──
+# Two routers, gated differently. The listing surface needs the Listing Dashboard;
+# fee profiles and net sheets are reachable by EITHER product, because the seller net
+# sheet is sold standalone as well as bundled.
+import listings as _listings_mod  # noqa: E402
+_listings_mod.setup(db, supabase, _ent_mod)
+app.include_router(
+    _listings_mod.router,
+    dependencies=[Depends(_ent_mod.require_entitlement("listing-dashboard"))],
+)
+app.include_router(
+    _listings_mod.net_sheet_router,
+    dependencies=[Depends(_ent_mod.require_any_entitlement(["listing-dashboard", "net-sheet"]))],
+)
 
 
 # ── PLAN TIERS & PLATFORM GATING (Phase 13.4) ──
@@ -5898,4 +5971,12 @@ def dashboard(request: Request):
 def signup_page():
     """Public signup page — recipient lands here from invitation email."""
     with open("/app/static/signup.html") as f:
+        return f.read()
+
+
+@app.get("/cma/{token}", response_class=HTMLResponse)
+def cma_public_report(token: str):
+    """Public CMA report — the shareable client-facing page. Data fetched
+    client-side from /api/cma-public/{token} (whitelisted, no JWT)."""
+    with open("/app/static/cma-report.html") as f:
         return f.read()
