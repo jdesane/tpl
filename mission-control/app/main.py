@@ -480,6 +480,22 @@ app.include_router(
 app.include_router(_cma_mod.public_router)
 
 
+# ── LISTING DASHBOARD ──
+# Two routers, gated differently. The listing surface needs the Listing Dashboard;
+# fee profiles and net sheets are reachable by EITHER product, because the seller net
+# sheet is sold standalone as well as bundled.
+import listings as _listings_mod  # noqa: E402
+_listings_mod.setup(db, supabase, _ent_mod)
+app.include_router(
+    _listings_mod.router,
+    dependencies=[Depends(_ent_mod.require_entitlement("listing-dashboard"))],
+)
+app.include_router(
+    _listings_mod.net_sheet_router,
+    dependencies=[Depends(_ent_mod.require_any_entitlement(["listing-dashboard", "net-sheet"]))],
+)
+
+
 # ── PLAN TIERS & PLATFORM GATING (Phase 13.4) ──
 # - Plan tiers (basic/mid/elite) gate features by URL path prefix.
 # - "Platform-only" routes (TPL Collective recruiting features) are restricted to workspace_id=1.

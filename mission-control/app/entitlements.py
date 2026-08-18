@@ -265,6 +265,35 @@ def require_entitlement(product_slug: str):
     return _dep
 
 
+def require_any_entitlement(product_slugs: List[str]):
+    """
+    Passes when the workspace holds ANY of these products.
+
+    Exists because some surfaces belong to more than one product. The seller net
+    sheet ships inside the Listing Dashboard but is also sold standalone, so an
+    account holding either one must reach it. Same sync-dependency reasoning as
+    require_entitlement().
+    """
+    def _dep(request: Request):
+        ws = getattr(request.state, "workspace_id", None)
+        if ws is None:
+            raise HTTPException(401, "Authentication required")
+        held = get_entitlements(ws)
+        for slug in product_slugs:
+            if slug in held:
+                return held[slug]
+        products = _products_by_slug()
+        names = [products.get(s, {}).get("name", s) for s in product_slugs]
+        raise HTTPException(403, {
+            "detail": "This account does not include " + " or ".join(names),
+            "error": "entitlement_required",
+            "product": product_slugs[0],
+            "accepts_any_of": product_slugs,
+            "upgrade_url": UPGRADE_URL,
+        })
+    return _dep
+
+
 def check_limit(workspace_id: int, product_slug: str, key: str, current: int) -> None:
     """
     Enforce a free-tier cap at the API. Call BEFORE creating the capped resource:
