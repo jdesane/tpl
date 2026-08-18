@@ -207,6 +207,7 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-item" data-min-plan="mid" onclick="showPage('content')"><span class="icon">&#x260E;</span>Content Hub</div>
     <div class="nav-item" data-platform-only="true" onclick="showPage('links')"><span class="icon">&#x2693;</span>Recruiting Links</div>
     <div class="nav-item" onclick="showPage('recruit-compare')"><span class="icon">&#x25EB;</span>Recruit Comparison</div>
+    <div class="nav-item" onclick="showPage('cma')"><span class="icon">&#x2302;</span>CMA Tool</div>
     <div class="nav-item" data-platform-only="true" onclick="showPage('engagement')"><span class="icon">&#x25C9;</span>Prospect Engagement</div>
   </div>
   <div class="nav-group" data-nav-group>
@@ -226,6 +227,7 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-group-label">Admin</div>
     <div class="nav-item" data-admin-only="true" onclick="showPage('admin-platform')"><span class="icon">&#x2747;</span>Platform</div>
     <div class="nav-item" data-admin-only="true" onclick="showPage('admin-users')"><span class="icon">&#x25D5;</span>Users</div>
+    <div class="nav-item" data-admin-only="true" onclick="showPage('admin-entitlements')"><span class="icon">&#x229E;</span>Entitlements</div>
     <div class="nav-item" data-admin-only="true" onclick="showPage('admin-invites')"><span class="icon">&#x2709;</span>Invitations</div>
     <div class="nav-item" data-admin-only="true" onclick="showPage('admin-costs')"><span class="icon">&#x24E7;</span>Costs</div>
     <div class="nav-item" data-admin-only="true" onclick="showPage('admin-audit')"><span class="icon">&#x29C9;</span>Audit Log</div>
@@ -1041,6 +1043,932 @@ _engagementInstallHook();
   window.addEventListener('load', handleHash);
 })();
 </script>
+
+<!-- ═══ CMA TOOL PAGE (Phase 22) ═══ -->
+<div class="page" id="page-cma">
+  <div class="panel-title" style="font-size:24px;margin-bottom:6px">CMA Tool</div>
+  <div style="color:var(--muted);font-size:13px;margin-bottom:18px">
+    Build a Comparative Market Analysis. Upload a Flex CMA export ZIP from your MLS (textCma.csv + photos), fill in the subject property, review comps, share the report.
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="cma-list-view">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="panel-title" style="font-size:14px">Your CMAs</div>
+      <button class="btn" onclick="cmaCreateNew()">+ New CMA</button>
+    </div>
+    <div id="cma-list" class="panel" style="padding:0">
+      <div style="padding:18px;color:var(--muted);font-size:13px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="cma-detail-view" style="display:none">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <button class="btn btn-ghost" onclick="cmaBackToList()">&larr; Back</button>
+      <div id="cma-detail-title" class="panel-title" style="font-size:20px;flex:1">New CMA</div>
+      <span id="cma-status-pill" class="badge" style="padding:4px 10px;border-radius:4px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;background:rgba(108,99,255,0.15);color:var(--accent)">draft</span>
+      <button class="btn btn-ghost" onclick="cmaAutoAdjust()" id="cma-auto-adjust-btn" title="Apply standard FL adjustments (pool / age / beds / baths / sqft / garage / lot)">&#9881; Auto-Adjust</button>
+      <button class="btn" onclick="cmaComputePricing()" id="cma-compute-btn">&#x25B6; Compute Pricing</button>
+      <button class="btn btn-ghost" onclick="cmaOpenReport()" id="cma-view-report-btn">View Report</button>
+      <button class="btn btn-ghost" onclick="cmaDownloadPdf()" id="cma-download-pdf-btn">Download PDF</button>
+      <button class="btn" onclick="cmaOpenSendModal()" id="cma-send-btn" style="background:var(--accent);color:#fff">Send to Client</button>
+      <button class="btn btn-ghost" onclick="cmaDelete()">Delete</button>
+    </div>
+
+    <!-- Info strip -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px">
+      <div class="panel"><div style="font-size:28px;color:var(--accent);font-weight:700" id="cma-stat-comps">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Comps</div></div>
+      <div class="panel"><div style="font-size:28px;color:#34d399;font-weight:700" id="cma-stat-active">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Active</div></div>
+      <div class="panel"><div style="font-size:28px;color:#f0c040;font-weight:700" id="cma-stat-pending">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Pending</div></div>
+      <div class="panel"><div style="font-size:28px;color:#8b5cf6;font-weight:700" id="cma-stat-closed">0</div><div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Closed</div></div>
+    </div>
+
+    <!-- Pricing Analysis panel -->
+    <div class="panel" id="cma-pricing-panel" style="margin-bottom:18px">
+      <div class="panel-title" style="font-size:14px;margin-bottom:12px">Pricing Analysis</div>
+      <div id="cma-pricing-body" style="color:var(--muted);font-size:13px">Click <strong style="color:var(--ink)">▶ Compute Pricing</strong> above once you've reviewed the comps to generate a suggested list price band.</div>
+    </div>
+
+    <!-- Two-column layout: Subject + Client on left, ZIP import on right -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px">
+      <div class="panel">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Subject Property</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Address</label><input class="cma-input" data-field="subject_address" style="width:100%" placeholder="123 Main St"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">City</label><input class="cma-input" data-field="subject_city" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">State</label><input class="cma-input" data-field="subject_state" style="width:100%" maxlength="2"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Zip</label><input class="cma-input" data-field="subject_zip" style="width:100%"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Beds</label><input class="cma-input cma-subject-json" data-key="beds" type="number" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Baths</label><input class="cma-input cma-subject-json" data-key="baths_total" type="number" step="0.5" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Sq Ft Living</label><input class="cma-input cma-subject-json" data-key="sqft_living" type="number" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Sq Ft Total</label><input class="cma-input cma-subject-json" data-key="sqft_total" type="number" style="width:100%"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Lot Size</label><input class="cma-input cma-subject-json" data-key="lot_size" type="number" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Year Built</label><input class="cma-input cma-subject-json" data-key="year_built" type="number" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Garage</label><input class="cma-input cma-subject-json" data-key="garage_spaces" type="number" step="0.5" style="width:100%"></div>
+          <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:6px">
+            <label style="font-size:12px"><input type="checkbox" class="cma-subject-json" data-key="pool"> Pool</label>
+            <label style="font-size:12px"><input type="checkbox" class="cma-subject-json" data-key="waterfront"> Waterfront</label>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Condition Notes / Upgrades</label>
+          <textarea class="cma-input cma-subject-json" data-key="condition_notes" rows="3" style="width:100%;font-family:inherit" placeholder="Remodeled kitchen 2024, new roof, etc."></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px">
+          <div class="panel-title" style="font-size:14px">Prepared For</div>
+          <button class="btn btn-sm btn-ghost" onclick="cmaAddClient()">+ Add Another Client</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Client 1 (primary)</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">First Name</label><input class="cma-input" data-field="client_first_name" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Last Name</label><input class="cma-input" data-field="client_last_name" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Email</label><input class="cma-input" data-field="client_email" type="email" style="width:100%"></div>
+          <div><label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Phone</label><input class="cma-input" data-field="client_phone" style="width:100%"></div>
+        </div>
+        <div id="cma-additional-clients"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" style="font-size:14px;margin-bottom:12px">Import Comps</div>
+        <div style="color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:12px">
+          <strong style="color:var(--ink)">Step 1:</strong> Upload the <strong>Cloud CMA / Flex ZIP</strong> (photos + rich data).
+        </div>
+        <input type="file" id="cma-zip-input" accept=".zip" style="display:none" onchange="cmaHandleZipSelect(event)">
+        <button class="btn" style="width:100%;margin-bottom:6px" onclick="document.getElementById('cma-zip-input').click()">Select ZIP</button>
+        <div id="cma-import-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px"></div>
+
+        <div style="color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:12px;padding-top:12px;border-top:1px dashed var(--surf3, #2a2a44)">
+          <strong style="color:var(--ink)">Step 2:</strong> Upload the <strong>custom export CSV</strong> (subject property + fresher prices). Merges by MLS#.
+        </div>
+        <input type="file" id="cma-csv-input" accept=".csv" style="display:none" onchange="cmaHandleCsvSelect(event)">
+        <button class="btn btn-ghost" style="width:100%;margin-bottom:6px" onclick="document.getElementById('cma-csv-input').click()">Select Custom CSV</button>
+        <div id="cma-csv-status" style="font-size:12px;color:var(--muted);text-align:center"></div>
+      </div>
+    </div>
+
+    <!-- Comps table -->
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="panel-title" style="font-size:14px">Comparable Properties</div>
+        <div style="font-size:12px;color:var(--muted)" id="cma-comps-summary"></div>
+      </div>
+      <div id="cma-comps-table"><div style="padding:18px;color:var(--muted);font-size:13px;text-align:center">No comps yet. Upload a ZIP above.</div></div>
+    </div>
+  </div>
+
+  <!-- Send-report modal -->
+  <div id="cma-send-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center">
+    <div class="panel" style="max-width:520px;width:90%;padding:28px">
+      <div class="panel-title" style="font-size:18px;margin-bottom:16px">Send CMA Report</div>
+      <div id="cma-send-recipients" style="margin-bottom:16px;font-size:13px"></div>
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Subject</label>
+      <input class="cma-input" id="cma-send-subject" style="width:100%;margin-bottom:12px">
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Personal Note (optional)</label>
+      <textarea class="cma-input" id="cma-send-message" rows="4" style="width:100%;font-family:inherit;margin-bottom:16px" placeholder="Add a note that will appear above the CTA button..."></textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="cmaCloseSendModal()">Cancel</button>
+        <button class="btn" style="background:var(--accent);color:#fff" onclick="cmaSendReport()">Send Now</button>
+      </div>
+      <div id="cma-send-result" style="margin-top:14px;font-size:12px;text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- Adjustments modal (replaces prompt()) -->
+  <div id="cma-adj-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center">
+    <div class="panel" style="max-width:640px;width:92%;padding:24px;max-height:88vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="panel-title" style="font-size:16px">Adjustments</div>
+        <button class="btn btn-sm btn-ghost" onclick="cmaCloseAdjModal()">&times;</button>
+      </div>
+      <div id="cma-adj-header" style="color:var(--muted);font-size:12px;margin-bottom:14px"></div>
+
+      <div id="cma-adj-rows"></div>
+
+      <div style="display:flex;gap:8px;margin:12px 0">
+        <button class="btn btn-sm btn-ghost" onclick="cmaAdjAddRow()">+ Add Line</button>
+        <button class="btn btn-sm btn-ghost" onclick="cmaAdjApplyAuto()" title="Recompute standard FL adjustments for this single comp">&#9881; Recompute Standard</button>
+      </div>
+
+      <div style="padding:12px;background:var(--surf2);border-radius:6px;margin:12px 0;font-size:13px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--muted)">Base price</span>
+          <span id="cma-adj-base">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--muted)">Total adjustments</span>
+          <span id="cma-adj-total">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--surf3);font-weight:600">
+          <span>Adjusted price</span>
+          <span id="cma-adj-final" style="color:var(--accent)">$0</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="cmaCloseAdjModal()">Cancel</button>
+        <button class="btn" style="background:var(--accent);color:#fff" onclick="cmaAdjSave()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────── CMA Tool (Phase 22) ─────────
+let cmaCurrentId = null;
+let cmaCurrentData = null;
+let cmaAutosaveTimer = null;
+
+function cmaFmtMoney(n) {
+  if (n === null || n === undefined || n === '') return '-';
+  const v = parseFloat(n);
+  if (isNaN(v)) return '-';
+  return '$' + Math.round(v).toLocaleString();
+}
+function cmaFmtInt(n) {
+  if (n === null || n === undefined || n === '') return '-';
+  const v = parseInt(n);
+  if (isNaN(v)) return '-';
+  return v.toLocaleString();
+}
+function cmaStatusColor(s) {
+  s = (s || '').toLowerCase();
+  if (s === 'active') return '#34d399';
+  if (s === 'pending') return '#f0c040';
+  if (s === 'closed') return '#8b5cf6';
+  return 'var(--muted)';
+}
+
+async function cmaLoadList() {
+  const root = document.getElementById('cma-list');
+  try {
+    const r = await fetch('/api/cmas');
+    if (!r.ok) throw new Error(await r.text());
+    const json = await r.json();
+    const items = json.cmas || [];
+    if (!items.length) {
+      root.innerHTML = '<div style="padding:32px;color:var(--muted);font-size:13px;text-align:center">No CMAs yet. Click "+ New CMA" to start.</div>';
+      return;
+    }
+    let html = '<table class="data-table" style="width:100%"><thead><tr>'
+      + '<th>Subject</th><th>Client</th><th>Status</th><th>Comps</th><th>Created</th><th></th>'
+      + '</tr></thead><tbody>';
+    items.forEach(c => {
+      const client = [c.client_first_name, c.client_last_name].filter(Boolean).join(' ') || '<span style="color:var(--muted)">-</span>';
+      const addr = c.subject_address || '<span style="color:var(--muted)">(no address)</span>';
+      html += '<tr>'
+        + '<td><strong>' + addr + '</strong>' + (c.subject_city ? '<div style="font-size:11px;color:var(--muted)">' + c.subject_city + ', ' + (c.subject_state || '') + ' ' + (c.subject_zip || '') + '</div>' : '') + '</td>'
+        + '<td>' + client + '</td>'
+        + '<td><span style="padding:3px 8px;border-radius:4px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:rgba(108,99,255,0.15);color:var(--accent)">' + (c.status || 'draft') + '</span></td>'
+        + '<td>' + (c.comp_count || 0) + '</td>'
+        + '<td style="font-size:12px;color:var(--muted)">' + (c.created_at ? new Date(c.created_at).toLocaleDateString() : '-') + '</td>'
+        + '<td style="text-align:right">'
+        + '<button class="btn btn-sm" onclick="cmaOpenDetail(' + c.id + ')">Open</button>'
+        + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    root.innerHTML = html;
+  } catch (e) {
+    root.innerHTML = '<div style="padding:18px;color:#ef4444;font-size:13px">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+async function cmaCreateNew() {
+  try {
+    const r = await fetch('/api/cmas', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const cma = await r.json();
+    cmaOpenDetail(cma.id);
+  } catch (e) {
+    alert('Failed to create: ' + e.message);
+  }
+}
+
+function cmaBackToList() {
+  cmaCurrentId = null;
+  cmaCurrentData = null;
+  document.getElementById('cma-list-view').style.display = '';
+  document.getElementById('cma-detail-view').style.display = 'none';
+  cmaLoadList();
+}
+
+async function cmaOpenDetail(id) {
+  cmaCurrentId = id;
+  document.getElementById('cma-list-view').style.display = 'none';
+  document.getElementById('cma-detail-view').style.display = '';
+  await cmaLoadDetail();
+}
+
+async function cmaLoadDetail() {
+  if (!cmaCurrentId) return;
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId);
+    if (!r.ok) throw new Error(await r.text());
+    const cma = await r.json();
+    cmaCurrentData = cma;
+
+    document.getElementById('cma-detail-title').textContent = cma.subject_address || 'New CMA #' + cma.id;
+    document.getElementById('cma-status-pill').textContent = cma.status || 'draft';
+
+    // Fill top-level fields
+    document.querySelectorAll('.cma-input[data-field]').forEach(el => {
+      const key = el.dataset.field;
+      el.value = cma[key] || '';
+    });
+
+    // Fill subject JSONB fields
+    const subj = cma.subject || {};
+    document.querySelectorAll('.cma-subject-json[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      if (el.type === 'checkbox') el.checked = !!subj[key];
+      else el.value = (subj[key] === null || subj[key] === undefined) ? '' : subj[key];
+    });
+
+    // Render additional clients (multi-client support)
+    cmaRenderAdditionalClients(cma.additional_clients || []);
+
+    // Render pricing analysis (if computed)
+    cmaRenderPricing(cma.pricing);
+
+    // Render comps
+    cmaRenderComps(cma.comps || []);
+    cmaBindAutosave();
+  } catch (e) {
+    alert('Failed to load: ' + e.message);
+  }
+}
+
+function cmaRenderComps(comps) {
+  const activeN = comps.filter(c => (c.status || '').toLowerCase() === 'active' && c.included).length;
+  const pendingN = comps.filter(c => (c.status || '').toLowerCase() === 'pending' && c.included).length;
+  const closedN = comps.filter(c => (c.status || '').toLowerCase() === 'closed' && c.included).length;
+  const includedN = comps.filter(c => c.included).length;
+
+  document.getElementById('cma-stat-comps').textContent = includedN;
+  document.getElementById('cma-stat-active').textContent = activeN;
+  document.getElementById('cma-stat-pending').textContent = pendingN;
+  document.getElementById('cma-stat-closed').textContent = closedN;
+  document.getElementById('cma-comps-summary').textContent = includedN + ' of ' + comps.length + ' included';
+
+  const root = document.getElementById('cma-comps-table');
+  if (!comps.length) {
+    root.innerHTML = '<div style="padding:18px;color:var(--muted);font-size:13px;text-align:center">No comps yet. Upload a ZIP above.</div>';
+    return;
+  }
+
+  // Group by status for readability
+  const groups = [
+    { key: 'active', label: 'Active (Competition)', comps: comps.filter(c => (c.status || '').toLowerCase() === 'active') },
+    { key: 'pending', label: 'Pending (Trending)', comps: comps.filter(c => (c.status || '').toLowerCase() === 'pending') },
+    { key: 'closed', label: 'Closed (Sold)', comps: comps.filter(c => (c.status || '').toLowerCase() === 'closed') },
+    { key: 'other', label: 'Other', comps: comps.filter(c => !['active','pending','closed'].includes((c.status || '').toLowerCase())) },
+  ];
+
+  let html = '';
+  groups.forEach(g => {
+    if (!g.comps.length) return;
+    html += '<div style="margin-bottom:16px">'
+      + '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:' + cmaStatusColor(g.key) + ';margin-bottom:6px;font-weight:600">' + g.label + ' &middot; ' + g.comps.length + '</div>'
+      + '<table class="data-table" style="width:100%;font-size:13px">'
+      + '<thead><tr>'
+      + '<th style="width:28px"></th>'
+      + '<th style="width:64px">Photo</th>'
+      + '<th>Address</th>'
+      + '<th style="text-align:center">Bd/Ba</th>'
+      + '<th style="text-align:right">Sqft</th>'
+      + '<th style="text-align:right">Price</th>'
+      + '<th style="text-align:right">$/sqft</th>'
+      + '<th style="text-align:right">DOM</th>'
+      + '<th style="text-align:right">Adj</th>'
+      + '<th></th>'
+      + '</tr></thead><tbody>';
+    g.comps.forEach(c => {
+      const ppsf = (c.current_price && c.sqft_living) ? Math.round(c.current_price / c.sqft_living) : null;
+      const bd = c.beds || '-';
+      const ba = c.baths_total ? Number(c.baths_total).toFixed(1) : '-';
+      const adjTotal = (c.adjustments || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+      const photo = c.primary_photo_url
+        ? '<img src="' + c.primary_photo_url + '" style="width:54px;height:40px;object-fit:cover;border-radius:3px" onerror="this.style.display=\'none\'">'
+        : '<div style="width:54px;height:40px;background:var(--surf2);border-radius:3px"></div>';
+      const opacity = c.included ? '1' : '0.4';
+      html += '<tr style="opacity:' + opacity + '">'
+        + '<td><input type="checkbox" ' + (c.included ? 'checked' : '') + ' onchange="cmaToggleCompIncluded(' + c.id + ', this.checked)"></td>'
+        + '<td>' + photo + '</td>'
+        + '<td><div style="font-weight:600">' + (c.address || '-') + '</div><div style="font-size:11px;color:var(--muted)">MLS# ' + (c.mls_number || '-') + (c.city ? ' &middot; ' + c.city : '') + '</div></td>'
+        + '<td style="text-align:center">' + bd + '/' + ba + '</td>'
+        + '<td style="text-align:right">' + cmaFmtInt(c.sqft_living) + '</td>'
+        + '<td style="text-align:right"><strong>' + cmaFmtMoney(c.current_price) + '</strong></td>'
+        + '<td style="text-align:right">' + (ppsf ? '$' + ppsf : '-') + '</td>'
+        + '<td style="text-align:right">' + (c.dom !== null && c.dom !== undefined ? c.dom : '-') + '</td>'
+        + '<td style="text-align:right">' + (adjTotal !== 0 ? '<span style="color:' + (adjTotal > 0 ? '#34d399' : '#ef4444') + '">' + (adjTotal > 0 ? '+' : '') + cmaFmtMoney(adjTotal) + '</span>' : '-') + '</td>'
+        + '<td style="text-align:right;white-space:nowrap">'
+        + '<button class="btn btn-sm btn-ghost" onclick="cmaEditAdjustments(' + c.id + ')" title="Adjustments">$</button> '
+        + '<button class="btn btn-sm btn-ghost" onclick="cmaEditComp(' + c.id + ')" title="Edit">&#9998;</button> '
+        + '<button class="btn btn-sm btn-ghost" onclick="cmaDeleteComp(' + c.id + ')" title="Delete">&times;</button>'
+        + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  root.innerHTML = html;
+}
+
+function cmaBindAutosave() {
+  document.querySelectorAll('.cma-input[data-field]').forEach(el => {
+    el.onblur = () => cmaSaveTopLevel();
+  });
+  document.querySelectorAll('.cma-subject-json[data-key]').forEach(el => {
+    if (el.type === 'checkbox') {
+      el.onchange = () => cmaSaveSubject();
+    } else {
+      el.onblur = () => cmaSaveSubject();
+    }
+  });
+}
+
+async function cmaSaveTopLevel() {
+  if (!cmaCurrentId) return;
+  const payload = {};
+  document.querySelectorAll('.cma-input[data-field]').forEach(el => {
+    payload[el.dataset.field] = el.value || null;
+  });
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const cma = await r.json();
+    cmaCurrentData = { ...(cmaCurrentData || {}), ...cma };
+    document.getElementById('cma-detail-title').textContent = cma.subject_address || 'New CMA #' + cma.id;
+  } catch (e) {
+    console.warn('cmaSaveTopLevel failed', e);
+  }
+}
+
+function cmaRenderAdditionalClients(clients) {
+  const root = document.getElementById('cma-additional-clients');
+  if (!root) return;
+  if (!clients || !clients.length) { root.innerHTML = ''; return; }
+  let html = '';
+  clients.forEach((c, i) => {
+    const idx = i + 2; // Client 2, 3, ...
+    html += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--surf3, #2a2a44)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Client ' + idx + '</div>'
+      + '<button class="btn btn-sm btn-ghost" onclick="cmaRemoveClient(' + i + ')" title="Remove">&times; Remove</button>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'
+      + '<input class="cma-input cma-add-client" data-idx="' + i + '" data-key="first_name" placeholder="First name" value="' + (c.first_name || '').replace(/"/g,'&quot;') + '">'
+      + '<input class="cma-input cma-add-client" data-idx="' + i + '" data-key="last_name"  placeholder="Last name"  value="' + (c.last_name  || '').replace(/"/g,'&quot;') + '">'
+      + '<input class="cma-input cma-add-client" data-idx="' + i + '" data-key="email"      placeholder="Email" type="email" value="' + (c.email || '').replace(/"/g,'&quot;') + '">'
+      + '<input class="cma-input cma-add-client" data-idx="' + i + '" data-key="phone"      placeholder="Phone" value="' + (c.phone || '').replace(/"/g,'&quot;') + '">'
+      + '</div></div>';
+  });
+  root.innerHTML = html;
+  root.querySelectorAll('.cma-add-client').forEach(el => {
+    el.onblur = () => cmaSaveAdditionalClients();
+  });
+}
+
+function cmaCollectAdditionalClients() {
+  const rows = {};
+  document.querySelectorAll('#cma-additional-clients .cma-add-client').forEach(el => {
+    const i = el.dataset.idx;
+    if (!rows[i]) rows[i] = {};
+    rows[i][el.dataset.key] = el.value || null;
+  });
+  return Object.keys(rows).sort((a, b) => a - b).map(k => rows[k]);
+}
+
+async function cmaAddClient() {
+  const current = cmaCollectAdditionalClients();
+  current.push({ first_name: '', last_name: '', email: '', phone: '' });
+  cmaRenderAdditionalClients(current);
+  await cmaSaveAdditionalClients();
+}
+
+async function cmaRemoveClient(i) {
+  const current = cmaCollectAdditionalClients();
+  current.splice(i, 1);
+  cmaRenderAdditionalClients(current);
+  await cmaSaveAdditionalClients();
+}
+
+async function cmaSaveAdditionalClients() {
+  if (!cmaCurrentId) return;
+  const additional_clients = cmaCollectAdditionalClients();
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ additional_clients })
+    });
+    if (cmaCurrentData) cmaCurrentData.additional_clients = additional_clients;
+  } catch (e) {
+    console.warn('cmaSaveAdditionalClients failed', e);
+  }
+}
+
+async function cmaSaveSubject() {
+  if (!cmaCurrentId) return;
+  const subject = {};
+  document.querySelectorAll('.cma-subject-json[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (el.type === 'checkbox') subject[key] = el.checked;
+    else if (el.type === 'number') subject[key] = el.value === '' ? null : parseFloat(el.value);
+    else subject[key] = el.value || null;
+  });
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject })
+    });
+  } catch (e) {
+    console.warn('cmaSaveSubject failed', e);
+  }
+}
+
+async function cmaHandleZipSelect(evt) {
+  const file = evt.target.files[0];
+  if (!file || !cmaCurrentId) return;
+  const status = document.getElementById('cma-import-status');
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Uploading ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)...';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/import-zip', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const res = await r.json();
+    status.style.color = '#34d399';
+    let msg = 'Imported ' + res.imported + ' comps, uploaded ' + res.photos_uploaded + ' photos.';
+    if (res.warning_count) msg += ' (' + res.warning_count + ' warning' + (res.warning_count === 1 ? '' : 's') + ')';
+    status.textContent = msg;
+    await cmaLoadDetail();
+  } catch (e) {
+    status.style.color = '#ef4444';
+    status.textContent = 'Import failed: ' + e.message;
+  } finally {
+    evt.target.value = '';
+  }
+}
+
+async function cmaToggleCompIncluded(compId, included) {
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId + '/comps/' + compId, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ included })
+    });
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+async function cmaDeleteComp(compId) {
+  if (!confirm('Delete this comp from the CMA?')) return;
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId + '/comps/' + compId, { method: 'DELETE' });
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+async function cmaEditComp(compId) {
+  const comp = (cmaCurrentData?.comps || []).find(c => c.id === compId);
+  if (!comp) return;
+  const address = prompt('Address:', comp.address || '') ?? comp.address;
+  const price = prompt('Current Price ($):', comp.current_price || '');
+  const sqft = prompt('Sq Ft Living:', comp.sqft_living || '');
+  const dom = prompt('DOM (Days on Market):', comp.dom ?? '');
+  const payload = { address };
+  if (price !== null) payload.current_price = price === '' ? null : parseFloat(price);
+  if (sqft !== null) payload.sqft_living = sqft === '' ? null : parseInt(sqft);
+  if (dom !== null) payload.dom = dom === '' ? null : parseInt(dom);
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId + '/comps/' + compId, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+// ── Adjustments modal (replaces prompt) ──
+let cmaAdjCurrentCompId = null;
+let cmaAdjWorking = [];  // in-progress edit array
+
+function cmaEditAdjustments(compId) {
+  const comp = (cmaCurrentData?.comps || []).find(c => c.id === compId);
+  if (!comp) return;
+  cmaAdjCurrentCompId = compId;
+  cmaAdjWorking = (comp.adjustments || []).map(a => ({ ...a }));
+  document.getElementById('cma-adj-header').innerHTML =
+    '<strong style="color:var(--ink)">' + (comp.address || 'Comp') + '</strong> — MLS# ' + (comp.mls_number || '?') +
+    ' &middot; Base price ' + cmaFmtMoney(comp.current_price || comp.list_price);
+  cmaAdjRenderRows();
+  document.getElementById('cma-adj-modal').style.display = 'flex';
+}
+
+function cmaCloseAdjModal() {
+  document.getElementById('cma-adj-modal').style.display = 'none';
+  cmaAdjCurrentCompId = null;
+  cmaAdjWorking = [];
+}
+
+function cmaAdjRenderRows() {
+  const root = document.getElementById('cma-adj-rows');
+  if (!cmaAdjWorking.length) {
+    root.innerHTML = '<div style="padding:20px;color:var(--muted);font-style:italic;text-align:center;font-size:13px">No adjustments yet. Click "+ Add Line" or "&#9881; Recompute Standard" to auto-generate from the subject-vs-comp differences.</div>';
+  } else {
+    root.innerHTML = cmaAdjWorking.map((a, i) => `
+      <div style="display:grid;grid-template-columns:1fr 140px 30px;gap:8px;margin-bottom:6px;align-items:center">
+        <input class="cma-input" data-adj-i="${i}" data-key="label" value="${(a.label || '').replace(/"/g,'&quot;')}" placeholder="e.g. Remodeled kitchen" style="width:100%">
+        <input class="cma-input" data-adj-i="${i}" data-key="amount" type="number" step="500" value="${a.amount || 0}" style="width:100%;text-align:right">
+        <button class="btn btn-sm btn-ghost" onclick="cmaAdjRemoveRow(${i})" title="Remove">&times;</button>
+      </div>
+    `).join('');
+    root.querySelectorAll('input[data-adj-i]').forEach(el => {
+      el.oninput = () => {
+        const i = parseInt(el.dataset.adjI);
+        const key = el.dataset.key;
+        if (key === 'amount') cmaAdjWorking[i].amount = parseFloat(el.value) || 0;
+        else cmaAdjWorking[i][key] = el.value;
+        // If agent edited an auto row, mark it non-auto so recompute won't overwrite it
+        if (cmaAdjWorking[i].auto) cmaAdjWorking[i].auto = false;
+        cmaAdjRefreshTotals();
+      };
+    });
+  }
+  cmaAdjRefreshTotals();
+}
+
+function cmaAdjRefreshTotals() {
+  const comp = (cmaCurrentData?.comps || []).find(c => c.id === cmaAdjCurrentCompId) || {};
+  const base = parseFloat(comp.current_price || comp.list_price || 0) || 0;
+  const total = cmaAdjWorking.reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+  document.getElementById('cma-adj-base').textContent = cmaFmtMoney(base);
+  const totalEl = document.getElementById('cma-adj-total');
+  totalEl.textContent = (total >= 0 ? '+' : '') + cmaFmtMoney(total);
+  totalEl.style.color = total > 0 ? '#34d399' : (total < 0 ? '#ef4444' : 'var(--ink)');
+  document.getElementById('cma-adj-final').textContent = cmaFmtMoney(base + total);
+}
+
+function cmaAdjAddRow() {
+  cmaAdjWorking.push({ label: '', amount: 0 });
+  cmaAdjRenderRows();
+}
+
+function cmaAdjRemoveRow(i) {
+  cmaAdjWorking.splice(i, 1);
+  cmaAdjRenderRows();
+}
+
+async function cmaAdjApplyAuto() {
+  // Recompute standard FL adjustments for THIS one comp by asking the server.
+  // Simpler: call the same auto-adjust endpoint scoped to this comp only via /comps update.
+  // For MVP we call the bulk endpoint which is idempotent (updates all included), then re-open.
+  if (!confirm('Recompute standard FL adjustments? (This applies to all included comps, not just this one — cancel and edit manually to only touch this comp.)')) return;
+  await cmaAutoAdjust(true);
+  const comp = (cmaCurrentData?.comps || []).find(c => c.id === cmaAdjCurrentCompId);
+  if (comp) cmaAdjWorking = (comp.adjustments || []).map(a => ({ ...a }));
+  cmaAdjRenderRows();
+}
+
+async function cmaAdjSave() {
+  if (!cmaAdjCurrentCompId) return;
+  const clean = cmaAdjWorking
+    .filter(a => (a.label || '').trim() || (parseFloat(a.amount) || 0) !== 0)
+    .map(a => ({ label: (a.label || '').trim(), amount: parseFloat(a.amount) || 0, auto: !!a.auto }));
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId + '/comps/' + cmaAdjCurrentCompId, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adjustments: clean })
+    });
+    cmaCloseAdjModal();
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Save failed: ' + e.message);
+  }
+}
+
+// ── Custom CSV upload ──
+async function cmaHandleCsvSelect(evt) {
+  const file = evt.target.files[0];
+  if (!file || !cmaCurrentId) return;
+  const status = document.getElementById('cma-csv-status');
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Uploading ' + file.name + '...';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/import-custom-csv', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const res = await r.json();
+    status.style.color = '#34d399';
+    let msg = 'Merged ' + res.merged + ' existing, added ' + res.inserted + ' new.';
+    if (res.subject_updated) msg = '✓ Subject property populated. ' + msg;
+    if (res.warning_count) msg += ' (' + res.warning_count + ' warnings)';
+    status.textContent = msg;
+    await cmaLoadDetail();
+  } catch (e) {
+    status.style.color = '#ef4444';
+    status.textContent = 'Import failed: ' + e.message;
+  } finally {
+    evt.target.value = '';
+  }
+}
+
+// ── Auto-Adjust (bulk) ──
+async function cmaAutoAdjust(silent) {
+  if (!cmaCurrentId) return;
+  const btn = document.getElementById('cma-auto-adjust-btn');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Adjusting...'; }
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/auto-adjust', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const res = await r.json();
+    if (!silent) {
+      const rates = res.rates_used || {};
+      alert('Applied standard adjustments to ' + res.updated + ' comps.\n\n' +
+        'Rates used (based on target ~$' + (res.target_price_band_center || 0).toLocaleString() + '):\n' +
+        '• Pool: $' + (rates.pool || 0).toLocaleString() + '\n' +
+        '• Age: $' + (rates.age_per_year || 0).toLocaleString() + '/yr\n' +
+        '• Bedroom: $' + (rates.bedroom || 0).toLocaleString() + '\n' +
+        '• Full bath: $' + (rates.full_bath || 0).toLocaleString() + '\n' +
+        '• Sqft: $' + (rates.sqft || 0) + '/sqft\n' +
+        '• Garage: $' + (rates.garage_per_space || 0).toLocaleString() + '/space\n' +
+        '• Lot: $' + (rates.quarter_acre || 0).toLocaleString() + ' per ¼-acre\n\n' +
+        'Open any comp\'s $ button to review or edit individual lines.');
+    }
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Auto-adjust failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+async function cmaDelete() {
+  if (!cmaCurrentId) return;
+  if (!confirm('Delete this entire CMA? All comps and photos will be removed.')) return;
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId, { method: 'DELETE' });
+    cmaBackToList();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+function cmaOpenReport() {
+  if (!cmaCurrentData?.share_token) return;
+  window.open('/cma/' + cmaCurrentData.share_token, '_blank');
+}
+
+async function cmaComputePricing() {
+  if (!cmaCurrentId) return;
+  const btn = document.getElementById('cma-compute-btn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Computing...';
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/compute-pricing', { method: 'POST' });
+    if (!r.ok) throw new Error(await r.text());
+    const { pricing } = await r.json();
+    cmaRenderPricing(pricing);
+    if (cmaCurrentData) cmaCurrentData.pricing = pricing;
+    document.getElementById('cma-status-pill').textContent = pricing.suggested?.target ? 'ready' : 'draft';
+  } catch (e) {
+    alert('Failed to compute pricing: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+function cmaRenderPricing(pricing) {
+  const body = document.getElementById('cma-pricing-body');
+  if (!body) return;
+  if (!pricing) {
+    body.innerHTML = 'Click <strong style="color:var(--ink)">▶ Compute Pricing</strong> above once you’ve reviewed the comps to generate a suggested list price band.';
+    return;
+  }
+  const s = pricing.suggested || {};
+  if (!s.target) {
+    body.innerHTML = '<div style="color:#f0c040">' + (s.error || 'Could not compute a suggested price. Add subject sq ft and include some comps first.') + '</div>';
+    return;
+  }
+  const seg = (k) => pricing[k] || {};
+  const active = seg('active'), pending = seg('pending'), closed = seg('closed');
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:0;background:var(--surf2);border-radius:8px;overflow:hidden;margin-bottom:14px">
+      <div style="text-align:center;padding:20px 12px">
+        <div style="font-size:22px;font-weight:700">${cmaFmtMoney(s.low)}</div>
+        <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">Low</div>
+      </div>
+      <div style="text-align:center;padding:20px 12px;background:linear-gradient(180deg,rgba(108,99,255,0.18),rgba(108,99,255,0.06));border-left:1px solid var(--surf3);border-right:1px solid var(--surf3)">
+        <div style="font-size:32px;font-weight:700;color:var(--accent)">${cmaFmtMoney(s.target)}</div>
+        <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">Target</div>
+      </div>
+      <div style="text-align:center;padding:20px 12px">
+        <div style="font-size:22px;font-weight:700">${cmaFmtMoney(s.high)}</div>
+        <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">High</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:12px">${s.formula || ''}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px">
+      <div style="padding:10px;border-radius:6px;background:var(--surf2)">
+        <div style="color:#34d399;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px">Active · ${active.count || 0}</div>
+        ${active.ppsf_median ? '<div style="margin-top:4px">Median: $' + Math.round(active.ppsf_median) + '/sqft</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
+      </div>
+      <div style="padding:10px;border-radius:6px;background:var(--surf2)">
+        <div style="color:#f0c040;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px">Pending · ${pending.count || 0}</div>
+        ${pending.ppsf_median ? '<div style="margin-top:4px">Median: $' + Math.round(pending.ppsf_median) + '/sqft</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
+      </div>
+      <div style="padding:10px;border-radius:6px;background:var(--surf2)">
+        <div style="color:#a78bfa;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px">Closed · ${closed.count || 0}</div>
+        ${closed.ppsf_median ? '<div style="margin-top:4px">Median: $' + Math.round(closed.ppsf_median) + '/sqft' + (closed.dom_median ? ' · ' + Math.round(closed.dom_median) + ' DOM' : '') + '</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
+      </div>
+    </div>
+  `;
+}
+
+async function cmaDownloadPdf() {
+  if (!cmaCurrentId) return;
+  const btn = document.getElementById('cma-download-pdf-btn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing PDF...';
+  try {
+    // Use authed fetch (wrapper attaches Bearer), then open blob in new tab.
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/pdf');
+    if (!r.ok) throw new Error(await r.text());
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    alert('Failed to build PDF: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+function cmaOpenSendModal() {
+  if (!cmaCurrentData) return;
+  const emails = [];
+  if (cmaCurrentData.client_email) emails.push(cmaCurrentData.client_email);
+  (cmaCurrentData.additional_clients || []).forEach(c => { if (c.email) emails.push(c.email); });
+  if (!emails.length) {
+    alert('Add at least one client email under "Prepared For" before sending.');
+    return;
+  }
+  document.getElementById('cma-send-recipients').innerHTML =
+    '<strong>Recipients:</strong> ' + emails.map(e => '<span style="background:var(--surf2);padding:3px 8px;border-radius:4px;margin:0 4px 0 0;display:inline-block">' + e + '</span>').join('');
+  document.getElementById('cma-send-subject').value =
+    'Your Comparative Market Analysis — ' + (cmaCurrentData.subject_address || 'Your Property');
+  document.getElementById('cma-send-message').value = '';
+  document.getElementById('cma-send-result').textContent = '';
+  const m = document.getElementById('cma-send-modal');
+  m.style.display = 'flex';
+}
+
+function cmaCloseSendModal() {
+  document.getElementById('cma-send-modal').style.display = 'none';
+}
+
+async function cmaSendReport() {
+  const res = document.getElementById('cma-send-result');
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Sending...';
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/send-report', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject_override: document.getElementById('cma-send-subject').value || null,
+        message_override: document.getElementById('cma-send-message').value || null,
+      })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const out = await r.json();
+    res.style.color = '#34d399';
+    res.textContent = 'Sent to ' + out.sent_count + ' recipient(s).' +
+      (out.failures?.length ? ' ' + out.failures.length + ' failed.' : '');
+    setTimeout(() => { cmaCloseSendModal(); cmaLoadDetail(); }, 1500);
+  } catch (e) {
+    res.style.color = '#ef4444';
+    res.textContent = 'Failed: ' + e.message;
+  }
+}
+
+// Hook into showPage.
+function _cmaInstallHook() {
+  if (window._cmaHookInstalled) return;
+  if (typeof window.showPage !== 'function') {
+    setTimeout(_cmaInstallHook, 100);
+    return;
+  }
+  window._cmaHookInstalled = true;
+  const _origShow = window.showPage;
+  window.showPage = function(name) {
+    _origShow(name);
+    if (name === 'cma') {
+      if (cmaCurrentId) cmaLoadDetail();
+      else cmaLoadList();
+    }
+  };
+  const pg = document.getElementById('page-cma');
+  if (pg && pg.style.display !== 'none' && pg.offsetParent !== null) {
+    if (cmaCurrentId) cmaLoadDetail();
+    else cmaLoadList();
+  }
+}
+_cmaInstallHook();
+
+// Deep-link: #cma/<id>
+(function() {
+  function handleHash() {
+    const h = (location.hash || '').replace(/^#/, '');
+    const m = h.match(/^cma\/(\d+)$/);
+    if (m) {
+      if (typeof window.showPage === 'function') window.showPage('cma');
+      cmaOpenDetail(parseInt(m[1]));
+    }
+  }
+  window.addEventListener('hashchange', handleHash);
+  window.addEventListener('load', handleHash);
+})();
+</script>
+
+<style>
+.cma-input {
+  background: var(--surf2, #1a1a2e);
+  border: 1px solid var(--surf3, #2a2a44);
+  color: var(--fg, #e8e8f0);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.cma-input:focus { outline: none; border-color: var(--accent, #6c63ff); }
+</style>
 
 <!-- ═══ COACHING PAGE (Phase 15) ═══ -->
 <div class="page" id="page-coaching">
@@ -1989,6 +2917,35 @@ _engagementInstallHook();
 
 <!-- ── ADMIN PAGES (Phase 13.6) — only visible to platform admin ── -->
 
+<div class="page" id="page-admin-entitlements">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin:0">ENTITLEMENTS</h1>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:4px">Which tools each account can use. Access is checked against the database on every request, so a change here takes effect immediately.</div>
+    </div>
+    <button class="btn btn-ghost" style="font-size:12px" onclick="loadEntitlements()">Refresh</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start">
+
+    <!-- Workspace list -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Accounts</div>
+      <div id="ent-workspace-list" style="max-height:640px;overflow-y:auto">
+        <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Toggle grid + history -->
+    <div>
+      <div id="ent-detail" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px;text-align:center;color:var(--text-muted);font-size:13px">
+        Pick an account to manage its tools.
+      </div>
+      <div id="ent-history" style="margin-top:20px"></div>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-admin-users">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
     <div>
@@ -2442,6 +3399,7 @@ function showPage(name){window.location.hash=name;
   if(name==='openclaw')loadAutomations();
   if(name==='ideas')loadIdeas();
   if(name==='admin-users')loadAdminUsers();
+  if(name==='admin-entitlements')loadEntitlements();
   if(name==='admin-invites')loadAdminInvites();
   if(name==='admin-audit')loadAdminAudit();
   if(name==='admin-costs')loadAdminCosts();
@@ -3793,6 +4751,208 @@ async function deleteIdea(id){
 function _esc(s){if(s==null)return '';return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function _fmtDate(s){if(!s)return '—';try{var d=new Date(s);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}catch(e){return s}}
 function _fmtRelative(s){if(!s)return '—';var d=new Date(s);var diff=(Date.now()-d.getTime())/1000;if(diff<60)return 'just now';if(diff<3600)return Math.round(diff/60)+'m ago';if(diff<86400)return Math.round(diff/3600)+'h ago';if(diff<2592000)return Math.round(diff/86400)+'d ago';return d.toLocaleDateString()}
+
+/* ── ENTITLEMENTS (Phase 23) ──────────────────────────────────
+   Toggle which products each workspace can use.
+
+   Two things this UI must never imply:
+   1. That turning a nav item on IS the gate. It is not - every gated route
+      re-checks the database. This screen edits the source of truth.
+   2. That team benefits can be granted casually. LPT forbids offering items of
+      value in exchange for being named sponsor, so source='team_member' requires
+      a signed team agreement. The API rejects it without one; the form makes that
+      visible rather than letting an admin discover it as an error.
+─────────────────────────────────────────────────────────────── */
+var ENT_STATE={workspaces:[],selected:null,agreements:[]};
+
+var ENT_SOURCE_META={
+  purchased:  {label:'Purchased',   color:'#22c55e', help:'Paid subscription.'},
+  trial:      {label:'Trial',       color:'#3b82f6', help:'Time-limited. Set an expiry date.'},
+  team_member:{label:'Team member', color:'#a855f7', help:'Requires a signed team agreement.'},
+  comp:       {label:'Comped',      color:'#f59e0b', help:'Granted free at your discretion.'},
+  internal:   {label:'Internal',    color:'#6b7280', help:'Your own workspace.'}
+};
+
+async function loadEntitlements(){
+  var list=document.getElementById('ent-workspace-list');
+  try{
+    var d=await fetch('/api/admin/workspaces').then(function(r){return r.json()});
+    ENT_STATE.workspaces=d.workspaces||[];
+    var total=d.product_count||0;
+    list.innerHTML=ENT_STATE.workspaces.map(function(w){
+      var sel=ENT_STATE.selected===w.id;
+      var brandColor=w.brand==='tpl'?'#a855f7':'#3b82f6';
+      return '<div onclick="selectEntWorkspace('+w.id+')" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;'+(sel?'background:var(--surface-2)':'')+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+          '<div style="font-weight:600;font-size:13px">'+_esc(w.name||('Workspace '+w.id))+'</div>'+
+          '<span style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:'+brandColor+';border:1px solid '+brandColor+';padding:1px 5px;border-radius:3px">'+_esc((w.brand||'').toUpperCase())+'</span>'+
+        '</div>'+
+        '<div style="color:var(--text-muted);font-size:11px;margin-top:2px">'+_esc(w.owner_email||'no user')+'</div>'+
+        '<div style="color:var(--text-muted);font-size:11px;margin-top:4px">'+w.entitlement_count+' of '+total+' tools'+
+          (w.account_type?' &middot; '+_esc(w.account_type):'')+'</div>'+
+      '</div>';
+    }).join('')||'<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No workspaces.</div>';
+    if(ENT_STATE.selected)renderEntDetail();
+  }catch(e){
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--red);font-size:12px">Could not load workspaces.</div>';
+  }
+}
+
+async function selectEntWorkspace(wsId){
+  ENT_STATE.selected=wsId;
+  loadEntitlements();
+  renderEntDetail();
+}
+
+async function renderEntDetail(){
+  var wsId=ENT_STATE.selected;
+  var box=document.getElementById('ent-detail');
+  if(!wsId){box.innerHTML='Pick an account to manage its tools.';return}
+  var ws=ENT_STATE.workspaces.filter(function(w){return w.id===wsId})[0]||{};
+  box.innerHTML='<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">Loading...</div>';
+  try{
+    var d=await fetch('/api/admin/workspaces/'+wsId+'/entitlements').then(function(r){return r.json()});
+    var ag=await fetch('/api/admin/team-agreements?workspace_id='+wsId).then(function(r){return r.json()});
+    ENT_STATE.agreements=(ag.agreements||[]).filter(function(a){return a.status==='active'});
+
+    var rows=(d.entitlements||[]).map(function(item){
+      var p=item.product,e=item.entitlement,on=item.enabled;
+      var meta=e?(ENT_SOURCE_META[e.source]||{label:e.source,color:'#888'}):null;
+      var statusCell=on
+        ? '<span style="color:#22c55e;font-weight:600">On</span>'
+        : (e?'<span style="color:var(--text-muted)">'+_esc(e.status)+'</span>':'<span style="color:var(--text-muted)">Off</span>');
+      var sourceCell=meta
+        ? '<span style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:1px;color:'+meta.color+';border:1px solid '+meta.color+';padding:2px 6px;border-radius:3px">'+_esc(meta.label.toUpperCase())+'</span>'
+        : '<span style="color:var(--text-muted)">&mdash;</span>';
+      var tierCell=(on&&e&&e.tier==='free')?'<span style="color:#f59e0b;font-size:11px">free tier</span>':'';
+      var expiry=(e&&e.expires_at)?'<div style="color:var(--text-muted);font-size:10px;margin-top:2px">expires '+_esc(String(e.expires_at).slice(0,10))+'</div>':'';
+      var action=on
+        ? '<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="entRevoke('+wsId+',\''+p.slug+'\',\''+_esc(p.name).replace(/\x27/g,"\\\x27")+'\')">Turn off</button>'
+        : '<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="entShowGrant('+wsId+',\''+p.slug+'\',\''+_esc(p.name).replace(/\x27/g,"\\\x27")+'\')">Turn on</button>';
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:11px 16px"><div style="font-weight:600">'+_esc(p.icon||'')+' '+_esc(p.name)+'</div>'+
+          '<div style="color:var(--text-muted);font-size:10px;font-family:DM Mono,monospace">'+_esc(p.slug)+'</div></td>'+
+        '<td style="padding:11px 16px">'+statusCell+expiry+'</td>'+
+        '<td style="padding:11px 16px">'+sourceCell+' '+tierCell+'</td>'+
+        '<td style="padding:11px 16px;text-align:right">'+action+'</td>'+
+      '</tr>';
+    }).join('');
+
+    box.style.padding='0';box.style.textAlign='left';
+    box.innerHTML=
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'+
+        '<div><div style="font-weight:600;font-size:15px">'+_esc(ws.name||('Workspace '+wsId))+'</div>'+
+        '<div style="color:var(--text-muted);font-size:11px;margin-top:2px">'+_esc(ws.owner_email||'')+'</div></div>'+
+        '<button class="btn btn-ghost" style="font-size:11px" onclick="entShowHistory('+wsId+')">History</button>'+
+      '</div>'+
+      '<div id="ent-grant-form"></div>'+
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:var(--surface-2);text-align:left">'+
+          '<th style="padding:10px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px">Tool</th>'+
+          '<th style="padding:10px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px">Status</th>'+
+          '<th style="padding:10px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px">Source</th>'+
+          '<th style="padding:10px 16px;font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:1px;text-align:right">Action</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table>';
+  }catch(e){
+    box.innerHTML='<div style="padding:24px;color:var(--red);font-size:12px">Could not load entitlements.</div>';
+  }
+}
+
+function entShowGrant(wsId,slug,name){
+  var agOpts=ENT_STATE.agreements.map(function(a){
+    return '<option value="'+a.id+'">#'+a.id+' '+_esc(a.agreement_version||'')+' signed '+_esc(String(a.signed_at).slice(0,10))+'</option>';
+  }).join('');
+  var noAgreement=!ENT_STATE.agreements.length;
+  document.getElementById('ent-grant-form').innerHTML=
+    '<div style="padding:16px 20px;background:var(--surface-2);border-bottom:1px solid var(--border)">'+
+      '<div style="font-weight:600;font-size:13px;margin-bottom:10px">Turn on '+_esc(name)+'</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
+        '<div><label style="display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Why</label>'+
+          '<select id="ent-src" onchange="entSourceChanged()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 8px;border-radius:4px">'+
+            '<option value="purchased">Purchased</option><option value="trial">Trial</option>'+
+            '<option value="comp">Comped</option><option value="team_member">Team member</option>'+
+            '<option value="internal">Internal</option></select></div>'+
+        '<div><label style="display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Tier</label>'+
+          '<select id="ent-tier" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 8px;border-radius:4px">'+
+            '<option value="pro">Full</option><option value="free">Free tier (capped)</option></select></div>'+
+        '<div><label style="display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Expires</label>'+
+          '<input id="ent-exp" type="date" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:4px 8px;border-radius:4px"></div>'+
+        '<div style="flex:1;min-width:180px"><label style="display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Note</label>'+
+          '<input id="ent-reason" placeholder="optional" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 8px;border-radius:4px"></div>'+
+        '<button class="btn" style="font-size:12px;padding:6px 14px" onclick="entGrant('+wsId+',\''+slug+'\')">Turn on</button>'+
+        '<button class="btn btn-ghost" style="font-size:12px;padding:6px 10px" onclick="document.getElementById(\'ent-grant-form\').innerHTML=\'\'">Cancel</button>'+
+      '</div>'+
+      '<div id="ent-agreement-row" style="display:none;margin-top:10px">'+
+        '<label style="display:block;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Team agreement (required)</label>'+
+        (noAgreement
+          ? '<div style="color:#f59e0b;font-size:12px">No active team agreement on this account. One must be signed and recorded before team benefits can be granted, because access cannot be tied to sponsorship.</div>'
+          : '<select id="ent-agreement" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 8px;border-radius:4px">'+agOpts+'</select>')+
+      '</div>'+
+      '<div id="ent-src-help" style="color:var(--text-muted);font-size:11px;margin-top:8px">Paid subscription.</div>'+
+    '</div>';
+}
+
+function entSourceChanged(){
+  var src=document.getElementById('ent-src').value;
+  var meta=ENT_SOURCE_META[src]||{};
+  document.getElementById('ent-src-help').textContent=meta.help||'';
+  document.getElementById('ent-agreement-row').style.display=(src==='team_member')?'block':'none';
+}
+
+async function entGrant(wsId,slug){
+  var src=document.getElementById('ent-src').value;
+  var body={product:slug,source:src,
+    tier:document.getElementById('ent-tier').value,
+    expires_at:document.getElementById('ent-exp').value||null,
+    reason:document.getElementById('ent-reason').value||null};
+  if(src==='team_member'){
+    var sel=document.getElementById('ent-agreement');
+    if(!sel){alert('A signed team agreement is required before granting team benefits.');return}
+    body.team_agreement_id=parseInt(sel.value,10);
+  }
+  try{
+    var r=await fetch('/api/admin/workspaces/'+wsId+'/entitlements',
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){var err=await r.json();throw new Error((err.detail&&err.detail.detail)||err.detail||'Failed');}
+    document.getElementById('ent-grant-form').innerHTML='';
+    loadEntitlements();renderEntDetail();
+  }catch(e){alert('Could not turn this on: '+e.message)}
+}
+
+async function entRevoke(wsId,slug,name){
+  var reason=prompt('Turning off '+name+'. Why? (recorded in the audit trail)');
+  if(reason===null)return;
+  if(!reason.trim()){alert('A reason is required.');return}
+  try{
+    var r=await fetch('/api/admin/workspaces/'+wsId+'/entitlements/'+slug,
+      {method:'DELETE',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({reason:reason})});
+    if(!r.ok)throw new Error('Failed');
+    loadEntitlements();renderEntDetail();
+  }catch(e){alert('Could not turn this off: '+e.message)}
+}
+
+async function entShowHistory(wsId){
+  var box=document.getElementById('ent-history');
+  box.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:12px">Loading history...</div>';
+  try{
+    var d=await fetch('/api/admin/workspaces/'+wsId+'/entitlement-events?limit=60').then(function(r){return r.json()});
+    var rows=(d.events||[]).map(function(e){
+      return '<tr style="border-top:1px solid var(--border)">'+
+        '<td style="padding:8px 16px;color:var(--text-muted);font-size:11px;white-space:nowrap">'+_esc(String(e.created_at).slice(0,16).replace('T',' '))+'</td>'+
+        '<td style="padding:8px 16px;font-size:12px">'+_esc(e.product_name||e.product_slug||'&mdash;')+'</td>'+
+        '<td style="padding:8px 16px;font-size:12px">'+_esc(e.action)+'</td>'+
+        '<td style="padding:8px 16px;font-size:11px;color:var(--text-muted)">'+_esc(e.to_source||e.from_source||'')+'</td>'+
+        '<td style="padding:8px 16px;font-size:11px;color:var(--text-muted)">'+_esc(e.reason||'')+'</td>'+
+      '</tr>';
+    }).join('');
+    box.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">'+
+      '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-family:DM Mono,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)">Audit trail</div>'+
+      (rows?('<table style="width:100%;border-collapse:collapse"><tbody>'+rows+'</tbody></table>')
+           :'<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px">Nothing recorded yet.</div>')+
+      '</div>';
+  }catch(e){box.innerHTML='<div style="color:var(--red);font-size:12px;padding:12px">Could not load history.</div>'}
+}
 
 async function loadAdminUsers(){
   var tbody=document.getElementById('admin-users-tbody');

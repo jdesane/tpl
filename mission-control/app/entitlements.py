@@ -650,6 +650,51 @@ def admin_update_product(product_id: int, body: ProductIn):
     return rows[0]
 
 
+@router.get("/workspaces")
+def admin_list_workspaces():
+    """
+    Every workspace with an entitlement summary, for the admin toggle grid.
+
+    One query per table rather than per workspace: with a few dozen accounts an
+    N+1 here would be a dozen round trips on a page load.
+    """
+    workspaces = (
+        _supabase.table("workspaces")
+        .select("id,name,plan,account_type,brand,created_at")
+        .order("id").execute().data
+    ) or []
+
+    ents = (
+        _supabase.table("workspace_entitlements")
+        .select("workspace_id,product_id,status,source,tier,expires_at,starts_at")
+        .execute().data
+    ) or []
+    by_id = {p["id"]: p for p in _products_by_slug().values()}
+
+    grouped: Dict[int, list] = {}
+    for e in ents:
+        if _is_active(e):
+            product = by_id.get(e["product_id"])
+            if product:
+                grouped.setdefault(e["workspace_id"], []).append({
+                    "slug": product["slug"], "name": product["name"],
+                    "source": e["source"], "tier": e["tier"],
+                })
+
+    owners: Dict[int, str] = {}
+    for u in (_supabase.table("users").select("id,email,workspace_id")
+              .execute().data or []):
+        if u.get("workspace_id") and u["workspace_id"] not in owners:
+            owners[u["workspace_id"]] = u.get("email")
+
+    for w in workspaces:
+        held = grouped.get(w["id"], [])
+        w["entitlements"] = held
+        w["entitlement_count"] = len(held)
+        w["owner_email"] = owners.get(w["id"])
+    return {"workspaces": workspaces, "product_count": len(by_id)}
+
+
 @router.get("/workspaces/{workspace_id}/entitlements")
 def admin_list_entitlements(workspace_id: int):
     """
