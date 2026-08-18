@@ -1,0 +1,48 @@
+-- SECURITY: drop execute_readonly_sql() outright.
+--
+-- Follow-up to 2026-08-17-security-revoke-execute-readonly-sql.sql, which revoked
+-- EXECUTE from PUBLIC / anon / authenticated and closed the hole.
+--
+-- WHY DROP RATHER THAN LEAVE IT REVOKED
+--   A revoke is a grant state, and grant states can silently revert. If anyone ever
+--   does DROP + CREATE on this function -- a redeploy of whatever created it, a
+--   schema restore, a migration replay -- Postgres resets its grants to default,
+--   and the default includes PUBLIC. The hole would reopen without anyone touching
+--   a security setting. Dropping the object means there is nothing left to re-grant.
+--
+--   The weekly Supabase advisor routine (trig_01TqYY9HxNdKYigZ6qonzRwZ) would catch
+--   a regression, but only within a week. Removing the object closes that window.
+--
+-- EVIDENCE IT IS UNUSED
+--   * grep across the repo (py/js/html/json): zero callers
+--   * Supabase edge_logs, 24h window: zero calls to /rest/v1/rpc/execute_readonly_sql
+--
+-- NO CASCADE, deliberately. If some view or function depends on this, the DROP
+-- fails loudly rather than silently taking dependents with it.
+--
+-- RECOVERY -- the exact original definition, should it ever genuinely be needed.
+-- Note that recreating it as-is reintroduces the vulnerability: it is SECURITY
+-- DEFINER, so it bypasses RLS, and CREATE grants EXECUTE to PUBLIC by default.
+-- If you must restore it, REVOKE FROM PUBLIC in the same transaction.
+--
+--   CREATE OR REPLACE FUNCTION public.execute_readonly_sql(query text)
+--    RETURNS json
+--    LANGUAGE plpgsql
+--    SECURITY DEFINER
+--   AS $function$
+--   DECLARE
+--     result json;
+--   BEGIN
+--     -- Safety: only allow SELECT
+--     IF NOT (UPPER(TRIM(query)) LIKE 'SELECT%') THEN
+--       RAISE EXCEPTION 'Only SELECT queries are allowed';
+--     END IF;
+--     EXECUTE format('SELECT COALESCE(json_agg(row_to_json(t)), ''[]''::json) FROM (%s) t', query) INTO result;
+--     RETURN result;
+--   END;
+--   $function$
+--
+-- For ad-hoc queries, use the Supabase SQL editor or an authenticated MCP session
+-- instead. Both are already scoped to a real identity.
+
+DROP FUNCTION IF EXISTS public.execute_readonly_sql(text);
