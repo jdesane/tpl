@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<!-- Personal link from Joe's email (?r=); keep it out of search results. -->
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pick a time with Joe DeSane | TPL Collective</title>
+<meta name="description" content="Pick a time for your call with Joe DeSane."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/weekly/site.css"/>
+<style>
+.head { display: flex; gap: 18px; align-items: center; margin-bottom: 26px; }
+.head img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-br); flex: none; }
+.head h1 { font-size: clamp(34px, 6vw, 52px); margin: 0; }
+.note { font-size: 15px; color: var(--muted); line-height: 1.6; margin: 0 0 22px; font-style: italic; }
+.slots { display: flex; flex-direction: column; gap: 10px; max-width: 460px; }
+.slot { text-align: left; background: var(--surface); border: 1.5px solid var(--border); color: var(--white); padding: 16px 18px;
+  border-radius: 10px; font-size: 17px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.15s, background 0.15s; }
+.slot:hover { border-color: var(--accent); background: var(--accent-bg); }
+.slot small { color: var(--muted); font-size: 13px; font-weight: 400; }
+.slot.busy { opacity: 0.6; pointer-events: none; }
+.slot.sel { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 0 3px rgba(108,99,255,0.18); }
+.slot.sel small { color: var(--accent-hi); font-weight: 600; }
+.none { margin-top: 26px; max-width: 460px; }
+.none summary { cursor: pointer; color: var(--accent-hi); font-size: 14px; }
+.none textarea { width: 100%; margin-top: 12px; min-height: 90px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--white); padding: 12px; font-family: inherit; font-size: 15px; outline: none; }
+.none textarea:focus { border-color: var(--accent); }
+.err { color: var(--red); font-size: 14px; margin-top: 14px; min-height: 18px; }
+.done { max-width: 520px; }
+.done .when { font-family: 'Bebas Neue', sans-serif; font-size: clamp(30px, 5vw, 42px); color: var(--gold); letter-spacing: 0.02em; margin: 6px 0 14px; }
+.done p { color: var(--muted); line-height: 1.6; font-size: 16px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/trainings">Free Trainings</a>
+    <a href="/compare">Compare</a>
+    <a href="/blog">Blog</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/trainings">Free Trainings</a>
+  <a href="/compare">Compare</a>
+  <a href="/blog">Blog</a>
+</div>
+
+<main>
+  <div class="narrow" id="root">
+    <p class="lead">Loading...</p>
+  </div>
+</main>
+
+<script src="/assets/weekly/common.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var r = params.get('r') || '';
+  var preselect = params.get('s');
+  var root = document.getElementById('root');
+  var info = null;
+
+  function head(title) {
+    return '<div class="head"><img src="/assets/joe-desane-headshot.png" alt="Joe DeSane"><div>'
+      + '<div class="eyebrow">Call with Joe DeSane</div><h1>' + tplEsc(title) + '</h1></div></div>';
+  }
+  function problem(msg) {
+    root.innerHTML = head('Hmm, that link')
+      + '<p class="lead">' + tplEsc(msg) + '</p>'
+      + '<p class="lead" style="margin-top:14px">Just reply to Joe\'s email, or write to <a href="mailto:joe@tplcollective.co">joe@tplcollective.co</a>.</p>';
+  }
+  function showConfirmed(label, fresh) {
+    root.innerHTML = '<div class="done">' + head(fresh ? "You're set" : 'Already confirmed')
+      + '<div class="when">' + tplEsc(label) + '</div>'
+      + '<p>A confirmation with a calendar invite is on its way to your inbox. If something comes up, just reply to that email.</p>'
+      + '<div class="actions" style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-ghost" href="/compare">Run your numbers before we talk</a>'
+      + '<a class="btn btn-ghost" href="/trainings">Free trainings this week</a></div></div>';
+  }
+  function showNoneSent() {
+    root.innerHTML = head('Got it')
+      + '<p class="lead">Joe will email you a few new options. Thanks for letting him know.</p>';
+  }
+
+  function render() {
+    if (info.status === 'confirmed' && info.confirmed) { showConfirmed(info.confirmed.label, false); return; }
+    if (info.status !== 'times_sent') {
+      problem(info.status === 'new' ? 'Joe is putting new times together and will email you shortly.' : 'This request is closed.');
+      return;
+    }
+    if (!info.slots.length) { problem('All of those times have passed.'); return; }
+    var mins = info.slots[0].minutes;
+    root.innerHTML = head(info.first_name ? 'Pick a time, ' + info.first_name : 'Pick a time')
+      + (info.note ? '<p class="note">"' + tplEsc(info.note) + '"</p>' : '')
+      + '<p class="lead" style="margin-bottom:18px">' + mins + ' minutes. Click the one that works and it\'s locked in.</p>'
+      + '<div class="slots">' + info.slots.map(function (s) {
+          return '<button class="slot" data-i="' + s.i + '">' + tplEsc(s.label) + '<small>Choose &rarr;</small></button>';
+        }).join('') + '</div>'
+      + '<details class="none" id="none"><summary>None of these work</summary>'
+      + '<textarea id="none-note" placeholder="What days or times are better for you?"></textarea>'
+      + '<button class="btn btn-ghost" id="none-send" style="margin-top:10px">Send to Joe</button></details>'
+      + '<div class="err" id="err"></div>';
+    root.querySelectorAll('.slot').forEach(function (b) { b.addEventListener('click', function () { choose(+b.getAttribute('data-i'), b); }); });
+    document.getElementById('none-send').addEventListener('click', sendNone);
+    if (location.hash === '#none') document.getElementById('none').open = true;
+  }
+
+  function post(body) {
+    return fetch(TPL_API + '/public/one-on-one/pick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (res) { return res.json().then(function (d) { if (!res.ok) throw new Error(d.detail || 'Something went wrong.'); return d; }); });
+  }
+  function choose(i, btn) {
+    root.querySelectorAll('.slot').forEach(function (b) { b.classList.add('busy'); });
+    if (btn) btn.querySelector('small').textContent = 'Confirming...';
+    post({ r: r, s: i }).then(function (d) {
+      tplTrack('call_confirmed', { source: 'pick_page' });
+      try { fbq('track', 'Schedule', { content_name: '1-on-1 confirmed' }); } catch (e) {}
+      showConfirmed(d.label, true);
+    }).catch(function (e) {
+      var err = document.getElementById('err');
+      if (err) err.textContent = e.message;
+      root.querySelectorAll('.slot').forEach(function (b) { b.classList.remove('busy'); b.querySelector('small').innerHTML = 'Choose &rarr;'; });
+    });
+  }
+  function sendNone() {
+    var note = document.getElementById('none-note').value.trim();
+    post({ r: r, none: true, note: note }).then(showNoneSent).catch(function (e) { document.getElementById('err').textContent = e.message; });
+  }
+
+  if (!/^[0-9a-f-]{36}$/i.test(r)) { problem("This link is missing a piece."); return; }
+  fetch(TPL_API + '/public/one-on-one/pick?r=' + encodeURIComponent(r))
+    .then(function (res) { return res.json().then(function (d) { if (!res.ok) throw new Error(d.detail || 'Not found'); return d; }); })
+    .then(function (d) {
+      info = d;
+      render();
+      // Clicked a specific time in the email: highlight it, but still require a
+      // tap. Corporate link scanners open email links in a real browser; an
+      // auto-confirm on load would let a scanner book a time nobody chose.
+      if (preselect !== null && info.status === 'times_sent') {
+        var want = +preselect;
+        var slot = info.slots.filter(function (s) { return s.i === want; })[0];
+        if (slot) {
+          var btn = root.querySelector('.slot[data-i="' + want + '"]');
+          btn.classList.add('sel');
+          btn.querySelector('small').textContent = 'Tap to confirm';
+        } else {
+          var err = document.getElementById('err');
+          if (err) err.textContent = 'That time has passed. Pick another, or tell Joe none of these work.';
+        }
+      }
+    })
+    .catch(function (e) { problem(e.message); });
+})();
+</script>
+</body>
+</html>

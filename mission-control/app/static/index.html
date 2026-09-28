@@ -194,6 +194,7 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">&#x2B21;</span>Dashboard</div>
     <div class="nav-item" onclick="showPage('contacts')"><span class="icon">&#x25CE;</span>Contacts<span class="nav-badge" id="contacts-badge">0</span></div>
     <div class="nav-item" onclick="showPage('opportunities')"><span class="icon">&#x25B7;</span>Opportunities</div>
+    <div class="nav-item" data-platform-only="true" onclick="showPage('one-on-one')"><span class="icon">&#x260F;</span>1-on-1 Requests<span class="nav-badge" id="oo-badge" style="display:none">0</span></div>
     <div class="nav-item" data-platform-only="true" onclick="showPage('agents')"><span class="icon">&#x2606;</span>Agents</div>
   </div>
   <div class="nav-group" data-nav-group>
@@ -209,6 +210,7 @@ th[onclick]:hover{color:var(--accent)}
     <div class="nav-item" onclick="showPage('recruit-compare')"><span class="icon">&#x25EB;</span>Recruit Comparison</div>
     <div class="nav-item" onclick="showPage('cma')"><span class="icon">&#x2302;</span>CMA Tool</div>
     <div class="nav-item" data-platform-only="true" onclick="showPage('engagement')"><span class="icon">&#x25C9;</span>Prospect Engagement</div>
+    <div class="nav-item" data-platform-only="true" onclick="showPage('weekly')"><span class="icon">&#x2709;</span>Weekly Email</div>
   </div>
   <div class="nav-group" data-nav-group>
     <div class="nav-group-label">Listings</div>
@@ -794,6 +796,786 @@ th[onclick]:hover{color:var(--accent)}
   </div>
 </div>
 
+<!-- ═══ 1-ON-1 REQUESTS PAGE (replaces Calendly self-booking) ═══ -->
+<style>
+#page-one-on-one .oo-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+#page-one-on-one .oo-card.flash{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+#page-one-on-one .oo-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+#page-one-on-one .oo-name{font-size:16px;font-weight:700}
+#page-one-on-one .oo-sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+#page-one-on-one .oo-age{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace}
+#page-one-on-one .oo-age.late{color:var(--amber)}
+#page-one-on-one .oo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin:12px 0}
+#page-one-on-one .oo-grid div{font-size:13px}
+#page-one-on-one .oo-grid span{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px}
+#page-one-on-one .oo-quote{font-size:13px;color:var(--text-dim);border-left:2px solid var(--accent);padding:4px 10px;margin:8px 0}
+#page-one-on-one .oo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#page-one-on-one .oo-form{margin-top:12px;padding:12px;border:1px dashed var(--border);border-radius:8px;display:none}
+#page-one-on-one .oo-in{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);font-size:13px;font-family:inherit}
+#page-one-on-one .oo-slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-bottom:8px}
+#page-one-on-one .oo-slot{font-size:13px;padding:6px 10px;background:var(--surface-2);border-radius:6px;display:inline-block;margin:0 6px 6px 0}
+#page-one-on-one .oo-slot.passed{text-decoration:line-through;color:var(--text-muted)}
+#page-one-on-one .oo-when{font-size:18px;font-weight:700;color:var(--gold)}
+</style>
+<div class="page" id="page-one-on-one">
+  <div class="panel-title" style="font-size:24px;margin-bottom:6px">1-on-1 Requests</div>
+  <div style="font-size:13px;margin-bottom:16px;color:var(--text-dim)">
+    Nothing lands on your calendar until you have read the answers and offered times. Agents pick one of your times; you get a calendar file and a prep email an hour before.
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="filter-tab active" data-oo="new" onclick="ooFilter('new')">Needs times <span id="oo-c-new"></span></button>
+    <button class="filter-tab" data-oo="times_sent" onclick="ooFilter('times_sent')">Waiting on agent <span id="oo-c-times_sent"></span></button>
+    <button class="filter-tab" data-oo="confirmed" onclick="ooFilter('confirmed')">Confirmed <span id="oo-c-confirmed"></span></button>
+    <button class="filter-tab" data-oo="closed" onclick="ooFilter('closed')">Closed</button>
+  </div>
+  <div id="oo-list"><div style="color:var(--text-dim);font-size:13px">Loading...</div></div>
+</div>
+
+<script>
+// ───────── 1-on-1 Requests ─────────
+var OO_API = '/api/one-on-one', ooStatus = 'new', ooRows = [], ooFocus = null;
+
+async function ooJson(url, opts){
+  opts = opts || {};
+  if (opts.body && typeof opts.body !== 'string'){ opts.body = JSON.stringify(opts.body); opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {}); }
+  var r = await fetch(url, opts); var d = null; try { d = await r.json(); } catch(e) {}
+  if (!r.ok) throw new Error((d && d.detail) || ('HTTP ' + r.status));
+  return d;
+}
+function ooEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function ooAgo(iso){
+  if (!iso) return '';
+  var h = (Date.now() - new Date(iso).getTime()) / 36e5;
+  if (h < 1) return Math.max(1, Math.round(h * 60)) + 'm ago';
+  if (h < 48) return Math.round(h) + 'h ago';
+  return Math.round(h / 24) + 'd ago';
+}
+
+async function ooBadge(){
+  try {
+    var c = await ooJson(OO_API + '/counts');
+    var b = document.getElementById('oo-badge');
+    if (b){ b.textContent = c['new']; b.style.display = c['new'] ? '' : 'none'; }
+    ['new','times_sent','confirmed'].forEach(function(k){ var el = document.getElementById('oo-c-' + k); if (el) el.textContent = c[k] ? '(' + c[k] + ')' : ''; });
+  } catch(e) {}
+}
+
+async function loadOneOnOne(){
+  var m = (location.hash || '').match(/^#one-on-one\/(\d+)$/);
+  ooFocus = m ? parseInt(m[1]) : ooFocus;
+  ooBadge();
+  var el = document.getElementById('oo-list');
+  try {
+    var all = (await ooJson(OO_API + '/requests')).requests;
+    if (ooFocus){ var f = all.filter(function(r){ return r.id === ooFocus; })[0]; if (f) ooStatus = f.status; }
+    document.querySelectorAll('#page-one-on-one [data-oo]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-oo') === ooStatus); });
+    ooRows = all.filter(function(r){ return r.status === ooStatus; });
+    if (!ooRows.length){
+      el.innerHTML = '<div class="panel" style="color:var(--text-dim);font-size:13px">' + ({'new':'Nothing waiting on you.','times_sent':'No offers outstanding.','confirmed':'No calls confirmed.','closed':'Nothing closed yet.'})[ooStatus] + '</div>';
+      return;
+    }
+    el.innerHTML = ooRows.map(ooCard).join('');
+    if (ooFocus){ var card = document.getElementById('oo-' + ooFocus); if (card){ card.classList.add('flash'); card.scrollIntoView({block: 'center'}); } ooFocus = null; }
+  } catch(e) { el.innerHTML = '<div class="wk-warn">' + ooEsc(e.message) + '</div>'; }
+}
+function ooFilter(s){ ooStatus = s; ooFocus = null; loadOneOnOne(); }
+
+function ooCard(r){
+  var a = r.answers || {};
+  var late = r.status === 'new' && (Date.now() - new Date(r.created_at).getTime()) > 12 * 36e5;
+  var h = '<div class="oo-card" id="oo-' + r.id + '"><div class="oo-top"><div>'
+    + '<div class="oo-name">' + ooEsc(r.who) + '</div>'
+    + '<div class="oo-sub">' + ooEsc(a.email) + ' &middot; ' + ooEsc(a.phone) + (a.current_brokerage ? ' &middot; ' + ooEsc(a.current_brokerage) : '') + '</div></div>'
+    + '<div class="oo-age' + (late ? ' late' : '') + '">requested ' + ooAgo(r.created_at) + (r.issue_id ? ' &middot; from weekly email' : '') + '</div></div>'
+    + '<div class="oo-grid">'
+    + '<div><span>Describes self</span>' + ooEsc(a.agent_type || '-') + '</div>'
+    + '<div><span>Deals / 12 mo</span>' + ooEsc(a.deals || '-') + '</div>'
+    + '<div><span>Avg price</span>' + ooEsc(a.avg_price || '-') + '</div>'
+    + '<div><span>Timeline</span>' + ooEsc(a.timeline || '-') + '</div>'
+    + '<div style="grid-column:1/-1"><span>Wants to talk about</span>' + ooEsc((a.topics || []).join(', ') || '-') + '</div></div>'
+    + (a.notes ? '<div class="oo-quote">' + ooEsc(a.notes) + '</div>' : '')
+    + (r.agent_note ? '<div class="oo-quote" style="border-color:var(--amber)"><b>None of your times worked:</b> ' + ooEsc(r.agent_note) + '</div>' : '');
+
+  if (r.status === 'times_sent'){
+    h += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px">Offered ' + ooAgo(r.times_sent_at) + ':</div><div style="margin-top:6px">'
+      + r.slots.map(function(s){ return '<span class="oo-slot' + (s.passed ? ' passed' : '') + '">' + ooEsc(s.label) + '</span>'; }).join('') + '</div>';
+  }
+  if (r.status === 'confirmed') h += '<div class="oo-when">' + ooEsc(r.confirmed_label) + ' <span style="font-size:12px;color:var(--text-dim);font-weight:400">' + (r.confirmed_minutes || 30) + ' min &middot; ' + (r.meeting_type === 'zoom' ? 'Zoom' : 'phone') + '</span></div>';
+  if (r.status === 'closed' && r.closed_reason) h += '<div class="oo-sub">Closed: ' + ooEsc(r.closed_reason) + '</div>';
+
+  h += '<div class="oo-actions">';
+  if (r.status === 'new' || r.status === 'times_sent')
+    h += '<button class="btn btn-primary btn-sm" onclick="ooShowTimes(' + r.id + ')">' + (r.status === 'new' ? 'Send times' : 'Send new times') + '</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="ooShowManual(' + r.id + ')">They replied, confirm a time</button>';
+  if (r.lead_id) h += '<button class="btn btn-ghost btn-sm" onclick="openContactProfile(' + r.lead_id + ')">Open contact</button>';
+  if (r.status !== 'closed') h += '<button class="btn btn-ghost btn-sm" onclick="ooClose(' + r.id + ')">' + (r.status === 'confirmed' ? 'Done' : 'Close') + '</button>';
+  else h += '<button class="btn btn-ghost btn-sm" onclick="ooReopen(' + r.id + ')">Reopen</button>';
+  h += '</div><div class="oo-form" id="oo-form-' + r.id + '"></div></div>';
+  return h;
+}
+
+function ooLocal(d){ function z(n){ return (n < 10 ? '0' : '') + n; } return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes()); }
+function ooSuggest(){
+  // next two business days at 10:00 and 2:00 local
+  var out = [], d = new Date(); d.setHours(0, 0, 0, 0);
+  while (out.length < 4){
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() === 0 || d.getDay() === 6) continue;
+    [10, 14].forEach(function(h){ var x = new Date(d); x.setHours(h); out.push(ooLocal(x)); });
+  }
+  return out.slice(0, 3);
+}
+function ooShowTimes(id){
+  var el = document.getElementById('oo-form-' + id), sug = ooSuggest();
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Offer up to 4 times (your local time). Leave a box empty to skip it.</div>'
+    + '<div class="oo-slots">' + [0,1,2,3].map(function(i){ return '<input type="datetime-local" class="oo-in" data-slot value="' + (sug[i] || '') + '"/>'; }).join('') + '</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><label style="font-size:12px;color:var(--text-dim)">How</label>'
+    + '<select class="oo-in" id="oo-how-' + id + '"><option value="phone">Phone call</option><option value="zoom">Zoom</option></select>'
+    + '<label style="font-size:12px;color:var(--text-dim);margin-left:8px">Length</label>'
+    + '<select class="oo-in" id="oo-min-' + id + '"><option>15</option><option selected>30</option><option>45</option><option>60</option></select><span style="font-size:12px;color:var(--text-dim)">minutes</span></div>'
+    + '<textarea class="oo-in" id="oo-note-' + id + '" style="width:100%;min-height:54px" placeholder="Optional personal note at the top of the email. Default: Thanks for filling that out. I read through your answers and I\'m looking forward to talking."></textarea>'
+    + '<div class="oo-actions"><button class="btn btn-primary btn-sm" onclick="ooSendTimes(' + id + ')">Email these times</button><button class="btn btn-ghost btn-sm" onclick="this.closest(\'.oo-form\').style.display=\'none\'">Cancel</button></div>';
+}
+async function ooSendTimes(id){
+  var slots = Array.prototype.map.call(document.querySelectorAll('#oo-form-' + id + ' [data-slot]'), function(i){ return i.value; })
+    .filter(Boolean).map(function(v){ return new Date(v).toISOString(); });
+  if (!slots.length){ showToast('Add at least one time.', true); return; }
+  try {
+    await ooJson(OO_API + '/requests/' + id + '/send-times', {method: 'POST', body: {slots: slots, minutes: parseInt(document.getElementById('oo-min-' + id).value), note: document.getElementById('oo-note-' + id).value, meeting: document.getElementById('oo-how-' + id).value}});
+    showToast('Times sent'); loadOneOnOne();
+  } catch(e) { showToast(e.message, true); }
+}
+function ooShowManual(id){
+  var el = document.getElementById('oo-form-' + id);
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">When they replied by email or phone. They get a confirmation with a calendar invite; so do you.</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="datetime-local" class="oo-in" id="oo-man-' + id + '" value="' + ooSuggest()[0] + '"/>'
+    + '<select class="oo-in" id="oo-man-min-' + id + '"><option>15</option><option selected>30</option><option>45</option><option>60</option></select>'
+    + '<select class="oo-in" id="oo-man-how-' + id + '"><option value="phone">Phone call</option><option value="zoom">Zoom</option></select>'
+    + '<button class="btn btn-primary btn-sm" onclick="ooConfirm(' + id + ')">Confirm</button></div>';
+}
+async function ooConfirm(id){
+  var v = document.getElementById('oo-man-' + id).value;
+  if (!v){ showToast('Pick a time.', true); return; }
+  if (!confirm('Confirm ' + new Date(v).toLocaleString() + '? They will get a confirmation email.')) return;
+  try { await ooJson(OO_API + '/requests/' + id + '/confirm', {method: 'POST', body: {start: new Date(v).toISOString(), minutes: parseInt(document.getElementById('oo-man-min-' + id).value), meeting: document.getElementById('oo-man-how-' + id).value}}); showToast('Confirmed'); loadOneOnOne(); }
+  catch(e) { showToast(e.message, true); }
+}
+async function ooClose(id){
+  var reason = prompt('Reason (optional): e.g. not a fit, no response, call done');
+  if (reason === null) return;
+  try { await ooJson(OO_API + '/requests/' + id + '/close', {method: 'POST', body: {reason: reason}}); loadOneOnOne(); }
+  catch(e) { showToast(e.message, true); }
+}
+async function ooReopen(id){
+  try { await ooJson(OO_API + '/requests/' + id + '/reopen', {method: 'POST'}); ooStatus = 'new'; loadOneOnOne(); }
+  catch(e) { showToast(e.message, true); }
+}
+// Deep link #one-on-one/<id> (from alert emails). showPage() rewrites the hash, so read it first.
+(function(){
+  function handle(){
+    var m = (location.hash || '').match(/^#one-on-one\/(\d+)$/);
+    if (!m) return;
+    ooFocus = parseInt(m[1]);
+    try { window.showPage('one-on-one'); } catch(e) { document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); }); document.getElementById('page-one-on-one').classList.add('active'); loadOneOnOne(); }
+  }
+  window.addEventListener('hashchange', handle);
+  window.addEventListener('load', handle);
+})();
+</script>
+
+<!-- ═══ WEEKLY EMAIL PAGE (recruiting newsletter) ═══ -->
+<style>
+#page-weekly .wk-label{display:block;font-size:11px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin:0 0 5px}
+#page-weekly .wk-in{width:100%;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none}
+#page-weekly .wk-in:focus{border-color:var(--accent)}
+#page-weekly textarea.wk-in{min-height:70px;resize:vertical;line-height:1.45}
+#page-weekly .wk-in:disabled{opacity:.6}
+#page-weekly .wk-field{margin-bottom:12px}
+#page-weekly .wk-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#page-weekly .wk-sec{margin-bottom:16px}
+#page-weekly .wk-sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#page-weekly .wk-sec-t{font-size:13px;font-weight:700;color:var(--text)}
+#page-weekly .wk-hint{font-size:11px;color:var(--text-muted);margin-top:-6px;margin-bottom:10px}
+#page-weekly .wk-item{border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--surface-2)}
+#page-weekly .wk-item .wk-in{background:var(--surface)}
+#page-weekly .wk-pill{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px}
+#page-weekly .wk-pill.draft{background:var(--surface-3);color:var(--text-dim)}
+#page-weekly .wk-pill.approved{background:rgba(251,191,36,.15);color:var(--amber)}
+#page-weekly .wk-pill.sending{background:rgba(96,165,250,.15);color:var(--blue)}
+#page-weekly .wk-pill.sent{background:rgba(52,211,153,.15);color:var(--green)}
+#page-weekly .wk-pill.cancelled{background:rgba(248,113,113,.15);color:var(--red)}
+#page-weekly .wk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
+#page-weekly .wk-stat{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+#page-weekly .wk-stat b{display:block;font-size:22px}
+#page-weekly .wk-stat span{font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase}
+#page-weekly .wk-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+#page-weekly .wk-preview{position:sticky;top:12px}
+#page-weekly .wk-preview iframe{width:100%;height:calc(100vh - 150px);min-height:600px;border:1px solid var(--border);border-radius:10px;background:#f4f4f8}
+#page-weekly .wk-gate{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;background:var(--surface)}
+#page-weekly .wk-gate .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#page-weekly .wk-warn{color:var(--amber);font-size:12px}
+#page-weekly .wk-ok{color:var(--green);font-size:12px}
+@media (max-width:1100px){#page-weekly .wk-editor{grid-template-columns:1fr}#page-weekly .wk-preview{position:static}}
+</style>
+<div class="page" id="page-weekly">
+  <div class="panel-title" style="font-size:24px;margin-bottom:6px">Weekly Email</div>
+  <div style="color:var(--muted);font-size:13px;margin-bottom:18px;color:var(--text-dim)">
+    Weekly value email to non-LPT agents on the recruit list. Every issue needs a test to you before it can be approved, and nothing sends until you approve it.
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="wk-list-view">
+    <div class="wk-stats" id="wk-audience"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px">
+      <div style="display:flex;gap:6px">
+        <button class="filter-tab active" id="wk-tab-issues" onclick="wkTab('issues')">Issues</button>
+        <button class="filter-tab" id="wk-tab-classes" onclick="wkTab('classes')">Classes</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="wkToggleSettings()">Settings</button>
+        <button class="btn btn-primary" id="wk-new-issue" onclick="wkCreate()">+ New Issue</button>
+        <button class="btn btn-primary" id="wk-new-class" style="display:none" onclick="wkClassForm()">+ Add Class</button>
+      </div>
+    </div>
+    <div id="wk-settings" class="panel" style="display:none;margin-bottom:14px"></div>
+    <div id="wk-issues" class="panel" style="padding:0"><div style="padding:18px;color:var(--text-dim);font-size:13px">Loading...</div></div>
+    <div id="wk-classes-wrap" style="display:none">
+      <div id="wk-class-form" class="panel" style="display:none;margin-bottom:14px"></div>
+      <div id="wk-classes" class="panel" style="padding:0"></div>
+      <div id="wk-viewers" class="panel" style="display:none;margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- EDITOR VIEW -->
+  <div id="wk-edit-view" style="display:none">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="wkBack()">&larr; Back</button>
+      <div id="wk-edit-title" class="panel-title" style="font-size:20px;flex:1"></div>
+      <span id="wk-dirty" class="wk-warn" style="display:none">Unsaved changes</span>
+      <button class="btn btn-ghost" id="wk-dup-btn" onclick="wkDuplicate()">Start next week from this</button>
+      <button class="btn btn-primary" id="wk-save-btn" onclick="wkSave()">Save</button>
+    </div>
+    <div id="wk-gate" class="wk-gate"></div>
+    <div class="wk-editor">
+      <div id="wk-form"></div>
+      <div class="wk-preview">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="wk-label" style="margin:0">Preview (saved version)</span>
+          <button class="btn btn-ghost btn-sm" onclick="wkLoadPreview()">&#x21bb; Refresh</button>
+        </div>
+        <iframe id="wk-preview-frame" title="Email preview"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────── Weekly Email (recruiting newsletter) ─────────
+var wkCur = null, wkSettingsCache = null, wkDirty = false;
+var WK_API = '/api/recruit-newsletter';
+
+function wkEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function wkFmtDate(d){if(!d)return '-';try{var p=String(d).slice(0,10).split('-');return new Date(p[0],p[1]-1,p[2]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch(e){return d}}
+function wkFmtTs(t){if(!t)return '-';try{return new Date(t).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}catch(e){return t}}
+async function wkJson(url, opts){
+  opts = opts || {};
+  if (opts.body && typeof opts.body !== 'string'){opts.body = JSON.stringify(opts.body); opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});}
+  var r = await fetch(url, opts);
+  var data = null; try { data = await r.json(); } catch(e) {}
+  if (!r.ok) throw new Error((data && data.detail) || ('HTTP ' + r.status));
+  return data;
+}
+
+async function loadWeekly(){
+  wkBackToListView();
+  wkLoadAudience();
+  wkLoadIssues();
+  try { wkSettingsCache = await wkJson(WK_API + '/settings'); } catch(e) {}
+}
+// Hash deep-link: #weekly/<issue id>. showPage() rewrites the hash, so read it first.
+(function(){
+  function handleHash(){
+    var m = (location.hash || '').replace(/^#/, '').match(/^weekly\/(\d+)$/);
+    if (!m) return;
+    var id = parseInt(m[1]);
+    // showPage reads the global `event`, which has no .closest() during load/hashchange
+    try { window.showPage('weekly'); } catch(e) { document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')}); document.getElementById('page-weekly').classList.add('active'); }
+    wkOpen(id);
+  }
+  window.addEventListener('hashchange', handleHash);
+  window.addEventListener('load', handleHash);
+})();
+
+async function wkLoadAudience(){
+  var el = document.getElementById('wk-audience');
+  el.innerHTML = '<div class="wk-stat"><b>...</b><span>Audience</span></div>';
+  try {
+    var a = await wkJson(WK_API + '/audience');
+    var html = '<div class="wk-stat"><b style="color:var(--accent)">' + a.total + '</b><span>Audience</span></div>';
+    Object.keys(a.by_brokerage).forEach(function(k){ html += '<div class="wk-stat"><b>' + a.by_brokerage[k] + '</b><span>' + wkEsc(k) + '</span></div>'; });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="wk-warn">Audience: ' + wkEsc(e.message) + '</div>'; }
+}
+
+async function wkLoadIssues(){
+  var root = document.getElementById('wk-issues');
+  try {
+    var d = await wkJson(WK_API + '/issues');
+    if (!d.issues.length){ root.innerHTML = '<div style="padding:18px;color:var(--text-dim);font-size:13px">No issues yet. Click <b>+ New Issue</b> to start the first one.</div>'; return; }
+    var html = '<table class="leads-table"><thead><tr><th>Week of</th><th>Subject</th><th>Status</th><th>Send time</th><th>Recipients</th><th>Sent</th><th></th></tr></thead><tbody>';
+    d.issues.forEach(function(i){
+      html += '<tr style="cursor:pointer" onclick="wkOpen(' + i.id + ')">'
+        + '<td>' + wkFmtDate(i.issue_date) + '</td>'
+        + '<td>' + (i.subject ? wkEsc(i.subject) : '<span style="color:var(--text-muted)">(no subject)</span>') + '</td>'
+        + '<td><span class="wk-pill ' + i.status + '">' + i.status + '</span></td>'
+        + '<td>' + wkFmtTs(i.scheduled_for) + '</td>'
+        + '<td>' + (i.total_recipients || '-') + '</td>'
+        + '<td>' + (i.sent_count || 0) + (i.failed_count ? ' <span style="color:var(--red)">(' + i.failed_count + ' failed)</span>' : '') + '</td>'
+        + '<td><button class="btn btn-ghost btn-sm">Open</button></td></tr>';
+    });
+    root.innerHTML = html + '</tbody></table>';
+  } catch(e) { root.innerHTML = '<div style="padding:18px" class="wk-warn">' + wkEsc(e.message) + '</div>'; }
+}
+
+// ── Settings ──
+function wkToggleSettings(){
+  var el = document.getElementById('wk-settings');
+  if (el.style.display !== 'none'){ el.style.display = 'none'; return; }
+  var s = wkSettingsCache || {};
+  function f(k, label, hint){ return '<div class="wk-field"><label class="wk-label">' + label + '</label><input class="wk-in" id="wks-' + k + '" value="' + wkEsc(s[k]) + '"/>' + (hint ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">' + hint + '</div>' : '') + '</div>'; }
+  var socials = (s.socials || []).map(function(x){ return x.label + ' | ' + x.url; }).join('\n');
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var rec = (s.recurring_events || []).map(function(e, i){
+    return '<div class="wk-item" data-rec="' + i + '">'
+      + '<div style="display:grid;grid-template-columns:auto 90px 90px 90px 1fr;gap:8px;align-items:end">'
+      + '<label style="font-size:12px;display:flex;gap:6px;align-items:center;padding-bottom:9px"><input type="checkbox" data-r="active"' + (e.active ? ' checked' : '') + '/> On</label>'
+      + '<div><label class="wk-label">Day</label><select class="wk-in" data-r="weekday">' + days.map(function(d, j){ return '<option value="' + j + '"' + (+e.weekday === j ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select></div>'
+      + '<div><label class="wk-label">Start</label><input class="wk-in" data-r="start" value="' + wkEsc(e.start) + '" placeholder="11:00"/></div>'
+      + '<div><label class="wk-label">End</label><input class="wk-in" data-r="end" value="' + wkEsc(e.end) + '" placeholder="11:30"/></div>'
+      + '<div><label class="wk-label">Title</label><input class="wk-in" data-r="title" value="' + wkEsc(e.title) + '"/></div></div>'
+      + '<div class="wk-grid2" style="margin-top:8px"><div><label class="wk-label">Hosted by</label><input class="wk-in" data-r="host" value="' + wkEsc(e.host) + '"/></div>'
+      + '<div><label class="wk-label">Register link</label><input class="wk-in" data-r="url" value="' + wkEsc(e.url) + '"/></div></div>'
+      + '<div style="margin-top:8px"><label class="wk-label">Description</label><textarea class="wk-in" data-r="description" style="min-height:44px">' + wkEsc(e.description) + '</textarea></div>'
+      + '<input type="hidden" data-r="key" value="' + wkEsc(e.key || '') + '"/>'
+      + '<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="this.closest(\'.wk-item\').remove()">Remove</button></div>';
+  }).join('');
+  el.innerHTML = '<div class="panel-title" style="font-size:14px;margin-bottom:12px">Weekly Email Settings</div>'
+    + f('mailing_address', 'Mailing address *', 'Required in every bulk email (CAN-SPAM). A PO box or business address is fine.')
+    + '<div class="wk-grid2">' + f('from_address', 'From') + f('reply_to', 'Reply-to') + '</div>'
+    + '<div class="wk-grid2">' + f('sender_name', 'Signature name') + f('sender_title', 'Signature title') + '</div>'
+    + '<div class="wk-grid2">' + f('zoom_link', 'Your Zoom link', 'Used when you offer a 1-on-1 as a Zoom call. Phone calls use the number the agent gave.') + f('notify_email', 'Alert me at', 'Where 1-on-1 requests, nudges, prep emails and "watched half the class" alerts go.') + '</div>'
+    + '<div class="wk-grid2">' + f('default_daily_cap', 'Default sends per day', 'Warms the list. Also limited by the 200/day domain cap shared with drips.') + '<div></div></div>'
+    + '<div class="wk-field"><label class="wk-label">Socials (one per line: Label | URL)</label><textarea class="wk-in" id="wks-socials" style="min-height:70px">' + wkEsc(socials) + '</textarea></div>'
+    + '<div class="wk-sec-h" style="margin-top:18px"><span class="wk-sec-t">Recurring open trainings</span><button class="btn btn-ghost btn-sm" onclick="wkAddRecurring()">+ Series</button></div>'
+    + '<div class="wk-hint" style="margin-top:0">Pre-fill every new issue for that week, and power tplcollective.ai/trainings. Only list sessions any agent can join. Times are Eastern, 24-hour.</div>'
+    + '<div id="wks-recurring">' + rec + '</div>'
+    + '<button class="btn btn-primary" onclick="wkSaveSettings()">Save Settings</button>';
+  el.style.display = '';
+}
+function wkAddRecurring(){
+  var s = wkSettingsCache || {};
+  s.recurring_events = wkCollectRecurring().concat([{key: '', active: true, weekday: 0, start: '11:00', end: '11:30', title: '', host: 'LPT Realty', description: '', url: ''}]);
+  document.getElementById('wk-settings').style.display = 'none';
+  wkToggleSettings();
+}
+function wkCollectRecurring(){
+  return Array.prototype.map.call(document.querySelectorAll('#wks-recurring [data-rec]'), function(box){
+    var o = {};
+    box.querySelectorAll('[data-r]').forEach(function(el){ var k = el.getAttribute('data-r'); o[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); });
+    o.weekday = parseInt(o.weekday) || 0;
+    if (!o.key) o.key = (o.title || 'series').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return o;
+  }).filter(function(o){ return o.title; });
+}
+async function wkSaveSettings(){
+  var body = {};
+  ['mailing_address','from_address','reply_to','sender_name','sender_title','zoom_link','notify_email'].forEach(function(k){ body[k] = document.getElementById('wks-' + k).value; });
+  body.default_daily_cap = parseInt(document.getElementById('wks-default_daily_cap').value) || 150;
+  body.socials = document.getElementById('wks-socials').value.split('\n').map(function(line){
+    var parts = line.split('|'); return {label: (parts[0] || '').trim(), url: (parts.slice(1).join('|') || '').trim()};
+  }).filter(function(x){ return x.label && /^https?:\/\//.test(x.url); });
+  body.recurring_events = wkCollectRecurring();
+  try { wkSettingsCache = await wkJson(WK_API + '/settings', {method:'PUT', body: body}); showToast('Settings saved'); document.getElementById('wk-settings').style.display = 'none'; }
+  catch(e) { showToast(e.message, true); }
+}
+
+// ── List <-> editor ──
+function wkBackToListView(){
+  document.getElementById('wk-list-view').style.display = '';
+  document.getElementById('wk-edit-view').style.display = 'none';
+}
+function wkBack(){
+  if (wkDirty && !confirm('Discard unsaved changes?')) return;
+  wkCur = null; wkDirty = false;
+  if (location.hash !== '#weekly') history.replaceState(null, '', '#weekly');
+  wkBackToListView(); wkLoadIssues();
+}
+async function wkCreate(){
+  try { var i = await wkJson(WK_API + '/issues', {method:'POST', body:{}}); wkOpen(i.id); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkDuplicate(){
+  if (wkDirty && !confirm('You have unsaved changes on this issue. Continue without saving?')) return;
+  try { var i = await wkJson(WK_API + '/issues/' + wkCur.id + '/duplicate', {method:'POST'}); wkDirty = false; showToast('Next week started. Events and news were cleared.'); wkOpen(i.id); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkOpen(id){
+  try {
+    // the gate reads the mailing address; a deep link can land here before loadWeekly fetched settings
+    if (!wkSettingsCache) { try { wkSettingsCache = await wkJson(WK_API + '/settings'); } catch(e) {} }
+    await wkLoadVideos();
+    wkCur = await wkJson(WK_API + '/issues/' + id);
+    wkDirty = false;
+    history.replaceState(null, '', '#weekly/' + id);
+    document.getElementById('wk-list-view').style.display = 'none';
+    document.getElementById('wk-edit-view').style.display = '';
+    document.getElementById('wk-settings').style.display = 'none';
+    document.getElementById('wk-edit-title').innerHTML = 'Week of ' + wkFmtDate(wkCur.issue_date) + ' &nbsp;<span class="wk-pill ' + wkCur.status + '">' + wkCur.status + '</span>';
+    document.getElementById('wk-dirty').style.display = 'none';
+    var locked = wkCur.status !== 'draft';
+    document.getElementById('wk-save-btn').style.display = locked ? 'none' : '';
+    wkRenderForm(locked);
+    wkRenderGate();
+    wkLoadPreview();
+  } catch(e) { showToast(e.message, true); }
+}
+
+// ── Form ──
+function wkC(){ var c = wkCur.content || {}; c.numbers = c.numbers || {}; c['class'] = c['class'] || {}; c.book = c.book || {}; c.events = c.events || []; c.posts = c.posts || []; c.news = c.news || []; c.tools = c.tools || []; wkCur.content = c; return c; }
+function wkIn(id, label, val, opts){
+  opts = opts || {};
+  var dis = opts.locked ? ' disabled' : '';
+  var ph = opts.ph ? ' placeholder="' + wkEsc(opts.ph) + '"' : '';
+  var ctl = opts.area
+    ? '<textarea class="wk-in" data-k="' + id + '"' + dis + ph + ' oninput="wkMarkDirty()">' + wkEsc(val) + '</textarea>'
+    : '<input class="wk-in" data-k="' + id + '"' + (opts.type ? ' type="' + opts.type + '"' : '') + dis + ph + ' value="' + wkEsc(val) + '" oninput="wkMarkDirty()"/>';
+  return '<div class="wk-field">' + (label ? '<label class="wk-label">' + label + '</label>' : '') + ctl + '</div>';
+}
+function wkMarkDirty(){ wkDirty = true; document.getElementById('wk-dirty').style.display = ''; }
+
+function wkRenderForm(locked){
+  var c = wkC(), L = {locked: locked};
+  function sec(title, inner, addBtn, hint){
+    return '<div class="panel wk-sec"><div class="wk-sec-h"><span class="wk-sec-t">' + title + '</span>' + (addBtn && !locked ? addBtn : '') + '</div>' + (hint ? '<div class="wk-hint">' + hint + '</div>' : '') + inner + '</div>';
+  }
+  function rm(kind, i){ return locked ? '' : '<button class="btn btn-ghost btn-sm" onclick="wkRemove(\'' + kind + '\',' + i + ')">Remove</button>'; }
+  var html = '';
+  html += sec('Envelope',
+    '<div class="wk-grid2">' + wkIn('issue_date', 'Week of', wkCur.issue_date, {locked: locked, type: 'date'}) + '<div></div></div>'
+    + wkIn('subject', 'Subject line *', wkCur.subject, {locked: locked, ph: 'e.g. 2 open trainings + what a $150K agent keeps'})
+    + wkIn('preheader', 'Preview text', wkCur.preheader, {locked: locked, ph: 'Shows next to the subject in the inbox'}));
+  html += sec('Intro *', wkIn('intro', '', c.intro, {locked: locked, area: true, ph: 'Two or three sentences in your voice. "Hey {name}," is added automatically.'}),
+    null, 'Formatting: **bold** and [link text](https://...). Blank line starts a new paragraph.');
+
+  var cl = c['class'], vids = wkVideosCache || [];
+  var opts = '<option value="">(no class this week)</option>' + vids.map(function(v){
+    return '<option value="' + wkEsc(v.slug) + '"' + (cl.video_slug === v.slug ? ' selected' : '') + '>' + wkEsc(v.title) + (v.published ? '' : ' (unpublished)') + '</option>';
+  }).join('');
+  html += sec("This week's class",
+    '<div class="wk-field"><label class="wk-label">Class</label><select class="wk-in" data-k="class_slug"' + (locked ? ' disabled' : '') + ' onchange="wkMarkDirty()">' + opts + '</select></div>'
+    + wkIn('class_headline', 'Headline (optional)', cl.headline, {locked: locked, ph: 'Defaults to the class title'})
+    + wkIn('class_blurb', 'Why watch it (optional)', cl.blurb, {locked: locked, area: true, ph: 'Defaults to the class description. One or two lines on what they will get out of it.'})
+    + '<div class="wk-grid2">' + wkIn('class_kicker', 'Section label', cl.kicker || "This week's class", L) + wkIn('class_cta', 'Button text', cl.cta_label || 'Watch the class', L) + '</div>',
+    null, 'The primary action of the email. Viewing is tracked per agent: you get an alert when someone watches half. Add classes on the Classes tab.');
+
+  var ev = '';
+  c.events.forEach(function(e, i){
+    ev += '<div class="wk-item" data-kind="events" data-i="' + i + '">'
+      + '<div class="wk-grid2"><div class="wk-field"><label class="wk-label">Host</label><select class="wk-in" data-k="host"' + (locked ? ' disabled' : '') + ' onchange="wkMarkDirty()">'
+      + ['LPT Realty','TPL Collective',''].concat(['LPT Realty','TPL Collective',''].indexOf(e.host || '') < 0 ? [e.host] : []).map(function(h){ return '<option value="' + wkEsc(h) + '"' + ((e.host || '') === h ? ' selected' : '') + '>' + (h ? 'Hosted by ' + wkEsc(h) : '(no badge)') + '</option>'; }).join('')
+      + '</select></div>' + wkIn('when', 'When', e.when, {locked: locked, ph: 'Monday, Oct 5 - 11 AM ET'}) + '</div>'
+      + wkIn('title', 'Title', e.title, L) + wkIn('description', 'Description', e.description, {locked: locked, area: true})
+      + '<div class="wk-grid2">' + wkIn('url', 'Register link', e.url, L) + wkIn('cta_label', 'Link text', e.cta_label || 'Register free', L) + '</div>'
+      + '<input type="hidden" data-k="recurring_key" value="' + wkEsc(e.recurring_key || '') + '"/>'
+      + rm('events', i) + '</div>';
+  });
+  html += sec('Free open trainings this week',
+    wkIn('events_title', 'Section heading', c.events_title || 'Free open trainings this week', L) + ev
+    + '<label style="font-size:12px;display:flex;gap:6px;align-items:center;color:var(--text-dim)"><input type="checkbox" data-k="show_schedule_link"' + (c.show_schedule_link === false ? '' : ' checked') + (locked ? ' disabled' : '') + ' onchange="wkMarkDirty()"/> Show "see the full schedule" link to tplcollective.ai/trainings</label>',
+    locked ? null : '<span><button class="btn btn-ghost btn-sm" onclick="wkReloadEvents()">&#x21bb; Reload this week\'s series</button> <button class="btn btn-ghost btn-sm" onclick="wkAdd(\'events\')">+ One-off</button></span>',
+    'Pre-filled from the recurring series in Settings for this week. Add a one-off for anything special. Only list sessions any agent can join.');
+
+  var n = c.numbers;
+  html += sec('Number of the week',
+    '<div class="wk-grid2">' + wkIn('n_stat', 'Big number', n.stat, {locked: locked, ph: '$18,800'}) + '<div></div></div>'
+    + wkIn('n_headline', 'Headline', n.headline, L) + wkIn('n_body', 'Body', n.body, {locked: locked, area: true})
+    + '<div class="wk-grid2">' + wkIn('n_url', 'Link', n.url || 'https://tplcollective.ai/compare', L) + wkIn('n_cta_label', 'Button text', n.cta_label || 'Run your own numbers', L) + '</div>',
+    null, 'Leave the headline empty to skip. Only use LPT figures from the official flyer.');
+
+  var ps = '';
+  c.posts.forEach(function(x, i){
+    ps += '<div class="wk-item" data-kind="posts" data-i="' + i + '">' + wkIn('title', 'Title', x.title, L)
+      + wkIn('blurb', 'One line on why it matters', x.blurb, L) + wkIn('url', 'Link', x.url, {locked: locked, ph: 'https://tplcollective.ai/blog/...'}) + rm('posts', i) + '</div>';
+  });
+  html += sec('From the blog', ps, '<button class="btn btn-ghost btn-sm" onclick="wkAdd(\'posts\')">+ Post</button>', 'One to three posts. Leave empty to skip.');
+
+  var nw = '';
+  c.news.forEach(function(x, i){
+    nw += '<div class="wk-item" data-kind="news" data-i="' + i + '">' + wkIn('headline', 'Headline', x.headline, L)
+      + wkIn('take', 'Your take', x.take, {locked: locked, area: true}) + wkIn('url', 'Source link', x.url, L) + rm('news', i) + '</div>';
+  });
+  html += sec('Industry pulse', nw, '<button class="btn btn-ghost btn-sm" onclick="wkAdd(\'news\')">+ Item</button>', 'Leave empty to skip.');
+
+  var tl = '';
+  c.tools.forEach(function(x, i){
+    tl += '<div class="wk-item" data-kind="tools" data-i="' + i + '"><div class="wk-grid2">' + wkIn('label', 'Label', x.label, L) + wkIn('url', 'Link', x.url, L) + '</div>' + rm('tools', i) + '</div>';
+  });
+  html += sec('Free tools', tl, '<button class="btn btn-ghost btn-sm" onclick="wkAdd(\'tools\')">+ Tool</button>');
+
+  var bk = c.book;
+  html += sec('Book a 1-on-1',
+    wkIn('b_headline', 'Headline', bk.headline, {locked: locked, ph: 'Want a straight answer on your numbers?'})
+    + wkIn('b_body', 'Body', bk.body, {locked: locked, area: true, ph: 'Leave blank for the default: grab 15 minutes, answer a few questions first so I come prepared.'})
+    + wkIn('b_cta', 'Button text', bk.cta_label || 'Book a 1-on-1 with Joe', L),
+    null, 'Goes to tplcollective.ai/book: a one-minute pre-call form. Nothing books automatically; it lands in 1-on-1 Requests for you to send times.');
+  html += sec('P.S.', wkIn('ps', '', c.ps, {locked: locked, area: true, ph: 'The most-read line in any email. Point it at the class or the 1-on-1.'}), null, 'Optional. Signature and socials are added automatically.');
+
+  document.getElementById('wk-form').innerHTML = html;
+}
+
+function wkCollect(){
+  var root = document.getElementById('wk-form');
+  function top(k){ var el = root.querySelector(':scope > .wk-sec [data-k="' + k + '"]:not(.wk-item [data-k])'); return el ? el.value : ''; }
+  function items(kind){
+    return Array.prototype.map.call(root.querySelectorAll('.wk-item[data-kind="' + kind + '"]'), function(box){
+      var o = {}; box.querySelectorAll('[data-k]').forEach(function(el){ o[el.getAttribute('data-k')] = el.value.trim(); }); return o;
+    });
+  }
+  var c = Object.assign({}, wkC());
+  c.intro = top('intro');
+  c['class'] = {video_slug: top('class_slug'), headline: top('class_headline'), blurb: top('class_blurb'), kicker: top('class_kicker'), cta_label: top('class_cta')};
+  c.events_title = top('events_title');
+  c.events = items('events');
+  var sl = root.querySelector('[data-k="show_schedule_link"]'); c.show_schedule_link = sl ? sl.checked : true;
+  c.numbers = {stat: top('n_stat'), headline: top('n_headline'), body: top('n_body'), url: top('n_url'), cta_label: top('n_cta_label')};
+  c.posts = items('posts');
+  c.news = items('news');
+  c.tools = items('tools');
+  c.book = {headline: top('b_headline'), body: top('b_body'), cta_label: top('b_cta')};
+  c.ps = top('ps');
+  delete c.feature; delete c.closing;
+  return {issue_date: top('issue_date'), subject: top('subject'), preheader: top('preheader'), content: c};
+}
+
+function wkAdd(kind){
+  var d = wkCollect(); wkCur.content = d.content; wkCur.subject = d.subject; wkCur.preheader = d.preheader; wkCur.issue_date = d.issue_date;
+  var blank = {events: {host: 'LPT Realty', when: '', title: '', description: '', url: '', cta_label: 'Register free'}, posts: {title: '', blurb: '', url: ''}, news: {headline: '', take: '', url: ''}, tools: {label: '', url: ''}}[kind];
+  wkCur.content[kind].push(blank);
+  wkRenderForm(false); wkMarkDirty();
+}
+function wkRemove(kind, i){
+  var d = wkCollect(); wkCur.content = d.content; wkCur.subject = d.subject; wkCur.preheader = d.preheader; wkCur.issue_date = d.issue_date;
+  wkCur.content[kind].splice(i, 1);
+  wkRenderForm(false); wkMarkDirty();
+}
+
+async function wkReloadEvents(){
+  var d = wkCollect();
+  if (!d.issue_date){ showToast('Set the week first.', true); return; }
+  try {
+    var r = await wkJson(WK_API + '/week-events?issue_date=' + encodeURIComponent(d.issue_date));
+    var oneOffs = (d.content.events || []).filter(function(e){ return !e.recurring_key; });
+    Object.assign(wkCur, d); wkCur.content.events = r.events.concat(oneOffs);
+    wkRenderForm(false); wkMarkDirty(); showToast('Loaded ' + r.events.length + ' series for that week. Save to keep.');
+  } catch(e) { showToast(e.message, true); }
+}
+
+// ── Classes (videos) ──
+var wkVideosCache = null;
+async function wkLoadVideos(){ try { wkVideosCache = (await wkJson(WK_API + '/videos')).videos; } catch(e) { wkVideosCache = []; } return wkVideosCache; }
+function wkTab(which){
+  ['issues','classes'].forEach(function(t){ document.getElementById('wk-tab-' + t).classList.toggle('active', t === which); });
+  document.getElementById('wk-issues').style.display = which === 'issues' ? '' : 'none';
+  document.getElementById('wk-classes-wrap').style.display = which === 'classes' ? '' : 'none';
+  document.getElementById('wk-new-issue').style.display = which === 'issues' ? '' : 'none';
+  document.getElementById('wk-new-class').style.display = which === 'classes' ? '' : 'none';
+  if (which === 'classes') wkRenderClasses();
+}
+async function wkRenderClasses(){
+  var root = document.getElementById('wk-classes');
+  root.innerHTML = '<div style="padding:18px;color:var(--text-dim);font-size:13px">Loading...</div>';
+  var vids = await wkLoadVideos();
+  if (!vids.length){ root.innerHTML = '<div style="padding:18px;color:var(--text-dim);font-size:13px">No classes yet. Upload to YouTube (public or unlisted), then click <b>+ Add Class</b> and paste the link.</div>'; return; }
+  var html = '<table class="leads-table"><thead><tr><th></th><th>Class</th><th>Views</th><th>Known viewers</th><th>Watched half+</th><th>Status</th><th></th></tr></thead><tbody>';
+  vids.forEach(function(v){
+    html += '<tr><td style="width:96px"><img src="https://i.ytimg.com/vi/' + wkEsc(v.youtube_id) + '/default.jpg" style="width:80px;border-radius:4px;display:block"/></td>'
+      + '<td><b>' + wkEsc(v.title) + '</b><div style="font-size:11px;color:var(--text-muted)">tplcollective.ai/watch?v=' + wkEsc(v.slug) + (v.duration_seconds ? ' &middot; ' + Math.round(v.duration_seconds / 60) + ' min' : '') + '</div></td>'
+      + '<td>' + (v.views || 0) + '</td><td>' + (v.known_viewers || 0) + '</td><td style="color:var(--green)">' + (v.watched_half || 0) + '</td>'
+      + '<td><span class="wk-pill ' + (v.published ? 'sent' : 'draft') + '">' + (v.published ? 'published' : 'hidden') + '</span></td>'
+      + '<td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="wkViewers(\'' + v.slug + '\')">Who watched</button> '
+      + '<button class="btn btn-ghost btn-sm" onclick="wkTogglePublish(\'' + v.slug + '\',' + (!v.published) + ')">' + (v.published ? 'Hide' : 'Publish') + '</button> '
+      + '<a class="btn btn-ghost btn-sm" href="https://tplcollective.ai/watch?v=' + wkEsc(v.slug) + '" target="_blank">Open</a></td></tr>';
+  });
+  root.innerHTML = html + '</tbody></table>';
+}
+function wkClassForm(){
+  var el = document.getElementById('wk-class-form');
+  el.style.display = '';
+  el.innerHTML = '<div class="panel-title" style="font-size:14px;margin-bottom:12px">Add a class</div>'
+    + '<div class="wk-field"><label class="wk-label">YouTube link *</label><input class="wk-in" id="wkc-url" placeholder="https://youtu.be/..."/></div>'
+    + '<div class="wk-field"><label class="wk-label">Title *</label><input class="wk-in" id="wkc-title" placeholder="What KW agents miss about the cap"/></div>'
+    + '<div class="wk-field"><label class="wk-label">Description</label><textarea class="wk-in" id="wkc-desc" placeholder="Shown on the watch page and as the default email blurb."></textarea></div>'
+    + '<div class="wk-hint">Public or unlisted both work. Length is picked up automatically the first time someone plays it.</div>'
+    + '<button class="btn btn-primary" onclick="wkSaveClass()">Add Class</button> <button class="btn btn-ghost" onclick="document.getElementById(\'wk-class-form\').style.display=\'none\'">Cancel</button>';
+}
+async function wkSaveClass(){
+  try {
+    await wkJson(WK_API + '/videos', {method: 'POST', body: {youtube_url: document.getElementById('wkc-url').value, title: document.getElementById('wkc-title').value, description: document.getElementById('wkc-desc').value}});
+    document.getElementById('wk-class-form').style.display = 'none'; showToast('Class added'); wkRenderClasses();
+  } catch(e) { showToast(e.message, true); }
+}
+async function wkTogglePublish(slug, pub){
+  try { await wkJson(WK_API + '/videos/' + slug, {method: 'PATCH', body: {published: pub}}); wkRenderClasses(); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkViewers(slug){
+  var el = document.getElementById('wk-viewers'); el.style.display = '';
+  el.innerHTML = 'Loading...';
+  try {
+    var d = await wkJson(WK_API + '/videos/' + slug + '/viewers');
+    var rows = d.viewers.map(function(v){
+      return '<tr><td>' + (v.lead_id ? '<a href="#" onclick="openContactProfile&&openContactProfile(' + v.lead_id + ');return false">' + wkEsc(v.name || v.email) + '</a>' : '-') + '</td><td>' + wkEsc(v.brokerage || '') + '</td>'
+        + '<td>' + wkBar(v.pct) + '</td><td>' + Math.round((v.watched_seconds || 0) / 60) + ' min</td><td>' + wkFmtTs(v.last_seen_at) + '</td></tr>';
+    }).join('');
+    el.innerHTML = '<div class="panel-title" style="font-size:14px;margin-bottom:10px">Who watched: ' + wkEsc(slug) + '</div>'
+      + (rows ? '<table class="leads-table"><thead><tr><th>Agent</th><th>Brokerage</th><th>Watched</th><th>Time</th><th>Last seen</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div style="color:var(--text-dim);font-size:13px">No known viewers yet.</div>')
+      + '<div class="wk-hint" style="margin-top:10px">' + d.anonymous_sessions + ' other plays came from people we could not identify (shared link, site visitors).</div>';
+  } catch(e) { el.innerHTML = '<span class="wk-warn">' + wkEsc(e.message) + '</span>'; }
+}
+function wkBar(pct){
+  pct = pct || 0;
+  var col = pct >= 50 ? 'var(--green)' : (pct >= 25 ? 'var(--amber)' : 'var(--text-muted)');
+  return '<div style="display:flex;align-items:center;gap:8px"><div style="width:90px;height:6px;background:var(--surface-3);border-radius:3px"><div style="width:' + pct + '%;height:100%;background:' + col + ';border-radius:3px"></div></div><span style="font-size:12px">' + pct + '%</span></div>';
+}
+
+// ── Engagement for a sent issue ──
+async function wkLoadEngagement(){
+  var el = document.getElementById('wk-engagement');
+  if (!el) return;
+  try {
+    var d = await wkJson(WK_API + '/issues/' + wkCur.id + '/engagement'), t = d.totals;
+    var stats = '<div class="wk-stats">'
+      + '<div class="wk-stat"><b style="color:var(--gold)">' + t.bookings + '</b><span>1-on-1 requests</span></div>'
+      + '<div class="wk-stat"><b style="color:var(--green)">' + t.watched_half + '</b><span>Watched half+</span></div>'
+      + '<div class="wk-stat"><b>' + t.watchers + '</b><span>Started the class</span></div>'
+      + '<div class="wk-stat"><b>' + t.clickers + '</b><span>Clicked</span></div></div>';
+    var rows = d.people.slice(0, 200).map(function(p){
+      var labels = p.clicks.map(function(c){ return c.label || 'link'; }).filter(function(v, i, a){ return a.indexOf(v) === i; }).slice(0, 4).join(', ');
+      return '<tr><td>' + (p.lead_id ? '<a href="#" onclick="openContactProfile&&openContactProfile(' + p.lead_id + ');return false">' + wkEsc(p.first_name || p.email) + '</a>' : wkEsc(p.email)) + '<div style="font-size:11px;color:var(--text-muted)">' + wkEsc(p.email) + '</div></td>'
+        + '<td>' + (p.booked ? '<span class="wk-pill approved">requested</span>' : '') + '</td>'
+        + '<td>' + (p.video_pct ? wkBar(p.video_pct) : '') + '</td>'
+        + '<td style="font-size:12px">' + (p.clicks.length ? p.clicks.length + ': ' + wkEsc(labels) : '') + '</td></tr>';
+    }).join('');
+    el.innerHTML = '<div class="panel-title" style="font-size:14px;margin:6px 0 10px">Who engaged</div>' + stats
+      + (rows ? '<table class="leads-table"><thead><tr><th>Agent</th><th>1-on-1</th><th>Class</th><th>Clicks</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div style="color:var(--text-dim);font-size:13px">Nobody yet.</div>')
+      + (t.bot_clicks_excluded ? '<div class="wk-hint" style="margin-top:8px">' + t.bot_clicks_excluded + ' clicks from corporate link scanners excluded. Opens are inflated the same way (Apple Mail loads every image), so trust clicks and watch time over opens.</div>' : '');
+  } catch(e) { el.innerHTML = '<span class="wk-warn">' + wkEsc(e.message) + '</span>'; }
+}
+
+async function wkSave(){
+  var btn = document.getElementById('wk-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    await wkJson(WK_API + '/issues/' + wkCur.id, {method: 'PATCH', body: wkCollect()});
+    wkDirty = false; showToast('Saved');
+    await wkOpen(wkCur.id);
+  } catch(e) { showToast(e.message, true); }
+  btn.disabled = false; btn.textContent = 'Save';
+}
+
+async function wkLoadPreview(){
+  var fr = document.getElementById('wk-preview-frame');
+  try {
+    var r = await fetch(WK_API + '/issues/' + wkCur.id + '/preview?first_name=Sharon');
+    fr.srcdoc = await r.text();
+  } catch(e) { fr.srcdoc = '<p style="font-family:sans-serif;padding:20px">Preview failed: ' + wkEsc(e.message) + '</p>'; }
+}
+
+// ── Review gate + sending ──
+function wkDefaultSendLocal(){
+  // issue date at 7:00 AM local, or tomorrow 7:00 if that is already past
+  var p = String(wkCur.issue_date).slice(0, 10).split('-');
+  var d = new Date(p[0], p[1] - 1, p[2], 7, 0);
+  if (d < new Date()){ d = new Date(); d.setDate(d.getDate() + 1); d.setHours(7, 0, 0, 0); }
+  function z(n){ return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes());
+}
+
+function wkRenderGate(){
+  var i = wkCur, el = document.getElementById('wk-gate'), c = i.counts || {};
+  var stats = '<div class="wk-stats">'
+    + '<div class="wk-stat"><b>' + (i.total_recipients || 0) + '</b><span>Recipients</span></div>'
+    + '<div class="wk-stat"><b style="color:var(--green)">' + (c.sent || 0) + '</b><span>Sent</span></div>'
+    + '<div class="wk-stat"><b>' + (c.queued || 0) + '</b><span>Queued</span></div>'
+    + '<div class="wk-stat"><b style="color:var(--accent)">' + (i.opens || 0) + '</b><span>Opens</span></div>'
+    + '<div class="wk-stat"><b style="color:var(--red)">' + (c.failed || 0) + '</b><span>Failed</span></div>'
+    + '<div class="wk-stat"><b>' + (c.skipped || 0) + '</b><span>Skipped</span></div></div>';
+
+  if (i.status === 'draft'){
+    var testLine = i.test_is_current
+      ? '<span class="wk-ok">&#x2713; Test of this version sent to ' + wkEsc(i.test_sent_to) + ' ' + wkFmtTs(i.test_sent_at) + '</span>'
+      : (i.test_sent_at ? '<span class="wk-warn">Edited since the last test. Send a new test before approving.</span>' : '<span class="wk-warn">No test sent yet.</span>');
+    var noAddr = !(wkSettingsCache && (wkSettingsCache.mailing_address || '').trim());
+    el.innerHTML = '<div class="panel-title" style="font-size:14px;margin-bottom:8px">1. Test &nbsp;&rarr;&nbsp; 2. Approve &amp; schedule</div>'
+      + '<div class="row" style="margin-bottom:10px"><button class="btn btn-ghost" onclick="wkTest()">Send test to me</button> ' + testLine + '</div>'
+      + (noAddr ? '<div class="wk-warn" style="margin-bottom:10px">Add a mailing address in Settings (list view) before approving.</div>' : '')
+      + '<div class="row"><label class="wk-label" style="margin:0">Send at</label><input type="datetime-local" class="wk-in" id="wk-send-at" style="width:auto" value="' + wkDefaultSendLocal() + '"/>'
+      + '<label class="wk-label" style="margin:0 0 0 8px">Max per day</label><input type="number" min="1" class="wk-in" id="wk-cap" style="width:90px" value="' + (i.daily_cap || 150) + '"/>'
+      + '<button class="btn btn-primary" onclick="wkApprove()"' + (i.test_is_current && !noAddr ? '' : ' disabled style="opacity:.5;cursor:not-allowed"') + '>Approve &amp; schedule</button>'
+      + '<button class="btn btn-ghost" style="margin-left:auto;color:var(--red)" onclick="wkDelete()">Delete draft</button></div>';
+    return;
+  }
+  var head = '';
+  if (i.status === 'approved') head = 'Scheduled for <b>' + wkFmtTs(i.scheduled_for) + '</b>, max ' + i.daily_cap + '/day. Content is locked.';
+  if (i.status === 'sending') head = 'Sending. Batches go out every 15 minutes, max ' + i.daily_cap + '/day.';
+  if (i.status === 'sent') head = 'Finished ' + wkFmtTs(i.completed_at) + '.';
+  if (i.status === 'cancelled') head = 'Cancelled ' + wkFmtTs(i.completed_at) + '.';
+  var actions = '';
+  if (i.status === 'approved' && !(c.sent || c.failed)) actions += '<button class="btn btn-ghost" onclick="wkUnapprove()">Back to draft</button> ';
+  if (i.status === 'approved' || i.status === 'sending') actions += '<button class="btn btn-ghost" style="color:var(--red)" onclick="wkCancel()">Cancel remaining sends</button> ';
+  actions += '<button class="btn btn-ghost" onclick="wkOpen(' + i.id + ')">&#x21bb; Refresh</button>';
+  el.innerHTML = '<div style="font-size:13px;margin-bottom:12px">' + head + '</div>' + stats + '<div class="row">' + actions + '</div>'
+    + (i.status === 'approved' ? '' : '<div id="wk-engagement" style="margin-top:16px"></div>');
+  if (i.status !== 'approved') wkLoadEngagement();
+}
+
+async function wkTest(){
+  if (wkDirty){ showToast('Save first, then send the test.', true); return; }
+  try { var r = await wkJson(WK_API + '/issues/' + wkCur.id + '/test', {method: 'POST', body: {}}); showToast('Test sent to ' + r.sent_to); wkOpen(wkCur.id); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkApprove(){
+  if (wkDirty){ showToast('Save first.', true); return; }
+  var at = document.getElementById('wk-send-at').value;
+  var cap = parseInt(document.getElementById('wk-cap').value) || 150;
+  if (!at){ showToast('Pick a send time.', true); return; }
+  var when = new Date(at);
+  var aud = '';
+  try { var a = await wkJson(WK_API + '/audience'); aud = a.total + ' agents'; } catch(e) { aud = 'the recruit list'; }
+  if (!confirm('Approve "' + wkCur.subject + '" to ' + aud + '?\n\nFirst batch: ' + when.toLocaleString() + '\nMax per day: ' + cap + '\n\nContent locks once approved.')) return;
+  try { await wkJson(WK_API + '/issues/' + wkCur.id + '/approve', {method: 'POST', body: {scheduled_for: when.toISOString(), daily_cap: cap}}); showToast('Approved and scheduled'); wkOpen(wkCur.id); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkUnapprove(){
+  if (!confirm('Move back to draft? The queue is cleared and you will need a fresh test before approving again.')) return;
+  try { await wkJson(WK_API + '/issues/' + wkCur.id + '/unapprove', {method: 'POST'}); wkOpen(wkCur.id); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkCancel(){
+  if (!confirm('Cancel every remaining send for this issue? Emails already sent are not affected.')) return;
+  try { await wkJson(WK_API + '/issues/' + wkCur.id + '/cancel', {method: 'POST'}); showToast('Cancelled'); wkOpen(wkCur.id); }
+  catch(e) { showToast(e.message, true); }
+}
+async function wkDelete(){
+  if (!confirm('Delete this draft?')) return;
+  try { await wkJson(WK_API + '/issues/' + wkCur.id, {method: 'DELETE'}); wkDirty = false; wkBack(); }
+  catch(e) { showToast(e.message, true); }
+}
+window.addEventListener('beforeunload', function(e){ if (wkDirty){ e.preventDefault(); e.returnValue = ''; } });
+</script>
+
 <!-- ═══ PROSPECT ENGAGEMENT PAGE (Phase 16) ═══ -->
 <div class="page" id="page-engagement">
   <div class="panel-title" style="font-size:24px;margin-bottom:6px">Prospect Engagement</div>
@@ -1075,6 +1857,8 @@ _engagementInstallHook();
       <span id="cma-status-pill" class="badge" style="padding:4px 10px;border-radius:4px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;background:rgba(108,99,255,0.15);color:var(--accent)">draft</span>
       <button class="btn btn-ghost" onclick="cmaAutoAdjust()" id="cma-auto-adjust-btn" title="Apply standard FL adjustments (pool / age / beds / baths / sqft / garage / lot)">&#9881; Auto-Adjust</button>
       <button class="btn" onclick="cmaComputePricing()" id="cma-compute-btn">&#x25B6; Compute Pricing</button>
+      <button class="btn btn-ghost" onclick="cmaOpenSnapshotModal()" id="cma-snapshot-btn" title="Capture current state so we can compare against it next month">&#128248; Snapshot</button>
+      <button class="btn" onclick="cmaOpenMonthlyUpdateModal()" id="cma-monthly-update-btn" style="background:#f0c040;color:#1a1a26;display:none">&#128202; Monthly Update</button>
       <button class="btn btn-ghost" onclick="cmaOpenReport()" id="cma-view-report-btn">View Report</button>
       <button class="btn btn-ghost" onclick="cmaDownloadPdf()" id="cma-download-pdf-btn">Download PDF</button>
       <button class="btn" onclick="cmaOpenSendModal()" id="cma-send-btn" style="background:var(--accent);color:#fff">Send to Client</button>
@@ -1093,6 +1877,15 @@ _engagementInstallHook();
     <div class="panel" id="cma-pricing-panel" style="margin-bottom:18px">
       <div class="panel-title" style="font-size:14px;margin-bottom:12px">Pricing Analysis</div>
       <div id="cma-pricing-body" style="color:var(--muted);font-size:13px">Click <strong style="color:var(--ink)">▶ Compute Pricing</strong> above once you've reviewed the comps to generate a suggested list price band.</div>
+    </div>
+
+    <!-- Snapshots / Monthly Update history panel -->
+    <div class="panel" id="cma-snapshots-panel" style="margin-bottom:18px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="panel-title" style="font-size:14px">Snapshots &amp; Monthly Update Cadence</div>
+        <div style="font-size:11px;color:var(--muted)" id="cma-snapshots-count"></div>
+      </div>
+      <div id="cma-snapshots-body" style="font-size:13px"></div>
     </div>
 
     <!-- Two-column layout: Subject + Client on left, ZIP import on right -->
@@ -1221,6 +2014,66 @@ _engagementInstallHook();
       </div>
     </div>
   </div>
+
+  <!-- Snapshot capture modal -->
+  <div id="cma-snapshot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center">
+    <div class="panel" style="max-width:520px;width:92%;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="panel-title" style="font-size:16px">&#128248; Capture Snapshot</div>
+        <button class="btn btn-sm btn-ghost" onclick="cmaCloseSnapshotModal()">&times;</button>
+      </div>
+      <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+        Locks the current pricing + comp state as a baseline. Next month, run <strong style="color:var(--ink)">📊 Monthly Update</strong> and we'll compare against this.
+      </div>
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Label</label>
+      <input class="cma-input" id="cma-snap-label" style="width:100%;margin-bottom:10px" placeholder="e.g. Initial CMA — August 2026">
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Snapshot Date</label>
+      <input class="cma-input" id="cma-snap-date" type="date" style="width:100%;margin-bottom:10px">
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Note (optional)</label>
+      <textarea class="cma-input" id="cma-snap-note" rows="2" style="width:100%;font-family:inherit;margin-bottom:16px" placeholder="e.g. Sent to client via email"></textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="cmaCloseSnapshotModal()">Cancel</button>
+        <button class="btn" style="background:var(--accent);color:#fff" onclick="cmaSaveSnapshot()">Capture Snapshot</button>
+      </div>
+      <div id="cma-snap-result" style="margin-top:12px;font-size:12px;text-align:center"></div>
+      <hr style="margin:18px 0;border:none;border-top:1px solid var(--surf3, #2a2a44)">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Backfill historical baseline (for a CMA sent before this feature existed)</div>
+      <button class="btn btn-ghost btn-sm" onclick="cmaOpenBackfillPrompt()" style="width:100%">Backfill a past snapshot manually</button>
+    </div>
+  </div>
+
+  <!-- Monthly Update modal -->
+  <div id="cma-monthly-update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center">
+    <div class="panel" style="max-width:820px;width:94%;padding:24px;max-height:92vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="panel-title" style="font-size:18px">&#128202; Monthly Update</div>
+        <button class="btn btn-sm btn-ghost" onclick="cmaCloseMonthlyUpdateModal()">&times;</button>
+      </div>
+      <div style="color:var(--muted);font-size:12px;margin-bottom:14px" id="cma-mu-header"></div>
+
+      <div id="cma-mu-delta" style="margin-bottom:16px"></div>
+
+      <div style="padding:14px;background:var(--surf2);border-radius:8px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Draft Email — edit before sending</div>
+        <label style="font-size:11px;color:var(--muted)">Subject</label>
+        <input class="cma-input" id="cma-mu-subject" style="width:100%;margin-bottom:10px">
+        <label style="font-size:11px;color:var(--muted)">HTML Body (editable)</label>
+        <textarea class="cma-input" id="cma-mu-html" rows="16" style="width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px"></textarea>
+      </div>
+
+      <div id="cma-mu-recipients" style="margin-bottom:12px;font-size:13px"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="cma-mu-attach-pdf" checked> Attach updated PDF</label>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="cmaCloseMonthlyUpdateModal()">Cancel</button>
+          <button class="btn" style="background:#f0c040;color:#1a1a26" onclick="cmaMonthlyUpdatePreview()">&#128065; Preview Email</button>
+          <button class="btn" style="background:var(--accent);color:#fff" onclick="cmaMonthlyUpdateSend()">Send Update</button>
+        </div>
+      </div>
+      <div id="cma-mu-result" style="margin-top:8px;font-size:12px;text-align:center"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1343,6 +2196,9 @@ async function cmaLoadDetail() {
 
     // Render pricing analysis (if computed)
     cmaRenderPricing(cma.pricing);
+
+    // Render snapshot history + toggle Monthly Update button visibility
+    cmaRenderSnapshots(cma.snapshots || []);
 
     // Render comps
     cmaRenderComps(cma.comps || []);
@@ -1567,12 +2423,26 @@ async function cmaHandleZipSelect(evt) {
   }
 }
 
+// Fires compute-pricing silently after any comp-change so the panel
+// reflects the current comp set without requiring another button press.
+// Only recomputes if pricing was already computed once (don't force a compute
+// on first-ever toggle before the user has clicked Compute Pricing).
+async function cmaRecomputePricingIfExists() {
+  if (!cmaCurrentId || !cmaCurrentData?.pricing) return;
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId + '/compute-pricing', { method: 'POST' });
+  } catch (e) {
+    console.warn('auto-recompute failed', e);
+  }
+}
+
 async function cmaToggleCompIncluded(compId, included) {
   try {
     await fetch('/api/cmas/' + cmaCurrentId + '/comps/' + compId, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ included })
     });
+    await cmaRecomputePricingIfExists();
     await cmaLoadDetail();
   } catch (e) {
     alert('Failed: ' + e.message);
@@ -1583,6 +2453,7 @@ async function cmaDeleteComp(compId) {
   if (!confirm('Delete this comp from the CMA?')) return;
   try {
     await fetch('/api/cmas/' + cmaCurrentId + '/comps/' + compId, { method: 'DELETE' });
+    await cmaRecomputePricingIfExists();
     await cmaLoadDetail();
   } catch (e) {
     alert('Failed: ' + e.message);
@@ -1605,6 +2476,7 @@ async function cmaEditComp(compId) {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    await cmaRecomputePricingIfExists();
     await cmaLoadDetail();
   } catch (e) {
     alert('Failed: ' + e.message);
@@ -1703,6 +2575,7 @@ async function cmaAdjSave() {
       body: JSON.stringify({ adjustments: clean })
     });
     cmaCloseAdjModal();
+    await cmaRecomputePricingIfExists();
     await cmaLoadDetail();
   } catch (e) {
     alert('Save failed: ' + e.message);
@@ -1807,48 +2680,102 @@ async function cmaComputePricing() {
   }
 }
 
+let cmaPricingBasis = 'adjusted'; // 'adjusted' | 'raw'
+let cmaLastPricing = null;
+
+function cmaSetPricingBasis(mode) {
+  cmaPricingBasis = mode;
+  if (cmaLastPricing) cmaRenderPricing(cmaLastPricing);
+}
+
 function cmaRenderPricing(pricing) {
+  const prevTarget = cmaLastPricing && (cmaLastPricing.suggested_adjusted?.target ?? cmaLastPricing.suggested?.target);
+  const newTarget = pricing && (pricing.suggested_adjusted?.target ?? pricing.suggested?.target);
+  cmaLastPricing = pricing;
   const body = document.getElementById('cma-pricing-body');
+  const panel = document.getElementById('cma-pricing-panel');
   if (!body) return;
+  // Flash the panel border to signal a fresh recompute (only on second-and-later renders)
+  if (panel && prevTarget !== undefined && prevTarget !== null && newTarget !== prevTarget) {
+    panel.style.transition = 'box-shadow 0.4s ease';
+    panel.style.boxShadow = '0 0 0 2px var(--accent, #6c63ff)';
+    setTimeout(() => { panel.style.boxShadow = ''; }, 900);
+  }
   if (!pricing) {
     body.innerHTML = 'Click <strong style="color:var(--ink)">▶ Compute Pricing</strong> above once you’ve reviewed the comps to generate a suggested list price band.';
     return;
   }
-  const s = pricing.suggested || {};
-  if (!s.target) {
-    body.innerHTML = '<div style="color:#f0c040">' + (s.error || 'Could not compute a suggested price. Add subject sq ft and include some comps first.') + '</div>';
-    return;
+  // Pick which suggested band to show based on toggle
+  const sAdj = pricing.suggested_adjusted;
+  const sRaw = pricing.suggested_raw;
+  const s = (cmaPricingBasis === 'raw' ? sRaw : sAdj) || pricing.suggested || {};
+  const other = (cmaPricingBasis === 'raw' ? sAdj : sRaw);
+
+  if (!s || !s.target) {
+    // Fall back to whatever we have
+    const fallback = pricing.suggested || {};
+    if (!fallback.target) {
+      body.innerHTML = '<div style="color:#f0c040">' + (fallback.error || 'Could not compute a suggested price. Add subject sq ft and include some comps first.') + '</div>';
+      return;
+    }
   }
+
+  const useSqft = cmaPricingBasis === 'raw';  // when raw mode, show raw $/sqft in segment cards
+
+  // Toggle bar
+  const toggleHtml = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px">
+      <div style="display:inline-flex;background:var(--surf2);border-radius:6px;padding:3px">
+        <button onclick="cmaSetPricingBasis('adjusted')" style="padding:6px 14px;border:0;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;background:${cmaPricingBasis === 'adjusted' ? 'var(--accent)' : 'transparent'};color:${cmaPricingBasis === 'adjusted' ? '#fff' : 'var(--muted)'};text-transform:uppercase;letter-spacing:.08em">Adjusted</button>
+        <button onclick="cmaSetPricingBasis('raw')" style="padding:6px 14px;border:0;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;background:${cmaPricingBasis === 'raw' ? 'var(--accent)' : 'transparent'};color:${cmaPricingBasis === 'raw' ? '#fff' : 'var(--muted)'};text-transform:uppercase;letter-spacing:.08em">Raw</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:right">
+        ${cmaPricingBasis === 'adjusted'
+          ? '<strong style="color:var(--ink)">Adjusted</strong> — comps normalized to subject via auto-adjust'
+          : '<strong style="color:var(--ink)">Raw</strong> — comps as-sold, no adjustments'}
+      </div>
+    </div>
+  `;
+
   const seg = (k) => pricing[k] || {};
   const active = seg('active'), pending = seg('pending'), closed = seg('closed');
-  body.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:0;background:var(--surf2);border-radius:8px;overflow:hidden;margin-bottom:14px">
+  const ppsfKey = useSqft ? 'ppsf_median_raw' : 'ppsf_median';
+  const otherLine = (other && other.target)
+    ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">Other view (${other.mode}): ${cmaFmtMoney(other.low)}–${cmaFmtMoney(other.high)} · target ${cmaFmtMoney(other.target)}</div>`
+    : '';
+
+  body.innerHTML = toggleHtml + `
+    <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:0;background:var(--surf2);border-radius:8px;overflow:hidden;margin-bottom:8px">
       <div style="text-align:center;padding:20px 12px">
         <div style="font-size:22px;font-weight:700">${cmaFmtMoney(s.low)}</div>
         <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">Low</div>
       </div>
       <div style="text-align:center;padding:20px 12px;background:linear-gradient(180deg,rgba(108,99,255,0.18),rgba(108,99,255,0.06));border-left:1px solid var(--surf3);border-right:1px solid var(--surf3)">
         <div style="font-size:32px;font-weight:700;color:var(--accent)">${cmaFmtMoney(s.target)}</div>
-        <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">Target</div>
+        <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">Average</div>
       </div>
       <div style="text-align:center;padding:20px 12px">
         <div style="font-size:22px;font-weight:700">${cmaFmtMoney(s.high)}</div>
         <div style="font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:4px">High</div>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:12px">${s.formula || ''}</div>
+    ${otherLine}
+    <div style="font-size:12px;color:var(--muted);font-style:italic;margin:12px 0">${s.formula || ''}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:-6px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em">
+      Last computed: ${pricing.computed_at ? new Date(pricing.computed_at).toLocaleTimeString() : '—'}
+    </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px">
       <div style="padding:10px;border-radius:6px;background:var(--surf2)">
         <div style="color:#34d399;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px">Active · ${active.count || 0}</div>
-        ${active.ppsf_median ? '<div style="margin-top:4px">Median: $' + Math.round(active.ppsf_median) + '/sqft</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
+        ${active[ppsfKey] ? '<div style="margin-top:4px">Median: $' + Math.round(active[ppsfKey]) + '/sqft</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
       </div>
       <div style="padding:10px;border-radius:6px;background:var(--surf2)">
         <div style="color:#f0c040;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px">Pending · ${pending.count || 0}</div>
-        ${pending.ppsf_median ? '<div style="margin-top:4px">Median: $' + Math.round(pending.ppsf_median) + '/sqft</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
+        ${pending[ppsfKey] ? '<div style="margin-top:4px">Median: $' + Math.round(pending[ppsfKey]) + '/sqft</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
       </div>
       <div style="padding:10px;border-radius:6px;background:var(--surf2)">
         <div style="color:#a78bfa;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px">Closed · ${closed.count || 0}</div>
-        ${closed.ppsf_median ? '<div style="margin-top:4px">Median: $' + Math.round(closed.ppsf_median) + '/sqft' + (closed.dom_median ? ' · ' + Math.round(closed.dom_median) + ' DOM' : '') + '</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
+        ${closed[ppsfKey] ? '<div style="margin-top:4px">Median: $' + Math.round(closed[ppsfKey]) + '/sqft' + (closed.dom_median ? ' · ' + Math.round(closed.dom_median) + ' DOM' : '') + '</div>' : '<div style="margin-top:4px;color:var(--muted)">No data</div>'}
       </div>
     </div>
   `;
@@ -1917,6 +2844,255 @@ async function cmaSendReport() {
     res.textContent = 'Sent to ' + out.sent_count + ' recipient(s).' +
       (out.failures?.length ? ' ' + out.failures.length + ' failed.' : '');
     setTimeout(() => { cmaCloseSendModal(); cmaLoadDetail(); }, 1500);
+  } catch (e) {
+    res.style.color = '#ef4444';
+    res.textContent = 'Failed: ' + e.message;
+  }
+}
+
+// ────────── Snapshots + Monthly Update ──────────
+
+function cmaRenderSnapshots(snapshots) {
+  const panel = document.getElementById('cma-snapshots-panel');
+  const body = document.getElementById('cma-snapshots-body');
+  const count = document.getElementById('cma-snapshots-count');
+  const muBtn = document.getElementById('cma-monthly-update-btn');
+  if (!snapshots || !snapshots.length) {
+    panel.style.display = 'none';
+    muBtn.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+  muBtn.style.display = '';
+  count.textContent = snapshots.length + ' snapshot' + (snapshots.length === 1 ? '' : 's');
+
+  let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  snapshots.forEach((s, i) => {
+    const suggested = ((s.pricing || {}).suggested) || {};
+    const closed = ((s.pricing || {}).closed) || {};
+    const active = ((s.pricing || {}).active) || {};
+    const badge = s.backfilled ? '<span style="background:rgba(240,192,64,0.15);color:#f0c040;padding:2px 6px;border-radius:3px;font-size:9px;text-transform:uppercase;letter-spacing:.1em;margin-left:6px">Backfilled</span>' : '';
+    html += `
+      <div style="padding:12px;background:var(--surf2);border-radius:6px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600">${s.label || 'Snapshot'} ${badge}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            ${s.snapshot_date || '—'}
+            ${suggested.target ? ' · Suggested: ' + cmaFmtMoney(suggested.low) + '–' + cmaFmtMoney(suggested.high) : ''}
+            ${closed.count ? ' · ' + closed.count + ' closed (med ' + cmaFmtMoney(closed.price_median) + ')' : ''}
+            ${active.count ? ' · ' + active.count + ' active' : ''}
+          </div>
+          ${s.note ? '<div style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic">' + s.note + '</div>' : ''}
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="cmaDeleteSnapshot(${i})" title="Remove snapshot">&times;</button>
+      </div>
+    `;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function cmaOpenSnapshotModal() {
+  if (!cmaCurrentId) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('cma-snap-label').value = 'CMA — ' + monthName;
+  document.getElementById('cma-snap-date').value = today;
+  document.getElementById('cma-snap-note').value = '';
+  document.getElementById('cma-snap-result').textContent = '';
+  document.getElementById('cma-snapshot-modal').style.display = 'flex';
+}
+
+function cmaCloseSnapshotModal() {
+  document.getElementById('cma-snapshot-modal').style.display = 'none';
+}
+
+async function cmaSaveSnapshot() {
+  const res = document.getElementById('cma-snap-result');
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Capturing...';
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/snapshot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        label: document.getElementById('cma-snap-label').value || null,
+        snapshot_date: document.getElementById('cma-snap-date').value || null,
+        note: document.getElementById('cma-snap-note').value || null,
+      })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const out = await r.json();
+    res.style.color = '#34d399';
+    res.textContent = '✓ Snapshot ' + out.total_snapshots + ' captured.';
+    setTimeout(() => { cmaCloseSnapshotModal(); cmaLoadDetail(); }, 900);
+  } catch (e) {
+    res.style.color = '#ef4444';
+    res.textContent = 'Failed: ' + e.message;
+  }
+}
+
+async function cmaDeleteSnapshot(index) {
+  if (!confirm('Remove this snapshot? Historical baselines can be re-backfilled if needed.')) return;
+  try {
+    await fetch('/api/cmas/' + cmaCurrentId + '/snapshots/' + index, { method: 'DELETE' });
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  }
+}
+
+async function cmaOpenBackfillPrompt() {
+  const date = prompt('Historical snapshot date (YYYY-MM-DD):', '2026-08-10');
+  if (!date) return;
+  const label = prompt('Label:', 'Initial CMA — August 2026') || null;
+  const closedCount = parseFloat(prompt('Closed comp count (blank = skip):', '') || '') || null;
+  const closedMedian = parseFloat(prompt('Closed median price:', '') || '') || null;
+  const closedHigh = parseFloat(prompt('Closed high price:', '') || '') || null;
+  const activeCount = parseFloat(prompt('Active count:', '') || '') || null;
+  const activeMedian = parseFloat(prompt('Active median price:', '') || '') || null;
+  const activeHigh = parseFloat(prompt('Active high price:', '') || '') || null;
+  const pendingCount = parseFloat(prompt('Pending count:', '') || '') || null;
+  const sLow = parseFloat(prompt('Suggested low:', '') || '') || null;
+  const sTarget = parseFloat(prompt('Suggested target:', '') || '') || null;
+  const sHigh = parseFloat(prompt('Suggested high:', '') || '') || null;
+
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/backfill-snapshot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        snapshot_date: date,
+        label,
+        closed_count: closedCount, closed_price_median: closedMedian, closed_price_max: closedHigh,
+        active_count: activeCount, active_price_median: activeMedian, active_price_max: activeHigh,
+        pending_count: pendingCount,
+        suggested_low: sLow, suggested_target: sTarget, suggested_high: sHigh,
+      })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    cmaCloseSnapshotModal();
+    await cmaLoadDetail();
+  } catch (e) {
+    alert('Backfill failed: ' + e.message);
+  }
+}
+
+async function cmaOpenMonthlyUpdateModal() {
+  if (!cmaCurrentId) return;
+  const modal = document.getElementById('cma-monthly-update-modal');
+  document.getElementById('cma-mu-header').textContent = 'Loading delta...';
+  document.getElementById('cma-mu-delta').innerHTML = '';
+  document.getElementById('cma-mu-subject').value = '';
+  document.getElementById('cma-mu-html').value = '';
+  document.getElementById('cma-mu-result').textContent = '';
+  modal.style.display = 'flex';
+
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/monthly-update');
+    if (!r.ok) throw new Error(await r.text());
+    const out = await r.json();
+    cmaRenderMonthlyUpdate(out);
+  } catch (e) {
+    document.getElementById('cma-mu-header').textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+function cmaRenderMonthlyUpdate(out) {
+  const prior = out.prior_snapshot;
+  const header = document.getElementById('cma-mu-header');
+  if (!prior) {
+    header.innerHTML = '<span style="color:#f0c040">No prior snapshot found.</span> Take one first, or backfill your original baseline.';
+    document.getElementById('cma-mu-delta').innerHTML = '';
+    document.getElementById('cma-mu-subject').value = out.draft_email?.subject || '';
+    document.getElementById('cma-mu-html').value = out.draft_email?.html || '';
+    return;
+  }
+  header.innerHTML = 'Comparing against <strong>' + (prior.label || prior.snapshot_date) + '</strong> (' + prior.snapshot_date + ')';
+
+  // Delta cards
+  const delta = out.delta || [];
+  const curr = out.current_pricing || {};
+  const currClosed = curr.closed || {};
+  const currActive = curr.active || {};
+  const currPending = curr.pending || {};
+  const currSuggested = curr.suggested || {};
+  const priorClosed = ((prior.pricing || {}).closed) || {};
+  const priorActive = ((prior.pricing || {}).active) || {};
+  const priorSuggested = ((prior.pricing || {}).suggested) || {};
+
+  const rows = [
+    { label: 'Closed median', prior: priorClosed.price_median, current: currClosed.price_median, fmt: cmaFmtMoney },
+    { label: 'Closed high', prior: priorClosed.price_max, current: currClosed.price_max, fmt: cmaFmtMoney },
+    { label: 'Active median', prior: priorActive.price_median, current: currActive.price_median, fmt: cmaFmtMoney },
+    { label: 'Suggested average', prior: priorSuggested.target, current: currSuggested.target, fmt: cmaFmtMoney },
+    { label: 'Closed count', prior: priorClosed.count, current: currClosed.count, fmt: v => v || 0 },
+    { label: 'Active count', prior: priorActive.count, current: currActive.count, fmt: v => v || 0 },
+  ];
+  let deltaHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">';
+  rows.forEach(r => {
+    let color = 'var(--muted)';
+    let arrow = '—';
+    if (r.prior && r.current) {
+      if (r.current > r.prior) { color = '#34d399'; arrow = '▲'; }
+      else if (r.current < r.prior) { color = '#ef4444'; arrow = '▼'; }
+      else arrow = '=';
+    }
+    deltaHtml += `
+      <div style="padding:12px;background:var(--surf2);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">${r.label}</div>
+        <div style="font-size:18px;font-weight:700;margin-top:4px">${r.fmt(r.current)}</div>
+        <div style="font-size:11px;margin-top:4px;color:${color}">${arrow} was ${r.fmt(r.prior)}</div>
+      </div>
+    `;
+  });
+  deltaHtml += '</div>';
+  document.getElementById('cma-mu-delta').innerHTML = deltaHtml;
+
+  // Pre-fill draft
+  const draft = out.draft_email || {};
+  document.getElementById('cma-mu-subject').value = draft.subject || '';
+  document.getElementById('cma-mu-html').value = draft.html || '';
+
+  // Recipients
+  const emails = [];
+  if (cmaCurrentData?.client_email) emails.push(cmaCurrentData.client_email);
+  (cmaCurrentData?.additional_clients || []).forEach(c => { if (c.email) emails.push(c.email); });
+  document.getElementById('cma-mu-recipients').innerHTML =
+    '<strong>Recipients:</strong> ' +
+    (emails.length
+      ? emails.map(e => '<span style="background:var(--surf2);padding:3px 8px;border-radius:4px;margin:0 4px 0 0;display:inline-block">' + e + '</span>').join('')
+      : '<span style="color:#ef4444">no client email — add one before sending</span>');
+}
+
+function cmaCloseMonthlyUpdateModal() {
+  document.getElementById('cma-monthly-update-modal').style.display = 'none';
+}
+
+function cmaMonthlyUpdatePreview() {
+  const html = document.getElementById('cma-mu-html').value;
+  const win = window.open('', '_blank');
+  win.document.write('<!doctype html><meta charset="utf-8"><title>Email Preview</title><body style="background:#f4f4f8;padding:24px">' + html + '</body>');
+  win.document.close();
+}
+
+async function cmaMonthlyUpdateSend() {
+  const res = document.getElementById('cma-mu-result');
+  res.style.color = 'var(--muted)';
+  res.textContent = 'Sending...';
+  try {
+    const r = await fetch('/api/cmas/' + cmaCurrentId + '/send-monthly-update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject: document.getElementById('cma-mu-subject').value || null,
+        html: document.getElementById('cma-mu-html').value || null,
+        attach_pdf: document.getElementById('cma-mu-attach-pdf').checked,
+      })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const out = await r.json();
+    res.style.color = '#34d399';
+    res.textContent = 'Sent to ' + out.sent_count + ' recipient(s).' +
+      (out.failures?.length ? ' ' + out.failures.length + ' failed.' : '');
+    setTimeout(() => { cmaCloseMonthlyUpdateModal(); cmaLoadDetail(); }, 1400);
   } catch (e) {
     res.style.color = '#ef4444';
     res.textContent = 'Failed: ' + e.message;
@@ -3447,6 +4623,8 @@ function showPage(name){window.location.hash=name;
   if(name==='content')loadContent();
   if(name==='links')loadLinks();
   if(name==='recruit-compare')loadRecruitCompare();
+  if(name==='weekly')loadWeekly();
+  if(name==='one-on-one')loadOneOnOne();
   if(name==='coaching')loadCoaching();
   if(name==='analytics')loadFunnelAnalytics();
   if(name==='revshare')loadRevShare();
@@ -5797,6 +6975,7 @@ async function loadAdminAudit(){
 }
 
 function mcBootstrap(){
+  if(typeof ooBadge==='function'){ooBadge();if(!window.__ooBadgeInterval)window.__ooBadgeInterval=setInterval(ooBadge,60000);}
   var startPage=window.location.hash.replace('#','');
   if(startPage&&document.getElementById('page-'+startPage)){showPage(startPage);}
   else{loadDashboard();}

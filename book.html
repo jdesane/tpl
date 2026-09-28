@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<!-- Per-recipient links (?t=) land here; keep it out of search results. -->
+<meta name="robots" content="noindex, nofollow"/>
+<link rel="canonical" href="https://tplcollective.ai/book" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Request a 1-on-1 with Joe DeSane | TPL Collective</title>
+<meta name="description" content="Request a 1-on-1 with Joe DeSane about your real numbers: splits, caps, fees and what you would keep somewhere else."/>
+<meta property="og:title" content="Request a 1-on-1 with Joe DeSane"/>
+<meta property="og:description" content="A few quick questions first so Joe comes prepared, then he emails you times that work."/>
+<meta property="og:type" content="website"/>
+<meta property="og:image" content="https://tplcollective.ai/og/trainings.jpg"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/weekly/site.css"/>
+<style>
+.progress { position: fixed; top: 68px; left: 0; right: 0; height: 3px; background: var(--surface2); z-index: 98; }
+.progress div { height: 100%; width: 0; background: var(--accent); transition: width 0.35s ease; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 48px; align-items: center; min-height: calc(100vh - 240px); }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; gap: 28px; } .aside { order: -1; } }
+.aside { text-align: center; }
+.aside img { width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-br); }
+.aside .who { margin-top: 14px; font-weight: 600; color: var(--white); }
+.aside .role { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.aside .why { margin-top: 16px; font-size: 13px; line-height: 1.6; color: var(--muted); text-align: left; }
+@media (max-width: 860px) { .aside img { width: 88px; height: 88px; } .aside .why { display: none; } }
+.step { display: none; animation: rise 0.35s ease; }
+.step.active { display: block; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.q-num { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent-hi); margin-bottom: 8px; }
+.q { font-size: clamp(22px, 3.4vw, 30px); font-weight: 500; color: var(--white); line-height: 1.3; margin-bottom: 8px; }
+.q-help { font-size: 14px; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em; }
+.field input, .field textarea { width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--border); color: var(--white);
+  font-size: 20px; padding: 8px 0; font-family: inherit; outline: none; transition: border-color 0.2s; }
+.field textarea { font-size: 17px; min-height: 110px; resize: vertical; border: 1.5px solid var(--border); border-radius: 8px; padding: 12px; }
+.field input:focus, .field textarea:focus { border-color: var(--accent); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 560px) { .row2 { grid-template-columns: 1fr; gap: 0; } }
+.opts { display: flex; flex-direction: column; gap: 10px; max-width: 460px; }
+.opt { display: flex; align-items: center; gap: 12px; text-align: left; background: var(--surface); border: 1.5px solid var(--border); color: var(--text);
+  padding: 12px 14px; border-radius: 8px; font-size: 16px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, background 0.15s; }
+.opt:hover { border-color: var(--accent-br); }
+.opt.sel { border-color: var(--accent); background: var(--accent-bg); color: var(--white); }
+.opt .key { font-family: 'DM Mono', monospace; font-size: 11px; width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--accent-br);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--accent-hi); flex: none; }
+.opt.sel .key { background: var(--accent); color: var(--white); border-color: var(--accent); }
+.nav-row { display: flex; align-items: center; gap: 14px; margin-top: 24px; }
+.hint { font-size: 12px; color: var(--dim); }
+.err { color: var(--red); font-size: 14px; margin-top: 12px; min-height: 18px; }
+.back { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; font-family: inherit; padding: 0; }
+.back:hover { color: var(--white); }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+#done h1 { margin-bottom: 8px; }
+.next-steps { margin-top: 28px; display: grid; gap: 12px; }
+.next-steps .card { display: flex; gap: 14px; align-items: flex-start; }
+.next-steps .n { font-family: 'DM Mono', monospace; color: var(--accent-hi); font-size: 13px; padding-top: 2px; }
+.next-steps b { color: var(--white); display: block; margin-bottom: 2px; }
+.next-steps span { color: var(--muted); font-size: 14px; line-height: 1.55; }
+.meanwhile { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/trainings" data-keep-t>Free Trainings</a>
+    <a href="/compare">Compare</a>
+    <a href="/blog">Blog</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/trainings" data-keep-t>Free Trainings</a>
+  <a href="/compare">Compare</a>
+  <a href="/blog">Blog</a>
+</div>
+<div class="progress"><div id="bar"></div></div>
+
+<main>
+  <div class="wrap">
+    <div class="layout" id="form-layout">
+      <form id="form" novalidate autocomplete="on">
+        <div class="hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <div id="steps"></div>
+        <div class="err" id="err" role="alert"></div>
+      </form>
+      <aside class="aside">
+        <img src="/assets/joe-desane-headshot.png" alt="Joe DeSane">
+        <div class="who">Joe DeSane</div>
+        <div class="role">Founder, TPL Collective</div>
+        <p class="why">A few quick questions so our call goes to your actual numbers, not getting-to-know-you. Takes about a minute. I read every one myself and reply with times that work.</p>
+      </aside>
+    </div>
+
+    <div id="done" class="narrow" style="display:none">
+      <div class="eyebrow">Request received</div>
+      <h1>Thanks, <span id="done-name"></span></h1>
+      <p class="lead">I read every request myself. You'll get an email from me with a few times that work, usually within one business day.</p>
+      <div class="next-steps">
+        <div class="card"><div class="n">01</div><div><b>I review your answers</b><span>So the call goes straight to your numbers.</span></div></div>
+        <div class="card"><div class="n">02</div><div><b>You get a few time options by email</b><span>Click the one that works and it's locked in, with a calendar invite.</span></div></div>
+        <div class="card"><div class="n">03</div><div><b>We talk</b><span>Your split, cap and fees, and what you'd keep somewhere else. No pitch deck.</span></div></div>
+      </div>
+      <div class="meanwhile">
+        <a class="btn btn-ghost" href="/trainings" data-keep-t>This week's free trainings</a>
+        <a class="btn btn-ghost" href="/compare">Run your numbers now</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/weekly/common.js"></script>
+<script>
+(function () {
+  var STEPS = [
+    { key: 'contact', q: "Let's start with your name and the best way to reach you.", type: 'contact' },
+    { key: 'current_brokerage', q: 'Where do you hang your license today?', help: 'Brokerage and office, if you like. "Not licensed yet" is a fine answer too.', type: 'text', placeholder: 'e.g. Keller Williams Jupiter' },
+    { key: 'agent_type', q: 'Which best describes you?', type: 'one', options: ['Solo agent', 'Team leader', 'Team member', 'Broker / owner', 'Not licensed yet'] },
+    { key: 'deals', q: 'How many deals did you close in the last 12 months?', type: 'one', options: ['0-5', '6-10', '11-20', '21-40', '40+'] },
+    { key: 'avg_price', q: "What's your average sale price?", type: 'one', options: ['Under $250K', '$250K-$400K', '$400K-$600K', '$600K-$1M', '$1M+'] },
+    { key: 'topics', q: 'What do you want to get out of the call?', help: 'Pick as many as you like.', type: 'many', options: ['Lowering what I pay my brokerage', 'Understanding revenue share', 'Leaving or starting a team', 'Better tech, tools or leads', 'Just exploring my options'] },
+    { key: 'timeline', q: 'If the numbers made sense, when would you consider a move?', type: 'one', options: ['Within 30 days', '1-3 months', '3-6 months', 'Just researching for now'] },
+    { key: 'notes', q: 'Anything Joe should know before the call?', help: 'Optional. Your current split, cap or fees are especially useful.', type: 'long' }
+  ];
+  var answers = { first_name: '', last_name: '', email: '', phone: '', topics: [] };
+  var idx = 0, started = false;
+  var stepsEl = document.getElementById('steps'), errEl = document.getElementById('err');
+
+  function letter(i) { return String.fromCharCode(65 + i); }
+
+  function render() {
+    stepsEl.innerHTML = STEPS.map(function (s, i) {
+      var h = '<div class="step" data-i="' + i + '">'
+        + '<div class="q-num">' + (i + 1) + ' of ' + STEPS.length + '</div>'
+        + '<div class="q">' + tplEsc(s.q) + '</div>'
+        + (s.help ? '<div class="q-help">' + tplEsc(s.help) + '</div>' : '<div class="q-help"></div>');
+      if (s.type === 'contact') {
+        h += '<div class="row2"><div class="field"><label for="f-first">First name *</label><input id="f-first" name="given-name" autocomplete="given-name" data-a="first_name"></div>'
+          + '<div class="field"><label for="f-last">Last name</label><input id="f-last" name="family-name" autocomplete="family-name" data-a="last_name"></div></div>'
+          + '<div class="field"><label for="f-email">Email *</label><input id="f-email" type="email" name="email" autocomplete="email" data-a="email"></div>'
+          + '<div class="field"><label for="f-phone">Cell phone *</label><input id="f-phone" type="tel" name="tel" autocomplete="tel" data-a="phone" placeholder="(555) 555-5555"></div>';
+      } else if (s.type === 'text') {
+        h += '<div class="field"><input data-a="' + s.key + '" placeholder="' + tplEsc(s.placeholder || '') + '"></div>';
+      } else if (s.type === 'long') {
+        h += '<div class="field"><textarea data-a="' + s.key + '"></textarea></div>';
+      } else {
+        h += '<div class="opts">' + s.options.map(function (o, j) {
+          return '<button type="button" class="opt" data-opt="' + tplEsc(o) + '"><span class="key">' + letter(j) + '</span>' + tplEsc(o) + '</button>';
+        }).join('') + '</div>';
+      }
+      var last = i === STEPS.length - 1;
+      h += '<div class="nav-row"><button type="button" class="btn" data-next>' + (last ? 'Send my request' : 'OK') + '</button>'
+        + (i > 0 ? '<button type="button" class="back" data-back>&larr; Back</button>' : '')
+        + '<span class="hint">' + (s.type === 'long' ? '' : 'press Enter') + '</span></div></div>';
+      return h;
+    }).join('');
+
+    stepsEl.querySelectorAll('[data-a]').forEach(function (el) {
+      el.value = answers[el.getAttribute('data-a')] || '';
+      el.addEventListener('input', function () {
+        var k = el.getAttribute('data-a');
+        if (k === 'phone') el.value = formatPhone(el.value);
+        answers[k] = el.value;
+        errEl.textContent = '';
+        if (!started) { started = true; tplTrack('form_start', { form: 'book_1on1' }); }
+      });
+    });
+    stepsEl.querySelectorAll('.opt').forEach(function (b) {
+      b.addEventListener('click', function () { choose(b); });
+    });
+    stepsEl.querySelectorAll('[data-next]').forEach(function (b) { b.addEventListener('click', next); });
+    stepsEl.querySelectorAll('[data-back]').forEach(function (b) { b.addEventListener('click', function () { go(idx - 1); }); });
+  }
+
+  function formatPhone(v) {
+    var d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length === 11 && d[0] === '1') d = d.slice(1);
+    if (d.length < 4) return d;
+    if (d.length < 7) return '(' + d.slice(0, 3) + ') ' + d.slice(3);
+    return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6, 10);
+  }
+
+  function choose(b) {
+    var s = STEPS[idx], val = b.getAttribute('data-opt');
+    if (s.type === 'many') {
+      var i = answers.topics.indexOf(val);
+      if (i >= 0) answers.topics.splice(i, 1); else answers.topics.push(val);
+      b.classList.toggle('sel', answers.topics.indexOf(val) >= 0);
+    } else {
+      answers[s.key] = val;
+      b.parentNode.querySelectorAll('.opt').forEach(function (x) { x.classList.toggle('sel', x === b); });
+      setTimeout(next, 280);  // single choice advances on its own, like Typeform
+    }
+    errEl.textContent = '';
+    if (!started) { started = true; tplTrack('form_start', { form: 'book_1on1' }); }
+  }
+
+  function markSelections() {
+    var s = STEPS[idx];
+    stepsEl.querySelectorAll('.step[data-i="' + idx + '"] .opt').forEach(function (b) {
+      var v = b.getAttribute('data-opt');
+      b.classList.toggle('sel', s.type === 'many' ? answers.topics.indexOf(v) >= 0 : answers[s.key] === v);
+    });
+  }
+
+  function go(i) {
+    idx = Math.max(0, Math.min(STEPS.length - 1, i));
+    stepsEl.querySelectorAll('.step').forEach(function (el) { el.classList.toggle('active', +el.getAttribute('data-i') === idx); });
+    document.getElementById('bar').style.width = (idx / STEPS.length * 100) + '%';
+    markSelections();
+    errEl.textContent = '';
+    var focus = stepsEl.querySelector('.step.active input, .step.active textarea');
+    if (focus && window.innerWidth > 700) setTimeout(function () { focus.focus(); }, 50);
+  }
+
+  function valid() {
+    var s = STEPS[idx];
+    if (s.type === 'contact') {
+      if (!answers.first_name.trim()) return 'Please add your first name.';
+      if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(answers.email.trim())) return "That email doesn't look right.";
+      if (answers.phone.replace(/\D/g, '').length < 10) return 'Please add a 10-digit phone number.';
+    }
+    if (s.type === 'one' && !answers[s.key]) return 'Pick one to continue.';
+    if (s.type === 'many' && !answers.topics.length) return 'Pick at least one.';
+    return '';
+  }
+
+  function next() {
+    var e = valid();
+    if (e) { errEl.textContent = e; return; }
+    if (idx === STEPS.length - 1) { submit(); return; }
+    go(idx + 1);
+  }
+
+  function submit() {
+    var btn = stepsEl.querySelector('.step.active [data-next]');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    var body = Object.assign({}, answers, { t: TPL_TOKEN, website: document.querySelector('input[name=website]').value });
+    fetch(TPL_API + '/public/one-on-one/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.detail || 'Something went wrong.'); return d; }); })
+      .then(function () {
+        tplTrack('generate_lead', { form: 'book_1on1', source: TPL_TOKEN ? 'weekly_email' : 'site' });
+        try { fbq('track', 'Lead', { content_name: '1-on-1 request' }); } catch (e) {}
+        showDone();
+      })
+      .catch(function (e) {
+        errEl.textContent = e.message + ' You can also email joe@tplcollective.co.';
+        btn.disabled = false; btn.textContent = 'Send my request';
+      });
+  }
+
+  function showDone() {
+    document.getElementById('form-layout').style.display = 'none';
+    document.getElementById('done').style.display = '';
+    document.getElementById('done-name').textContent = answers.first_name.trim();
+    document.getElementById('bar').style.width = '100%';
+    document.querySelectorAll('#done a[data-keep-t]').forEach(function (a) { a.setAttribute('href', tplLink(a.getAttribute('href'))); });
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (document.getElementById('form-layout').style.display === 'none') return;
+    var s = STEPS[idx];
+    var inField = /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '');
+    if (e.key === 'Enter' && !(document.activeElement && document.activeElement.tagName === 'TEXTAREA')) {
+      e.preventDefault(); next(); return;
+    }
+    if (!inField && (s.type === 'one' || s.type === 'many') && /^[a-z]$/i.test(e.key)) {
+      var b = stepsEl.querySelectorAll('.step.active .opt')[e.key.toUpperCase().charCodeAt(0) - 65];
+      if (b) choose(b);
+    }
+  });
+
+  render();
+  go(0);
+
+  // Prefill from the weekly email link: they shouldn't retype what we know.
+  if (TPL_TOKEN) {
+    fetch(TPL_API + '/public/weekly/recipient?t=' + encodeURIComponent(TPL_TOKEN))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.known) return;
+        // fill empty fields in place; re-rendering would steal focus from someone mid-typing
+        ['first_name', 'last_name', 'email', 'current_brokerage'].forEach(function (k) {
+          if (!d[k] || answers[k]) return;
+          answers[k] = d[k];
+          var el = stepsEl.querySelector('[data-a="' + k + '"]');
+          if (el && !el.value) el.value = d[k];
+        });
+      }).catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>

@@ -65,7 +65,7 @@ def _hdr(c):
 def _ftr(c):
     c.setFillColor(BG_DARK);c.rect(0,0,W,FT,fill=1,stroke=0)
     c.setFillColor(GOLD);c.setFont("Helvetica-Bold",8);c.drawString(L,18,"Ready for the full picture?")
-    c.setFillColor(TEXT_LIGHT);c.setFont("Helvetica",8);c.drawString(205,18,"Book a free strategy call: calendly.com/discovertpl")
+    c.setFillColor(TEXT_LIGHT);c.setFont("Helvetica",8);c.drawString(205,18,"Request a free strategy call: tplcollective.ai/book")
 
 def _sec(c,y,t):
     c.setFillColor(ACCENT);c.rect(L-10,y-2,4,16,fill=1,stroke=0)
@@ -148,7 +148,7 @@ def generate_pdf(r):
     if y>FT+60:
         c.setFillColor(HexColor("#666"));c.setFont("Helvetica",8);c.drawCentredString(W/2,y,"This doesn't include HybridShare income, stock awards, or included AI tools.");y-=20
         bw,bh=300,28;c.setFillColor(GOLD);c.roundRect((W-bw)/2,y-6,bw,bh,6,fill=1,stroke=0)
-        c.setFillColor(BG_DARK);c.setFont("Helvetica-Bold",10);c.drawCentredString(W/2,y+3,"Book a free strategy call: calendly.com/discovertpl");y-=34
+        c.setFillColor(BG_DARK);c.setFont("Helvetica-Bold",10);c.drawCentredString(W/2,y+3,"Request a free strategy call: tplcollective.ai/book");y-=34
     if y>FT+20:
         c.setFillColor(HexColor("#aaa"));c.setFont("Helvetica",6.5);c.drawCentredString(W/2,y,"TPL Collective is a recruiting, coaching, and community platform. LPT Realty is the brokerage.");y-=10
         c.setFont("Helvetica",6);c.drawCentredString(W/2,y,f"Generated {datetime.now().strftime('%B %d, %Y')}. Verify terms with your broker.")
@@ -159,9 +159,9 @@ async def send_email(name,email,pdf,brokerage,diff):
     if not ak: return False
     b64=base64.b64encode(pdf).decode()
     if diff>0:
-        html=f'<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#222"><h2 style="color:#0a0a0f">Hey {name},</h2><p>Your cost comparison — <b>{brokerage} vs. LPT Realty</b>.</p><p>You\'d keep <b style="color:#34d399">${diff:,.0f} more per year</b> at LPT.</p><p>Full report attached. It doesn\'t include HybridShare, stock awards, or AI tools.</p><p><a href="https://calendly.com/discovertpl" style="display:inline-block;background:#f0c040;color:#0a0a0f;font-weight:700;padding:12px 28px;border-radius:6px;text-decoration:none;margin:12px 0">Book a Free Strategy Call</a></p><p style="color:#888;font-size:13px">No pressure. Just numbers.</p><hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0"><p style="color:#999;font-size:11px">TPL Collective is a community platform. LPT Realty is the brokerage.</p></div>'
+        html=f'<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#222"><h2 style="color:#0a0a0f">Hey {name},</h2><p>Your cost comparison — <b>{brokerage} vs. LPT Realty</b>.</p><p>You\'d keep <b style="color:#34d399">${diff:,.0f} more per year</b> at LPT.</p><p>Full report attached. It doesn\'t include HybridShare, stock awards, or AI tools.</p><p><a href="https://tplcollective.ai/book" style="display:inline-block;background:#f0c040;color:#0a0a0f;font-weight:700;padding:12px 28px;border-radius:6px;text-decoration:none;margin:12px 0">Request a Free Strategy Call</a></p><p style="color:#888;font-size:13px">No pressure. Just numbers.</p><hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0"><p style="color:#999;font-size:11px">TPL Collective is a community platform. LPT Realty is the brokerage.</p></div>'
     else:
-        html=f'<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#222"><h2 style="color:#0a0a0f">Hey {name},</h2><p>Your cost comparison — <b>{brokerage} vs. LPT Realty</b>.</p><p>Commission math is close, but LPT agents also get HybridShare, stock awards, and AI tools included.</p><p><a href="https://calendly.com/discovertpl" style="display:inline-block;background:#f0c040;color:#0a0a0f;font-weight:700;padding:12px 28px;border-radius:6px;text-decoration:none;margin:12px 0">Book a Free Strategy Call</a></p><hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0"><p style="color:#999;font-size:11px">TPL Collective is a community platform. LPT Realty is the brokerage.</p></div>'
+        html=f'<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#222"><h2 style="color:#0a0a0f">Hey {name},</h2><p>Your cost comparison — <b>{brokerage} vs. LPT Realty</b>.</p><p>Commission math is close, but LPT agents also get HybridShare, stock awards, and AI tools included.</p><p><a href="https://tplcollective.ai/book" style="display:inline-block;background:#f0c040;color:#0a0a0f;font-weight:700;padding:12px 28px;border-radius:6px;text-decoration:none;margin:12px 0">Request a Free Strategy Call</a></p><hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0"><p style="color:#999;font-size:11px">TPL Collective is a community platform. LPT Realty is the brokerage.</p></div>'
     async with httpx.AsyncClient() as cl:
         r=await cl.post("https://api.resend.com/emails",headers={"Authorization":f"Bearer {ak}","Content-Type":"application/json"},
             json={"from":"TPL Collective <reports@tplcollective.ai>","to":[email],"subject":f"Your Brokerage Cost Report — {brokerage} vs. LPT Realty",

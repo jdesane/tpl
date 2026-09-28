@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=34463024060012400&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<!-- Per-recipient links (?t=) land here; keep it out of search results. -->
+<meta name="robots" content="noindex, nofollow"/>
+<link rel="canonical" href="https://tplcollective.ai/trainings" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Class | TPL Collective</title>
+<meta name="description" content="On-demand class from Joe DeSane for real estate agents."/>
+<meta property="og:title" content="A class from Joe DeSane | TPL Collective"/>
+<meta property="og:description" content="Short, on-demand classes on the numbers and decisions real estate agents actually face."/>
+<meta property="og:type" content="video.other"/>
+<meta property="og:image" content="https://tplcollective.ai/og/trainings.jpg"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/weekly/site.css"/>
+<style>
+.player { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.player iframe, .player #yt { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.meta { margin-top: 22px; }
+.meta h1 { font-size: clamp(32px, 5vw, 48px); margin-bottom: 10px; }
+.meta p { color: var(--muted); font-size: 16px; line-height: 1.65; white-space: pre-line; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+.more { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-top: 16px; }
+.more a { text-decoration: none; color: inherit; padding: 0; overflow: hidden; }
+.more img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--surface2); }
+.more h3 { font-size: 15px; color: var(--white); font-weight: 600; padding: 12px 14px 14px; line-height: 1.35; }
+.missing { text-align: center; padding: 60px 0; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">TPL<span>.</span></a>
+  <div class="nav-links">
+    <a href="/trainings" data-keep-t>Free Trainings</a>
+    <a href="/compare">Compare</a>
+    <a href="/blog">Blog</a>
+    <a href="/book" data-keep-t class="nav-cta">Book a Call</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="/trainings" data-keep-t>Free Trainings</a>
+  <a href="/compare">Compare</a>
+  <a href="/blog">Blog</a>
+  <a href="/book" data-keep-t class="nav-cta">Book a Call</a>
+</div>
+
+<main>
+  <div class="narrow" id="content">
+    <div class="player"><div id="yt"></div></div>
+    <div class="meta">
+      <div class="eyebrow">A class from Joe DeSane</div>
+      <h1 id="title">Loading...</h1>
+      <p id="desc"></p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="/book" data-keep-t onclick="tplTrack('book_click',{cta_location:'watch_below_video'})">Book a 1-on-1 with Joe</a>
+      <a class="btn btn-ghost" href="/trainings" data-keep-t>See this week's free trainings</a>
+    </div>
+    <section class="section" id="more-section" style="display:none">
+      <h2>More classes</h2>
+      <div class="more" id="more"></div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-brand">TPL Collective</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/trainings">Free Trainings</a>
+    <a href="/compare">Compare</a>
+    <a href="/resources">Free Resources</a>
+    <a href="/blog">Blog</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 TPL Collective &middot; Powered by LPT Realty</div>
+</footer>
+
+<script src="/assets/weekly/common.js"></script>
+<script>
+(function () {
+  var slug = new URLSearchParams(location.search).get('v') || '';
+  var video = null, player = null;
+
+  // Watch tracking. `watched` counts seconds actually played: each 1s tick adds
+  // the playhead's advance only when it moved forward by a normal amount, so
+  // dragging the scrubber to the end does not count as watching.
+  var sid = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)).replace(/[^A-Za-z0-9-]/g, '');
+  var watched = 0, lastPos = null, maxPos = 0, duration = 0, lastSent = -1, started = false;
+  var marks = { 25: false, 50: false, 75: false, 90: false };
+
+  function payload() {
+    return JSON.stringify({ v: slug, t: TPL_TOKEN, sid: sid, watched: Math.round(watched), pos: Math.round(maxPos), dur: Math.round(duration) });
+  }
+  function send(beacon) {
+    if (!video || Math.round(watched) === lastSent) return;
+    lastSent = Math.round(watched);
+    var url = TPL_API + '/tracking/weekly/video', body = payload();
+    // text/plain keeps this a "simple" request: no CORS preflight, works in sendBeacon
+    if (beacon && navigator.sendBeacon) { navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' })); return; }
+    fetch(url, { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain' }, keepalive: true }).catch(function () {});
+  }
+  function tick() {
+    if (!player || !player.getPlayerState) return;
+    var playing = player.getPlayerState() === 1;
+    var pos = player.getCurrentTime ? player.getCurrentTime() : 0;
+    if (!duration && player.getDuration) duration = player.getDuration() || 0;
+    if (playing) {
+      if (lastPos !== null) {
+        var step = pos - lastPos;
+        if (step > 0 && step <= 2.5) watched += step;
+      }
+      lastPos = pos;
+      if (pos > maxPos) maxPos = pos;
+      if (duration) {
+        var pct = watched / duration * 100;
+        [25, 50, 75, 90].forEach(function (m) {
+          if (!marks[m] && pct >= m) { marks[m] = true; tplTrack('video_progress', { video: slug, percent: m }); }
+        });
+      }
+    } else {
+      lastPos = null;
+    }
+  }
+  setInterval(tick, 1000);
+  setInterval(function () { if (player && player.getPlayerState && player.getPlayerState() === 1) send(false); }, 10000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') send(true); });
+  window.addEventListener('pagehide', function () { send(true); });
+
+  window.onYouTubeIframeAPIReady = function () {
+    player = new YT.Player('yt', {
+      host: 'https://www.youtube-nocookie.com',
+      videoId: video.youtube_id,
+      playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+      events: {
+        onStateChange: function (e) {
+          if (e.data === 1 && !started) {
+            started = true;
+            tplTrack('video_start', { video: slug });
+            send(false);
+          }
+          if (e.data === 2) send(false);
+          if (e.data === 0) { tick(); send(false); tplTrack('video_complete', { video: slug }); }
+        }
+      }
+    });
+  };
+
+  function showMissing() {
+    document.getElementById('content').innerHTML =
+      '<div class="missing"><div class="eyebrow">Class not found</div><h1>This class moved</h1>'
+      + '<p class="lead" style="margin:0 auto 24px">It may have been replaced by a newer version.</p>'
+      + '<a class="btn" href="' + tplLink('/trainings') + '">See every class and training</a></div>';
+  }
+
+  function loadMore() {
+    fetch(TPL_API + '/public/weekly/videos').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      var others = ((d && d.videos) || []).filter(function (v) { return v.slug !== slug; }).slice(0, 6);
+      if (!others.length) return;
+      document.getElementById('more-section').style.display = '';
+      document.getElementById('more').innerHTML = others.map(function (v) {
+        return '<a class="card" href="' + tplEsc(tplLink('/watch', { v: v.slug })) + '">'
+          + '<img loading="lazy" src="https://i.ytimg.com/vi/' + tplEsc(v.youtube_id) + '/hqdefault.jpg" alt="">'
+          + '<h3>' + tplEsc(v.title) + '</h3></a>';
+      }).join('');
+    }).catch(function () {});
+  }
+
+  if (!/^[a-z0-9-]+$/.test(slug)) { showMissing(); return; }
+  fetch(TPL_API + '/public/weekly/videos/' + slug)
+    .then(function (r) { if (!r.ok) throw new Error('missing'); return r.json(); })
+    .then(function (v) {
+      video = v;
+      document.title = v.title + ' | TPL Collective';
+      document.getElementById('title').textContent = v.title;
+      document.getElementById('desc').textContent = v.description || '';
+      var s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+      loadMore();
+    })
+    .catch(showMissing);
+})();
+</script>
+</body>
+</html>

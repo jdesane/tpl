@@ -19,3 +19,10 @@ __pycache__/
 .vscode/
 .idea/
 *.swp
+
+# Mission Control runtime state + secrets (lives on VPS, never committed)
+mission-control/data/
+mission-control/docker-compose.yml
+mission-control/app/*.bak
+mission-control/app/*.pre-*
+mission-control-vps-pull/

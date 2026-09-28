@@ -622,19 +622,36 @@ def _adjusted_price(comp):
 
 
 def _segment_stats(comps):
-    """Compute pricing stats for a set of comps (already filtered by status + included)."""
+    """Compute pricing stats for a set of comps (already filtered by status + included).
+
+    Carries BOTH adjusted and raw price/ppsf so the UI can toggle between them.
+    Adjusted = raw + sum(adjustments) (per-line), Raw = current_price as-is.
+    """
     if not comps:
         return {"count": 0}
-    prices = []
-    ppsfs = []
+    adj_prices = []
+    raw_prices = []
+    adj_ppsfs = []
+    raw_ppsfs = []
     doms = []
     for c in comps:
+        try:
+            raw = float(c.get("current_price") or c.get("list_price") or 0)
+        except (TypeError, ValueError):
+            raw = 0.0
         eff = _adjusted_price(c)
-        prices.append(eff)
+        if raw > 0:
+            raw_prices.append(raw)
+        if eff > 0:
+            adj_prices.append(eff)
         sqft = c.get("sqft_living")
-        if sqft and eff:
+        if sqft:
             try:
-                ppsfs.append(eff / float(sqft))
+                sqft_f = float(sqft)
+                if raw > 0 and sqft_f > 0:
+                    raw_ppsfs.append(raw / sqft_f)
+                if eff > 0 and sqft_f > 0:
+                    adj_ppsfs.append(eff / sqft_f)
             except (TypeError, ValueError, ZeroDivisionError):
                 pass
         d = c.get("dom")
@@ -645,12 +662,21 @@ def _segment_stats(comps):
                 pass
     return {
         "count": len(comps),
-        "price_min": min(prices) if prices else None,
-        "price_max": max(prices) if prices else None,
-        "price_median": _median(prices),
-        "price_mean": _mean(prices),
-        "ppsf_median": _median(ppsfs),
-        "ppsf_mean": _mean(ppsfs),
+        # Adjusted (default — subject-normalized)
+        "price_min": min(adj_prices) if adj_prices else None,
+        "price_max": max(adj_prices) if adj_prices else None,
+        "price_median": _median(adj_prices),
+        "price_mean": _mean(adj_prices),
+        "ppsf_median": _median(adj_ppsfs),
+        "ppsf_mean": _mean(adj_ppsfs),
+        # Raw (as sold/listed, no adjustments applied)
+        "price_min_raw": min(raw_prices) if raw_prices else None,
+        "price_max_raw": max(raw_prices) if raw_prices else None,
+        "price_median_raw": _median(raw_prices),
+        "price_mean_raw": _mean(raw_prices),
+        "ppsf_median_raw": _median(raw_ppsfs),
+        "ppsf_mean_raw": _mean(raw_ppsfs),
+        # Days on market
         "dom_median": _median(doms),
         "dom_mean": _mean(doms),
     }
@@ -694,37 +720,50 @@ def _compute_pricing(comps, subject):
     except (TypeError, ValueError):
         subject_sqft = None
 
-    suggested = None
-    if source_stats and subject_sqft:
-        base_ppsf = source_stats["ppsf_median"]
+    def _band(source_stats, source_key, ppsf_key, mode_label):
+        if not source_stats or source_stats.get("count", 0) == 0:
+            return None
+        base_ppsf = source_stats.get(ppsf_key)
+        if not base_ppsf or not subject_sqft:
+            return None
         target = base_ppsf * subject_sqft
         rounded_target = int(round(target / 1000.0)) * 1000
         rounded_low = int(round(target * 0.95 / 1000.0)) * 1000
         rounded_high = int(round(target * 1.05 / 1000.0)) * 1000
-        suggested = {
+        return {
             "low": rounded_low,
             "target": rounded_target,
             "high": rounded_high,
             "basis": source_key,
             "basis_ppsf": round(base_ppsf, 2),
             "subject_sqft": int(subject_sqft),
+            "mode": mode_label,
             "formula": (
-                f"Median $/sqft of {source_stats['count']} {source_key} comp"
+                f"Median {mode_label} $/sqft of {source_stats['count']} {source_key} comp"
                 f"{'s' if source_stats['count'] != 1 else ''} = ${round(base_ppsf, 2)}/sqft "
-                f"× {int(subject_sqft):,} sqft subject = ${rounded_target:,} target "
-                f"(±5% → ${rounded_low:,} - ${rounded_high:,})"
+                f"x {int(subject_sqft):,} sqft subject = ${rounded_target:,} target "
+                f"(+/-5% => ${rounded_low:,} - ${rounded_high:,})"
             ),
         }
-    elif not subject_sqft:
+
+    suggested_adjusted = _band(source_stats, source_key, "ppsf_median", "adjusted")
+    suggested_raw = _band(source_stats, source_key, "ppsf_median_raw", "raw")
+
+    # `suggested` = adjusted for back-compat with the initial CMA/report/PDF path.
+    if not subject_sqft:
         suggested = {"error": "Subject sq ft living is required to compute the suggested price."}
-    else:
+    elif not source_stats:
         suggested = {"error": "No included comps with $/sqft data yet."}
+    else:
+        suggested = suggested_adjusted or {"error": "No comps to compute pricing from."}
 
     return {
         "active": active,
         "pending": pending,
         "closed": closed,
         "suggested": suggested,
+        "suggested_adjusted": suggested_adjusted,
+        "suggested_raw": suggested_raw,
         "computed_at": datetime.now(timezone.utc).isoformat(),
         "included_count": len(included),
         "total_count": len(comps),
@@ -933,7 +972,7 @@ def _build_cma_pdf(cma, comps, agent):
     if suggested.get("target"):
         band_row = [[
             Paragraph(f"<b>${suggested['low']:,}</b><br/><font size=8 color='#6b7280'>LOW</font>", body),
-            Paragraph(f"<font color='#6c63ff' size=22><b>${suggested['target']:,}</b></font><br/><font size=8 color='#6b7280'>TARGET</font>", body),
+            Paragraph(f"<font color='#6c63ff' size=22><b>${suggested['target']:,}</b></font><br/><font size=8 color='#6b7280'>AVERAGE</font>", body),
             Paragraph(f"<b>${suggested['high']:,}</b><br/><font size=8 color='#6b7280'>HIGH</font>", body),
         ]]
         bt = Table(band_row, colWidths=[2.3 * inch, 2.3 * inch, 2.3 * inch])
@@ -1083,6 +1122,11 @@ async def send_cma_report(cma_id: int, payload: SendReportPayload, request: Requ
     if not recipients:
         raise HTTPException(400, "no client email on file; add one under 'Prepared For' first")
 
+    # Auto-BCC Joe's personal email so he always has a copy in his inbox
+    _bcc = "joe@desaneteam.com"
+    if _bcc.lower() not in {r.lower() for r in recipients}:
+        recipients = list(recipients) + [_bcc]
+
     # Pull agent info
     agent = None
     uid = cma.get("created_by_user_id")
@@ -1141,8 +1185,8 @@ async def send_cma_report(cma_id: int, payload: SendReportPayload, request: Requ
         try:
             ok, err = _send(
                 smtp_cfg, recipient, subject, html,
-                from_address=f"{(agent or {}).get('name') or 'TPL Collective'} <cma@tplcollective.ai>",
-                reply_to=(agent or {}).get("email") or "",
+                from_address=f"{(agent or {}).get('name') or 'Joe DeSane'} <joe@tplcollective.ai>",
+                reply_to="joe@desaneteam.com",
                 campaign="cma-report",
                 attachments=attachments,
             )
@@ -1619,4 +1663,551 @@ async def auto_adjust(cma_id: int, payload: AutoAdjustPayload, request: Request)
         "skipped": skipped,
         "rates_used": rates,
         "target_price_band_center": int(target),
+    }
+
+
+# ════════════════════════════════════════════════════════════
+# SESSION 6 — MONTHLY UPDATES (snapshot → delta → auto-drafted email)
+# ════════════════════════════════════════════════════════════
+# Workflow:
+#   1. Agent finalizes a CMA and sends it → click "📸 Snapshot" to lock the state
+#   2. Each month: re-import fresh comps, recompute pricing, click "📸 Snapshot" again
+#      with an updated label. Then click "📊 Monthly Update" → shows delta + drafts
+#      an update email in Joe's voice. Agent reviews + sends.
+#
+# Each snapshot = {snapshot_date, label, note, pricing, comp_summary}
+
+def _summarize_comps(comps):
+    """Roll included comps into an aggregate summary for a snapshot."""
+    included = [c for c in comps if c.get("included", True)]
+
+    def _seg(status_name):
+        seg = [c for c in included if (c.get("status") or "").strip().lower() == status_name]
+        prices = []
+        ppsfs = []
+        doms = []
+        for c in seg:
+            p = _adjusted_price(c)
+            if p:
+                prices.append(p)
+            sqft = c.get("sqft_living")
+            if sqft and p:
+                try:
+                    ppsfs.append(p / float(sqft))
+                except (TypeError, ValueError, ZeroDivisionError):
+                    pass
+            d = c.get("dom")
+            if d is not None:
+                try:
+                    doms.append(int(d))
+                except (TypeError, ValueError):
+                    pass
+        return {
+            "count": len(seg),
+            "price_median": _median(prices),
+            "price_mean": _mean(prices),
+            "price_min": min(prices) if prices else None,
+            "price_max": max(prices) if prices else None,
+            "ppsf_median": _median(ppsfs),
+            "dom_median": _median(doms),
+            "mls_numbers": [c.get("mls_number") for c in seg if c.get("mls_number")],
+        }
+
+    return {
+        "active": _seg("active"),
+        "pending": _seg("pending"),
+        "closed": _seg("closed"),
+        "total_included": len(included),
+    }
+
+
+class SnapshotIn(BaseModel):
+    label: Optional[str] = None
+    note: Optional[str] = None
+    snapshot_date: Optional[str] = None  # ISO date; defaults to today
+
+
+@router.post("/{cma_id}/snapshot")
+async def create_snapshot(cma_id: int, payload: SnapshotIn, request: Request):
+    """Capture the current CMA state (pricing + comp summary) as a labeled snapshot."""
+    if _db is None:
+        raise HTTPException(500, "module not initialized")
+    r = _db("cmas").select("*").eq("id", cma_id).limit(1).execute()
+    if not r.data:
+        raise HTTPException(404, "cma not found")
+    cma = r.data[0]
+    comps = (_db("cma_comps").select("*").eq("cma_id", cma_id).execute()).data or []
+
+    # Ensure pricing is fresh — if never computed, do it now
+    pricing = cma.get("pricing")
+    if not pricing:
+        pricing = _compute_pricing(comps, cma.get("subject") or {})
+        _db("cmas").update({"pricing": pricing}).eq("id", cma_id).execute()
+
+    snap_date = (payload.snapshot_date or datetime.now(timezone.utc).date().isoformat())[:10]
+    label = payload.label or f"Snapshot — {snap_date}"
+
+    snapshot = {
+        "snapshot_date": snap_date,
+        "label": label,
+        "note": payload.note or "",
+        "pricing": pricing,
+        "comp_summary": _summarize_comps(comps),
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    existing = cma.get("snapshots") or []
+    if isinstance(existing, str):
+        try:
+            existing = json.loads(existing)
+        except Exception:
+            existing = []
+    existing.append(snapshot)
+    # Keep sorted oldest → newest by snapshot_date
+    existing.sort(key=lambda s: (s.get("snapshot_date") or "", s.get("captured_at") or ""))
+
+    _db("cmas").update({"snapshots": existing}).eq("id", cma_id).execute()
+    return {"ok": True, "snapshot": snapshot, "total_snapshots": len(existing)}
+
+
+class BackfillSnapshotIn(BaseModel):
+    """Seed a historical snapshot for a CMA whose baseline was set outside our system.
+
+    All fields optional except snapshot_date. Missing pricing/comp counts default to
+    empty but the snapshot is still useful as a chronological anchor + note store.
+    """
+    snapshot_date: str
+    label: Optional[str] = None
+    note: Optional[str] = None
+    # Historical pricing summary — feed what you know
+    active_count: Optional[int] = None
+    active_price_median: Optional[float] = None
+    active_price_max: Optional[float] = None
+    pending_count: Optional[int] = None
+    pending_price_median: Optional[float] = None
+    closed_count: Optional[int] = None
+    closed_price_median: Optional[float] = None
+    closed_price_max: Optional[float] = None
+    closed_ppsf_median: Optional[float] = None
+    # Suggested range at the time
+    suggested_low: Optional[float] = None
+    suggested_target: Optional[float] = None
+    suggested_high: Optional[float] = None
+
+
+@router.post("/{cma_id}/backfill-snapshot")
+async def backfill_snapshot(cma_id: int, payload: BackfillSnapshotIn, request: Request):
+    """One-off: seed a historical snapshot when you can't recompute from stored comps."""
+    if _db is None:
+        raise HTTPException(500, "module not initialized")
+    r = _db("cmas").select("snapshots").eq("id", cma_id).limit(1).execute()
+    if not r.data:
+        raise HTTPException(404, "cma not found")
+
+    snap = {
+        "snapshot_date": payload.snapshot_date[:10],
+        "label": payload.label or f"Backfilled — {payload.snapshot_date[:10]}",
+        "note": payload.note or "",
+        "backfilled": True,
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "pricing": {
+            "active": {
+                "count": payload.active_count or 0,
+                "price_median": payload.active_price_median,
+                "price_max": payload.active_price_max,
+            },
+            "pending": {
+                "count": payload.pending_count or 0,
+                "price_median": payload.pending_price_median,
+            },
+            "closed": {
+                "count": payload.closed_count or 0,
+                "price_median": payload.closed_price_median,
+                "price_max": payload.closed_price_max,
+                "ppsf_median": payload.closed_ppsf_median,
+            },
+            "suggested": {
+                "low": payload.suggested_low,
+                "target": payload.suggested_target,
+                "high": payload.suggested_high,
+            } if payload.suggested_target else None,
+        },
+        "comp_summary": {
+            "active": {"count": payload.active_count or 0},
+            "pending": {"count": payload.pending_count or 0},
+            "closed": {"count": payload.closed_count or 0},
+        },
+    }
+
+    existing = (r.data[0].get("snapshots")) or []
+    if isinstance(existing, str):
+        try:
+            existing = json.loads(existing)
+        except Exception:
+            existing = []
+    existing.append(snap)
+    existing.sort(key=lambda s: (s.get("snapshot_date") or "", s.get("captured_at") or ""))
+    _db("cmas").update({"snapshots": existing}).eq("id", cma_id).execute()
+    return {"ok": True, "snapshot": snap, "total_snapshots": len(existing)}
+
+
+@router.delete("/{cma_id}/snapshots/{index}")
+async def delete_snapshot(cma_id: int, index: int, request: Request):
+    if _db is None:
+        raise HTTPException(500, "module not initialized")
+    r = _db("cmas").select("snapshots").eq("id", cma_id).limit(1).execute()
+    if not r.data:
+        raise HTTPException(404, "cma not found")
+    snaps = r.data[0].get("snapshots") or []
+    if index < 0 or index >= len(snaps):
+        raise HTTPException(404, "snapshot index out of range")
+    snaps.pop(index)
+    _db("cmas").update({"snapshots": snaps}).eq("id", cma_id).execute()
+    return {"ok": True, "remaining": len(snaps)}
+
+
+# ─── Delta computation + auto-drafted email ───
+
+def _pct_change(new, old):
+    if not old or old == 0:
+        return None
+    try:
+        return round(((new - old) / old) * 100, 1)
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_money(n):
+    if n is None:
+        return "—"
+    try:
+        return "${:,.0f}".format(float(n))
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _first_names_line(cma):
+    """Return greeting like 'Jorge & Angela' from primary + additional clients."""
+    firsts = []
+    if cma.get("client_first_name"):
+        firsts.append(cma["client_first_name"].strip())
+    for c in (cma.get("additional_clients") or []):
+        f = (c.get("first_name") or "").strip()
+        if f:
+            firsts.append(f)
+    if not firsts:
+        return "there"
+    if len(firsts) == 1:
+        return firsts[0]
+    if len(firsts) == 2:
+        return f"{firsts[0]} & {firsts[1]}"
+    return ", ".join(firsts[:-1]) + f" & {firsts[-1]}"
+
+
+def _new_closes_since(comps, since_date_iso):
+    """Comps closed on or after since_date_iso."""
+    if not since_date_iso:
+        return []
+    out = []
+    for c in comps:
+        if (c.get("status") or "").strip().lower() != "closed":
+            continue
+        cd = c.get("closing_date")
+        if not cd:
+            continue
+        try:
+            if str(cd)[:10] >= since_date_iso[:10]:
+                out.append(c)
+        except Exception:
+            continue
+    out.sort(key=lambda c: c.get("closing_date") or "", reverse=True)
+    return out
+
+
+def _delta_narrative(prior, current):
+    """Human-readable direction words comparing two snapshots' key metrics."""
+    lines = []
+    prior_closed_median = ((prior.get("pricing") or {}).get("closed") or {}).get("price_median")
+    curr_closed_median = ((current.get("pricing") or {}).get("closed") or {}).get("price_median")
+    if prior_closed_median and curr_closed_median:
+        pct = _pct_change(curr_closed_median, prior_closed_median)
+        direction = "up" if curr_closed_median > prior_closed_median else "down" if curr_closed_median < prior_closed_median else "unchanged"
+        lines.append({
+            "metric": "closed_median",
+            "prior": prior_closed_median,
+            "current": curr_closed_median,
+            "direction": direction,
+            "pct_change": pct,
+        })
+
+    prior_closed_high = ((prior.get("pricing") or {}).get("closed") or {}).get("price_max")
+    curr_closed_high = ((current.get("pricing") or {}).get("closed") or {}).get("price_max")
+    if prior_closed_high and curr_closed_high:
+        lines.append({
+            "metric": "closed_high",
+            "prior": prior_closed_high,
+            "current": curr_closed_high,
+            "direction": "up" if curr_closed_high > prior_closed_high else "down" if curr_closed_high < prior_closed_high else "unchanged",
+        })
+
+    prior_active_median = ((prior.get("pricing") or {}).get("active") or {}).get("price_median")
+    curr_active_median = ((current.get("pricing") or {}).get("active") or {}).get("price_median")
+    if prior_active_median and curr_active_median:
+        lines.append({
+            "metric": "active_median",
+            "prior": prior_active_median,
+            "current": curr_active_median,
+            "direction": "up" if curr_active_median > prior_active_median else "down" if curr_active_median < prior_active_median else "unchanged",
+        })
+
+    return lines
+
+
+def _draft_update_email(cma, comps, prior_snapshot, current_pricing):
+    """Auto-draft the monthly update email in Joe's voice."""
+    address = cma.get("subject_address") or "your home"
+    greeting = _first_names_line(cma)
+
+    prior_date = (prior_snapshot or {}).get("snapshot_date")
+    new_closes = _new_closes_since(comps, prior_date) if prior_date else []
+
+    curr_pricing = current_pricing or {}
+    curr_active = curr_pricing.get("active") or {}
+    curr_pending = curr_pricing.get("pending") or {}
+    curr_closed = curr_pricing.get("closed") or {}
+    # Client-facing email cites the RAW band (as-sold prices normalized by $/sqft),
+    # not the adjusted band. Reason: adjusted values can suppress the number
+    # dramatically when subject differs from most comps (no pool, smaller sqft, etc.)
+    # in a way that reads worse to a seller than reality. Raw = the market talking
+    # directly. Fallback to `suggested` if raw isn't computed (older snapshots).
+    curr_suggested = curr_pricing.get("suggested_raw") or curr_pricing.get("suggested") or {}
+
+    prior_pricing = (prior_snapshot or {}).get("pricing") or {}
+    prior_suggested = prior_pricing.get("suggested_raw") or prior_pricing.get("suggested") or {}
+
+    # Direction is determined by the SUGGESTED AVERAGE (target) delta — same
+    # number the client sees in the report + pricing panel. Do not use raw
+    # comp medians here or the email numbers won't match the report numbers.
+    price_direction = None
+    if prior_suggested.get("target") and curr_suggested.get("target"):
+        if curr_suggested["target"] > prior_suggested["target"] * 1.01:
+            price_direction = "up"
+        elif curr_suggested["target"] < prior_suggested["target"] * 0.99:
+            price_direction = "down"
+        else:
+            price_direction = "flat"
+
+    tone_sentence = {
+        "up": "That's a positive move for us.",
+        "down": "The market has softened a touch this month, but it's a small move and normal for a 30-day window.",
+        "flat": "The market has held steady — a stable read.",
+    }.get(price_direction, "The market is giving us a clearer picture of where your home should land.")
+
+    # HTML body — kept minimal. No month-over-month comparison, no reference
+    # to what we originally quoted. Just: greeting, what closed, what's active,
+    # timeline check-in, sign off.
+    parts = []
+    parts.append(f"<p>Hi {greeting},</p>")
+
+    parts.append(
+        f"<p>Hope you're both doing well. Here is your <strong>monthly market update</strong> "
+        f"for <strong>{address}</strong>.</p>"
+    )
+
+    # Recent closed sales
+    if new_closes:
+        parts.append(
+            f"<p><strong>Recent Comparable Sales</strong><br>"
+            f"{len(new_closes)} home{'s' if len(new_closes) != 1 else ''} closed in your area this month:<br>"
+        )
+        rows = []
+        for c in new_closes[:6]:
+            price = c.get("current_price") or c.get("list_price")
+            rows.append(f"• {c.get('address','—')} — closed {_fmt_money(price)}")
+        parts[-1] += "<br>".join(rows) + "</p>"
+
+    # Current activity — counts only
+    activity_bits = []
+    if curr_active.get("count"):
+        activity_bits.append(
+            f"<strong>{curr_active['count']} active listing{'s' if curr_active['count'] != 1 else ''}</strong> "
+            f"currently on the market"
+        )
+    if curr_pending.get("count"):
+        activity_bits.append(
+            f"<strong>{curr_pending['count']} pending sale{'s' if curr_pending['count'] != 1 else ''}</strong> "
+            f"in the pipeline"
+        )
+    if activity_bits:
+        parts.append(f"<p><strong>Current Activity</strong><br>There are {' and '.join(activity_bits)} in your comp range.</p>")
+
+    # Timeline check-in + close
+    parts.append(
+        "<p><strong>Quick check-in:</strong> is the timeline we discussed still the same on your end, "
+        "or has anything shifted?</p>"
+    )
+    parts.append(
+        "<p>Let me know if any questions come up — happy to jump on a quick call anytime.</p>"
+    )
+    parts.append("<p>Talk soon,<br>Joe</p>")
+
+    html = (
+        '<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;'
+        'max-width:640px;color:#1a1a26;line-height:1.55;font-size:15px">'
+        + "".join(parts)
+        + "</div>"
+    )
+
+    subject_addr_short = (cma.get("subject_address") or "your home").split(",")[0]
+    email_subject = f"{subject_addr_short} — Market Update"
+
+    return {
+        "subject": email_subject,
+        "html": html,
+        "new_closes_count": len(new_closes),
+        "closed_median_direction": price_direction,
+    }
+
+
+@router.get("/{cma_id}/monthly-update")
+async def get_monthly_update(cma_id: int, request: Request):
+    """Return delta vs last snapshot + auto-drafted email."""
+    if _db is None:
+        raise HTTPException(500, "module not initialized")
+    r = _db("cmas").select("*").eq("id", cma_id).limit(1).execute()
+    if not r.data:
+        raise HTTPException(404, "cma not found")
+    cma = r.data[0]
+    comps = (_db("cma_comps").select("*").eq("cma_id", cma_id).execute()).data or []
+
+    snapshots = cma.get("snapshots") or []
+    if isinstance(snapshots, str):
+        try:
+            snapshots = json.loads(snapshots)
+        except Exception:
+            snapshots = []
+
+    # Recompute pricing fresh so the update reflects current state
+    current_pricing = _compute_pricing(comps, cma.get("subject") or {})
+    _db("cmas").update({"pricing": current_pricing}).eq("id", cma_id).execute()
+
+    prior_snapshot = snapshots[-1] if snapshots else None
+    delta = _delta_narrative(prior_snapshot, {"pricing": current_pricing}) if prior_snapshot else []
+    draft = _draft_update_email(cma, comps, prior_snapshot, current_pricing)
+
+    return {
+        "ok": True,
+        "has_prior_snapshot": bool(prior_snapshot),
+        "prior_snapshot": prior_snapshot,
+        "current_pricing": current_pricing,
+        "delta": delta,
+        "draft_email": draft,
+        "snapshot_count": len(snapshots),
+    }
+
+
+class SendMonthlyUpdatePayload(BaseModel):
+    to: Optional[List[str]] = None
+    subject: Optional[str] = None
+    html: Optional[str] = None  # allow override of auto-drafted body
+    attach_pdf: bool = True
+
+
+@router.post("/{cma_id}/send-monthly-update")
+async def send_monthly_update(cma_id: int, payload: SendMonthlyUpdatePayload, request: Request):
+    """Send the monthly update email. Falls back to auto-drafted subject/body if not overridden."""
+    import base64
+    if _db is None:
+        raise HTTPException(500, "module not initialized")
+    r = _db("cmas").select("*").eq("id", cma_id).limit(1).execute()
+    if not r.data:
+        raise HTTPException(404, "cma not found")
+    cma = r.data[0]
+    comps = (_db("cma_comps").select("*").eq("cma_id", cma_id).eq("included", True)
+             .order("status").order("current_price").execute()).data or []
+
+    recipients = payload.to or _client_emails(cma)
+    if not recipients:
+        raise HTTPException(400, "no client email on file")
+
+    # Auto-BCC Joe's personal email so he always has a copy in his inbox
+    _bcc = "joe@desaneteam.com"
+    if _bcc.lower() not in {r.lower() for r in recipients}:
+        recipients = list(recipients) + [_bcc]
+
+    snapshots = cma.get("snapshots") or []
+    prior_snapshot = snapshots[-1] if snapshots else None
+    current_pricing = _compute_pricing(comps, cma.get("subject") or {})
+    draft = _draft_update_email(cma, comps, prior_snapshot, current_pricing)
+
+    email_subject = payload.subject or draft["subject"]
+    email_html = payload.html or draft["html"]
+
+    # Append the "view interactive report" CTA
+    share_url = f"https://mission.tplcollective.ai/cma/{cma['share_token']}"
+    email_html += (
+        f'<p style="margin:24px 0"><a href="{share_url}" '
+        f'style="display:inline-block;background:#6c63ff;color:#fff;padding:11px 20px;'
+        f'border-radius:6px;text-decoration:none;font-weight:600">View updated interactive report</a></p>'
+    )
+
+    # Optional PDF attachment
+    attachments = None
+    if payload.attach_pdf:
+        agent = None
+        uid = cma.get("created_by_user_id")
+        if uid:
+            try:
+                u = _supabase.table("users").select("id,name,email,phone").eq("id", uid).limit(1).execute()
+                if u.data:
+                    agent = u.data[0]
+            except Exception:
+                pass
+        pdf_bytes = _build_cma_pdf(cma, comps, agent)
+        fname = f"CMA_Update_{(cma.get('subject_address') or 'report').replace(' ', '_')[:60]}.pdf"
+        attachments = [{"filename": fname, "content": base64.b64encode(pdf_bytes).decode()}]
+
+    from main import send_email as _send, load_settings as _load_settings
+    settings = _load_settings() or {}
+    smtp_cfg = settings.get("smtp") or {}
+    agent = None
+    uid = cma.get("created_by_user_id")
+    if uid:
+        try:
+            u = _supabase.table("users").select("id,name,email,phone").eq("id", uid).limit(1).execute()
+            if u.data:
+                agent = u.data[0]
+        except Exception:
+            pass
+
+    sent_count = 0
+    failures = []
+    for recipient in recipients:
+        try:
+            ok, err = _send(
+                smtp_cfg, recipient, email_subject, email_html,
+                from_address=f"{(agent or {}).get('name') or 'Joe DeSane'} <joe@tplcollective.ai>",
+                reply_to="joe@desaneteam.com",
+                campaign="cma-monthly-update",
+                attachments=attachments,
+            )
+            if ok:
+                sent_count += 1
+            else:
+                failures.append({"to": recipient, "error": err})
+        except Exception as e:
+            failures.append({"to": recipient, "error": str(e)})
+
+    if sent_count:
+        _db("cmas").update({
+            "last_update_sent_at": datetime.now(timezone.utc).isoformat(),
+            "update_count": (cma.get("update_count") or 0) + 1,
+            "sent_to": ", ".join(recipients),
+        }).eq("id", cma_id).execute()
+
+    return {
+        "ok": sent_count > 0,
+        "sent_count": sent_count,
+        "recipients": recipients,
+        "failures": failures,
     }

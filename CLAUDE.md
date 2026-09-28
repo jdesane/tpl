@@ -821,6 +821,112 @@ Deliberately dropped from the workbook: Estimated Mortgage, Reverse Prospecting,
 "Old offer" (merged into `offers`), MixBook and DISC fields. The CMA tab is not
 rebuilt - `listings.cma_id` links to the Phase 22 CMA Builder.
 
+## Weekly Email — recruiting newsletter 🚧 BUILT, NOT DEPLOYED (2026-09-28)
+
+Weekly value email to every non-LPT agent on the recruit list (~420 unique addresses), with
+per-agent tracking of clicks, class watch time and 1-on-1 requests. Inspired by Malcolm Lawson's
+REAL Academy weekly email, restructured for a list that went cold for 5 months.
+
+**Email order** (`render_issue` in `recruit_newsletter.py`): short intro → **this week's class**
+(Joe's YouTube class, the primary action) → free open trainings this week (auto-filled from
+recurring LPT series, "see the full schedule" → /trainings) → number of the week (optional) →
+from the blog → industry pulse (optional) → free tools → **book a 1-on-1** (→ /book) → signature,
+socials, P.S. Every event is badged "Hosted by LPT Realty"; footer says TPL is not a brokerage.
+
+**Tables** (`migrations/2026-09-28-recruit-newsletter.sql`): `recruit_newsletter_issues`,
+`recruit_newsletter_sends` (per-recipient `token` UUID), `recruit_newsletter_clicks`,
+`tpl_videos`, `video_watch_sessions`, `booking_requests`. **Not** `newsletter_issues` /
+`newsletter_subscribers` - those hold the South Florida Thunder baseball newsletter.
+
+**Module:** `mission-control/app/recruit_newsletter.py`, three routers:
+- `/api/recruit-newsletter/*` (platform-only admin): issues, review gate, `/process` cron,
+  `/videos` (classes), `/issues/{id}/engagement`, `/week-events`, settings
+- `/api/public/weekly/*`: `videos`, `trainings`, `recipient?t=` (prefill), `POST book`
+- `/api/tracking/weekly/*`: `c/{token}` signed click redirect, `POST video` heartbeat
+
+**Site pages** (Vercel): `trainings.html` (indexable, in sitemap, OG `og/trainings.jpg`),
+`watch.html` + `book.html` (noindex; token pages). Shared `assets/weekly/site.css` + `common.js`
+(API base = mission.tplcollective.ai on the live domain, same origin locally; carries `?t=` across
+pages).
+
+**Tracking rules:**
+- Every link in a recipient's email goes through `/api/tracking/weekly/c/<token>?u=&s=`, HMAC-signed
+  with `JWT_SECRET` so it cannot be used as an open redirect. Own pages also get `?t=<token>`.
+- Link-scanner bursts (3+ different links within 15s) are flagged `suspected_bot` and excluded.
+  Opens are inflated by Apple Mail; trust clicks, watch time and bookings.
+- YouTube only reports totals, so classes are watched on /watch (IFrame API). `watched_seconds` counts
+  real playback only (seeking ahead doesn't count). Milestones 25/50/75/90 go to `lead_activity`;
+  first time a lead passes 50% of a class, Joe gets an email. Anonymous plays are recorded without a lead.
+- /book posts to `one_on_one.py` (see "1-on-1 Requests" below); nothing auto-books.
+
+**Review gate:** approve requires a test sent after the last edit, subject + intro, a mailing
+address (CAN-SPAM), `JWT_SECRET`, and a published class if one is selected. Content locks on approve.
+
+**Sending:** approve snapshots the audience as `queued`; `/process` sends through `send_email()`,
+`daily_cap` (default 150) warms the list, 60 per run, lease prevents overlap.
+
+**Settings** (`recruit_newsletter` in `/data/settings.json`): mailing address, from, reply-to,
+`notify_email`, `meeting_details`, `call_minutes`, signature, `socials`, `recurring_events` (5 LPT series seeded;
+Motivational Monday, Tools Tuesday, REFF on; the two Spanish shows off). Recurring events verified
+from LPT's Mailchimp archive 2026-09-28; Tools Tuesday's Zoom schedule only ran through Oct 20.
+
+**Tests:** `tests/test_recruit_newsletter.py` - 147 assertions, in-memory fake Supabase.
+
+**DEPLOY ORDER:** apply the migration → deploy MC → push the site (Vercel) → add the VPS crons:
+`*/15 * * * * curl -s -X POST http://127.0.0.1:8000/api/recruit-newsletter/process >> /var/log/tpl-weekly.log 2>&1`
+`*/15 * * * * curl -s -X POST http://127.0.0.1:8000/api/one-on-one/process >> /var/log/tpl-1on1.log 2>&1`
+
+## 1-on-1 Requests - replaces Calendly 🚧 BUILT, NOT DEPLOYED (2026-09-28)
+
+A weekend Calendly booking auto-approved and surfaced only when "meeting starting" arrived.
+Now nothing reaches Joe's calendar until he has read the answers and offered times.
+
+- **Flow:** `tplcollective.ai/book` (8-step pre-qual form, no sponsor question) → `booking_requests`
+  status `new` + lead updated/hot + "Send 1-on-1 times" task due today + alert to Joe →
+  MC **1-on-1 Requests** (nav badge) → Joe offers 1-4 slots → agent emailed one button per slot →
+  `tplcollective.ai/pick?r=<token>` → agent taps a time (the email link only preselects; a tap is
+  required so link scanners can't confirm) → `confirmed`: both get an .ics, a call task lands on
+  the call date, lead → `discovery_call`. "None of these work" returns to `new` with their note.
+  Joe can also confirm by hand when the agent replies by phone/email.
+- **No cracks:** `/api/one-on-one/process` (cron) nudges Joe on requests waiting 12h+, offers
+  unanswered 48h+ or whose slots all passed (max once per 24h), sends Joe a prep email with the
+  answers 60 min before, and the agent a reminder 90 min before.
+- **Module:** `mission-control/app/one_on_one.py`. Admin `/api/one-on-one/*` (platform-only);
+  public `/api/public/one-on-one/{request,pick}`. Emails via `send_email()`; a suppressed agent
+  returns a clear 409 so Joe calls them instead of the email silently failing.
+- **Calendly removed site-wide:** 6 inline embeds replaced with a request card, every
+  `calendly.com/discovertpl` link → `/book`, drip `/go/book-<id>` redirect → `/book` (fixes the
+  14 funnels and emails already sent), walkthrough email → "reply and I'll send times", portal →
+  mailto request, AI writer prompts, hot-lead alert, daily report stat, comparison report PDF, and
+  the Sponsor Checklist PDF (rebuilt). The Calendly webhook stays so any stray booking still logs.
+- **Tests:** `tests/test_one_on_one.py` - 63 assertions.
+
+## Page Capture — local Chrome extension (2026-08-28)
+
+Replaces the third-party full-page screenshot extension Joe lost. Unpacked MV3 extension at
+`tools/page-capture`, loaded via `chrome://extensions` → Developer mode → Load unpacked.
+Captures any page, including ones behind a login (Mission Control, Supabase, Ads Manager),
+as PNG / JPEG / PDF. Nothing leaves the machine. Zero dependencies, no build step.
+
+- `background.js` (service worker) owns the run, so closing the popup mid-capture does not
+  cancel it. `offscreen.js` does the pixel work — service workers have no canvas and no
+  `URL.createObjectURL`.
+- **Full-page capture uses `Emulation.setDeviceMetricsOverride` to resize the renderer's
+  viewport to the document height, then takes one plain screenshot.** Do not "fix" this back
+  to `Page.captureScreenshot` with `captureBeyondViewport: true` and a tall `clip` — that is
+  the documented approach and current Chrome silently ignores it, returning the visible area
+  for every slice, which stacks the same screenful down the image. Verified against real
+  Chrome: 900x5400 document captured whole, fixed header rendered once.
+- Falls back to scroll-and-stitch when the debugger will not attach (DevTools already open on
+  that tab). That path verifies the page actually moved before each shot and stops with a note
+  rather than emitting duplicate tiles. The popup names the method used and the fallback reason.
+- PDF has two modes: *image* (pixel-identical, hand-rolled PDF writer — one JPEG per page,
+  DCTDecode, plain xref) and *vector* (Chrome's print pipeline, selectable text, with
+  `Emulation.setEmulatedMedia({media:'screen'})` first so a print stylesheet cannot strip the
+  content). Verified the writer's output parses in Quartz with xref offsets checked per entry.
+- `make-icons.js` regenerates `icons/*.png` — pure Node + zlib software rasterizer, no puppeteer.
+- `.vercelignore` (new file, previously absent) keeps the folder out of the marketing deploy.
+
 ## Security — hardening + weekly monitoring (2026-08-17)
 
 **Fixed: `execute_readonly_sql()` was a full database read for anyone.** Found by the
@@ -882,6 +988,8 @@ expose trigger functions as RPC, so it is not callable from outside);
   revoked product usable for a week. JWT entitlement snapshots are for rendering nav only —
   every gated route re-checks against the DB. Hiding a nav item is not gating.
 - RETechbox marketing never mentions LPT, sponsorship, or joining anything. It sells software.
+- **No self-serve booking, ever.** No Calendly or any link/embed that puts a meeting on Joe's
+  calendar without his approval. Calls go through `/book` → 1-on-1 Requests → Joe offers times.
 - **Never store Social Security numbers.** No SSN column exists in any table and none
   may be added. Lenders need only the last four to pull a payoff. See Listing Dashboard.
 - **Never ship fee/rate tables to agents.** Title insurance, doc stamps and settlement

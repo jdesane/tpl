@@ -50,8 +50,9 @@ def main():
 
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    # Get ALL existing lead emails (not just Meta) to avoid re-importing deleted leads
-    existing = supabase.table("leads").select("email").execute()
+    # Get all existing lead emails in Joe's workspace (Meta forms target TPL recruiting → workspace=1).
+    # We dedupe within Joe's workspace only; other tenants can have their own leads with same email.
+    existing = supabase.table("leads").select("email").eq("workspace_id", 1).execute()
     existing_emails = {r["email"].lower() for r in existing.data}
 
     # Also check suppression list and deleted leads log
@@ -89,6 +90,7 @@ def main():
             if not is_valid_email(email):
                 try:
                     supabase.table("activity_log").insert({
+                        "workspace_id": 1,
                         "type": "sync_validation_error",
                         "message": f"sync_meta_leads rejected malformed email: {email!r} (form={form_name!r})",
                         "meta": {"email": email, "form": form_name, "fields": fields}
@@ -103,8 +105,9 @@ def main():
             first_name = name_parts[0] if name_parts else "Unknown"
             last_name = name_parts[1] if len(name_parts) > 1 else ""
 
-            # Create lead
+            # Create lead — explicit workspace_id=1 since Meta forms feed Joe's TPL recruiting funnel.
             result = supabase.table("leads").insert({
+                "workspace_id": 1,
                 "name": name,
                 "first_name": first_name,
                 "last_name": last_name,
@@ -121,9 +124,10 @@ def main():
 
             lead_id = result.data[0]["id"]
 
-            # Create opportunity
+            # Create opportunity (Joe's workspace)
             try:
                 supabase.table("opportunities").insert({
+                    "workspace_id": 1,
                     "contact_id": lead_id,
                     "pipeline_id": 1,
                     "stage": "new_fb_lead",
@@ -134,9 +138,10 @@ def main():
             except Exception:
                 pass
 
-            # Enroll in email funnel
+            # Enroll in email funnel (Joe's workspace)
             try:
                 supabase.table("email_funnel_enrollments").insert({
+                    "workspace_id": 1,
                     "lead_id": lead_id,
                     "funnel_id": funnel_id,
                     "current_step": 1,
@@ -146,8 +151,9 @@ def main():
             except Exception:
                 pass
 
-            # Log activity
+            # Log activity (Joe's workspace)
             supabase.table("activity_log").insert({
+                "workspace_id": 1,
                 "type": "meta_lead",
                 "message": f"New lead via Meta sync: {name} ({email}) - {form_name}",
                 "meta": {"lead_id": lead_id, "form": form_name, "funnel_id": funnel_id, "sync": True, "brokerage": current_brokerage}

@@ -85,7 +85,7 @@ function buildWalkthroughEmail({ firstName, videoUrl }) {
     <li>Most agents finish the move in under a week.</li>
     <li>If anything in the video is unclear, reply to this email. It comes straight to me.</li>
   </ul>
-  <p>If you'd rather walk through it together, grab a slot on my calendar: <a href="https://calendly.com/discovertpl" style="color:#6c63ff;">calendly.com/discovertpl</a></p>
+  <p>If you'd rather walk through it together, just reply to this email and I'll send you a few times that work.</p>
   <p>Joe<br><span style="color:#8888aa;font-size:13px;">Joe DeSane / TPL Collective / joe@tplcollective.co</span></p>
 </div>`,
     text: `Hey ${name},
@@ -99,7 +99,7 @@ A few things worth knowing:
 - Most agents finish the move in under a week.
 - If anything in the video is unclear, reply to this email. It comes straight to me.
 
-If you'd rather walk through it together, grab a slot on my calendar: https://calendly.com/discovertpl
+If you'd rather walk through it together, just reply to this email and I'll send you a few times that work.
 
 Joe
 

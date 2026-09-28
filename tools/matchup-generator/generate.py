@@ -333,7 +333,7 @@ fbq('track', 'PageView');
     <a href="/fee-plans">Fee Plans</a>
     <a href="/compare">Compare</a>
     <a href="/blog">Blog</a>
-    <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta" onclick="gtag('event','calendly_click',{{'page_location':window.location.pathname}});fbq('track','Schedule',{{content_name:'Discovery Call'}})">Book a Call</a>
+    <a href="/book" class="nav-cta" onclick="gtag('event','calendly_click',{{'page_location':window.location.pathname}});fbq('track','Schedule',{{content_name:'Discovery Call'}})">Book a Call</a>
   </div>
   <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
@@ -343,7 +343,7 @@ fbq('track', 'PageView');
   <a href="/fee-plans">Fee Plans</a>
   <a href="/compare">Compare</a>
   <a href="/blog">Blog</a>
-  <a href="https://calendly.com/discovertpl" target="_blank" class="nav-cta">Book a Call</a>
+  <a href="/book" class="nav-cta">Book a Call</a>
 </div>
 
 <header class="hero">
@@ -438,7 +438,7 @@ fbq('track', 'PageView');
     {citations_html}
     <div class="cta-row">
       <a href="{compare_url}" class="btn-primary">Run the Live Math at My Production &rarr;</a>
-      <a href="https://calendly.com/discovertpl" class="btn-secondary" target="_blank" onclick="gtag('event','calendly_click',{{'page_location':window.location.pathname,cta_location:'vs_table'}});fbq('track','Schedule',{{content_name:'Discovery Call'}})">Talk to Joe (15 min)</a>
+      <a href="/book" class="btn-secondary" onclick="gtag('event','calendly_click',{{'page_location':window.location.pathname,cta_location:'vs_table'}});fbq('track','Schedule',{{content_name:'Discovery Call'}})">Talk to Joe (15 min)</a>
     </div>
   </section>
 

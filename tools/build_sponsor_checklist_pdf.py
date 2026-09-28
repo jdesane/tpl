@@ -363,7 +363,7 @@ def back_page(c):
 
     c.setFillColorRGB(1, 1, 1)
     c.setFont("MontBlack", 22)
-    c.drawString(1.0*inch, 3.55*inch, "Book a call with Joe.")
+    c.drawString(1.0*inch, 3.55*inch, "Request a call with Joe.")
 
     c.setFillColorRGB(*TEXT)
     c.setFont("MontLight", 12)
@@ -371,7 +371,7 @@ def back_page(c):
 
     c.setFillColorRGB(*ACCENT)
     c.setFont("MontSemi", 13)
-    c.drawString(1.0*inch, 2.7*inch, "calendly.com/discovertpl")
+    c.drawString(1.0*inch, 2.7*inch, "tplcollective.ai/book")
 
     c.setFillColorRGB(*MUTED)
     c.setFont("MontLight", 10)

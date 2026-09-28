@@ -467,6 +467,21 @@ app.include_router(_prospect_engagement_mod.ingest_router)
 app.include_router(_prospect_engagement_mod.router)
 
 
+# ── WEEKLY RECRUITING EMAIL ROUTER ──
+# Platform-only (/api/recruit-newsletter is in PLATFORM_ONLY_PREFIXES). Sends go through send_email().
+import recruit_newsletter as _recruit_newsletter_mod  # noqa: E402
+_recruit_newsletter_mod.setup(db, supabase)
+app.include_router(_recruit_newsletter_mod.router)            # /api/recruit-newsletter (platform-only)
+app.include_router(_recruit_newsletter_mod.public_router)     # /api/public/weekly (classes, trainings, booking form)
+app.include_router(_recruit_newsletter_mod.tracking_router)   # /api/tracking/weekly (click redirect, video heartbeat)
+
+# ── 1-ON-1 REQUESTS (replaces Calendly self-booking) ──
+import one_on_one as _one_on_one_mod  # noqa: E402
+_one_on_one_mod.setup(db, supabase)
+app.include_router(_one_on_one_mod.router)          # /api/one-on-one (platform-only)
+app.include_router(_one_on_one_mod.public_router)   # /api/public/one-on-one (form + pick-a-time)
+
+
 # ── PHASE 22: CMA TOOL ROUTER ──
 # JWT-gated CRUD on cmas + cma_comps + ZIP import from MLS Flex export.
 # Session 2 will add a public /cma-public/<share_token> router for the shareable report.
@@ -518,6 +533,8 @@ PLATFORM_ONLY_PREFIXES = (
     "/api/referrals",
     "/api/revshare",
     "/api/newsletter",
+    "/api/recruit-newsletter",
+    "/api/one-on-one",
     "/api/prospects",
     "/api/buyer-intake",
     "/api/admin",  # Phase 13.5: invitations, user management, impersonation
@@ -3062,7 +3079,7 @@ IMPORTANT RULES:
 - Keep it concise. Most emails should be under 150 words.
 - Use [Name] as placeholder ONLY if no specific name is given in the prompt.
 - Always sign off as Joe DeSane, TPL Collective.
-- Include calendly.com/discovertpl or tplcollective.ai/commission-calculator as CTA when appropriate.
+- Include tplcollective.ai/book (1-on-1 request form) or tplcollective.ai/compare as CTA when appropriate.
 - TPL Collective is NOT LPT Realty. TPL is the community/team. LPT is the brokerage.
 
 LPT REALTY FACTS (use only when relevant):
@@ -3148,7 +3165,7 @@ IMPORTANT RULES:
 - NEVER use em dashes (the long dash). Use regular dashes (-) or rewrite the sentence.
 - Keep posts concise. Most should be under 200 words.
 - Include relevant hashtags at the end (5-7 max).
-- Always include a CTA - either tplcollective.ai/commission-calculator or calendly.com/discovertpl or "DM me".
+- Always include a CTA - either tplcollective.ai/compare or tplcollective.ai/book or "DM me".
 - TPL Collective is NOT LPT Realty. TPL is the community/team. LPT is the brokerage.
 - Emojis are fine for social posts but don't overdo it.
 
@@ -3445,7 +3462,7 @@ async def ai_score_leads():
     </div>
     <div style="text-align:center;margin-top:20px;">
       <a href="https://mission.tplcollective.ai" style="display:inline-block;background:#6c63ff;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-right:8px;">View in Mission Control</a>
-      <a href="https://calendly.com/discovertpl" style="display:inline-block;background:#1e1e36;color:#6c63ff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;border:1px solid #6c63ff;">Schedule via Calendly</a>
+      <a href="https://mission.tplcollective.ai/#one-on-one" style="display:inline-block;background:#1e1e36;color:#6c63ff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;border:1px solid #6c63ff;">1-on-1 Requests</a>
     </div>
     <div style="margin-top:20px;font-size:11px;color:#444;text-align:center;">TPL Mission Control - Hot Lead Alert</div>
   </div>
@@ -3816,8 +3833,9 @@ async def send_daily_report():
     # Stage changes (24h)
     stage_changes = db("lead_activity").select("lead_id, description").eq("activity_type", "stage_change").gte("created_at", yesterday).execute().data
 
-    # Calendly bookings (24h)
-    calendly = db("activity_log").select("message").eq("type", "calendly").gte("created_at", yesterday).execute().data
+    # 1-on-1 requests (24h) - replaced Calendly self-booking
+    one_on_one_requests = db("lead_activity").select("lead_id").eq("activity_type", "booking_form_submitted").gte("created_at", yesterday).execute().data
+    one_on_one_confirmed = db("lead_activity").select("lead_id").eq("activity_type", "call_confirmed").gte("created_at", yesterday).execute().data
 
     # Email stats (24h)
     emails_sent = db("email_send_log").select("id, status").gte("created_at", yesterday).execute().data
@@ -3891,7 +3909,8 @@ async def send_daily_report():
 
     # Pipeline Pulse
     pipeline_html = stat_row("New leads (24h)", f"{len(new_leads)}", "#34d399" if new_leads else "#8888aa")
-    pipeline_html += stat_row("Calendly bookings", f"{len(calendly)}", "#34d399" if calendly else "#8888aa")
+    pipeline_html += stat_row("1-on-1 requests", f"{len(one_on_one_requests)}", "#34d399" if one_on_one_requests else "#8888aa")
+    pipeline_html += stat_row("1-on-1 calls confirmed", f"{len(one_on_one_confirmed)}", "#34d399" if one_on_one_confirmed else "#8888aa")
     pipeline_html += stat_row("Re-engagements", f"{len(set(r['lead_id'] for r in re_engagements))}", "#f0c040" if re_engagements else "#8888aa")
     pipeline_html += stat_row("Stage changes", f"{len(stage_changes)}", "#6c63ff" if stage_changes else "#8888aa")
 
@@ -4298,7 +4317,7 @@ def short_redirect(code: str):
         "vs-remax": "/vs/remax",
         "vs-real": "/vs/real-brokerage",
         "vs-switch": "/vs/exp-switch",
-        "book": "https://calendly.com/discovertpl",
+        "book": "/book",  # was Calendly; every call now starts with the pre-call form
         "fees": "/fee-plans",
         "join": "/join",
         "why": "/why-tpl",
@@ -4309,7 +4328,7 @@ def short_redirect(code: str):
 
     # Build redirect URL with tracking params
     if base_url.startswith("http"):
-        # External URL (Calendly)
+        # External URL
         sep = "&" if "?" in base_url else "?"
         target = f"{base_url}{sep}utm_source=email&utm_campaign=drip"
         if cid:
