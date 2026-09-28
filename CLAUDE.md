@@ -821,7 +821,7 @@ Deliberately dropped from the workbook: Estimated Mortgage, Reverse Prospecting,
 "Old offer" (merged into `offers`), MixBook and DISC fields. The CMA tab is not
 rebuilt - `listings.cma_id` links to the Phase 22 CMA Builder.
 
-## Weekly Email — recruiting newsletter 🚧 BUILT, NOT DEPLOYED (2026-09-28)
+## Weekly Email — recruiting newsletter ✅ DEPLOYED (2026-09-28)
 
 Weekly value email to every non-LPT agent on the recruit list (~420 unique addresses), with
 per-agent tracking of clicks, class watch time and 1-on-1 requests. Inspired by Malcolm Lawson's
@@ -870,13 +870,13 @@ address (CAN-SPAM), `JWT_SECRET`, and a published class if one is selected. Cont
 Motivational Monday, Tools Tuesday, REFF on; the two Spanish shows off). Recurring events verified
 from LPT's Mailchimp archive 2026-09-28; Tools Tuesday's Zoom schedule only ran through Oct 20.
 
-**Tests:** `tests/test_recruit_newsletter.py` - 147 assertions, in-memory fake Supabase.
+**Tests:** `tests/test_recruit_newsletter.py` - 132 assertions, in-memory fake Supabase.
 
 **DEPLOY ORDER:** apply the migration → deploy MC → push the site (Vercel) → add the VPS crons:
 `*/15 * * * * curl -s -X POST http://127.0.0.1:8000/api/recruit-newsletter/process >> /var/log/tpl-weekly.log 2>&1`
 `*/15 * * * * curl -s -X POST http://127.0.0.1:8000/api/one-on-one/process >> /var/log/tpl-1on1.log 2>&1`
 
-## 1-on-1 Requests - replaces Calendly 🚧 BUILT, NOT DEPLOYED (2026-09-28)
+## 1-on-1 Requests - replaces Calendly ✅ DEPLOYED (2026-09-28)
 
 A weekend Calendly booking auto-approved and surfaced only when "meeting starting" arrived.
 Now nothing reaches Joe's calendar until he has read the answers and offered times.
@@ -899,7 +899,19 @@ Now nothing reaches Joe's calendar until he has read the answers and offered tim
   14 funnels and emails already sent), walkthrough email → "reply and I'll send times", portal →
   mailto request, AI writer prompts, hot-lead alert, daily report stat, comparison report PDF, and
   the Sponsor Checklist PDF (rebuilt). The Calendly webhook stays so any stray booking still logs.
-- **Tests:** `tests/test_one_on_one.py` - 63 assertions.
+- **Phone or Zoom per call:** chosen when sending times (`meeting_type`); Zoom needs `zoom_link` in
+  Weekly Email settings. Confirmations, .ics LOCATION, reminders and Joe's prep email follow it.
+- **Tests:** `tests/test_one_on_one.py` - 72 assertions.
+
+**Deployed 2026-09-28:** migration applied; MC rebuilt (VPS backups `*.pre-weekly-20260928-135734`);
+crons for `/api/recruit-newsletter/process` and `/api/one-on-one/process` added (crontab backup in
+`/root/crontab.pre-weekly-*.bak`); site pushed (commit c8daf57). Calendly account turned off by Joe.
+
+**Traefik fix (same deploy):** `/go/<code>` drip short-links were routed to the basic-auth
+Mission Control UI router, so every drip link click hit a password prompt (5 clicks ever, none
+since April). `/go/` is now on the public `mission-api` router (docker-compose.yml on VPS; backup
+`docker-compose.yml.pre-go-public-*`). When adding any public, non-`/api` path, add it to BOTH
+Traefik rules or it will be behind basic auth.
 
 ## Page Capture — local Chrome extension (2026-08-28)
 
