@@ -7,10 +7,10 @@ let currentProspect = null;
 let authenticated = false;
 const STAGES = ['New', 'Contacted', 'Interested', 'Deciding', 'Joined'];
 
-// Auth credentials (internal admin tool)
-const AUTH_USERS = {
-  'joe@tplcollective.ai': 'TplMission2026'
-};
+// Retired legacy tool. It compared a hardcoded password in the browser, which made the
+// password public (this file is served at /static/recruiting/app.js). Login is disabled;
+// use Mission Control. Never put credentials in client-side code.
+const AUTH_USERS = {};
 
 // ── DOM refs ──
 const $ = id => document.getElementById(id);

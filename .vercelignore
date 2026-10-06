@@ -1,0 +1,25 @@
+# Files Vercel must NEVER publish. Without this file, every tracked file in the
+# repo was served at tplcollective.ai/<path> (CLAUDE.md, server code,
+# migrations). Everything not listed here is the public website.
+# Keep: api/ (serverless functions), data/ (comparator reads /data/brokerages.json),
+# private-assets/ (api/download.js includeFiles), assets/, downloads/, og/, pages.
+
+# Internal docs and notes, anywhere in the repo
+*.md
+docs/
+
+# Server code, schema, scripts
+mission-control/
+migrations/
+*.py
+*.sh
+
+# Working folders
+tools/
+content/
+social-graphics/
+outbound/
+ventures/
+RevShare_Tracking/
+contracts/
+WEEKLY-REPORT-*.html

@@ -19,7 +19,7 @@
 
 ## Auth System
 - JWT-based auth via `auth.py` (PyJWT + passlib/bcrypt)
-- Joe's admin account: joe@tplcollective.ai (password: TplMission2026)
+- Joe's admin account: joe@tplcollective.ai (never write passwords or secrets in this repo; see Security, 2026-10-06)
 - 7-day token expiry, role-based access (admin/agent)
 - Login: POST /api/auth/login returns JWT + user object
 
@@ -1017,6 +1017,22 @@ that file could have read every table, including `users.password_hash`.
 `notify_buyer_intake` being anon-executable (it returns `trigger`, and PostgREST does not
 expose trigger functions as RPC, so it is not callable from outside);
 `auth_rls_initplan` on the three tiny `wellington_*` tables.
+
+## Security — repo was publicly served (fixed 2026-10-06)
+
+Vercel deploys this repo's root, and `.vercelignore` had never been committed, so EVERY tracked
+file was public at `tplcollective.ai/<path>`: this CLAUDE.md (which contained Joe's Mission
+Control admin password), all Mission Control source, and the migrations. `/api/auth/login` is
+public, so the password alone was enough to get an admin JWT.
+- `.vercelignore` is now committed and excludes `*.md`, `docs/`, `mission-control/`,
+  `migrations/`, `*.py`, `*.sh`, `tools/`, `content/`, `social-graphics/`, `outbound/`,
+  `ventures/` and other working folders. Verify with a curl that `/CLAUDE.md` returns 404
+  after any change to it.
+- The password was removed from this file and Joe rotated it. It remains in git history, which
+  is why rotation (not deletion) is the fix.
+- **Never put passwords, tokens or keys in any repo file**, even in files that are ignored by
+  Vercel. The anon Supabase keys in `ideas/index.html` and `static/recruiting/supabase-client.js`
+  are public by design (RLS protects data) and are fine.
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
