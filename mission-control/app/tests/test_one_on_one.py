@@ -5,6 +5,7 @@ in-memory fake Supabase from test_recruit_newsletter.
 Run:  python tests/test_one_on_one.py   (from mission-control/app)
 """
 import base64
+import re
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -274,8 +275,169 @@ def test_fmt():
     check("fmt: ET label", oo._fmt_et(dt) == "Tue, Oct 6 at 2:00 PM ET", oo._fmt_et(dt))
 
 
+# ════════════════════════════════════════════════════════════
+# /report-call holds
+# ════════════════════════════════════════════════════════════
+
+MON_8AM_ET = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)   # Monday 8:00 AM ET (EDT)
+
+
+class Frozen:
+    def __init__(self, t): self.t = t
+    def __enter__(self):
+        self.orig = oo._now
+        oo._now = lambda: self.t
+        return self
+    def __exit__(self, *a):
+        oo._now = self.orig
+
+
+def reset_hold():
+    reset()
+    DB["opportunities"] = [{"id": 900, "contact_id": 1, "pipeline_id": 1, "stage": "new_fb_lead", "status": "open"},
+                           {"id": 901, "contact_id": 3, "pipeline_id": 1, "stage": "new_fb_lead", "status": "open"}]
+    [l for l in DB["leads"] if l["id"] == 3][0]["phone"] = "(561) 555-0103"
+
+
+def slot_labels(day_iso):
+    d = [x for x in oo.public_slots()["days"] if x["date"] == day_iso]
+    return [x["label"] for x in d[0]["slots"]] if d else []
+
+
+def link_parts(html_body, action):
+    import html as H, urllib.parse as U
+    m = re.search(r'href="([^"]*/approve\?[^"]*a=' + action + r'[^"]*)"', html_body)
+    q = dict(U.parse_qsl(U.urlparse(H.unescape(m.group(1))).query))
+    return int(q["r"]), q["a"], q["s"]
+
+
+def test_slots():
+    reset_hold()
+    with Frozen(MON_8AM_ET):
+        days = oo.public_slots()["days"]
+        check("slots: 20-minute calls", oo.public_slots()["minutes"] == 20)
+        check("slots: today respects 4h notice (from noon)", slot_labels("2026-10-05") == ["12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM"], str(slot_labels("2026-10-05")))
+        check("slots: Tue 9:30 AM-3 PM, last start 2:30", slot_labels("2026-10-06")[0] == "9:30 AM" and slot_labels("2026-10-06")[-1] == "2:30 PM" and len(slot_labels("2026-10-06")) == 11)
+        check("slots: Wed 10 AM-5 PM, last start 4:30", slot_labels("2026-10-07")[0] == "10:00 AM" and slot_labels("2026-10-07")[-1] == "4:30 PM" and len(slot_labels("2026-10-07")) == 14)
+        check("slots: no weekends", not slot_labels("2026-10-10") and not slot_labels("2026-10-11"))
+        check("slots: 10 days ahead, not 11", days[-1]["date"] == "2026-10-15", days[-1]["date"])
+        # a time Joe already offered someone is not shown to anyone else
+        DB["booking_requests"].append({"id": 77, "workspace_id": 1, "status": "times_sent", "token": "x",
+            "proposed_slots": [{"start": "2026-10-06T14:00:00+00:00", "minutes": 30}]})
+        tue = slot_labels("2026-10-06")
+        check("slots: offered 10:00-10:30 call blocks 10:00", "10:00 AM" not in tue, str(tue[:4]))
+        check("slots: 10-min buffer after it also blocks 10:30", "10:30 AM" not in tue)
+        check("slots: 9:30 (ends 9:50) and 11:00 stay open", tue[:2] == ["9:30 AM", "11:00 AM"], str(tue[:3]))
+
+
+def test_hold_and_approve():
+    reset_hold()
+    with Frozen(MON_8AM_ET):
+        tue_10 = "2026-10-06T14:00:00+00:00"
+        raises("hold: email required", lambda: oo.hold(oo.HoldIn(start=tue_10, first_name="Amy", email="nope")), 400)
+        raises("hold: closed slot rejected", lambda: oo.hold(oo.HoldIn(start="2026-10-10T14:00:00+00:00", first_name="Amy", email="amy@kw.com")), 409)
+        MAIL.clear()
+        r = oo.hold(oo.HoldIn(start=tue_10, first_name="Amy", last_name="Lee", email="AMY@kw.com",
+                              utm={"utm_source": "facebook", "utm_campaign": "commission-report", "evil": "x"}))
+        req = the_request()
+        check("hold: label for the page", r["label"] == "Tue, Oct 6 at 10:00 AM ET", r["label"])
+        check("hold: status held, nothing confirmed", req["status"] == "held" and not req.get("confirmed_start"))
+        check("hold: matched the Meta lead by email", req["lead_id"] == 1)
+        check("hold: utm kept, junk dropped", req["utm"] == {"utm_source": "facebook", "utm_campaign": "commission-report"})
+        check("hold: slot disappears for everyone", "10:00 AM" not in slot_labels("2026-10-06"))
+        check("hold: opportunity -> engaged", DB["opportunities"][0]["stage"] == "engaged")
+        check("hold: approve task due today", any(t["title"].startswith("Approve 1-on-1: Amy Lee") for t in DB["tasks"]))
+        check("hold: no confirmation sent to the agent yet", all(x["to"] != "amy@kw.com" for x in MAIL))
+        joe = [x for x in MAIL if x["to"] == "joe@desaneteam.com"][0]
+        check("hold: Joe gets 3 approval links", all(f"a={a}" in joe["html"] for a in ("approve", "zoom", "other")))
+        check("hold: Joe warned there's no phone", "No phone number on file" in joe["html"])
+        raises("hold: same slot twice -> taken", lambda: oo.hold(oo.HoldIn(start=tue_10, first_name="Bob", email="bob@remax.net")), 409, "taken")
+
+        rid, a, sig = link_parts(joe["html"], "approve")
+        page = oo.approve_page(rid, a, sig).body.decode()
+        check("approve link (GET): shows a button, changes nothing", "<form method=\"post\"" in page and the_request()["status"] == "held")
+        bad = oo.approve_page(rid, "zoom", sig).body.decode()
+        check("approve link: signature is per action", "isn't valid" in bad)
+        res = oo.approve_submit(rid, a, sig).body.decode()
+        check("approve phone without a number: refused, still held", "no phone number" in res and the_request()["status"] == "held")
+        rid, a, sig = link_parts(joe["html"], "zoom")
+        res = oo.approve_submit(rid, a, sig).body.decode()
+        check("approve zoom without a link: refused", "Zoom link" in res)
+        T.SETTINGS["recruit_newsletter"]["zoom_link"] = "https://zoom.us/j/999"
+        MAIL.clear()
+        res = oo.approve_submit(rid, a, sig).body.decode()
+        req = the_request()
+        check("approve zoom: confirmed at the held time", "Confirmed" in res and req["status"] == "confirmed" and req["confirmed_start"] == tue_10 and req["confirmed_minutes"] == 20)
+        check("approve: opportunity -> appointment_booked", DB["opportunities"][0]["stage"] == "appointment_booked")
+        check("approve: agent gets confirmation + Zoom link + .ics", any(x["to"] == "amy@kw.com" and "zoom.us/j/999" in x["html"] and x["attachments"] for x in MAIL))
+        check("approve: approve task closed, call task added", all(t["status"] == "done" for t in DB["tasks"] if t["title"].startswith("Approve")) and any(t["title"].startswith("1-on-1 call with Amy") for t in DB["tasks"]))
+        res2 = oo.approve_submit(rid, a, sig).body.decode()
+        check("approve: second click is harmless", "Confirmed" in res2 and len([x for x in MAIL if x["to"] == "amy@kw.com"]) == 1)
+        check("approve: slot stays blocked once confirmed", "10:00 AM" not in slot_labels("2026-10-06"))
+
+
+def test_hold_other_and_unknown():
+    reset_hold()
+    with Frozen(MON_8AM_ET):
+        wed_11 = "2026-10-07T15:00:00+00:00"
+        oo.hold(oo.HoldIn(start=wed_11, first_name="Bob", email="bob@remax.net"))
+        req = the_request()
+        rid, a, sig = link_parts([x for x in MAIL if x["to"] == "joe@desaneteam.com"][-1]["html"], "other")
+        oo.approve_submit(rid, a, sig)
+        req = the_request()
+        check("other: back to Needs times, slot released", req["status"] == "new" and req["requested_start"] is None)
+        check("other: slot open again", "11:00 AM" in slot_labels("2026-10-07"))
+        check("other: send-times task", any(t["title"] == "Send 1-on-1 times to Bob" for t in DB["tasks"]))
+
+        oo.hold(oo.HoldIn(start=wed_11, first_name="Bob", email="bob@remax.net"))
+        r = oo.approve_admin(the_request()["id"], oo.ApproveIn(meeting="phone"))
+        check("admin approve (phone, number on file)", r["status"] == "confirmed" and the_request()["meeting_type"] == "phone")
+
+        n = len(DB["leads"])
+        oo.hold(oo.HoldIn(start="2026-10-08T14:00:00+00:00", first_name="Nina", email="nina@new.com"))
+        newl = DB["leads"][-1]
+        check("unknown email: new lead flagged for review", len(DB["leads"]) == n + 1 and newl["source"] == "meta-report-call" and "unmatched-meta-lead" in newl["tags"])
+        before = len(DB["booking_requests"])
+        oo.hold(oo.HoldIn(start="2026-10-08T14:30:00+00:00", first_name="x", email="x@x.com", website="spam"))
+        check("hold: honeypot stores nothing", len(DB["booking_requests"]) == before)
+
+
+def test_hold_reminders():
+    reset_hold()
+    with Frozen(MON_8AM_ET):
+        oo.hold(oo.HoldIn(start="2026-10-06T14:00:00+00:00", first_name="Amy", email="amy@kw.com"))
+    req = the_request()
+    req["created_at"] = MON_8AM_ET.isoformat()   # the real DB stamps now(); the fake uses the wall clock
+    with Frozen(MON_8AM_ET + timedelta(hours=1)):
+        MAIL.clear()
+        check("held: no nudge in the first 2 hours", oo.process()["nudges"] == 0)
+    with Frozen(MON_8AM_ET + timedelta(hours=2, minutes=5)):
+        r = oo.process()
+        check("held: nudge after 2 hours, with approval links", r["nudges"] == 1 and "Waiting on you: Amy" in MAIL[-1]["subject"] and "a=approve" in MAIL[-1]["html"])
+    with Frozen(MON_8AM_ET + timedelta(hours=3)):
+        check("held: not again within 2 hours", oo.process()["nudges"] == 0)
+    with Frozen(datetime(2026, 10, 6, 14, 1, tzinfo=timezone.utc)):
+        MAIL.clear()
+        oo.process()
+        req = the_request()
+        check("held: expires when the time passes", req["status"] == "new" and req["requested_start"] is None)
+        check("held: agent told new times are coming", any(x["to"] == "amy@kw.com" and x["subject"] == "New times for our call" for x in MAIL))
+        check("held: Joe told it was missed", any(x["subject"].startswith("Missed: Amy") for x in MAIL))
+
+
+def test_availability_admin():
+    reset_hold()
+    with Frozen(MON_8AM_ET):
+        raises("availability: end before start", lambda: oo.put_availability(oo.AvailabilityIn(hours={"0": [["15:00", "09:30"]]})), 400)
+        raises("availability: bad length", lambda: oo.put_availability(oo.AvailabilityIn(slot_minutes=5)), 400)
+        oo.put_availability(oo.AvailabilityIn(hours={"5": [["10:00", "11:00"]], **{str(d): oo.DEFAULT_AVAILABILITY["hours"][str(d)] for d in range(5)}}, slot_minutes=15))
+        check("availability: Saturday opened, 15-min slots", slot_labels("2026-10-10") == ["10:00 AM", "10:25 AM"], str(slot_labels("2026-10-10")))
+        check("availability: preview shows upcoming", len(oo.get_availability()["preview"]) == 12)
+
+
 if __name__ == "__main__":
-    for fn in [test_fmt, test_submit, test_send_times_and_pick, test_none_work_and_manual, test_suppressed_agent, test_reminders, test_zoom_vs_phone, test_admin_list]:
+    for fn in [test_fmt, test_submit, test_send_times_and_pick, test_none_work_and_manual, test_suppressed_agent, test_reminders, test_zoom_vs_phone, test_admin_list,
+               test_slots, test_hold_and_approve, test_hold_other_and_unknown, test_hold_reminders, test_availability_admin]:
         fn()
     print(f"\n{T.PASS[0]} passed, {len(T.FAIL)} failed")
     sys.exit(1 if T.FAIL else 0)

@@ -70,7 +70,9 @@ DEFAULTS = {
     "video_watch_sessions": lambda: {"workspace_id": 1, "watched_seconds": 0, "max_position": 0, "duration": 0, "pct": 0, "last_seen_at": _now_iso()},
     "booking_requests": lambda: {"workspace_id": 1, "created_at": _now_iso(), "status": "new", "token": str(uuid.uuid4()),
                                  "proposed_slots": [], "last_nudge_at": None, "prep_sent_at": None, "agent_reminder_sent_at": None,
-                                 "confirmed_start": None, "times_sent_at": None, "meeting_type": "phone"},
+                                 "confirmed_start": None, "times_sent_at": None, "meeting_type": "phone",
+                                 "requested_start": None, "requested_minutes": None, "utm": {}, "source": None},
+    "opportunities": lambda: {"status": "open", "pipeline_id": 1},
     "tasks": lambda: {"workspace_id": 1, "status": "pending", "created_at": _now_iso()},
     "leads": lambda: {"workspace_id": 1, "tags": [], "motivations": [], "lead_score": 0, "phone": "", "first_name": "", "last_name": ""},
 }

@@ -913,6 +913,44 @@ since April). `/go/` is now on the public `mission-api` router (docker-compose.y
 `docker-compose.yml.pre-go-public-*`). When adding any public, non-`/api` path, add it to BOTH
 Traefik rules or it will be behind basic auth.
 
+## /report-call - Meta lead-ad booking page ✅ DEPLOYED (2026-10-06)
+
+**The URL `/report-call` is locked into a published Meta instant form ("Commission Report"). Never
+rename, move or redirect it. Content may change.**
+
+For agents who just filled the Meta form (they already gave name, email, phone, transactions,
+avg price, split, brokerage). The thank-you button sends them here. `/book` stays as-is for cold traffic.
+
+- **Page** (`report-call.html`): no site nav, non-link logo, headline continuing the ad, Joe's
+  headshot, day chips + time buttons, name + email only, footer "Joe DeSane | TPL Collective | LPT
+  Realty" + Privacy Policy. `noindex, nofollow`. Mobile first (Facebook/Instagram in-app browsers).
+  UTMs (+ fbclid) from the URL are sent with the pick. Confirmation: "Your time is held."
+- **Own scheduler, approval required** (Joe chose this over a live calendar; the no-self-serve rule
+  holds): a pick creates `booking_requests` status **`held`** (`requested_start/_minutes`, `utm`,
+  `source='report-call'`). The slot is blocked for everyone (partial unique index on held slots + busy
+  check). Joe gets an email with **Approve (phone) / Approve as Zoom / Offer other times**. Those are
+  HMAC-signed links per action that open a confirm page; the action is a POST, so link scanners
+  can't approve. Approve runs the existing `_confirm()` (both get .ics, call task, lead ->
+  discovery_call). Also in MC: 1-on-1 Requests -> **Awaiting approval** tab.
+- **Availability** (MC -> 1-on-1 Requests -> Availability; `recruit_newsletter.availability` in
+  settings): Mon/Tue/Thu/Fri 9:30-3:00 ET, Wed 10:00-5:00 ET, 20-min calls, 10-min buffer, 4h notice,
+  10 days ahead. Slots hide anything held, confirmed or already offered via Send times. Google
+  Calendar is NOT checked; Joe's approval is the double-booking guard.
+- **CRM:** lead matched by email in workspace 1 (unknown email -> new lead `source='meta-report-call'`,
+  tag `unmatched-meta-lead`). LPT Recruiting opportunity (pipeline 1, keyed by `contact_id`) moves
+  forward only: pick -> `engaged`, approve -> `appointment_booked` (every confirmation now does this).
+- **No cracks:** held and not approved after 2h, or within 3h of the call -> nudge with approval links
+  (every 2h). If the time passes unapproved: released to Needs times, agent told new times are coming.
+- **Pixels:** fires BOTH `501610407036223` (spec) and site-wide `34463024060012400`: PageView on load,
+  `Schedule` when a slot is held (the agent's browser; approval happens later in Joe's). Drop whichever
+  isn't tied to the lead-ad account once confirmed in Events Manager.
+- **Endpoints:** public `GET /api/public/one-on-one/slots`, `POST /hold`, `GET|POST /approve`;
+  admin `POST /api/one-on-one/requests/{id}/approve|release`, `GET|PUT /api/one-on-one/availability`.
+- **Migration:** `migrations/2026-10-06-report-call-holds.sql` (adds `held` status + columns + index).
+- **Tests:** `tests/test_one_on_one.py` now 120 assertions (slot math frozen at a known Monday).
+- **Deployed 2026-10-06:** migration applied; MC rebuilt (VPS backups `*.pre-reportcall-20261006-114549`);
+  site pushed. No new cron: the existing `/api/one-on-one/process` job handles held slots.
+
 ## Page Capture — local Chrome extension (2026-08-28)
 
 Replaces the third-party full-page screenshot extension Joe lost. Unpacked MV3 extension at
@@ -1001,7 +1039,8 @@ expose trigger functions as RPC, so it is not callable from outside);
   every gated route re-checks against the DB. Hiding a nav item is not gating.
 - RETechbox marketing never mentions LPT, sponsorship, or joining anything. It sells software.
 - **No self-serve booking, ever.** No Calendly or any link/embed that puts a meeting on Joe's
-  calendar without his approval. Calls go through `/book` → 1-on-1 Requests → Joe offers times.
+  calendar without his approval. Calls go through `/book` → 1-on-1 Requests → Joe offers times, or
+  `/report-call` where the agent picks a slot that is only HELD until Joe approves it.
 - **Never store Social Security numbers.** No SSN column exists in any table and none
   may be added. Lenders need only the last four to pull a payoff. See Listing Dashboard.
 - **Never ship fee/rate tables to agents.** Title insurance, doc stamps and settlement

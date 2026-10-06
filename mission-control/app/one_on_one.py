@@ -24,11 +24,14 @@ Routers:
   router         /api/one-on-one/*          platform-only admin
   public_router  /api/public/one-on-one/*   form + pick-a-time page
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Form
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional, List, Any, Callable
 from datetime import datetime, timedelta, timezone
 import base64
+import hashlib
+import hmac
 import re
 import uuid
 
@@ -46,7 +49,8 @@ NUDGE_OFFER_AFTER = timedelta(hours=48)
 NUDGE_EVERY = timedelta(hours=24)
 PREP_BEFORE = timedelta(minutes=60)
 AGENT_REMINDER_BEFORE = timedelta(minutes=90)
-STATUSES = ("new", "times_sent", "confirmed", "closed")
+STATUSES = ("new", "held", "times_sent", "confirmed", "closed")
+PIPELINE_RECRUITING = 1   # "LPT Recruiting"
 
 
 def setup(db_callable, supabase_client):
@@ -193,6 +197,20 @@ def _close_tasks(req: dict, prefix: str):
             _t("tasks").update({"status": "done", "completed_at": _iso(_now())}).in_("id", ids).execute()
     except Exception as e:
         print(f"[1on1] task close failed: {e}")
+
+
+def _advance_opportunity(lead_id, to_stage: str, from_stages: tuple):
+    """Move the lead's open LPT Recruiting opportunity forward, never backward."""
+    if not lead_id:
+        return
+    try:
+        opps = (_t("opportunities").select("id, stage").eq("contact_id", lead_id)
+                .eq("pipeline_id", PIPELINE_RECRUITING).eq("status", "open").execute().data or [])
+        for o in opps:
+            if o.get("stage") in from_stages:
+                _t("opportunities").update({"stage": to_stage, "updated_at": _iso(_now())}).eq("id", o["id"]).execute()
+    except Exception as e:
+        print(f"[1on1] opportunity move failed: {e}")
 
 
 def _ics(req: dict, start: datetime, minutes: int, for_joe: bool) -> dict:
@@ -425,6 +443,7 @@ def _confirm(req: dict, start: datetime, minutes: int, by_agent: bool) -> dict:
         _t("leads").update(lead_upd).eq("id", req.get("lead_id")).execute()
     except Exception:
         pass
+    _advance_opportunity(req.get("lead_id"), "appointment_booked", ("new_fb_lead", "contacted", "engaged", "nurture_not_ready"))
     rn._activity(req.get("lead_id"), "call_confirmed", f"1-on-1 confirmed for {label}",
                  {"request_id": req["id"], "start": _iso(start), "by": "agent" if by_agent else "joe"})
     _close_tasks(req, "Send ")
@@ -460,6 +479,9 @@ def list_requests(status: Optional[str] = None):
                        "minutes": s["minutes"]} for s in _slots(r)]
         st = _parse_ts(r.get("confirmed_start"))
         r["confirmed_label"] = _fmt_et(st) if st else None
+        rq = _parse_ts(r.get("requested_start"))
+        r["requested_label"] = _fmt_et(rq) if rq else None
+        r["requested_passed"] = bool(rq and rq <= now)
         r.pop("token", None)
     return {"requests": rows}
 
@@ -477,6 +499,9 @@ def send_times(req_id: int, body: SendTimesIn):
     req = _get(req_id)
     if req["status"] in ("confirmed", "closed"):
         raise HTTPException(409, f"This request is {req['status']}. Reopen it first.")
+    if req["status"] == "held":
+        # offering other times releases the held slot
+        _t("booking_requests").update({"requested_start": None}).eq("id", req_id).execute()
     minutes = int(body.minutes or _settings().get("call_minutes") or 30)
     if not 10 <= minutes <= 120:
         raise HTTPException(400, "Call length should be 10-120 minutes.")
@@ -568,6 +593,8 @@ def reopen(req_id: int):
 # ════════════════════════════════════════════════════════════
 
 def _age(delta: timedelta) -> str:
+    if delta < timedelta(hours=1):
+        return f"{max(1, int(delta.total_seconds() // 60))} min"
     h = int(delta.total_seconds() // 3600)
     return f"{h // 24} days" if h >= 48 else f"{h} hours"
 
@@ -577,11 +604,14 @@ def process():
     now = _now()
     done = {"nudges": 0, "preps": 0, "agent_reminders": 0}
     rows = (_t("booking_requests").select("*").eq("workspace_id", WS)
-            .in_("status", ["new", "times_sent", "confirmed"]).execute().data or [])
+            .in_("status", ["new", "held", "times_sent", "confirmed"]).execute().data or [])
     for req in rows:
         last_nudge = _parse_ts(req.get("last_nudge_at"))
         can_nudge = not last_nudge or now - last_nudge >= NUDGE_EVERY
         try:
+            if req["status"] == "held":
+                _process_held(req, now, last_nudge, done)
+                continue
             if req["status"] == "new" and can_nudge:
                 age = now - (_parse_ts(req.get("created_at")) or now)
                 if age >= NUDGE_NEW_AFTER:
@@ -622,3 +652,363 @@ def process():
         except Exception as e:
             print(f"[1on1] reminder failed for {req.get('id')}: {e}")
     return {"ok": True, **done}
+
+
+# ════════════════════════════════════════════════════════════
+# /report-call: pick a real slot, it's HELD, Joe approves
+# ════════════════════════════════════════════════════════════
+#
+# For people coming from the Meta "Commission Report" lead ads. They already
+# answered the qualifying questions on Meta, so the page asks only name + email
+# and shows Joe's open slots. A pick creates a 'held' request (slot blocked for
+# everyone else) and emails Joe Approve / Approve as Zoom / Offer other times.
+# Nothing is confirmed, and no calendar invite goes out, until he approves.
+
+DEFAULT_AVAILABILITY = {
+    # weekday (0=Mon) -> list of [start, end] in ET, 24h. Set by Joe 2026-10-06.
+    "hours": {"0": [["09:30", "15:00"]], "1": [["09:30", "15:00"]], "2": [["10:00", "17:00"]],
+              "3": [["09:30", "15:00"]], "4": [["09:30", "15:00"]], "5": [], "6": []},
+    "slot_minutes": 20,
+    "buffer_minutes": 10,
+    "min_notice_hours": 4,
+    "days_ahead": 10,
+}
+HOLD_NUDGE_AFTER = timedelta(hours=2)
+HOLD_NUDGE_BEFORE_CALL = timedelta(hours=3)
+UTM_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid")
+
+
+def _availability() -> dict:
+    av = json_copy(DEFAULT_AVAILABILITY)
+    saved = (rn._settings().get("availability") or {})
+    for k in ("slot_minutes", "buffer_minutes", "min_notice_hours", "days_ahead"):
+        if saved.get(k) is not None:
+            av[k] = int(saved[k])
+    if isinstance(saved.get("hours"), dict):
+        av["hours"] = {str(d): saved["hours"].get(str(d), []) for d in range(7)}
+    return av
+
+
+def json_copy(o):
+    import json as _json
+    return _json.loads(_json.dumps(o))
+
+
+def _parse_hhmm(v: str) -> Optional[tuple]:
+    m = re.match(r"^([01]?\d|2[0-3]):([0-5]\d)$", str(v or "").strip())
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _busy_intervals(exclude_id: Optional[int] = None) -> List[tuple]:
+    """Everything that should block a slot: held picks, confirmed calls, and
+    times Joe has already offered someone (so two people can't get the same one)."""
+    rows = (_t("booking_requests").select("id, status, requested_start, requested_minutes, confirmed_start, confirmed_minutes, proposed_slots")
+            .eq("workspace_id", WS).in_("status", ["held", "times_sent", "confirmed"]).execute().data or [])
+    out = []
+    for r in rows:
+        if r["id"] == exclude_id:
+            continue
+        if r["status"] == "held" and r.get("requested_start"):
+            st = _parse_ts(r["requested_start"])
+            if st:
+                out.append((st, st + timedelta(minutes=int(r.get("requested_minutes") or 20))))
+        elif r["status"] == "confirmed" and r.get("confirmed_start"):
+            st = _parse_ts(r["confirmed_start"])
+            if st:
+                out.append((st, st + timedelta(minutes=int(r.get("confirmed_minutes") or 30))))
+        elif r["status"] == "times_sent":
+            for sl in r.get("proposed_slots") or []:
+                st = _parse_ts(sl.get("start"))
+                if st:
+                    out.append((st, st + timedelta(minutes=int(sl.get("minutes") or 30))))
+    return out
+
+
+def _open_slots(now: Optional[datetime] = None, exclude_id: Optional[int] = None) -> List[datetime]:
+    av = _availability()
+    now = now or _now()
+    length = timedelta(minutes=av["slot_minutes"])
+    step = timedelta(minutes=av["slot_minutes"] + av["buffer_minutes"])
+    buffer = timedelta(minutes=av["buffer_minutes"])
+    earliest = now + timedelta(hours=av["min_notice_hours"])
+    busy = _busy_intervals(exclude_id)
+    today_et = now.astimezone(rn._ET).date()
+    out = []
+    for d in range(av["days_ahead"] + 1):
+        day = today_et + timedelta(days=d)
+        for win in av["hours"].get(str(day.weekday()), []) or []:
+            a, b = _parse_hhmm(win[0]), _parse_hhmm(win[1])
+            if not a or not b:
+                continue
+            start = datetime(day.year, day.month, day.day, a[0], a[1], tzinfo=rn._ET)
+            end = datetime(day.year, day.month, day.day, b[0], b[1], tzinfo=rn._ET)
+            t = start
+            while t + length <= end:
+                if t >= earliest and not any(t < be + buffer and bs - buffer < t + length for bs, be in busy):
+                    out.append(t.astimezone(timezone.utc))
+                t += step
+    return out
+
+
+class HoldIn(BaseModel):
+    start: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+    utm: dict = {}
+    website: str = ""   # honeypot
+
+
+class AvailabilityIn(BaseModel):
+    hours: Optional[dict] = None
+    slot_minutes: Optional[int] = None
+    buffer_minutes: Optional[int] = None
+    min_notice_hours: Optional[int] = None
+    days_ahead: Optional[int] = None
+
+
+class ApproveIn(BaseModel):
+    meeting: Optional[str] = "phone"
+
+
+@public_router.get("/slots")
+def public_slots():
+    av = _availability()
+    days: dict = {}
+    for st in _open_slots():
+        local = st.astimezone(rn._ET)
+        key = local.date().isoformat()
+        if key not in days:
+            days[key] = {"date": key, "weekday": local.strftime("%a"), "label": local.strftime("%b ") + str(local.day), "slots": []}
+        days[key]["slots"].append({"start": _iso(st), "label": local.strftime("%I:%M %p").lstrip("0")})
+    return {"minutes": av["slot_minutes"], "timezone": "ET", "days": list(days.values())}
+
+
+def _sign_approval(req: dict, action: str) -> str:
+    return hmac.new(rn._secret(), f"approve|{req['id']}|{req.get('token')}|{action}".encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def _approval_link(req: dict, action: str) -> str:
+    return f"https://mission.tplcollective.ai/api/public/one-on-one/approve?r={req['id']}&a={action}&s={_sign_approval(req, action)}"
+
+
+@public_router.post("/hold")
+def hold(body: HoldIn):
+    if body.website:
+        return {"ok": True, "label": ""}
+    email = (body.email or "").strip().lower()
+    first = (body.first_name or "").strip()[:60]
+    last = (body.last_name or "").strip()[:60]
+    if not first or not rn._EMAIL_RE.match(email):
+        raise HTTPException(400, "Please add your first name and a valid email.")
+    st = _parse_ts(body.start)
+    if not st:
+        raise HTTPException(400, "Pick one of the open times.")
+    st = st.astimezone(timezone.utc).replace(second=0, microsecond=0)
+    if st not in _open_slots():
+        raise HTTPException(409, "That time was just taken. Please pick another.")
+    minutes = _availability()["slot_minutes"]
+    utm = {k: str(v)[:200] for k, v in (body.utm or {}).items() if k in UTM_KEYS and v}
+
+    lead = (_t("leads").select("*").eq("workspace_id", WS).ilike("email", email).order("id").limit(1).execute().data or [None])[0]
+    if lead:
+        upd = {"lead_temperature": "hot", "lead_score": max(int(lead.get("lead_score") or 0), 70),
+               "tags": sorted(set((lead.get("tags") or []) + ["report-call"]))}
+        if not lead.get("first_name"):
+            upd["first_name"] = first
+        _t("leads").update(upd).eq("id", lead["id"]).execute()
+    else:
+        lead = _t("leads").insert({
+            "workspace_id": WS, "name": f"{first} {last}".strip(), "first_name": first, "last_name": last, "email": email,
+            "source": "meta-report-call", "stage": "new", "status": "new", "lead_score": 70, "lead_temperature": "hot",
+            "tags": ["report-call", "unmatched-meta-lead"],
+        }).execute().data[0]
+
+    try:
+        req = _t("booking_requests").insert({
+            "workspace_id": WS, "lead_id": lead["id"], "status": "held", "token": str(uuid.uuid4()),
+            "requested_start": _iso(st), "requested_minutes": minutes, "utm": utm, "source": "report-call",
+            "meeting_type": "phone",
+            "answers": {"first_name": first or lead.get("first_name") or "", "last_name": last or lead.get("last_name") or "",
+                        "email": email, "phone": lead.get("phone") or "",
+                        "current_brokerage": lead.get("current_brokerage") or "", "deals": lead.get("deals_per_year") or "",
+                        "avg_price": lead.get("avg_price") or "", "notes": ""},
+        }).execute().data[0]
+    except Exception:
+        # unique index on held slots: someone else got it a moment earlier
+        raise HTTPException(409, "That time was just taken. Please pick another.")
+
+    label = _fmt_et(st)
+    rn._activity(lead["id"], "call_time_held", f"Picked {label} on /report-call (waiting on Joe's approval)",
+                 {"request_id": req["id"], "start": _iso(st), "utm": utm})
+    _advance_opportunity(lead["id"], "engaged", ("new_fb_lead", "contacted", "nurture_not_ready"))
+    _task(req, f"Approve 1-on-1: {_who(req)}, {label}", _now())
+    has_phone = bool((req.get("answers") or {}).get("phone"))
+    buttons = (
+        f'<p style="margin:18px 0 8px 0;">'
+        f'<a href="{_approval_link(req, "approve")}" style="display:inline-block;background:{rn.ACCENT};color:#fff;padding:11px 18px;border-radius:6px;text-decoration:none;font-weight:bold;margin:0 8px 8px 0;">Approve (phone)</a>'
+        f'<a href="{_approval_link(req, "zoom")}" style="display:inline-block;background:#fff;color:{rn.ACCENT};border:2px solid {rn.ACCENT};padding:9px 16px;border-radius:6px;text-decoration:none;font-weight:bold;margin:0 8px 8px 0;">Approve as Zoom</a>'
+        f'<a href="{_approval_link(req, "other")}" style="display:inline-block;color:{rn.MUTED};padding:11px 4px;text-decoration:underline;">Offer other times</a></p>'
+    )
+    _email_joe(
+        f"Approve? {_who(req)} picked {label}",
+        f"From the Meta report ad. The slot is held for them; nothing is on your calendar until you approve."
+        + ("" if has_phone else " <b>No phone number on file</b>, so approve as Zoom or offer other times.")
+        + (f"<br>Ad: {_esc(utm.get('utm_campaign') or utm.get('utm_source'))}" if utm else "")
+        + buttons,
+        req, campaign="one-on-one-hold",
+    )
+    return {"ok": True, "label": label, "minutes": minutes}
+
+
+def _approve(req: dict, action: str) -> dict:
+    if req["status"] != "held" or not req.get("requested_start"):
+        st = _parse_ts(req.get("confirmed_start"))
+        if req["status"] == "confirmed" and st:
+            return {"ok": True, "status": "confirmed", "label": _fmt_et(st), "already": True}
+        raise HTTPException(409, f"This request is already {req['status']}.")
+    if action == "other":
+        _t("booking_requests").update({"status": "new", "requested_start": None}).eq("id", req["id"]).eq("status", "held").execute()
+        _close_tasks(req, "Approve ")
+        _task(req, f"Send 1-on-1 times to {_who(req)}", _now())
+        rn._activity(req.get("lead_id"), "call_time_released", "Joe will offer other times", {"request_id": req["id"]})
+        return {"ok": True, "status": "new"}
+    meeting = "zoom" if action == "zoom" else "phone"
+    if meeting == "zoom" and not (_settings().get("zoom_link") or "").strip():
+        raise HTTPException(400, "Add your Zoom link in Weekly Email settings first, or approve as a phone call.")
+    if meeting == "phone" and not (req.get("answers") or {}).get("phone"):
+        raise HTTPException(400, "There's no phone number for this agent. Approve as Zoom or offer other times.")
+    st = _parse_ts(req["requested_start"])
+    if st <= _now():
+        raise HTTPException(409, "That time has already passed. Offer other times instead.")
+    if meeting != req.get("meeting_type"):
+        _t("booking_requests").update({"meeting_type": meeting}).eq("id", req["id"]).execute()
+        req = {**req, "meeting_type": meeting}
+    _close_tasks(req, "Approve ")
+    return _confirm(req, st, int(req.get("requested_minutes") or 20), by_agent=True)
+
+
+def _page(title: str, body: str) -> HTMLResponse:
+    return HTMLResponse(
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<meta name="robots" content="noindex,nofollow"><title>' + _esc(title) + '</title></head>'
+        f'<body style="margin:0;background:#0a0a0f;color:#e8e8f0;font-family:{rn.FONT};">'
+        '<div style="max-width:460px;margin:12vh auto;padding:28px 22px;background:#12121a;border:1px solid #2a2a3d;border-radius:14px;">'
+        + body + '</div></body></html>')
+
+
+@public_router.get("/approve", response_class=HTMLResponse)
+def approve_page(r: int, a: str, s: str):
+    """Shows what's being approved and a button. The action itself is a POST, so
+    email link scanners that open links can't approve anything."""
+    req = (_t("booking_requests").select("*").eq("id", r).limit(1).execute().data or [None])[0]
+    if not req or a not in ("approve", "zoom", "other") or not hmac.compare_digest(_sign_approval(req, a), s or ""):
+        return _page("Link not valid", '<h2 style="margin:0 0 8px 0;">This link isn\'t valid</h2><p style="color:#8888aa;">Open 1-on-1 Requests in Mission Control instead.</p>')
+    st = _parse_ts(req.get("requested_start"))
+    if req["status"] != "held" or not st:
+        cs = _parse_ts(req.get("confirmed_start"))
+        msg = f"Already confirmed for {_fmt_et(cs)}." if req["status"] == "confirmed" and cs else f"This request is {req['status']}."
+        return _page("Already handled", f'<h2 style="margin:0 0 8px 0;">Nothing to do</h2><p style="color:#8888aa;">{_esc(msg)}</p>')
+    a_ = req.get("answers") or {}
+    verb = {"approve": "Approve as a phone call", "zoom": "Approve as a Zoom call", "other": "Release the slot and offer other times"}[a]
+    return _page("Approve 1-on-1",
+        f'<div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8b85ff;">1-on-1 request</div>'
+        f'<h2 style="margin:6px 0 4px 0;">{_esc(_who(req))}</h2>'
+        f'<div style="color:#8888aa;font-size:14px;">{_esc(a_.get("email"))}{" &middot; " + _esc(a_.get("phone")) if a_.get("phone") else ""}</div>'
+        f'<div style="font-size:22px;font-weight:bold;color:#f0c040;margin:18px 0;">{_esc(_fmt_et(st))}</div>'
+        f'<form method="post"><input type="hidden" name="r" value="{req["id"]}"><input type="hidden" name="a" value="{_esc(a)}"><input type="hidden" name="s" value="{_esc(s)}">'
+        f'<button style="width:100%;background:#6c63ff;color:#fff;border:0;border-radius:8px;padding:14px;font-size:16px;font-weight:bold;cursor:pointer;">{_esc(verb)}</button></form>')
+
+
+@public_router.post("/approve", response_class=HTMLResponse)
+def approve_submit(r: int = Form(...), a: str = Form(...), s: str = Form(...)):
+    req = (_t("booking_requests").select("*").eq("id", r).limit(1).execute().data or [None])[0]
+    if not req or a not in ("approve", "zoom", "other") or not hmac.compare_digest(_sign_approval(req, a), s or ""):
+        return _page("Link not valid", '<h2 style="margin:0;">This link isn\'t valid</h2>')
+    try:
+        res = _approve(req, a)
+    except HTTPException as e:
+        return _page("Couldn't approve", f'<h2 style="margin:0 0 8px 0;">Couldn\'t do that</h2><p style="color:#8888aa;">{_esc(e.detail)}</p>')
+    if res.get("status") == "new":
+        return _page("Slot released", '<h2 style="margin:0 0 8px 0;">Slot released</h2><p style="color:#8888aa;">It\'s in 1-on-1 Requests under Needs times. Send them a few options from there.</p>'
+                     f'<p><a href="{_mc_link(req)}" style="color:#8b85ff;">Open in Mission Control</a></p>')
+    return _page("Confirmed", f'<h2 style="margin:0 0 8px 0;">Confirmed</h2><p style="color:#8888aa;">{_esc(_who(req))}, {_esc(res["label"])}. '
+                 'They have the confirmation and calendar invite; yours is in your inbox.</p>')
+
+
+@router.post("/requests/{req_id}/approve")
+def approve_admin(req_id: int, body: ApproveIn):
+    return _approve(_get(req_id), "zoom" if (body.meeting or "").lower() == "zoom" else "approve")
+
+
+@router.post("/requests/{req_id}/release")
+def release_admin(req_id: int):
+    return _approve(_get(req_id), "other")
+
+
+@router.get("/availability")
+def get_availability():
+    return {**_availability(), "preview": [_fmt_et(s) for s in _open_slots()[:12]]}
+
+
+@router.put("/availability")
+def put_availability(body: AvailabilityIn):
+    from main import load_settings, save_settings
+    cur = _availability()
+    if body.hours is not None:
+        hours = {}
+        for d in range(7):
+            wins = []
+            for w in (body.hours.get(str(d)) or []):
+                a, b = _parse_hhmm(w[0] if len(w) > 0 else ""), _parse_hhmm(w[1] if len(w) > 1 else "")
+                if not a or not b or a >= b:
+                    raise HTTPException(400, f"{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]}: each window needs a start before its end (HH:MM).")
+                wins.append([f"{a[0]:02d}:{a[1]:02d}", f"{b[0]:02d}:{b[1]:02d}"])
+            hours[str(d)] = wins
+        cur["hours"] = hours
+    limits = {"slot_minutes": (10, 90), "buffer_minutes": (0, 60), "min_notice_hours": (0, 72), "days_ahead": (1, 30)}
+    for k, (lo, hi) in limits.items():
+        v = getattr(body, k)
+        if v is not None:
+            if not lo <= int(v) <= hi:
+                raise HTTPException(400, f"{k.replace('_', ' ')} must be between {lo} and {hi}.")
+            cur[k] = int(v)
+    all_s = load_settings() or {}
+    rs = all_s.get("recruit_newsletter") or {}
+    rs["availability"] = cur
+    all_s["recruit_newsletter"] = rs
+    save_settings(all_s)
+    return get_availability()
+
+
+def _process_held(req: dict, now: datetime, last_nudge: Optional[datetime], done: dict):
+    st = _parse_ts(req.get("requested_start"))
+    created = _parse_ts(req.get("created_at")) or now
+    if not st:
+        return
+    if st <= now:
+        # never approved in time: release it, tell Joe and the agent
+        res = _t("booking_requests").update({"status": "new", "requested_start": None}).eq("id", req["id"]).eq("status", "held").execute().data
+        if not res:
+            return
+        rn._activity(req.get("lead_id"), "call_time_expired", f"Held time {_fmt_et(st)} passed without approval", {"request_id": req["id"]})
+        _close_tasks(req, "Approve ")
+        _task(req, f"Send 1-on-1 times to {_who(req)}", now)
+        _email_agent(req, "New times for our call",
+                     f"<p>I'm sorry, I couldn't confirm {_esc(_fmt_et(st))} in time. I'll send you a few new options shortly, "
+                     "or just reply with what works for you.</p>")
+        _email_joe(f"Missed: {_who(req)}'s held time {_fmt_et(st)} passed",
+                   "It was never approved. They've been told new times are coming; send some from 1-on-1 Requests.", req,
+                   campaign="one-on-one-nudge")
+        done["nudges"] += 1
+        return
+    due = (now - created >= HOLD_NUDGE_AFTER) or (st - now <= HOLD_NUDGE_BEFORE_CALL)
+    if due and (not last_nudge or now - last_nudge >= HOLD_NUDGE_AFTER):
+        req = {**req}
+        buttons = (f'<br><br><a href="{_approval_link(req, "approve")}" style="color:{rn.ACCENT};font-weight:bold;">Approve (phone)</a> &middot; '
+                   f'<a href="{_approval_link(req, "zoom")}" style="color:{rn.ACCENT};font-weight:bold;">Approve as Zoom</a> &middot; '
+                   f'<a href="{_approval_link(req, "other")}" style="color:{rn.MUTED};">Offer other times</a>')
+        _email_joe(f"Waiting on you: {_who(req)} is holding {_fmt_et(st)}",
+                   f"Picked {_age(now - created)} ago and not approved yet." + buttons, req, campaign="one-on-one-nudge")
+        _t("booking_requests").update({"last_nudge_at": _iso(now)}).eq("id", req["id"]).execute()
+        done["nudges"] += 1

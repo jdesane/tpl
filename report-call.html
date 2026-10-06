@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--
+  /report-call: booking page behind the Meta "Commission Report" instant form.
+  THIS URL IS LOCKED INTO A PUBLISHED META FORM. Never rename or move it; change
+  the content only. The visitor already answered the qualifying questions on
+  Meta, so this page asks for name + email only. A picked slot is HELD; Joe
+  approves before anything is confirmed (see mission-control/app/one_on_one.py).
+-->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X6WMCMBJ9R"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X6WMCMBJ9R');
+  gtag('config', 'AW-11351310286');
+</script>
+<!-- Meta Pixel Code: both pixels, so whichever is tied to the lead-ad account sees PageView + Schedule -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '501610407036223');
+fbq('init', '34463024060012400');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=501610407036223&ev=PageView&noscript=1"/></noscript>
+<!-- End Meta Pixel Code -->
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<title>Go through your commission report with Joe | TPL Collective</title>
+<meta name="description" content="Pick a time to go through your commission report with Joe DeSane."/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/weekly/site.css"/>
+<style>
+/* Mobile first. Almost all traffic arrives in the Facebook / Instagram in-app browser. */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.top { padding: 18px 20px 0; padding-top: max(18px, env(safe-area-inset-top)); }
+.logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.08em; color: var(--white); }
+.logo span { color: var(--accent); }
+main { flex: 1; padding: 22px 20px 36px; }
+.wrap { max-width: 560px; margin: 0 auto; }
+.who { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.who img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-br); flex: none; }
+.who b { display: block; color: var(--white); font-size: 16px; }
+.who span { color: var(--muted); font-size: 13px; }
+h1 { font-size: clamp(34px, 9vw, 52px); margin-bottom: 12px; }
+.sub { color: var(--muted); font-size: 16px; line-height: 1.55; margin-bottom: 26px; }
+.label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-hi); margin: 0 0 10px; }
+.days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin: 0 -20px 18px; padding-left: 20px; padding-right: 20px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.days::-webkit-scrollbar { display: none; }
+.day { flex: none; scroll-snap-align: start; width: 64px; padding: 10px 0; text-align: center; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text); cursor: pointer; font-family: inherit; }
+.day small { display: block; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.day b { display: block; font-size: 15px; margin-top: 2px; }
+.day.on { border-color: var(--accent); background: var(--accent-bg); }
+.times { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 22px; }
+.time { min-height: 46px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface); color: var(--white);
+  font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.time.on { border-color: var(--accent); background: var(--accent); }
+.form { display: none; }
+.form.show { display: block; }
+.picked { background: var(--accent-bg); border: 1px solid var(--accent-br); border-radius: 10px; padding: 12px 14px; color: var(--white); font-size: 15px; margin-bottom: 16px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+/* 16px+ inputs stop iOS from zooming the page on focus */
+.field input { width: 100%; font-size: 17px; padding: 13px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface); color: var(--white); font-family: inherit; outline: none; }
+.field input:focus { border-color: var(--accent); }
+.go { width: 100%; min-height: 52px; font-size: 16px; }
+.err { color: var(--red); font-size: 14px; margin-top: 12px; min-height: 18px; }
+.fine { font-size: 12px; color: var(--dim); margin-top: 12px; line-height: 1.5; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.done { display: none; text-align: left; }
+.done .when { font-family: 'Bebas Neue', sans-serif; font-size: clamp(28px, 8vw, 40px); color: var(--gold); margin: 6px 0 14px; letter-spacing: 0.02em; }
+.done p { color: var(--muted); font-size: 16px; line-height: 1.6; }
+.empty { color: var(--muted); font-size: 15px; line-height: 1.6; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+footer { border-top: 1px solid var(--border); padding: 18px 20px; padding-bottom: max(18px, env(safe-area-inset-bottom)); text-align: center; }
+footer p { font-size: 12px; color: var(--dim); margin: 0 0 6px; }
+footer a { font-size: 12px; color: var(--dim); }
+@media (min-width: 640px) {
+  .days { margin: 0 0 18px; padding-left: 0; padding-right: 0; flex-wrap: wrap; overflow: visible; }
+  .times { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="top"><div class="logo">TPL<span>.</span></div></div>
+
+<main>
+  <div class="wrap">
+    <div id="pick">
+      <div class="who">
+        <img src="/assets/joe-desane-headshot.png" alt="Joe DeSane" width="64" height="64">
+        <div><b>Joe DeSane</b><span>TPL Collective &middot; LPT Realty</span></div>
+      </div>
+      <h1>Your commission report is on the way. Want to go through it together?</h1>
+      <p class="sub">A 20-minute call with me on your numbers. No pitch deck.</p>
+
+      <div id="slots-area">
+        <div class="label">Pick a day</div>
+        <div class="days" id="days"><div class="empty" style="flex:1">Loading open times...</div></div>
+        <div class="label" id="times-label" style="display:none">Pick a time (Eastern)</div>
+        <div class="times" id="times"></div>
+      </div>
+
+      <form class="form" id="form" novalidate>
+        <div class="picked" id="picked"></div>
+        <div class="hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <div class="field"><label for="name">Your name</label><input id="name" name="name" autocomplete="name" placeholder="First and last name"></div>
+        <div class="field"><label for="email">Email (the one you used on the form)</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"></div>
+        <button class="btn go" id="go" type="submit">Request this time</button>
+        <div class="err" id="err" role="alert"></div>
+        <p class="fine">I hold this time for you and confirm by email, usually within a couple of hours.</p>
+      </form>
+    </div>
+
+    <div class="done" id="done">
+      <div class="label">Request received</div>
+      <h1 style="margin-bottom:4px">Your time is held.</h1>
+      <div class="when" id="done-when"></div>
+      <p>I'll confirm by email shortly and have your numbers ready.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Joe DeSane | TPL Collective | LPT Realty</p>
+  <a href="/privacy-policy">Privacy Policy</a>
+</footer>
+
+<script>
+(function () {
+  var API = /tplcollective\.ai$/.test(location.hostname) ? 'https://mission.tplcollective.ai/api' : location.origin + '/api';
+  var params = new URLSearchParams(location.search);
+  var utm = {};
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach(function (k) { if (params.get(k)) utm[k] = params.get(k); });
+  var data = null, day = null, slot = null;
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  // Prefill if the ad or a forwarded link carries them; never required.
+  var preName = params.get('name') || [params.get('first_name'), params.get('last_name')].filter(Boolean).join(' ');
+  if (preName) $('name').value = preName;
+  if (params.get('email')) $('email').value = params.get('email');
+
+  function fallback(msg) {
+    $('slots-area').innerHTML = '<div class="empty">' + esc(msg) + '</div>';
+  }
+
+  function renderDays() {
+    if (!data.days.length) { fallback("No open times in the next few days. No problem: I'll reach out within 24 hours like the form said."); return; }
+    $('days').innerHTML = data.days.map(function (d, i) {
+      return '<button type="button" class="day" data-i="' + i + '"><small>' + esc(d.weekday) + '</small><b>' + esc(d.label) + '</b></button>';
+    }).join('');
+    $('days').querySelectorAll('.day').forEach(function (b) { b.addEventListener('click', function () { chooseDay(+b.getAttribute('data-i')); }); });
+    chooseDay(0);
+  }
+  function chooseDay(i) {
+    day = data.days[i]; slot = null;
+    $('days').querySelectorAll('.day').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-i') === i); });
+    $('times-label').style.display = '';
+    $('times').innerHTML = day.slots.map(function (s, j) {
+      return '<button type="button" class="time" data-j="' + j + '">' + esc(s.label) + '</button>';
+    }).join('');
+    $('times').querySelectorAll('.time').forEach(function (b) { b.addEventListener('click', function () { chooseTime(+b.getAttribute('data-j')); }); });
+    $('form').classList.remove('show');
+  }
+  function chooseTime(j) {
+    slot = day.slots[j];
+    $('times').querySelectorAll('.time').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-j') === j); });
+    $('picked').innerHTML = '<b>' + esc(day.weekday) + ', ' + esc(day.label) + ' at ' + esc(slot.label) + ' ET</b> &middot; ' + data.minutes + ' min';
+    $('form').classList.add('show');
+    $('err').textContent = '';
+    setTimeout(function () { $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+  }
+
+  function load() {
+    return fetch(API + '/public/one-on-one/slots')
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) { data = d; renderDays(); })
+      .catch(function () { fallback("Couldn't load the calendar. No problem: I'll reach out within 24 hours like the form said."); });
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('name').value.trim(), email = $('email').value.trim();
+    if (!slot) { $('err').textContent = 'Pick a time first.'; return; }
+    if (!name) { $('err').textContent = 'Please add your name.'; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { $('err').textContent = "That email doesn't look right."; return; }
+    var parts = name.split(/\s+/);
+    var go = $('go'); go.disabled = true; go.textContent = 'Holding your time...';
+    fetch(API + '/public/one-on-one/hold', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: slot.start, first_name: parts[0], last_name: parts.slice(1).join(' '), email: email, utm: utm,
+                             website: document.querySelector('input[name=website]').value })
+    })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) { var er = new Error(d.detail || 'Something went wrong.'); er.status = r.status; throw er; } return d; }); })
+      .then(function (d) {
+        try { fbq('track', 'Schedule', { content_name: 'Report call' }); } catch (x) {}
+        try { gtag('event', 'schedule_request', { page: 'report-call' }); } catch (x) {}
+        $('pick').style.display = 'none';
+        $('done-when').textContent = d.label;
+        $('done').style.display = 'block';
+        window.scrollTo(0, 0);
+      })
+      .catch(function (err) {
+        go.disabled = false; go.textContent = 'Request this time';
+        $('err').textContent = err.message;
+        if (err.status === 409) { load(); }  // slot taken: refresh the times
+      });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

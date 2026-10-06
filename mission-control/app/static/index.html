@@ -822,18 +822,21 @@ th[onclick]:hover{color:var(--accent)}
   <div style="font-size:13px;margin-bottom:16px;color:var(--text-dim)">
     Nothing lands on your calendar until you have read the answers and offered times. Agents pick one of your times; you get a calendar file and a prep email an hour before.
   </div>
-  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <button class="filter-tab" data-oo="held" onclick="ooFilter('held')">Awaiting approval <span id="oo-c-held"></span></button>
     <button class="filter-tab active" data-oo="new" onclick="ooFilter('new')">Needs times <span id="oo-c-new"></span></button>
     <button class="filter-tab" data-oo="times_sent" onclick="ooFilter('times_sent')">Waiting on agent <span id="oo-c-times_sent"></span></button>
     <button class="filter-tab" data-oo="confirmed" onclick="ooFilter('confirmed')">Confirmed <span id="oo-c-confirmed"></span></button>
     <button class="filter-tab" data-oo="closed" onclick="ooFilter('closed')">Closed</button>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="ooToggleAvailability()">Availability</button>
   </div>
+  <div id="oo-avail" class="panel" style="display:none;margin-bottom:14px"></div>
   <div id="oo-list"><div style="color:var(--text-dim);font-size:13px">Loading...</div></div>
 </div>
 
 <script>
 // ───────── 1-on-1 Requests ─────────
-var OO_API = '/api/one-on-one', ooStatus = 'new', ooRows = [], ooFocus = null;
+var OO_API = '/api/one-on-one', ooStatus = null, ooRows = [], ooFocus = null;
 
 async function ooJson(url, opts){
   opts = opts || {};
@@ -855,8 +858,9 @@ async function ooBadge(){
   try {
     var c = await ooJson(OO_API + '/counts');
     var b = document.getElementById('oo-badge');
-    if (b){ b.textContent = c['new']; b.style.display = c['new'] ? '' : 'none'; }
-    ['new','times_sent','confirmed'].forEach(function(k){ var el = document.getElementById('oo-c-' + k); if (el) el.textContent = c[k] ? '(' + c[k] + ')' : ''; });
+    var waiting = (c['new'] || 0) + (c['held'] || 0);
+    if (b){ b.textContent = waiting; b.style.display = waiting ? '' : 'none'; }
+    ['held','new','times_sent','confirmed'].forEach(function(k){ var el = document.getElementById('oo-c-' + k); if (el) el.textContent = c[k] ? '(' + c[k] + ')' : ''; });
   } catch(e) {}
 }
 
@@ -868,10 +872,11 @@ async function loadOneOnOne(){
   try {
     var all = (await ooJson(OO_API + '/requests')).requests;
     if (ooFocus){ var f = all.filter(function(r){ return r.id === ooFocus; })[0]; if (f) ooStatus = f.status; }
+    if (!ooStatus) ooStatus = all.some(function(r){ return r.status === 'held'; }) ? 'held' : 'new';
     document.querySelectorAll('#page-one-on-one [data-oo]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-oo') === ooStatus); });
     ooRows = all.filter(function(r){ return r.status === ooStatus; });
     if (!ooRows.length){
-      el.innerHTML = '<div class="panel" style="color:var(--text-dim);font-size:13px">' + ({'new':'Nothing waiting on you.','times_sent':'No offers outstanding.','confirmed':'No calls confirmed.','closed':'Nothing closed yet.'})[ooStatus] + '</div>';
+      el.innerHTML = '<div class="panel" style="color:var(--text-dim);font-size:13px">' + ({'held':'No picked times waiting on approval.','new':'Nothing waiting on you.','times_sent':'No offers outstanding.','confirmed':'No calls confirmed.','closed':'Nothing closed yet.'})[ooStatus] + '</div>';
       return;
     }
     el.innerHTML = ooRows.map(ooCard).join('');
@@ -887,15 +892,23 @@ function ooCard(r){
     + '<div class="oo-name">' + ooEsc(r.who) + '</div>'
     + '<div class="oo-sub">' + ooEsc(a.email) + ' &middot; ' + ooEsc(a.phone) + (a.current_brokerage ? ' &middot; ' + ooEsc(a.current_brokerage) : '') + '</div></div>'
     + '<div class="oo-age' + (late ? ' late' : '') + '">requested ' + ooAgo(r.created_at) + (r.issue_id ? ' &middot; from weekly email' : '') + '</div></div>'
-    + '<div class="oo-grid">'
-    + '<div><span>Describes self</span>' + ooEsc(a.agent_type || '-') + '</div>'
-    + '<div><span>Deals / 12 mo</span>' + ooEsc(a.deals || '-') + '</div>'
-    + '<div><span>Avg price</span>' + ooEsc(a.avg_price || '-') + '</div>'
-    + '<div><span>Timeline</span>' + ooEsc(a.timeline || '-') + '</div>'
-    + '<div style="grid-column:1/-1"><span>Wants to talk about</span>' + ooEsc((a.topics || []).join(', ') || '-') + '</div></div>'
+    + (function(){
+        // only what we actually know; /report-call requests carry little beyond name + email
+        var cells = [['Describes self', a.agent_type], ['Deals / 12 mo', a.deals], ['Avg price', a.avg_price], ['Timeline', a.timeline]]
+          .filter(function(c){ return c[1]; }).map(function(c){ return '<div><span>' + c[0] + '</span>' + ooEsc(c[1]) + '</div>'; }).join('');
+        var topics = (a.topics || []).join(', ');
+        if (topics) cells += '<div style="grid-column:1/-1"><span>Wants to talk about</span>' + ooEsc(topics) + '</div>';
+        return cells ? '<div class="oo-grid">' + cells + '</div>' : '';
+      })()
     + (a.notes ? '<div class="oo-quote">' + ooEsc(a.notes) + '</div>' : '')
     + (r.agent_note ? '<div class="oo-quote" style="border-color:var(--amber)"><b>None of your times worked:</b> ' + ooEsc(r.agent_note) + '</div>' : '');
 
+  if (r.status === 'held'){
+    h += '<div class="oo-when" style="margin-top:6px">' + ooEsc(r.requested_label) + ' <span style="font-size:12px;color:var(--text-dim);font-weight:400">' + (r.requested_minutes || 20) + ' min &middot; picked on /report-call' + (r.requested_passed ? ' &middot; <span style="color:var(--red)">time has passed</span>' : '') + '</span></div>';
+    var u = r.utm || {};
+    if (u.utm_campaign || u.utm_source) h += '<div class="oo-sub">Ad: ' + ooEsc([u.utm_source, u.utm_campaign, u.utm_content].filter(Boolean).join(' / ')) + '</div>';
+    if (!a.phone) h += '<div class="oo-sub" style="color:var(--amber)">No phone on file: approve as Zoom or offer other times.</div>';
+  }
   if (r.status === 'times_sent'){
     h += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px">Offered ' + ooAgo(r.times_sent_at) + ':</div><div style="margin-top:6px">'
       + r.slots.map(function(s){ return '<span class="oo-slot' + (s.passed ? ' passed' : '') + '">' + ooEsc(s.label) + '</span>'; }).join('') + '</div>';
@@ -904,6 +917,10 @@ function ooCard(r){
   if (r.status === 'closed' && r.closed_reason) h += '<div class="oo-sub">Closed: ' + ooEsc(r.closed_reason) + '</div>';
 
   h += '<div class="oo-actions">';
+  if (r.status === 'held')
+    h += '<button class="btn btn-primary btn-sm" onclick="ooApprove(' + r.id + ',\'phone\')">Approve (phone)</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="ooApprove(' + r.id + ',\'zoom\')">Approve as Zoom</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="ooRelease(' + r.id + ')">Offer other times</button>';
   if (r.status === 'new' || r.status === 'times_sent')
     h += '<button class="btn btn-primary btn-sm" onclick="ooShowTimes(' + r.id + ')">' + (r.status === 'new' ? 'Send times' : 'Send new times') + '</button>'
       + '<button class="btn btn-ghost btn-sm" onclick="ooShowManual(' + r.id + ')">They replied, confirm a time</button>';
@@ -960,6 +977,51 @@ async function ooConfirm(id){
   if (!v){ showToast('Pick a time.', true); return; }
   if (!confirm('Confirm ' + new Date(v).toLocaleString() + '? They will get a confirmation email.')) return;
   try { await ooJson(OO_API + '/requests/' + id + '/confirm', {method: 'POST', body: {start: new Date(v).toISOString(), minutes: parseInt(document.getElementById('oo-man-min-' + id).value), meeting: document.getElementById('oo-man-how-' + id).value}}); showToast('Confirmed'); loadOneOnOne(); }
+  catch(e) { showToast(e.message, true); }
+}
+async function ooApprove(id, meeting){
+  try { var r = await ooJson(OO_API + '/requests/' + id + '/approve', {method: 'POST', body: {meeting: meeting}}); showToast('Confirmed: ' + r.label); ooStatus = 'confirmed'; loadOneOnOne(); }
+  catch(e) { showToast(e.message, true); }
+}
+async function ooRelease(id){
+  if (!confirm('Release this time and offer other times instead?')) return;
+  try { await ooJson(OO_API + '/requests/' + id + '/release', {method: 'POST'}); ooStatus = 'new'; loadOneOnOne(); ooShowTimes(id); }
+  catch(e) { showToast(e.message, true); }
+}
+
+// ── Availability (open slots on /report-call) ──
+async function ooToggleAvailability(){
+  var el = document.getElementById('oo-avail');
+  if (el.style.display !== 'none'){ el.style.display = 'none'; return; }
+  el.style.display = ''; el.innerHTML = 'Loading...';
+  try {
+    var a = await ooJson(OO_API + '/availability');
+    var names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var rows = names.map(function(n, d){
+      var w = (a.hours[String(d)] || [])[0];
+      return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><label style="width:70px;font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" data-av-on="' + d + '"' + (w ? ' checked' : '') + '/> ' + n + '</label>'
+        + '<input type="time" class="oo-in" data-av-start="' + d + '" value="' + (w ? w[0] : '09:30') + '"/><span style="font-size:12px;color:var(--text-dim)">to</span>'
+        + '<input type="time" class="oo-in" data-av-end="' + d + '" value="' + (w ? w[1] : '15:00') + '"/></div>';
+    }).join('');
+    function num(k, label, v){ return '<label style="font-size:12px;color:var(--text-dim);display:flex;flex-direction:column;gap:4px">' + label + '<input type="number" class="oo-in" style="width:90px" id="av-' + k + '" value="' + v + '"/></label>'; }
+    el.innerHTML = '<div class="panel-title" style="font-size:14px;margin-bottom:6px">Open times on /report-call (Eastern)</div>'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Agents pick from these; every pick waits for your approval. Times already held, confirmed or offered to someone are hidden automatically. Your Google Calendar is not checked, so approve only times that are actually free.</div>'
+      + rows
+      + '<div style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 0">' + num('slot_minutes', 'Call length (min)', a.slot_minutes) + num('buffer_minutes', 'Buffer (min)', a.buffer_minutes)
+      + num('min_notice_hours', 'Min notice (hrs)', a.min_notice_hours) + num('days_ahead', 'Days ahead', a.days_ahead) + '</div>'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Next open: ' + (a.preview.length ? ooEsc(a.preview.slice(0, 6).join(' · ')) : 'none') + '</div>'
+      + '<button class="btn btn-primary btn-sm" onclick="ooSaveAvailability()">Save</button>';
+  } catch(e) { el.innerHTML = '<span class="wk-warn">' + ooEsc(e.message) + '</span>'; }
+}
+async function ooSaveAvailability(){
+  var hours = {};
+  for (var d = 0; d < 7; d++){
+    var on = document.querySelector('[data-av-on="' + d + '"]').checked;
+    hours[String(d)] = on ? [[document.querySelector('[data-av-start="' + d + '"]').value, document.querySelector('[data-av-end="' + d + '"]').value]] : [];
+  }
+  var body = {hours: hours};
+  ['slot_minutes','buffer_minutes','min_notice_hours','days_ahead'].forEach(function(k){ body[k] = parseInt(document.getElementById('av-' + k).value); });
+  try { await ooJson(OO_API + '/availability', {method: 'PUT', body: body}); showToast('Availability saved'); document.getElementById('oo-avail').style.display = 'none'; ooToggleAvailability(); }
   catch(e) { showToast(e.message, true); }
 }
 async function ooClose(id){
