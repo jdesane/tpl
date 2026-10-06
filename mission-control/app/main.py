@@ -475,6 +475,11 @@ app.include_router(_recruit_newsletter_mod.router)            # /api/recruit-new
 app.include_router(_recruit_newsletter_mod.public_router)     # /api/public/weekly (classes, trainings, booking form)
 app.include_router(_recruit_newsletter_mod.tracking_router)   # /api/tracking/weekly (click redirect, video heartbeat)
 
+# ── META LEAD ADS (webhook fetch + 6-hour backfill + token health) ──
+import meta_leads as _meta_leads_mod  # noqa: E402
+_meta_leads_mod.setup(db, supabase)
+app.include_router(_meta_leads_mod.router)          # /api/meta-leads (platform-only; cron via loopback)
+
 # ── 1-ON-1 REQUESTS (replaces Calendly self-booking) ──
 import one_on_one as _one_on_one_mod  # noqa: E402
 _one_on_one_mod.setup(db, supabase)
@@ -535,6 +540,7 @@ PLATFORM_ONLY_PREFIXES = (
     "/api/newsletter",
     "/api/recruit-newsletter",
     "/api/one-on-one",
+    "/api/meta-leads",
     "/api/prospects",
     "/api/buyer-intake",
     "/api/admin",  # Phase 13.5: invitations, user management, impersonation
@@ -5298,91 +5304,11 @@ async def meta_leads_webhook(request: Request):
             return {"success": True, "action": "lead_created" if lead_result.get("action") != "invalid_email" else "invalid_email", "leads": [lead_result]}
         return {"success": True, "action": "no_entries"}
 
-    for entry in entries:
-        changes = entry.get("changes", [])
-        for change in changes:
-            if change.get("field") != "leadgen":
-                continue
-
-            value = change.get("value", {})
-            leadgen_id = value.get("leadgen_id", "")
-            form_id = value.get("form_id", "")
-
-            if not leadgen_id or not page_access_token:
-                # If no access token, log what we got and skip Graph API call
-                db("activity_log").insert({
-                    "type": "meta_lead",
-                    "message": f"Meta lead received but no page access token configured. Leadgen ID: {leadgen_id}",
-                    "meta": {"leadgen_id": leadgen_id, "form_id": form_id}
-                }).execute()
-                continue
-
-            # Fetch lead data from Meta Graph API
-            try:
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(
-                        f"https://graph.facebook.com/v21.0/{leadgen_id}",
-                        params={"access_token": page_access_token}
-                    )
-                    if resp.status_code != 200:
-                        db("activity_log").insert({
-                            "type": "meta_lead",
-                            "message": f"Failed to fetch lead {leadgen_id} from Graph API: {resp.status_code}",
-                            "meta": {"leadgen_id": leadgen_id, "response": resp.text[:500]}
-                        }).execute()
-                        continue
-
-                    lead_data = resp.json()
-            except Exception as e:
-                db("activity_log").insert({
-                    "type": "meta_lead",
-                    "message": f"Error fetching lead {leadgen_id}: {str(e)}",
-                    "meta": {"leadgen_id": leadgen_id}
-                }).execute()
-                continue
-
-            # Parse field_data from Meta response
-            # Format: {"field_data": [{"name": "email", "values": ["user@example.com"]}, ...]}
-            fields = {}
-            for field in lead_data.get("field_data", []):
-                field_name = field.get("name", "").lower()
-                field_values = field.get("values", [])
-                if field_values:
-                    fields[field_name] = field_values[0]
-
-            email = (fields.get("email", "") or "").strip()
-            if not email:
-                continue
-            if not is_valid_email(email):
-                try:
-                    db("activity_log").insert({
-                        "type": "webhook_validation_error",
-                        "message": f"Meta webhook rejected malformed email from leadgen {leadgen_id}: {email!r}",
-                        "meta": {"leadgen_id": leadgen_id, "form_id": form_id, "email": email, "fields": fields}
-                    }).execute()
-                except Exception:
-                    pass
-                continue
-
-            name = fields.get("full_name", "") or fields.get("name", "Unknown")
-            phone = fields.get("phone_number", "") or fields.get("phone", "")
-
-            # Fetch form name for better source tracking
-            form_name = lead_data.get("form_name", "Meta Lead Form")
-
-            lead_result = await _create_meta_lead(
-                name=name,
-                email=email,
-                phone=phone,
-                form_name=form_name,
-                campaign_name="",
-                ad_name="",
-                platform=lead_data.get("platform", "fb"),
-                settings=settings
-            )
-            leads_created.append(lead_result)
-
-    return {"success": True, "action": "processed", "leads_created": len(leads_created), "leads": leads_created}
+    # Leadgen notifications: fetch + store + alert via meta_leads.py (same path as the 6-hour backfill).
+    # Run the blocking Supabase/Graph work off the event loop.
+    import asyncio as _aio
+    leads_created = await _aio.get_running_loop().run_in_executor(None, _meta_leads_mod.handle_webhook_payload, data)
+    return {"success": True, "action": "processed", "leads_created": len([r for r in leads_created if r.get("status") == "stored"]), "leads": leads_created}
 
 
 async def _create_meta_lead(name: str, email: str, phone: str, form_name: str,

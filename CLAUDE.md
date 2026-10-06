@@ -951,6 +951,39 @@ avg price, split, brokerage). The thank-you button sends them here. `/book` stay
 - **Deployed 2026-10-06:** migration applied; MC rebuilt (VPS backups `*.pre-reportcall-20261006-114549`);
   site pushed. No new cron: the existing `/api/one-on-one/process` job handles held slots.
 
+## Meta Lead Ads -> Mission Control rebuilt ✅ DEPLOYED (2026-10-06)
+
+The "Commission Report" instant forms weren't reaching Mission Control. Diagnosis: the webhook
+worked, but Meta test leads all use `test@meta.com`, so they merged silently into old lead #54.
+The 6-hour sync only polled 2 hard-coded form IDs (never the new forms). Form answers, form and ad
+names were thrown away, existing-lead timeline inserts used wrong column names, and fetch failures
+were logged without alerting anyone.
+
+- **`mission-control/app/meta_leads.py`**: one code path for the webhook and the backfill.
+  `process_leadgen()` fetches the lead on Graph **v26.0** with
+  `form_id,ad_name,adset_name,campaign_name,platform,is_organic,field_data`, looks up the form name,
+  maps answers by keyword (transactions -> `deals_per_year`, sale price -> `avg_price`, split ->
+  `commission_split`, brokerage -> `current_brokerage`), upserts the lead by email in workspace 1,
+  saves `source_page` = "<ad> - <form>", adds the LPT Recruiting opportunity at `new_fb_lead`, and
+  writes a real `lead_activity` row. **No drip enrollment** (Joe, 2026-10-06).
+- **`meta_lead_submissions`** table: one row per leadgen ID (UNIQUE) = the de-dupe key. Statuses:
+  received / stored / test / failed. Migration `2026-10-06-meta-lead-submissions.sql`.
+- **Alerts via `send_email()`** to `notify_email`: every new Meta lead (all answers + form/ad);
+  "Meta lead NOT stored" on any failure (once per leadgen ID); TEST alert for Testing Tool leads
+  (dummy `<test lead:` values / `test@meta.com`), which never create or change a contact.
+- **Backfill**: `sync_meta_leads.py` is now a thin wrapper that POSTs to `/api/meta-leads/sync`
+  (loopback). It reads EVERY active form on the Page (319 incl. old listing forms), leads from the
+  last 3 days, processes unseen leadgen IDs, and retries failed ones. Cron unchanged (every 6h).
+- **Token health**: `/api/meta-leads/token-check` daily at 13:15 UTC (`--token-check` cron) alerts if
+  the Page token is invalid, missing leads_retrieval / pages_manage_ads / pages_show_list /
+  pages_read_engagement, or gets an expiry within 14 days. Current token: PAGE, never expires,
+  issued 2026-04-13. A System User token is the more permanent option (Joe, Business Settings).
+- Webhook still answers Meta 200 and keeps the direct-POST (Zapier-style) path. Meta's dashboard
+  shows the leadgen webhook on v25.0; change it to v26.0 in the App Dashboard (payload is the same).
+- **Tests:** `tests/test_meta_leads.py` - 40 assertions (Graph faked, real Commission Report keys).
+- Deployed: VPS backups `*.pre-metaleads-20261006-135348`; crontab backup `/root/crontab.pre-metatoken-*`.
+  First backfill run stored the earlier Testing Tool lead as `test` and the TEST alert was delivered.
+
 ## Page Capture — local Chrome extension (2026-08-28)
 
 Replaces the third-party full-page screenshot extension Joe lost. Unpacked MV3 extension at
