@@ -247,6 +247,8 @@ nav {
   margin-bottom: 20px; letter-spacing: 0.02em;
 }
 .section-title em { font-style: normal; color: var(--accent); }
+.section-body a { color: var(--accent-hi, #8b85ff); font-weight: 600; text-decoration: none; }
+.section-body a:hover { text-decoration: underline; }
 .section-body {
   font-size: 17px; color: var(--muted);
   max-width: 680px; line-height: 1.75; font-weight: 300;
@@ -852,6 +854,59 @@ footer {
 
 <hr class="divider"/>
 
+<!-- REVENUE SHARE + TRAINING -->
+<section class="comp-table-wrap" id="revenue-share">
+  <div class="comp-table-inner">
+    <div class="fade-in">
+      <span class="section-label">Beyond the Split</span>
+      <h2 class="section-title">Revenue Share &amp; Training</h2>
+      <p class="section-body">Both brokerages pay revenue share for attracting producing agents, and the two models work very differently. eXp distributes a share of a company revenue pool across up to 7 tiers of your sponsored network, so earnings move with a pool that changes month to month. LPT's HybridShare is a 7-tier structure on the Brokerage Partner plan, paid as a percentage of the company dollar your downline generates. Business Builder agents can build a downline and switch to Brokerage Partner when they're ready.</p>
+    </div>
+    <table class="comp-table fade-in delay-1">
+      <thead>
+        <tr>
+          <th>Revenue Share &amp; Training</th>
+          <th>LPT Realty</th>
+          <th>eXp Realty</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Available On</td>
+          <td>Brokerage Partner plan</td>
+          <td>All agents</td>
+        </tr>
+        <tr>
+          <td>Tiers</td>
+          <td>7</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Earnings Formula</td>
+          <td>% of downline's company dollar</td>
+          <td>% of monthly revenue pool (variable)</td>
+        </tr>
+        <tr>
+          <td>Build a Downline Before Activating</td>
+          <td>Yes - build on Business Builder, activate later</td>
+          <td>N/A - all agents on the same plan</td>
+        </tr>
+        <tr>
+          <td>Virtual Campus</td>
+          <td>Online portal</td>
+          <td>eXp World (immersive 3D)</td>
+        </tr>
+        <tr>
+          <td>Training</td>
+          <td>Growing library, plus TPL Collective coaching and community</td>
+          <td>eXp University, 50+ hours of live training weekly</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="section-body fade-in" style="margin-top:24px;">eXp has the deeper training library today, and for brand-new agents that depth is a real advantage. Joining LPT through TPL Collective adds coaching, accountability and marketing systems on top of LPT's brokerage infrastructure. Thinking about making the move? Read <a href="/vs/exp-switch">what to check before you leave eXp</a>.</p>
+  </div>
+</section>
+
 <!-- WHO LPT IS BEST FOR -->
 <section class="bestfor-section">
   <div class="bestfor-inner">
@@ -964,7 +1019,7 @@ document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
   <!-- Internal Cross-Link -->
   <div style="text-align:center;padding:12px 0 4px;font-family:sans-serif;font-size:0.85rem;color:#8888aa;">
-    Also see: <a href="https://tplcollective.ai/blog/lpt-vs-exp-realty" style="color:#6c63ff;text-decoration:none;">LPT vs eXp Realty — Full In-Depth Article</a>
+    Also see: <a href="https://tplcollective.ai/vs/exp-switch" style="color:#6c63ff;text-decoration:none;">Leaving eXp? What to check before you switch</a>
   </div>
 </body>
 </html>

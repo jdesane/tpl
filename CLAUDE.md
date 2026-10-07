@@ -82,7 +82,7 @@
 - `social-graphics/` — Puppeteer-based social media graphics generator
 - Key pages: index, why-tpl, fee-plans, lpt-explained, commission-calculator, 27k-worksheet, resources, join, join-lpt-realty, revshare, two-lanes, franchise-fees, brokerage-fees, privacy-policy, 404, fb-post-scheduler, ideas/index
 - Comparison pages: vs/keller-williams, vs/exp-realty, vs/exp-switch, vs/coldwell-banker, vs/century-21, vs/real-brokerage, vs/remax, vs/epique-realty, vs/compass, vs/homesmart, vs/berkshire-hathaway, vs/index (hub) — 11 comparison pages total
-- Blog articles (blog/): lpt-vs-exp-realty, lpt-vs-keller-williams, lpt-vs-real-brokerage, lpt-vs-coldwell-banker, lpt-vs-epique-realty, lpt-vs-century-21, how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees — 11 blog posts total
+- Blog articles (blog/): lpt-vs-keller-williams, lpt-vs-real-brokerage, lpt-vs-coldwell-banker, lpt-vs-epique-realty, lpt-vs-century-21, how-to-switch-brokerages, commission-splits-explained, what-is-a-cap-in-real-estate, cloud-brokerage-vs-traditional, hidden-brokerage-fees — 10 blog posts total (lpt-vs-exp-realty 301s to /vs/exp-realty since 2026-10-07)
 - Blog index (blog.html) with filter tabs, comparison + guide categories
 
 ## Build Plan (v2 Architecture) — ALL COMPLETE
@@ -1066,6 +1066,18 @@ public, so the password alone was enough to get an admin JWT.
 - **Never put passwords, tokens or keys in any repo file**, even in files that are ignored by
   Vercel. The anon Supabase keys in `ideas/index.html` and `static/recruiting/supabase-client.js`
   are public by design (RLS protects data) and are fine.
+
+## SEO indexing cleanup (2026-10-07)
+GSC (Oct 7): 36 indexed / 23 not indexed, 16 of them "Crawled - currently not indexed".
+- **eXp cannibalization fixed:** /vs/exp-realty, /vs/exp-switch and /blog/lpt-vs-exp-realty all
+  targeted "LPT vs eXp" and none were indexed. The blog post now 301s to /vs/exp-realty (its revenue
+  share + training comparison was merged in). /vs/exp-switch dropped its copy of the cost breakdown
+  and now targets "leaving eXp" (pre-notice checklist + links to the switching guides).
+- Internal links added to /two-lanes, /brokerage-fees, /blog/hidden-brokerage-fees from fee-plans,
+  lpt-explained, why-tpl and two indexed blog posts.
+- /privacy-policy is noindex and out of the sitemap. robots.txt already blocks /compare?*.
+- **Still open:** templated /vs/ pages (douglas-elliman, sothebys, the-agency) need content unique to
+  each brokerage; 16 pages still link /joining-lpt-realty, which 302s to the homepage.
 
 ## DNS — Complete ✅
 - `@` → 216.198.79.1 (root domain)
